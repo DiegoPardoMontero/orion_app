@@ -14,3 +14,8 @@ springdoc:
     enabled: true
   swagger-ui:
     enabled: true
+
+orion:
+  admin:
+    email: ${ORION_ADMIN_EMAIL:admin@orion.local}
+    password: ${ORION_ADMIN_PASSWORD:admin123*}
