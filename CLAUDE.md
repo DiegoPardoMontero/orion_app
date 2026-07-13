@@ -2,36 +2,76 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-<!--
-This is a skeleton. Nothing below was derived from the codebase — the repo was
-empty when this file was created. Fill in the sections that apply and delete
-the rest.
--->
-
 ## Overview
 
-<!-- What this project is and what it does. -->
+Orión — plataforma de agendamiento de clases para una academia de inglés colombiana
+(MVP 1: estudiantes reservan con profesores según disponibilidad; el contacto ocurre por
+WhatsApp; sin pagos). Volumen esperado: decenas de usuarios.
+
+El trabajo se dirige por briefs en `docs/briefs/`. **Léelos antes de tocar código**: definen
+el alcance cerrado de cada tarea, y construir features que no están en el brief es una
+violación explícita de las instrucciones. La comunicación con Pardo es en español; el código
+y los identificadores, en inglés.
 
 ## Commands
 
-<!--
-Build:
-Run (dev):
-Test (all):
-Test (single):
-Lint / typecheck:
--->
+Infraestructura (Postgres + Mailpit):
+
+```bash
+docker compose up -d          # postgres:5432, mailpit web:8025 / smtp:1025
+docker compose down -v        # borra también el volumen (esquema desde cero)
+```
+
+Backend (desde `backend/`):
+
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+./mvnw verify                          # unitarios (*Test) + integración (*IT)
+./mvnw test                            # solo unitarios
+./mvnw verify -Dit.test=AuthFlowIT     # un solo test de integración
+```
+
+Los tests usan Testcontainers con Postgres real: Docker debe estar corriendo, pero la infra
+de `docker compose` no necesita estar arriba.
 
 ## Architecture
 
-<!--
-The big picture that isn't obvious from reading one file: how the major pieces
-fit together, where the boundaries are, how data flows through the system.
--->
+**Monolito modular** bajo `co.orion`. Módulos actuales: `identity` y `shared`. Dentro de cada
+módulo: `api/` (controllers y DTOs) · `application/` (servicios) · `domain/` (entidades) ·
+`persistence/` (repositorios).
+
+**Flyway es el dueño del esquema.** `spring.jpa.hibernate.ddl-auto=validate`, siempre.
+Hibernate nunca crea ni altera tablas; solo valida que las entidades coincidan con lo que
+migró Flyway — si divergen, la aplicación no arranca. Todo cambio de esquema es una migración
+nueva en `backend/src/main/resources/db/migration`. Este principio es permanente.
+
+**Convenciones de datos:** IDs `UUID` generados en la base (`gen_random_uuid()`, mapeados con
+`@Generated(event = INSERT)`, no con `@GeneratedValue`). Tiempos en `TIMESTAMPTZ`, almacenados
+en UTC; la zona de negocio es `America/Bogota`. Roles y estados son `VARCHAR + CHECK`, no
+enums nativos de Postgres (evolucionarlos es una migración trivial en vez de un `ALTER TYPE`).
+El email se normaliza a minúsculas en el constructor de `User`, no en la base.
+
+**El `Clock` de `shared/config` es la única fuente de la hora.** Nunca `Instant.now()` directo:
+la auditoría JPA (`@CreatedDate`/`@LastModifiedDate`) lee de ese bean a través de un
+`DateTimeProvider`, para que congelarlo en un test congele también las marcas de auditoría.
+
+**Autenticación por sesión, sin JWT.** Cookie `ORION_SESSION` httpOnly + CSRF con cookie
+`XSRF-TOKEN` legible por JS y header `X-XSRF-TOKEN` en toda petición mutante (el login está
+exento). Los errores siempre son JSON — nunca un redirect a una página de login. La API vive
+bajo `/api/v1`.
 
 ## Conventions
 
-<!--
-Project-specific rules that Claude would otherwise get wrong.
-Skip anything generic.
--->
+- **Spring Boot 4.1** (Boot 3.5 llegó a EOL el 30/06/2026). Nunca degradar la versión de Boot
+  para "resolver" un error de compilación: eso requiere aprobación explícita de Pardo.
+- Boot 4 renombró artefactos y movió clases de paquete respecto a Boot 3 (`starter-webmvc`,
+  `starter-flyway`, un módulo `-test` por starter, `org.testcontainers:testcontainers-*`,
+  `@DataJpaTest` en `boot.data.jpa.test.autoconfigure`, `TestRestTemplate` en
+  `boot.resttestclient` y con `@AutoConfigureTestRestTemplate` explícito). **El conocimiento
+  entrenado sobre Spring está sesgado a Boot 3**: ante un error, compara contra lo que genera
+  Spring Initializr para Boot 4.1 o busca la clase en los jars de `~/.m2` antes de teorizar.
+- Sin Lombok. DTOs como `record` de Java 21. Inyección por constructor, siempre.
+- Claridad sobre magia. Comentarios solo donde el "por qué" no sea obvio.
+- Un commit por paso del brief, mensaje convencional en inglés
+  (`feat(identity): session-based auth with role protection`).
+- Antes de declarar terminado un paso: `./mvnw verify` en verde.
