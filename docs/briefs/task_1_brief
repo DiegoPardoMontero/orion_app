@@ -1,0 +1,440 @@
+# Brief · Tarea 1 — Fundación de Orión
+
+**Proyecto:** Orion Language Academy — plataforma web de agendamiento de clases de inglés (MVP 1).
+**Quién dirige:** Pardo, ingeniero principal y dueño del repositorio. Tú (Claude Code) implementas bajo su dirección.
+**Resultado de esta tarea:** monorepo con infraestructura local (PostgreSQL + Mailpit), backend Spring Boot que arranca y conecta, esquema V1 migrado con Flyway, autenticación por sesión con 3 roles, datos semilla y suite de tests en verde.
+
+---
+
+## 0. Modo de trabajo — LEER PRIMERO, APLICA A TODO
+
+1. **Un paso a la vez.** Esta tarea tiene 6 pasos (0 al 5). Al terminar cada paso: (a) resume qué archivos creaste o modificaste y por qué, (b) explica brevemente los conceptos de Spring/Postgres nuevos que aparecieron — Pardo conoce los fundamentos pero lleva tiempo sin trabajar con Spring y quiere entender todo a profundidad, (c) entrega los comandos de verificación del paso, y (d) **DETENTE y espera su confirmación explícita antes de continuar.**
+2. **Nada de features futuras.** No crees código, carpetas, entidades ni endpoints de reservas, disponibilidad, notificaciones o frontend "porque es fácil dejarlo listo". El alcance está cerrado en la sección 10.
+3. **Antes de declarar un paso terminado**, compila y ejecuta los tests existentes (`./mvnw verify` cuando ya existan tests). No entregues pasos rotos.
+4. **Si necesitas desviarte del brief** (una dependencia extra, una versión distinta, otra estructura), pregunta primero y justifica. No decidas solo.
+5. **Commits:** mínimo uno por paso, formato convencional en inglés (`feat(identity): session-based auth with role protection`). El código y los identificadores en inglés; la comunicación con Pardo en español.
+6. **Estilo de código:** claridad sobre magia. Sin Lombok. DTOs como `record` de Java 21. Inyección por constructor siempre. Comentarios solo donde el "por qué" no sea obvio.
+7. Si algo del entorno de Pardo falla (Docker, puertos ocupados, versión de Java), ayuda a diagnosticar antes de proponer cambios al diseño.
+
+---
+
+## 1. Contexto mínimo del producto
+
+Orión digitaliza una academia de inglés colombiana que hoy opera por WhatsApp. En el MVP 1 los estudiantes reservan clases con profesores según su disponibilidad, y ambos se contactan por WhatsApp; sin pagos todavía. Volumen esperado: decenas de usuarios, no miles. Esta tarea construye **solo los cimientos**: repositorio, infraestructura local, base de datos e identidad/autenticación.
+
+## 2. Decisiones de arquitectura ya tomadas (no negociables)
+
+- **Java 21 + Spring Boot 3.x** (la última 3.x estable) + Maven con wrapper (`mvnw`). No saltar a Boot 4.x sin discutirlo con Pardo.
+- **Monolito modular.** Paquete raíz `co.orion`. En esta tarea solo existen los módulos `identity` y `shared`. Dentro de cada módulo: `api/` (controllers y DTOs), `application/` (servicios), `domain/` (entidades), `persistence/` (repositorios).
+- **PostgreSQL 16 y Flyway es el dueño del esquema:** `spring.jpa.hibernate.ddl-auto=validate` siempre. Hibernate nunca crea ni altera tablas; solo valida que las entidades coincidan con lo que Flyway migró. Este es un principio permanente del proyecto.
+- **IDs `UUID`** generados en la base (`gen_random_uuid()`), **tiempos en `TIMESTAMPTZ`** (UTC en almacenamiento; la zona de negocio es `America/Bogota`).
+- **Autenticación por sesión de servidor con cookie httpOnly** (Spring Security clásico). Nada de JWT en este MVP: una sola instancia, un solo dominio, la sesión es más simple y más difícil de implementar mal.
+- **CSRF activo** con el patrón estándar para SPAs: cookie `XSRF-TOKEN` legible por JavaScript + header `X-XSRF-TOKEN` en cada request mutante. El endpoint de login queda exento (se protege con las credenciales mismas).
+- **API bajo `/api/v1`**, errores siempre como JSON (nunca redirects a páginas HTML de login).
+- **OpenAPI** con springdoc, disponible solo en perfil `local`.
+- En `shared` vive un bean `Clock` (`Clock.systemUTC()`) que se inyecta donde se necesite la hora — permite congelar el tiempo en tests. Las tareas futuras dependen de esto.
+
+---
+
+## 3. Paso 0 — Repositorio e infraestructura local
+
+Crear la estructura del monorepo:
+
+```
+orion/
+├── backend/            (vacío por ahora — se llena en el Paso 1)
+├── frontend/           (solo .gitkeep — se llena en la Tarea 4)
+├── docs/
+│   └── briefs/         (guardar este brief aquí)
+├── docker-compose.yml
+├── .gitignore          (Java/Maven + Node + IDEs + .env)
+└── README.md           (qué es Orión, cómo levantar la infra; se irá completando)
+```
+
+Contenido **exacto** de `docker-compose.yml`:
+
+```yaml
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: orion-postgres
+    environment:
+      POSTGRES_DB: orion
+      POSTGRES_USER: orion
+      POSTGRES_PASSWORD: orion_local
+    ports:
+      - "5432:5432"
+    volumes:
+      - orion_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orion -d orion"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: orion-mailpit
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+volumes:
+  orion_pgdata:
+```
+
+Mailpit es un servidor SMTP falso con interfaz web: todo correo que la aplicación "envíe" en desarrollo aparece en `http://localhost:8025` sin configurar nada real. Lo usaremos desde la Tarea 3.
+
+**Verificación (la ejecuta Pardo):**
+
+```bash
+docker compose up -d
+docker compose ps
+# ambos servicios corriendo; postgres en estado healthy
+
+docker exec -it orion-postgres psql -U orion -d orion -c "select version();"
+# responde PostgreSQL 16.x
+
+# Abrir http://localhost:8025 → interfaz de Mailpit, bandeja vacía
+```
+
+**DETENTE aquí y espera confirmación.**
+
+---
+
+## 4. Paso 1 — Esqueleto Spring Boot que arranca y conecta
+
+Generar el proyecto en `backend/` (Spring Initializr o equivalente) con estas dependencias **exactas**:
+
+- `spring-boot-starter-web`, `spring-boot-starter-data-jpa`, `spring-boot-starter-security`, `spring-boot-starter-validation`, `spring-boot-starter-mail`, `spring-boot-starter-actuator`
+- `flyway-core` + `flyway-database-postgresql`
+- `org.postgresql:postgresql` (runtime)
+- `springdoc-openapi-starter-webmvc-ui`
+- `spring-boot-devtools` (runtime, opcional)
+- Test: `spring-boot-starter-test`, `spring-security-test`, `org.testcontainers:junit-jupiter`, `org.testcontainers:postgresql`, `spring-boot-testcontainers`
+
+Clase principal `co.orion.OrionApplication`.
+
+`application.yml` + `application-local.yml` con, como mínimo:
+
+- Datasource: `jdbc:postgresql://localhost:5432/orion`, usuario/clave `orion`/`orion_local`, sobreescribibles por variables de entorno (`DB_URL`, `DB_USER`, `DB_PASSWORD`).
+- `spring.jpa.hibernate.ddl-auto: validate` y `spring.jpa.open-in-view: false` (explicar a Pardo por qué se apaga open-in-view).
+- Flyway habilitado (default), migraciones en `classpath:db/migration`.
+- Mail: host `localhost`, puerto `1025`, sin auth (solo perfil local).
+- Actuator: exponer únicamente `health`.
+- springdoc habilitado solo en `local`.
+- Cookie de sesión: nombre `ORION_SESSION`, `http-only: true`, `same-site: lax`.
+- `spring.application.name: orion-backend`.
+
+**Verificación:**
+
+```bash
+cd backend
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+# arranca sin errores; en los logs: pool Hikari conectado y Flyway inicializado
+# (sin migraciones aún — Flyway solo crea su tabla de historial y no truena)
+
+curl -i http://localhost:8080/actuator/health
+# → 401. Esto es CORRECTO y esperado: Spring Security protege todo por
+# defecto (secure by default). Lo abriremos conscientemente en el Paso 4.
+
+docker exec -it orion-postgres psql -U orion -d orion -c "select * from flyway_schema_history;"
+# la tabla existe (vacía)
+```
+
+**DETENTE aquí y espera confirmación.**
+
+---
+
+## 5. Paso 2 — Migración V1: esquema de identidad
+
+Crear `backend/src/main/resources/db/migration/V1__identity.sql` con contenido **exacto**:
+
+```sql
+CREATE TABLE users (
+    id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email          VARCHAR(255) NOT NULL UNIQUE,
+    password_hash  VARCHAR(100) NOT NULL,
+    full_name      VARCHAR(150) NOT NULL,
+    whatsapp_phone VARCHAR(20),
+    role           VARCHAR(20) NOT NULL
+                   CHECK (role IN ('STUDENT', 'PROFESSOR', 'ADMIN')),
+    status         VARCHAR(20) NOT NULL DEFAULT 'ACTIVE'
+                   CHECK (status IN ('ACTIVE', 'INACTIVE')),
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE professor_profiles (
+    user_id      UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    headline     VARCHAR(120),
+    bio          TEXT,
+    photo_url    VARCHAR(500),
+    is_published BOOLEAN NOT NULL DEFAULT false,
+    updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_users_role ON users(role);
+```
+
+Notas de diseño para explicarle a Pardo al entregar el paso:
+
+- Roles y estados como `VARCHAR + CHECK` y no como `ENUM` nativo de Postgres: evolucionar un enum nativo exige `ALTER TYPE` con restricciones molestas; un CHECK se reemplaza con una migración trivial.
+- El email se normaliza a minúsculas **en la aplicación** (constructor de la entidad) — regla de una sola dirección, más simple que CITEXT.
+- `ON DELETE CASCADE` en el perfil: el perfil no tiene sentido sin su usuario.
+- `professor_profiles` usa el mismo UUID del usuario como PK (relación 1:1 real, sin id propio).
+
+**Verificación:**
+
+```bash
+# reiniciar la aplicación → Flyway aplica V1
+docker exec -it orion-postgres psql -U orion -d orion -c "\d users"
+docker exec -it orion-postgres psql -U orion -d orion -c "\d professor_profiles"
+docker exec -it orion-postgres psql -U orion -d orion \
+  -c "select version, description, success from flyway_schema_history;"
+# → V1 | identity | t
+```
+
+**DETENTE aquí y espera confirmación.**
+
+---
+
+## 6. Paso 3 — Entidades JPA, repositorios y datos semilla
+
+**`identity/domain`:**
+
+- `User`: mapea `users`. Enums Java `UserRole { STUDENT, PROFESSOR, ADMIN }` y `UserStatus { ACTIVE, INACTIVE }` persistidos con `@Enumerated(EnumType.STRING)`. El constructor normaliza el email a minúsculas y valida no-nulos. Auditoría con `@CreatedDate`/`@LastModifiedDate` sobre `created_at`/`updated_at` (`@EnableJpaAuditing` en una clase de configuración de `shared`).
+- `ProfessorProfile`: PK = `user_id` compartido con `User` (`@Id` + `@OneToOne @MapsId`).
+
+**`identity/persistence`:**
+
+- `UserRepository extends JpaRepository<User, UUID>` con `Optional<User> findByEmailIgnoreCase(String email)` y `boolean existsByEmailIgnoreCase(String email)`.
+- `ProfessorProfileRepository extends JpaRepository<ProfessorProfile, UUID>`.
+
+**Semilla de desarrollo** — clase `DevDataSeeder implements ApplicationRunner`, anotada `@Profile("local")`, **idempotente** (verifica existencia por email antes de crear):
+
+| Email | Rol | Detalle |
+|---|---|---|
+| valor de `ORION_ADMIN_EMAIL` (default `admin@orion.local`) | ADMIN | clave de `ORION_ADMIN_PASSWORD` (default `admin123*`) |
+| `maria@orion.local` | PROFESSOR | perfil **publicado**, headline y bio de ejemplo |
+| `juan@orion.local` | PROFESSOR | perfil **sin publicar** |
+| `ana@orion.local` | STUDENT | — |
+| `carlos@orion.local` | STUDENT | — |
+
+Clave común de desarrollo para todos menos el admin: `orion123*`. Todas las claves con BCrypt.
+
+**Verificación:**
+
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+docker exec -it orion-postgres psql -U orion -d orion \
+  -c "select email, role, status from users order by role, email;"
+# → 5 filas
+# reiniciar de nuevo la app → siguen siendo 5 filas (idempotencia)
+```
+
+**DETENTE aquí y espera confirmación.**
+
+---
+
+## 7. Paso 4 — Autenticación por sesión
+
+### 7.1 Configuración de seguridad
+
+`co.orion.shared.security.SecurityConfig` — usar esta configuración como base **exacta**:
+
+```java
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    @Bean
+    SecurityFilterChain filterChain(HttpSecurity http,
+                                    CorsConfigurationSource corsSource) throws Exception {
+        http
+            .cors(c -> c.configurationSource(corsSource))
+            .csrf(csrf -> csrf
+                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+                .ignoringRequestMatchers("/api/v1/auth/login"))
+            .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/actuator/health").permitAll()
+                .requestMatchers("/api/v1/auth/login").permitAll()
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                .anyRequest().authenticated())
+            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+            .exceptionHandling(e -> e
+                .authenticationEntryPoint(new JsonAuthEntryPoint())
+                .accessDeniedHandler(new JsonAccessDeniedHandler()))
+            .logout(l -> l
+                .logoutUrl("/api/v1/auth/logout")
+                .invalidateHttpSession(true)
+                .deleteCookies("ORION_SESSION")
+                .logoutSuccessHandler((req, res, a) -> res.setStatus(204)))
+            .httpBasic(b -> b.disable())
+            .formLogin(f -> f.disable());
+        return http.build();
+    }
+
+    @Bean
+    PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    AuthenticationManager authenticationManager(AuthenticationConfiguration cfg) throws Exception {
+        return cfg.getAuthenticationManager();
+    }
+}
+```
+
+`CsrfCookieFilter` (patrón recomendado por la documentación de Spring Security para SPAs — fuerza la escritura de la cookie `XSRF-TOKEN` en la respuesta):
+
+```java
+class CsrfCookieFilter extends OncePerRequestFilter {
+    @Override
+    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res,
+                                    FilterChain chain) throws ServletException, IOException {
+        CsrfToken token = (CsrfToken) req.getAttribute(CsrfToken.class.getName());
+        if (token != null) {
+            token.getToken();
+        }
+        chain.doFilter(req, res);
+    }
+}
+```
+
+`CorsConfigurationSource` (bean en `shared`): origen permitido `http://localhost:3000` (configurable por propiedad `orion.cors.allowed-origins`), `allowCredentials=true`, métodos GET/POST/PUT/PATCH/DELETE, headers `Content-Type` y `X-XSRF-TOKEN`.
+
+`JsonAuthEntryPoint` y `JsonAccessDeniedHandler`: responden `401` y `403` con body JSON `{"error": "..."}` y `Content-Type: application/json`.
+
+### 7.2 UserDetails y servicio
+
+- `OrionUserDetails implements UserDetails`: envuelve al `User`, expone `ROLE_<rol>` como authority; un usuario `INACTIVE` retorna `isEnabled() = false`.
+- `CustomUserDetailsService implements UserDetailsService`: carga por email (ignorando mayúsculas) desde `UserRepository`.
+
+### 7.3 Endpoints de autenticación
+
+`identity/api/AuthController` (`/api/v1/auth`):
+
+- `POST /login` — body `LoginRequest(String email, String password)` validado. Autentica y **persiste el contexto en la sesión**. En Spring Security 6 esto ya NO es automático — este es el gotcha clave, usar este patrón:
+
+```java
+private final SecurityContextRepository contextRepo = new HttpSessionSecurityContextRepository();
+
+@PostMapping("/login")
+public UserResponse login(@Valid @RequestBody LoginRequest body,
+                          HttpServletRequest request, HttpServletResponse response) {
+    Authentication auth = authenticationManager.authenticate(
+        new UsernamePasswordAuthenticationToken(body.email().toLowerCase(), body.password()));
+    SecurityContext context = SecurityContextHolder.createEmptyContext();
+    context.setAuthentication(auth);
+    SecurityContextHolder.setContext(context);
+    contextRepo.saveContext(context, request, response);
+    return UserResponse.from((OrionUserDetails) auth.getPrincipal());
+}
+```
+
+  Credenciales inválidas → `401` JSON con mensaje genérico (nunca revelar si falló el email o la clave). `UserResponse(UUID id, String email, String fullName, String role)` como `record`.
+- `GET /me` — devuelve el `UserResponse` del usuario autenticado; `401` si es anónimo (lo maneja el entry point).
+- El logout lo maneja Spring Security según la configuración (POST `/api/v1/auth/logout` → 204, sesión invalidada, cookie borrada).
+
+### 7.4 Ruta de humo para verificar roles
+
+`AdminPingController`: `GET /api/v1/admin/ping` → `{"pong": true}`. Sirve para probar la protección por rol; queda como smoke test permanente.
+
+### 7.5 Manejo global de errores
+
+`@RestControllerAdvice` mínimo en `shared`: validación (`400` con detalles por campo), `MethodArgumentNotValidException`, y fallback `500` con mensaje genérico. Forma estándar: `{"error": string, "details"?: [...]}`.
+
+Notas didácticas para la entrega del paso: qué es la `SecurityFilterChain` y en qué orden corren los filtros, por qué la sesión + httpOnly protege contra XSS que roba tokens, qué ataque exactamente previene CSRF y cómo funciona el baile cookie/header, y qué hace Spring con la fijación de sesión (rota el ID al autenticar, `changeSessionId`, por defecto).
+
+**Verificación (secuencia curl exacta):**
+
+```bash
+# 1. Login — guarda cookies (sesión + XSRF)
+curl -i -c /tmp/orion.txt -H "Content-Type: application/json" \
+  -d '{"email":"ana@orion.local","password":"orion123*"}' \
+  http://localhost:8080/api/v1/auth/login
+# → 200, body con datos de Ana, Set-Cookie: ORION_SESSION y XSRF-TOKEN
+
+# 2. Sesión activa
+curl -b /tmp/orion.txt http://localhost:8080/api/v1/auth/me
+# → 200 con datos de Ana
+
+# 3. Sin sesión
+curl -i http://localhost:8080/api/v1/auth/me
+# → 401 con body JSON
+
+# 4. Ruta admin siendo estudiante
+curl -i -b /tmp/orion.txt http://localhost:8080/api/v1/admin/ping
+# → 403 con body JSON
+
+# 5. Login como admin y ping
+curl -i -c /tmp/admin.txt -H "Content-Type: application/json" \
+  -d '{"email":"admin@orion.local","password":"admin123*"}' \
+  http://localhost:8080/api/v1/auth/login
+curl -b /tmp/admin.txt http://localhost:8080/api/v1/admin/ping
+# → 200 {"pong":true}
+
+# 6. Logout (el POST exige el header CSRF: copiar el valor de la cookie
+#    XSRF-TOKEN que está en /tmp/orion.txt)
+curl -i -b /tmp/orion.txt -X POST \
+  -H "X-XSRF-TOKEN: <valor-de-la-cookie-XSRF-TOKEN>" \
+  http://localhost:8080/api/v1/auth/logout
+# → 204
+
+# 7. La sesión murió
+curl -i -b /tmp/orion.txt http://localhost:8080/api/v1/auth/me
+# → 401
+```
+
+**DETENTE aquí y espera confirmación.**
+
+---
+
+## 8. Paso 5 — Pruebas automatizadas
+
+Stack: JUnit 5 + Testcontainers con `@ServiceConnection` (Postgres real, **no H2** — paridad total con producción) + MockMvc/TestRestTemplate.
+
+Casos mínimos exigidos (los nombres de los tests son documentación viva — escribirlos descriptivos):
+
+1. **`UserRepositoryTest`** (`@DataJpaTest` + Testcontainers): guarda un usuario y lo encuentra por email ignorando mayúsculas; un email duplicado viola la constraint única.
+2. **`AuthFlowIT`** (`@SpringBootTest` en puerto aleatorio, perfil de test con semilla propia o datos creados en el test):
+   - login correcto devuelve 200, el usuario y la cookie de sesión;
+   - login con clave errada devuelve 401 sin revelar el motivo;
+   - `GET /me` anónimo → 401;
+   - `GET /admin/ping` como STUDENT → 403;
+   - `GET /admin/ping` como ADMIN → 200;
+   - logout invalida la sesión (el `/me` posterior da 401);
+   - un usuario `INACTIVE` no puede iniciar sesión.
+
+Explicar a Pardo cómo funciona `@ServiceConnection` (Boot levanta el contenedor y cablea el datasource solo) y por qué los tests de repositorio no usan mocks.
+
+**Verificación:**
+
+```bash
+./mvnw verify
+# → BUILD SUCCESS, todos los tests verdes
+```
+
+**DETENTE aquí. Fin de la Tarea 1.**
+
+---
+
+## 9. Definition of done (checklist final)
+
+- [ ] `docker compose up -d` levanta Postgres (healthy) y Mailpit
+- [ ] `./mvnw spring-boot:run` con perfil `local` arranca, Flyway aplica V1, la semilla carga y es idempotente
+- [ ] La secuencia curl del Paso 4 se cumple completa (200/401/403/204 donde corresponde, errores siempre JSON)
+- [ ] CSRF activo: existe la cookie `XSRF-TOKEN` y un POST sin header falla
+- [ ] `./mvnw verify` en verde con Testcontainers
+- [ ] README con instrucciones reales de arranque (infra + backend + credenciales semilla)
+- [ ] Un commit por paso, mensajes convencionales
+- [ ] Cero código de features futuras
+
+## 10. Fuera de alcance de esta tarea — NO construir
+
+Disponibilidad y cupos, reservas, regla de 24 horas, correos transaccionales y .ics, frontend, Dockerfile de la aplicación, despliegue, CI/CD, CRUD de usuarios del admin (solo existe el ping). Si algo parece faltar "para que quede completo", pregunta antes de agregarlo.
