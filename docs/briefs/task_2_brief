@@ -1,0 +1,280 @@
+# Brief · Tarea 2 — Disponibilidad y cálculo de cupos
+
+**Prerequisito:** Tarea 1 completa (definition of done en verde). Sigue vigente el adendum de Spring Boot 4.1.x.
+**Resultado de esta tarea:** los profesores gestionan sus franjas semanales recurrentes y sus bloqueos puntuales, publican o despublican su perfil, y cualquier usuario autenticado puede listar profesores publicados y consultar sus **cupos disponibles** — el endpoint estrella del MVP 1 — con el algoritmo de cálculo probado por contrato.
+
+---
+
+## 0. Modo de trabajo
+
+Rigen las mismas reglas de la sección 0 del brief de la Tarea 1 (que deberían estar en el `CLAUDE.md` del repo): **un paso a la vez**, explicar los conceptos nuevos a Pardo, **DETENERTE al final de cada paso** y esperar su confirmación, cero features futuras, `./mvnw verify` en verde antes de declarar un paso terminado, un commit por paso.
+
+Regla adicional específica de esta tarea: **la lógica de cupos se implementa exactamente como la define la sección 1 y la prueba el contrato de la sección 6.** Si crees que hay un caso no cubierto o una ambigüedad, pregunta — no decidas solo.
+
+---
+
+## 1. Decisiones de dominio — LEER ANTES DE CODIFICAR
+
+1. **Duración de clase fija: 60 minutos.** Los cupos siempre empiezan en punto (08:00, 09:00…). Una regla 18:00–21:00 produce exactamente 3 cupos: 18:00, 19:00 y 20:00.
+2. **Convención de día de la semana: ISO 1–7 (1 = lunes … 7 = domingo)**, idéntica a `java.time.DayOfWeek.getValue()`. Alinear la convención de la base con la de `java.time` elimina toda una familia de bugs de traducción.
+3. **Zona horaria:** las reglas y excepciones se expresan en hora local `America/Bogota` (el modelo mental del profesor). Los cupos se devuelven como fecha-hora con offset explícito (`2026-07-15T10:00:00-05:00`). Todo el cálculo se hace en zona Bogotá; jamás con `LocalDateTime` "flotante" ni asumiendo UTC.
+4. **Semántica de intervalos semiabiertos `[inicio, fin)`.** Dos intervalos se intersectan si y solo si `aInicio < bFin && bInicio < aFin`. Consecuencia que debe cumplirse al pie de la letra: una excepción 10:00–11:00 elimina **solo** el cupo de las 10:00 — el de las 09:00 y el de las 11:00 sobreviven.
+5. **Reglas:** minutos obligatoriamente en `:00` (simplificación del MVP, validada en la aplicación, no en la base). Prohibido el solape entre reglas activas del mismo profesor y día — se valida en creación con la misma semántica semiabierta del punto 4.
+6. **Excepciones:** día completo (`startTime` y `endTime` nulos) o rango parcial (ambos presentes, `start < end`, sin restricción de minutos). Un cupo se elimina si **intersecta** la excepción.
+7. **Solo futuro estricto:** no se devuelven cupos con inicio `<= now` (en Bogotá). Sin antelación mínima de reserva por ahora.
+8. **La resta de reservas ya se implementa hoy, con datos sintéticos.** El calculador recibe una lista de intervalos ocupados y los resta. En esta tarea la capa de aplicación le pasa una lista vacía (`List.of()` con comentario `TODO Tarea 3`); la Tarea 3 solo conecta las reservas reales. Así la lógica difícil queda 100 % probada desde ya.
+9. **Rango de consulta:** `from`/`to` son fechas (interpretadas en Bogotá), inclusive. Sin parámetros: hoy → hoy+6 (7 días). Máximo 31 días (`400` si se excede o si `from > to`). Un `from` en el pasado se acepta; el filtro del punto 7 hace su trabajo.
+10. **El cálculo es en memoria, no en SQL.** A nuestro volumen (decenas de reglas por profesor) cargar y calcular en Java es lo correcto, lo legible y lo testeable. **No** "optimizar" moviendo la lógica a queries.
+
+Ubicación en el código: todo lo de esta tarea vive en el módulo nuevo **`scheduling`** (`api/`, `application/`, `domain/`, `persistence/`), salvo el perfil del profesor y el listado público, que pertenecen a **`identity`**.
+
+---
+
+## 2. Paso 0 — Migración V2, entidades, repositorios y semilla
+
+Crear `V2__availability.sql` con contenido **exacto**:
+
+```sql
+CREATE TABLE availability_rules (
+    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    professor_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    weekday      SMALLINT NOT NULL CHECK (weekday BETWEEN 1 AND 7),
+    start_time   TIME NOT NULL,
+    end_time     TIME NOT NULL,
+    active       BOOLEAN NOT NULL DEFAULT true,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CHECK (start_time < end_time)
+);
+
+CREATE INDEX idx_availability_rules_professor ON availability_rules(professor_id);
+
+CREATE TABLE availability_exceptions (
+    id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    professor_id   UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    exception_date DATE NOT NULL,
+    start_time     TIME,
+    end_time       TIME,
+    reason         VARCHAR(200),
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CHECK (
+        (start_time IS NULL AND end_time IS NULL)
+        OR (start_time IS NOT NULL AND end_time IS NOT NULL AND start_time < end_time)
+    )
+);
+
+CREATE INDEX idx_availability_exceptions_prof_date
+    ON availability_exceptions(professor_id, exception_date);
+```
+
+Notas de diseño para explicar en la entrega: la alineación a `:00` se valida en la app y no con CHECK (es regla de negocio relajable, no invariante estructural); la columna `active` queda reservada para "pausar sin borrar" en el futuro — en este MVP el borrado es duro (`DELETE`) y no hay endpoint para desactivar.
+
+**Entidades** en `scheduling/domain`: `AvailabilityRule` y `AvailabilityException`, mapeo directo, sin relaciones JPA hacia `User` (basta el `UUID professorId` — explicar por qué evitar relaciones entre módulos mantiene los límites limpios).
+
+**Repositorios** en `scheduling/persistence`:
+- `AvailabilityRuleRepository`: `List<AvailabilityRule> findByProfessorIdAndActiveTrue(UUID professorId)` y un método de detección de solape (derivado o `@Query`) con semántica semiabierta.
+- `AvailabilityExceptionRepository`: `List<AvailabilityException> findByProfessorIdAndExceptionDateBetween(UUID professorId, LocalDate from, LocalDate to)`.
+
+**Semilla:** extender `DevDataSeeder` (idempotente — solo si el profesor no tiene reglas): María → lunes 18:00–21:00 y miércoles 08:00–11:00; Juan → martes 15:00–18:00.
+
+**Verificación (la ejecuta Pardo):**
+
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+docker exec -it orion-postgres psql -U orion -d orion -c "\d availability_rules"
+docker exec -it orion-postgres psql -U orion -d orion \
+  -c "select version, description, success from flyway_schema_history;"
+# → V1 y V2 en success
+
+docker exec -it orion-postgres psql -U orion -d orion \
+  -c "select u.email, r.weekday, r.start_time, r.end_time
+      from availability_rules r join users u on u.id = r.professor_id
+      order by u.email, r.weekday;"
+# → 3 filas (2 de María, 1 de Juan); reiniciar la app no duplica
+
+./mvnw verify   # sigue verde
+```
+
+**DETENTE aquí y espera confirmación.**
+
+---
+
+## 3. Paso 1 — CRUD de reglas del profesor
+
+Endpoints (rol `PROFESSOR`; un `STUDENT` recibe `403`):
+
+- `GET /api/v1/me/availability/rules` → lista de `RuleResponse(UUID id, int weekday, LocalTime startTime, LocalTime endTime, boolean active)`.
+- `POST /api/v1/me/availability/rules` — body `CreateRuleRequest(int weekday, LocalTime startTime, LocalTime endTime)` → `201` con la regla creada.
+- `DELETE /api/v1/me/availability/rules/{id}` → `204`. Si la regla no existe **o pertenece a otro profesor** → `404` (nunca `403`: no revelamos existencia de recursos ajenos).
+
+Validaciones de creación (todas → `400` con `{"error": ...}` claro):
+- `weekday` fuera de 1–7.
+- `startTime >= endTime`.
+- Minutos distintos de `:00` en inicio o fin.
+- Solape con una regla activa existente del mismo día (misma semántica semiabierta: 18:00–21:00 y 21:00–22:00 **no** solapan; 18:00–21:00 y 20:00–22:00 sí).
+
+Tests web mínimos exigidos (`@SpringBootTest` + Testcontainers): creación feliz, cada validación, `403` como estudiante, `404` al borrar regla ajena, y que `GET` solo devuelve las propias.
+
+**Verificación curl** — recuerda que todo POST/DELETE exige el header CSRF; usar este patrón:
+
+```bash
+curl -s -c /tmp/maria.txt -H "Content-Type: application/json" \
+  -d '{"email":"maria@orion.local","password":"orion123*"}' \
+  http://localhost:8080/api/v1/auth/login > /dev/null
+TOKEN=$(awk '/XSRF-TOKEN/ {print $7}' /tmp/maria.txt)
+
+# crear regla válida (viernes 14:00-16:00) → 201
+curl -i -b /tmp/maria.txt -H "X-XSRF-TOKEN: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"weekday":5,"startTime":"14:00","endTime":"16:00"}' \
+  http://localhost:8080/api/v1/me/availability/rules
+
+# solape con la del lunes → 400
+curl -i -b /tmp/maria.txt -H "X-XSRF-TOKEN: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"weekday":1,"startTime":"20:00","endTime":"22:00"}' \
+  http://localhost:8080/api/v1/me/availability/rules
+
+# minutos inválidos → 400
+curl -i -b /tmp/maria.txt -H "X-XSRF-TOKEN: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"weekday":2,"startTime":"09:30","endTime":"11:30"}' \
+  http://localhost:8080/api/v1/me/availability/rules
+
+# listar → incluye las de la semilla + la nueva del viernes
+curl -b /tmp/maria.txt http://localhost:8080/api/v1/me/availability/rules
+```
+
+**DETENTE aquí y espera confirmación.**
+
+---
+
+## 4. Paso 2 — Excepciones (bloqueos puntuales)
+
+Endpoints (rol `PROFESSOR`):
+
+- `GET /api/v1/me/availability/exceptions` → excepciones con `exception_date >= hoy` (Bogotá), ordenadas por fecha. `ExceptionResponse(UUID id, LocalDate date, LocalTime startTime, LocalTime endTime, String reason)` — tiempos nulos = día completo.
+- `POST /api/v1/me/availability/exceptions` — body `CreateExceptionRequest(LocalDate date, LocalTime startTime, LocalTime endTime, String reason)` → `201`. `startTime`/`endTime` van juntos o ninguno; `reason` opcional (máx. 200).
+- `DELETE /api/v1/me/availability/exceptions/{id}` → `204`; ajena o inexistente → `404`.
+
+Validaciones → `400`: solo uno de los dos tiempos presente; `startTime >= endTime`. (Las excepciones parciales **no** exigen minutos `:00` — ver decisión 6.)
+
+Tests web mínimos: creación de día completo, creación parcial, cada validación, `403` estudiante, `404` ajena.
+
+**Verificación curl** (mismo patrón CSRF): crear un bloqueo de día completo para el próximo lunes y uno parcial 10:00–11:00 para el próximo miércoles como María; listarlos; intentar crear una con solo `startTime` → `400`.
+
+**DETENTE aquí y espera confirmación.**
+
+---
+
+## 5. Paso 3 — Perfil del profesor y listado público
+
+En el módulo **`identity`**:
+
+- `PUT /api/v1/me/profile` (rol `PROFESSOR`) — body `UpdateProfileRequest(String headline, String bio, String photoUrl, boolean isPublished)`; `headline` máx. 120, `photoUrl` máx. 500 → `200` con el perfil actualizado.
+- `GET /api/v1/professors` (cualquier autenticado) → solo perfiles con `is_published = true` y usuario `ACTIVE`: `ProfessorSummary(UUID id, String fullName, String headline, String photoUrl)`.
+- `GET /api/v1/professors/{id}` (cualquier autenticado) → `ProfessorDetail(id, fullName, headline, bio, photoUrl, whatsappPhone)`. No publicado o inexistente → `404`.
+
+Tests web mínimos: el listado excluye a Juan (no publicado); tras `PUT` con `isPublished=false`, María desaparece del listado y su detalle da `404`; un estudiante no puede llamar `PUT /me/profile` (`403`).
+
+**Verificación curl:** listar profesores como Ana (aparece solo María); despublicar a María con su propia sesión; volver a listar (vacío); republicarla.
+
+**DETENTE aquí y espera confirmación.**
+
+---
+
+## 6. Paso 4 — `SlotCalculator`: el corazón de la tarea
+
+Clase **pura** en `scheduling/domain` — sin Spring, sin repositorios, sin I/O:
+
+```java
+public final class SlotCalculator {
+    public static final ZoneId BOGOTA = ZoneId.of("America/Bogota");
+
+    public List<Slot> calculate(
+            List<AvailabilityRule> rules,          // solo activas (filtra el caller o aquí)
+            List<AvailabilityException> exceptions,
+            List<OccupiedInterval> occupied,       // [start, end) en instantes; vacío hasta la Tarea 3
+            LocalDate from, LocalDate to,          // inclusive, fechas Bogotá
+            ZonedDateTime now) { ... }
+}
+```
+
+`Slot` y `OccupiedInterval` son records del dominio con inicio/fin como instantes zonificados. Algoritmo: por cada fecha del rango → reglas activas cuyo `weekday` coincide → generar cupos de 60 min alineados a la hora mientras `finCupo <= finRegla` → descartar los que intersecten una excepción de esa fecha (día completo elimina todos) → descartar los que intersecten un intervalo ocupado → descartar `inicio <= now` → ordenar por inicio.
+
+**Contrato de pruebas — unit tests puros (sin Spring, sin BD), nombres descriptivos en inglés, mínimo un test por caso:**
+
+| # | Caso | Dado | Esperado |
+|---|---|---|---|
+| C1 | Regla simple | Lunes 18:00–21:00; rango con un solo lunes | Exactamente 18:00, 19:00, 20:00 de ese lunes; nada en otros días |
+| C2 | Dos reglas mismo día | Miércoles 08:00–10:00 y 15:00–17:00 | 08:00, 09:00, 15:00, 16:00 |
+| C3 | Excepción día completo | Regla del lunes + excepción sin horas ese lunes | Cero cupos esa fecha; el lunes siguiente intacto |
+| C4 | Excepción parcial exacta | Regla 09:00–12:00 + excepción 10:00–11:00 | Sobreviven 09:00 y 11:00; muere solo 10:00 (semiabierto) |
+| C5 | Excepción parcial que cruza | Regla 09:00–13:00 + excepción 10:30–11:30 | Mueren 10:00 y 11:00; sobreviven 09:00 y 12:00 |
+| C6 | Intervalo ocupado sintético | Regla 18:00–21:00 + ocupado 19:00–20:00 | Sobreviven 18:00 y 20:00 — prueba la resta de reservas antes de que existan reservas |
+| C7 | Filtro de pasado | now = miércoles 10:30 Bogotá; regla miércoles 09:00–12:00; rango incluye hoy | Hoy solo aparece 11:00 (ni 09:00 ni 10:00) |
+| C8 | Regla inactiva | Regla con `active=false` | No genera cupos |
+| C9 | Frontera de zona horaria | now = `2026-07-15T04:30Z` (= 14 jul 23:30 Bogotá); regla miércoles (15 jul) 08:00–10:00 | Los cupos del 15 aparecen completos — el cálculo usa Bogotá, no UTC |
+| C10 | Límites del rango | Regla diaria; `from == to` (un día) | Solo cupos de ese día; nada fuera del rango |
+
+**Verificación:** `./mvnw test` — Pardo lee los nombres de los tests como documentación del algoritmo. Estos tests deben correr en milisegundos (cero contexto de Spring): explicarle por qué esa velocidad es consecuencia directa de que el dominio sea puro.
+
+**DETENTE aquí y espera confirmación.**
+
+---
+
+## 7. Paso 5 — Endpoint de cupos
+
+`GET /api/v1/professors/{id}/slots?from=YYYY-MM-DD&to=YYYY-MM-DD` (cualquier autenticado):
+
+- Profesor inexistente o **no publicado** → `404` (aunque tenga reglas — probarlo con Juan).
+- Defaults y límites según decisión 9 (`from`=hoy, `to`=from+6; máx. 31 días; `from > to` → `400`).
+- La capa de aplicación (`SlotQueryService` en `scheduling/application`): carga reglas activas y excepciones del rango, llama al calculador con `List.of()` como ocupados (`// TODO Tarea 3: restar reservas confirmadas`), inyecta el `Clock` de `shared` para `now`.
+- Respuesta:
+
+```json
+{
+  "professorId": "…",
+  "timezone": "America/Bogota",
+  "slots": [
+    { "startsAt": "2026-07-15T08:00:00-05:00", "endsAt": "2026-07-15T09:00:00-05:00" }
+  ]
+}
+```
+
+**Tests de integración** (`@SpringBootTest` + Testcontainers) con **`Clock` fijo** (un `@TestConfiguration` aporta un `@Bean @Primary Clock` congelado — aquí paga su deuda el bean de la Tarea 1): fijar el reloj en lunes `2026-07-13T12:00` Bogotá, crear vía API una regla de miércoles 08:00–11:00 y una excepción parcial 09:00–10:00 el `2026-07-15`, consultar `from=2026-07-15&to=2026-07-15` y afirmar **exactamente** `08:00` y `10:00` con offset `-05:00`. Añadir tests de: `404` con profesor no publicado, `400` con rango > 31 días, defaults sin parámetros.
+
+**Verificación curl (E2E con la semilla):**
+
+```bash
+curl -s -c /tmp/ana.txt -H "Content-Type: application/json" \
+  -d '{"email":"ana@orion.local","password":"orion123*"}' \
+  http://localhost:8080/api/v1/auth/login > /dev/null
+
+# cupos de María próximos 7 días → los lunes: 18,19,20; los miércoles: 08,09,10
+curl -b /tmp/ana.txt "http://localhost:8080/api/v1/professors/<ID_MARIA>/slots"
+
+# crear como María un bloqueo el próximo miércoles 09:00-10:00 y reconsultar:
+# el miércoles queda 08:00 y 10:00 — el cupo de las 09:00 desapareció
+
+# cupos de Juan (no publicado) → 404
+# rango de 60 días → 400
+```
+
+(Obtener `<ID_MARIA>` del listado de profesores del Paso 3.)
+
+**DETENTE aquí. Fin de la Tarea 2.**
+
+---
+
+## 8. Definition of done (checklist final)
+
+- [ ] `flyway_schema_history` muestra V1 y V2; semilla de disponibilidad idempotente
+- [ ] CRUD de reglas con las 4 validaciones, ownership (`404` ajeno) y `403` por rol
+- [ ] CRUD de excepciones (día completo y parcial) con sus validaciones
+- [ ] Publicar/despublicar perfil afecta listado, detalle y endpoint de cupos
+- [ ] Los 10 casos del contrato (C1–C10) implementados como unit tests puros y en verde
+- [ ] Endpoint de cupos con defaults, límites, `404` no publicado y test de integración con `Clock` fijo
+- [ ] La secuencia curl E2E del Paso 5 se cumple
+- [ ] `./mvnw verify` verde; README actualizado con los endpoints nuevos
+- [ ] Un commit por paso; cero código de features futuras
+
+## 9. Fuera de alcance de esta tarea — NO construir
+
+Reservas y tabla `bookings` (Tarea 3), regla de 24 horas, correos e .ics, frontend, endpoints de admin, cambios al esquema de identidad, paginación, caché, y cualquier "optimización" que mueva el cálculo de cupos a SQL. Si algo parece faltar, pregunta antes de agregarlo.

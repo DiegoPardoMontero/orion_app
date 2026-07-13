@@ -11,10 +11,9 @@ spring:
     hibernate:
       ddl-auto: validate
     open-in-view: false
-    properties:
-      hibernate:
-        jdbc:
-          time_zone: UTC
+    # OJO: no poner hibernate.jdbc.time_zone. Desplaza también las columnas TIME (hora de pared,
+    # sin zona) por el offset del servidor: una regla 18:00–21:00 acabaría guardada como
+    # 23:00–02:00. Los Instant sobre TIMESTAMPTZ ya guardan el momento absoluto sin ayuda.
 
   flyway:
     enabled: true
