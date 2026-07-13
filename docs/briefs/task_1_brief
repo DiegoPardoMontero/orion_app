@@ -438,3 +438,30 @@ Explicar a Pardo cómo funciona `@ServiceConnection` (Boot levanta el contenedor
 ## 10. Fuera de alcance de esta tarea — NO construir
 
 Disponibilidad y cupos, reservas, regla de 24 horas, correos transaccionales y .ics, frontend, Dockerfile de la aplicación, despliegue, CI/CD, CRUD de usuarios del admin (solo existe el ping). Si algo parece faltar "para que quede completo", pregunta antes de agregarlo.
+
+## Adendum al brief — 13 jul 2026 (aprobado por Pardo)
+
+Spring Boot 3.5 llegó a EOL el 30/06/2026, por lo que la restricción de 3.x
+queda **anulada**. Reglas actualizadas:
+
+1. **Versión: Spring Boot 4.1.x** (la última patch disponible en Initializr).
+   Java 21 se mantiene. No usar 4.0.x (EOL dic 2026) ni milestones/RCs.
+2. **springdoc:** usar `springdoc-openapi-starter-webmvc-ui` en su línea
+   **3.x** (la compatible con Boot 4), no 2.8.x.
+3. **Starters de test:** en Boot 4 los módulos de test se reorganizaron.
+   Acepta los artefactos que genere Initializr para Boot 4.1 y garantiza el
+   requisito funcional: Testcontainers con `@ServiceConnection`, MockMvc y
+   soporte de tests de Spring Security. No fuerces nombres de artefactos
+   de Boot 3.
+4. **Jackson 3:** Boot 4 usa Jackson 3 (paquete `tools.jackson`). Para
+   nuestro alcance (records + REST simple) casi no nos toca, pero si
+   escribes configuración de serialización, no mezcles imports de
+   `com.fasterxml.*` (Jackson 2).
+5. **Tu conocimiento está sesgado a Boot 3.** Si algo no compila o una
+   clase cambió de paquete, consulta las release notes y la guía oficial
+   de migración Boot 3→4 antes de improvisar. **Nunca degrades la versión
+   de Spring Boot para "resolver" un error de compilación** — eso requiere
+   aprobación explícita de Pardo.
+6. Todo lo demás del brief queda vigente sin cambios: pasos, migración V1,
+   configuración de seguridad (ya está en DSL de lambdas), secuencia curl,
+   tests y definition of done.

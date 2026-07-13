@@ -6,7 +6,7 @@ Sin pagos en el MVP 1.
 
 ## Stack
 
-- **Backend:** Java 21, Spring Boot 3.x, Maven (wrapper), monolito modular bajo `co.orion`.
+- **Backend:** Java 21, Spring Boot 4.1, Maven (wrapper), monolito modular bajo `co.orion`.
 - **Base de datos:** PostgreSQL 16. Flyway es el dueño del esquema (`ddl-auto=validate`).
 - **Frontend:** pendiente (Tarea 4).
 
