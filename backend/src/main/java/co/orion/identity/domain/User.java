@@ -88,6 +88,10 @@ public class User {
         this.whatsappPhone = whatsappPhone;
     }
 
+    public void changeFullName(String fullName) {
+        this.fullName = Objects.requireNonNull(fullName, "fullName");
+    }
+
     public void activate() {
         this.status = UserStatus.ACTIVE;
     }

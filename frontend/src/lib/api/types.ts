@@ -18,4 +18,8 @@ export type RuleResponse = Schemas["RuleResponse"];
 export type ExceptionResponse = Schemas["ExceptionResponse"];
 export type ProfileResponse = Schemas["ProfileResponse"];
 
+export type AdminUserResponse = Schemas["AdminUserResponse"];
+export type AdminBookingResponse = Schemas["AdminBookingResponse"];
+export type MetricsResponse = Schemas["MetricsResponse"];
+
 export type Modality = "VIRTUAL" | "IN_PERSON";

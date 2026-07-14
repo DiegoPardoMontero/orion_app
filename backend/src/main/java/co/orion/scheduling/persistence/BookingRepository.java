@@ -5,13 +5,21 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import co.orion.scheduling.domain.Booking;
 import co.orion.scheduling.domain.BookingStatus;
 
-public interface BookingRepository extends JpaRepository<Booking, UUID> {
+/**
+ * JpaSpecificationExecutor da el listado con filtros del panel de admin. Se usa Specification y
+ * no un @Query con "(:from is null or ...)": Postgres no puede inferir el tipo de un parámetro
+ * nulo y responde "could not determine data type of parameter $1". La Specification construye
+ * la consulta con los filtros que de verdad llegaron, así que ese parámetro nunca se envía.
+ */
+public interface BookingRepository extends JpaRepository<Booking, UUID>,
+        JpaSpecificationExecutor<Booking> {
 
     /** Las reservas que ocupan cupos del profesor en un rango: la entrada del SlotCalculator. */
     List<Booking> findByProfessorIdAndStatusAndStartsAtBetween(UUID professorId,
@@ -49,6 +57,22 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             order by b.startsAt desc
             """)
     List<Booking> findPastOfProfessor(@Param("userId") UUID professorId, @Param("now") Instant now);
+
+    /** Reservas creadas en los últimos 7 días (por fecha de creación, no de la clase). */
+    long countByCreatedAtGreaterThanEqual(Instant since);
+
+    /**
+     * El porcentaje histórico de reservas de autoservicio: las que creó el propio estudiante,
+     * sin que nadie de la academia tuviera que intervenir. Es la métrica estrella del MVP.
+     */
+    @Query("""
+            select coalesce(
+                     sum(case when b.createdBy = b.studentId then 1.0 else 0.0 end) * 100.0
+                     / nullif(count(b), 0),
+                   0.0)
+            from Booking b
+            """)
+    double selfServicePercentage();
 
     /**
      * Un estudiante no puede tener dos clases confirmadas que se pisen, ni siquiera con

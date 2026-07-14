@@ -66,6 +66,10 @@ public abstract class ApiIntegrationSupport {
         return rest.exchange(path, HttpMethod.PUT, new HttpEntity<>(body, headers(session)), responseType);
     }
 
+    protected <T> ResponseEntity<T> patch(String path, Session session, Object body, Class<T> responseType) {
+        return rest.exchange(path, HttpMethod.PATCH, new HttpEntity<>(body, headers(session)), responseType);
+    }
+
     protected <T> ResponseEntity<T> delete(String path, Session session, Class<T> responseType) {
         return rest.exchange(path, HttpMethod.DELETE, new HttpEntity<>(headers(session)), responseType);
     }

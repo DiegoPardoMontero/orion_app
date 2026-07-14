@@ -116,7 +116,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/professors": {
+    "/api/v1/admin/users": {
         parameters: {
             query?: never;
             header?: never;
@@ -124,6 +124,38 @@ export interface paths {
             cookie?: never;
         };
         get: operations["list_2"];
+        put?: never;
+        post: operations["create_3"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["update_1"];
+        trace?: never;
+    };
+    "/api/v1/professors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_3"];
         put?: never;
         post?: never;
         delete?: never;
@@ -204,6 +236,38 @@ export interface paths {
             cookie?: never;
         };
         get: operations["ping"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["metrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["bookings"];
         put?: never;
         post?: never;
         delete?: never;
@@ -349,6 +413,28 @@ export interface components {
             fullName?: string;
             role?: string;
         };
+        CreateUserRequest: {
+            /** Format: email */
+            email: string;
+            fullName: string;
+            whatsappPhone?: string;
+            role: string;
+            password: string;
+        };
+        AdminUserResponse: {
+            /** Format: uuid */
+            id?: string;
+            email?: string;
+            fullName?: string;
+            whatsappPhone?: string;
+            role?: string;
+            status?: string;
+        };
+        UpdateUserRequest: {
+            fullName?: string;
+            whatsappPhone?: string;
+            status?: string;
+        };
         ProfessorSummary: {
             /** Format: uuid */
             id?: string;
@@ -395,6 +481,25 @@ export interface components {
             locationNote?: string;
             canCancel?: boolean;
             counterpart?: components["schemas"]["Counterpart"];
+        };
+        MetricsResponse: {
+            /** Format: int64 */
+            bookingsLast7Days?: number;
+            /** Format: double */
+            selfServicePctAllTime?: number;
+        };
+        AdminBookingResponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: date-time */
+            startsAt?: string;
+            /** Format: date-time */
+            endsAt?: string;
+            studentName?: string;
+            professorName?: string;
+            modality?: string;
+            status?: string;
+            selfService?: boolean;
         };
     };
     responses: never;
@@ -639,6 +744,79 @@ export interface operations {
     };
     list_2: {
         parameters: {
+            query?: {
+                role?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AdminUserResponse"][];
+                };
+            };
+        };
+    };
+    create_3: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateUserRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AdminUserResponse"];
+                };
+            };
+        };
+    };
+    update_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateUserRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AdminUserResponse"];
+                };
+            };
+        };
+    };
+    list_3: {
+        parameters: {
             query?: never;
             header?: never;
             path?: never;
@@ -764,6 +942,51 @@ export interface operations {
                     "*/*": {
                         [key: string]: boolean;
                     };
+                };
+            };
+        };
+    };
+    metrics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MetricsResponse"];
+                };
+            };
+        };
+    };
+    bookings: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+                professorId?: string;
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AdminBookingResponse"][];
                 };
             };
         };
