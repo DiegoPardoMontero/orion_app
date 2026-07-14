@@ -70,6 +70,11 @@ public class AvailabilityRule {
         this.active = true;
     }
 
+    /** Pausar sin borrar. Todavía ningún endpoint la expone; el calculador sí la respeta. */
+    public void deactivate() {
+        this.active = false;
+    }
+
     public UUID getId() {
         return id;
     }
