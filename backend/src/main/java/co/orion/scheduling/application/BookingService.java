@@ -1,5 +1,6 @@
 package co.orion.scheduling.application;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -14,8 +15,10 @@ import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.identity.persistence.UserRepository;
 import co.orion.scheduling.domain.Booking;
+import co.orion.scheduling.domain.BookingCancelledEvent;
 import co.orion.scheduling.domain.BookingCreatedEvent;
 import co.orion.scheduling.domain.BookingModality;
+import co.orion.scheduling.domain.BookingStatus;
 import co.orion.scheduling.domain.BusinessZone;
 import co.orion.scheduling.domain.Slot;
 import co.orion.scheduling.persistence.BookingRepository;
@@ -34,15 +37,18 @@ public class BookingService {
     private final UserRepository users;
     private final SlotQueryService slots;
     private final ApplicationEventPublisher events;
+    private final Clock clock;
 
     public BookingService(BookingRepository bookings,
                           UserRepository users,
                           SlotQueryService slots,
-                          ApplicationEventPublisher events) {
+                          ApplicationEventPublisher events,
+                          Clock clock) {
         this.bookings = bookings;
         this.users = users;
         this.slots = slots;
         this.events = events;
+        this.clock = clock;
     }
 
     @Transactional
@@ -69,6 +75,51 @@ public class BookingService {
         Booking saved = saveOrLoseTheRace(booking);
         events.publishEvent(new BookingCreatedEvent(saved.getId()));
         return saved;
+    }
+
+    /**
+     * Cancela una reserva. Quién puede y bajo qué condiciones depende del rol:
+     * el estudiante y el profesor solo las suyas y con 24 h de margen; el admin, cualquiera
+     * confirmada y a cualquier hora — es la válvula de "fuerza mayor" del manual corporativo.
+     */
+    @Transactional
+    public Booking cancel(User actor, UUID bookingId, String reason) {
+        Booking booking = bookings.findById(bookingId)
+                .filter(candidate -> canSee(actor, candidate))
+                .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada"));
+
+        if (!booking.isConfirmed()) {
+            throw new ConflictException("La reserva ya no está confirmada");
+        }
+
+        Instant now = clock.instant();
+        boolean isAdmin = actor.getRole() == UserRole.ADMIN;
+        if (!isAdmin && !booking.isCancellableAt(now)) {
+            throw new UnprocessableException(
+                    "Con menos de 24 horas de anticipación la clase se considera impartida (política Orión)");
+        }
+
+        booking.cancel(cancellationStatusFor(actor), actor.getId(), now, reason);
+        Booking cancelled = bookings.save(booking);
+        events.publishEvent(new BookingCancelledEvent(cancelled.getId()));
+        return cancelled;
+    }
+
+    /** Una reserva ajena responde 404, no 403: no confirmamos que exista. El admin lo ve todo. */
+    private boolean canSee(User actor, Booking booking) {
+        return switch (actor.getRole()) {
+            case ADMIN -> true;
+            case STUDENT -> booking.getStudentId().equals(actor.getId());
+            case PROFESSOR -> booking.getProfessorId().equals(actor.getId());
+        };
+    }
+
+    private BookingStatus cancellationStatusFor(User actor) {
+        return switch (actor.getRole()) {
+            case STUDENT -> BookingStatus.CANCELLED_BY_STUDENT;
+            case PROFESSOR -> BookingStatus.CANCELLED_BY_PROFESSOR;
+            case ADMIN -> BookingStatus.CANCELLED_BY_ADMIN;
+        };
     }
 
     /**

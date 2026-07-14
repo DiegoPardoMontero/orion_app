@@ -1,7 +1,10 @@
 package co.orion.scheduling.api;
 
+import java.util.UUID;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,5 +36,13 @@ public class BookingsController {
                 body.modality(),
                 body.locationNote(),
                 body.studentId()));
+    }
+
+    @PostMapping("/{id}/cancel")
+    public BookingResponse cancel(@AuthenticationPrincipal OrionUserDetails principal,
+                                  @PathVariable UUID id,
+                                  @Valid @RequestBody(required = false) CancelBookingRequest body) {
+        String reason = body != null ? body.reason() : null;
+        return BookingResponse.from(bookingService.cancel(principal.user(), id, reason));
     }
 }

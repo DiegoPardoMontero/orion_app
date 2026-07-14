@@ -130,7 +130,24 @@ expresan en hora local de Bogotá; los intervalos son semiabiertos `[inicio, fin
 bloqueo de 10:00–11:00 elimina el cupo de las 10:00 pero no el de las 11:00; nunca se devuelven
 cupos que ya empezaron.
 
-## 3. Tests
+Reservas:
+
+| Método | Ruta | Quién | Qué hace |
+|---|---|---|---|
+| POST | `/api/v1/bookings` | STUDENT, ADMIN | Reserva un cupo (el admin, en nombre de un estudiante) |
+| POST | `/api/v1/bookings/{id}/cancel` | dueño o ADMIN | Cancela (body opcional `{"reason": "..."}`) |
+| GET | `/api/v1/me/bookings?scope=upcoming\|past` | STUDENT, PROFESSOR | Mis clases, con la contraparte y su WhatsApp |
+
+Una reserva `CONFIRMED` oculta su cupo; al cancelarla, el cupo reaparece. **Regla de las 24
+horas:** estudiantes y profesores solo pueden cancelar con 24 h o más de anticipación (si no,
+422); el ADMIN está exento. El campo `canCancel` de "mis clases" ya trae esa decisión resuelta
+desde el servidor.
+
+## 3. Probar a mano
+
+Guía paso a paso con Postman, con todos los casos de error: [docs/postman-guide.md](docs/postman-guide.md)
+
+## 4. Tests
 
 ```bash
 cd backend
@@ -143,7 +160,7 @@ Los tests levantan un **PostgreSQL real** con Testcontainers (no H2), así que D
 estar corriendo. No hace falta que la infra de `docker compose` esté arriba: Testcontainers
 crea y destruye sus propios contenedores.
 
-## 4. Variables de entorno
+## 5. Variables de entorno
 
 | Variable | Default |
 |---|---|

@@ -122,6 +122,21 @@ public class Booking {
         return createdBy.equals(studentId);
     }
 
+    /**
+     * Transición a un estado terminal de cancelación. Solo desde CONFIRMED: los demás estados
+     * son finales, y volver a cancelar algo ya cancelado es un conflicto, no una operación idempotente.
+     * Quién puede cancelar y cuándo lo decide el servicio; aquí solo se guarda el hecho.
+     */
+    public void cancel(BookingStatus cancelledStatus, UUID cancelledBy, Instant cancelledAt, String reason) {
+        if (!isConfirmed()) {
+            throw new IllegalStateException("Solo una reserva CONFIRMED se puede cancelar");
+        }
+        this.status = Objects.requireNonNull(cancelledStatus, "cancelledStatus");
+        this.cancelledBy = Objects.requireNonNull(cancelledBy, "cancelledBy");
+        this.cancelledAt = Objects.requireNonNull(cancelledAt, "cancelledAt");
+        this.cancellationReason = reason;
+    }
+
     public UUID getId() {
         return id;
     }
