@@ -13,4 +13,7 @@ public interface AvailabilityExceptionRepository extends JpaRepository<Availabil
     List<AvailabilityException> findByProfessorIdAndExceptionDateBetween(UUID professorId,
                                                                          LocalDate from,
                                                                          LocalDate to);
+
+    List<AvailabilityException> findByProfessorIdAndExceptionDateGreaterThanEqualOrderByExceptionDateAscStartTimeAsc(
+            UUID professorId, LocalDate from);
 }
