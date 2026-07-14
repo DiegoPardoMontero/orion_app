@@ -10,6 +10,7 @@ import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,10 +29,15 @@ import co.orion.identity.domain.ProfessorProfile;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.identity.persistence.ProfessorProfileRepository;
+import org.springframework.jdbc.core.JdbcTemplate;
+
 import co.orion.scheduling.domain.AvailabilityRule;
+import co.orion.scheduling.domain.Booking;
+import co.orion.scheduling.domain.BookingModality;
 import co.orion.scheduling.domain.BusinessZone;
 import co.orion.scheduling.persistence.AvailabilityExceptionRepository;
 import co.orion.scheduling.persistence.AvailabilityRuleRepository;
+import co.orion.scheduling.persistence.BookingRepository;
 import co.orion.support.ApiIntegrationSupport;
 
 /**
@@ -66,6 +72,12 @@ class ProfessorSlotsIT extends ApiIntegrationSupport {
     @Autowired
     private ProfessorProfileRepository profiles;
 
+    @Autowired
+    private BookingRepository bookings;
+
+    @Autowired
+    private JdbcTemplate jdbc;
+
     private User maria;
     private User juan;
     private Session mariaSession;
@@ -73,6 +85,8 @@ class ProfessorSlotsIT extends ApiIntegrationSupport {
 
     @BeforeEach
     void seed() {
+        // bookings primero: sus FK a users no tienen cascada (son registros de negocio).
+        bookings.deleteAll();
         exceptions.deleteAll();
         rules.deleteAll();
         profiles.deleteAll();
@@ -179,6 +193,50 @@ class ProfessorSlotsIT extends ApiIntegrationSupport {
         assertThat(response.getBody().slots().getFirst().startsAt().toInstant())
                 .isEqualTo(ZonedDateTime.of(
                         LocalDate.of(2026, 7, 13), LocalTime.of(13, 0), BusinessZone.BOGOTA).toInstant());
+    }
+
+    @Test
+    void aConfirmedBookingRemovesExactlyItsSlot() {
+        post("/api/v1/me/availability/rules", mariaSession,
+                new CreateRuleRequest(3, LocalTime.of(8, 0), LocalTime.of(11, 0)), RuleResponse.class);
+        UUID ana = users.findByEmailIgnoreCase("ana@orion.test").orElseThrow().getId();
+
+        // El cupo de las 09:00 del miércoles queda reservado.
+        bookings.save(new Booking(ana, maria.getId(),
+                wednesdayAt(9), wednesdayAt(10),
+                BookingModality.VIRTUAL, null, ana));
+
+        ResponseEntity<SlotsResponse> response = get(
+                slotsUrl(maria, "?from=2026-07-15&to=2026-07-15"), anaSession, SlotsResponse.class);
+
+        assertThat(response.getBody().slots()).hasSize(2);
+        assertThat(response.getBody().slots())
+                .noneMatch(slot -> slot.startsAt().toInstant().equals(wednesdayAt(9)));
+    }
+
+    @Test
+    void aCancelledBookingDoesNotRemoveItsSlot() {
+        post("/api/v1/me/availability/rules", mariaSession,
+                new CreateRuleRequest(3, LocalTime.of(8, 0), LocalTime.of(11, 0)), RuleResponse.class);
+        UUID ana = users.findByEmailIgnoreCase("ana@orion.test").orElseThrow().getId();
+
+        Booking booking = bookings.save(new Booking(ana, maria.getId(),
+                wednesdayAt(9), wednesdayAt(10),
+                BookingModality.VIRTUAL, null, ana));
+        // Cancelarla libera el cupo. La operación de cancelar llega en el Paso 4; aquí basta
+        // con dejar la fila en un estado no CONFIRMED, que es lo único que mira el cálculo.
+        jdbc.update("update bookings set status = 'CANCELLED_BY_STUDENT' where id = ?", booking.getId());
+
+        ResponseEntity<SlotsResponse> response = get(
+                slotsUrl(maria, "?from=2026-07-15&to=2026-07-15"), anaSession, SlotsResponse.class);
+
+        assertThat(response.getBody().slots()).hasSize(3);
+        assertThat(response.getBody().slots())
+                .anyMatch(slot -> slot.startsAt().toInstant().equals(wednesdayAt(9)));
+    }
+
+    private Instant wednesdayAt(int hour) {
+        return ZonedDateTime.of(WEDNESDAY, LocalTime.of(hour, 0), BusinessZone.BOGOTA).toInstant();
     }
 
     @Test

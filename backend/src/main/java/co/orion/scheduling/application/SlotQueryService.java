@@ -1,6 +1,7 @@
 package co.orion.scheduling.application;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -11,11 +12,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import co.orion.identity.application.ProfessorProfileService;
+import co.orion.scheduling.domain.BookingStatus;
 import co.orion.scheduling.domain.BusinessZone;
+import co.orion.scheduling.domain.OccupiedInterval;
 import co.orion.scheduling.domain.Slot;
 import co.orion.scheduling.domain.SlotCalculator;
 import co.orion.scheduling.persistence.AvailabilityExceptionRepository;
 import co.orion.scheduling.persistence.AvailabilityRuleRepository;
+import co.orion.scheduling.persistence.BookingRepository;
 import co.orion.shared.error.BusinessRuleViolationException;
 
 @Service
@@ -26,16 +30,19 @@ public class SlotQueryService {
 
     private final AvailabilityRuleRepository rules;
     private final AvailabilityExceptionRepository exceptions;
+    private final BookingRepository bookings;
     private final ProfessorProfileService profiles;
     private final SlotCalculator calculator = new SlotCalculator();
     private final Clock clock;
 
     public SlotQueryService(AvailabilityRuleRepository rules,
                             AvailabilityExceptionRepository exceptions,
+                            BookingRepository bookings,
                             ProfessorProfileService profiles,
                             Clock clock) {
         this.rules = rules;
         this.exceptions = exceptions;
+        this.bookings = bookings;
         this.profiles = profiles;
         this.clock = clock;
     }
@@ -52,10 +59,31 @@ public class SlotQueryService {
         return calculator.calculate(
                 rules.findByProfessorIdAndActiveTrue(professorId),
                 exceptions.findByProfessorIdAndExceptionDateBetween(professorId, start, end),
-                List.of(), // TODO Tarea 3: restar reservas confirmadas
+                confirmedBookingsAsOccupied(professorId, start, end),
                 start,
                 end,
                 now());
+    }
+
+    /**
+     * Solo las CONFIRMED ocupan cupo: una reserva cancelada libera su horario, y por eso el
+     * índice único de bookings es parcial. El SlotCalculator ya sabía restar estos intervalos
+     * desde la Tarea 2 (caso C6); aquí simplemente dejan de ser sintéticos.
+     */
+    private List<OccupiedInterval> confirmedBookingsAsOccupied(UUID professorId,
+                                                               LocalDate from,
+                                                               LocalDate to) {
+        Instant rangeStart = from.atStartOfDay(BusinessZone.BOGOTA).toInstant();
+        Instant rangeEnd = to.plusDays(1).atStartOfDay(BusinessZone.BOGOTA).toInstant();
+
+        return bookings
+                .findByProfessorIdAndStatusAndStartsAtBetween(
+                        professorId, BookingStatus.CONFIRMED, rangeStart, rangeEnd)
+                .stream()
+                .map(booking -> new OccupiedInterval(
+                        booking.getStartsAt().atZone(BusinessZone.BOGOTA),
+                        booking.getEndsAt().atZone(BusinessZone.BOGOTA)))
+                .toList();
     }
 
     private void validateRange(LocalDate from, LocalDate to) {
