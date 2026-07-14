@@ -1,9 +1,11 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CalendarOff, Clock, Plus, X } from "lucide-react";
 import { useState } from "react";
-import { Cargando, ErrorCarga } from "@/components/estados";
+import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
 import { Modal } from "@/components/Modal";
+import { Bloque, Boton, Campo } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type { ExceptionResponse, RuleResponse } from "@/lib/api/types";
 import { fechaLarga } from "@/lib/format";
@@ -38,7 +40,7 @@ export default function DisponibilidadPage() {
 
   if (reglas.isPending || excepciones.isPending) {
     return (
-      <main className="mx-auto max-w-md p-4">
+      <main className="px-5 py-5">
         <Cargando filas={4} />
       </main>
     );
@@ -46,7 +48,7 @@ export default function DisponibilidadPage() {
 
   if (reglas.isError) {
     return (
-      <main className="mx-auto max-w-md p-4">
+      <main className="px-5 py-5">
         <ErrorCarga
           mensaje="No pudimos cargar tu disponibilidad."
           onReintentar={() => void reglas.refetch()}
@@ -56,31 +58,39 @@ export default function DisponibilidadPage() {
   }
 
   return (
-    <main className="mx-auto max-w-md p-4">
-      <h1 className="text-xl font-semibold">Mi disponibilidad</h1>
-      <p className="mt-0.5 text-xs text-ink-muted">Horario semanal recurrente · hora de Bogotá</p>
+    <main className="space-y-3 px-5 py-5">
+      <div>
+        <h1 className="text-[20px] font-extrabold">Mi disponibilidad</h1>
+        <p className="mt-1 flex items-center gap-1.5 text-[12.5px] text-text-secondary">
+          <Clock size={14} strokeWidth={2.2} />
+          Horario semanal recurrente · hora de Bogotá
+        </p>
+      </div>
 
-      <div className="mt-3.5">
-        {DIAS.map((dia) => {
+      <section className="rounded-card bg-info-bg p-4">
+        {DIAS.map((dia, indice) => {
           const delDia = (reglas.data ?? []).filter((regla) => regla.weekday === dia.valor);
           return (
-            <div key={dia.valor} className="border-b border-line py-2.5">
+            <div
+              key={dia.valor}
+              className={indice > 0 ? "border-t border-[rgba(58,50,114,0.12)] pt-3 mt-3" : ""}
+            >
               <div className="flex items-center justify-between">
-                <span className="text-[13px] font-semibold">{dia.nombre}</span>
+                <span className="text-[13.5px] font-bold text-info">{dia.nombre}</span>
                 <button
                   type="button"
                   aria-label={`Añadir franja el ${dia.nombre.toLowerCase()}`}
                   onClick={() => setDiaNuevaFranja(dia.valor)}
-                  className="px-2 text-ink-muted"
+                  className="grid h-7 w-7 place-items-center rounded-full bg-white text-info hover:bg-accent hover:text-white"
                 >
-                  +
+                  <Plus size={15} strokeWidth={2.4} />
                 </button>
               </div>
 
               {delDia.length === 0 ? (
-                <p className="mt-2 text-xs text-ink-muted">Sin franjas — toca + para añadir</p>
+                <p className="mt-2 text-[12px] text-[#7a6fc9]">Sin franjas — toca + para añadir</p>
               ) : (
-                <div className="mt-2 flex flex-wrap gap-1.5">
+                <div className="mt-2 flex flex-wrap gap-2">
                   {delDia.map((regla) => (
                     <ChipFranja key={regla.id} regla={regla} />
                   ))}
@@ -89,29 +99,33 @@ export default function DisponibilidadPage() {
             </div>
           );
         })}
-      </div>
+      </section>
 
-      <p className="mt-4 text-xs font-semibold text-ink-soft">Fechas bloqueadas</p>
-
-      {(excepciones.data ?? []).length === 0 ? (
-        <p className="mt-1.5 text-xs text-ink-muted">
-          Ninguna por ahora. Bloquea un día cuando no puedas dar clases.
-        </p>
-      ) : (
-        <ul className="mt-1.5 space-y-2">
-          {excepciones.data!.map((excepcion) => (
-            <FilaExcepcion key={excepcion.id} excepcion={excepcion} />
-          ))}
-        </ul>
-      )}
-
-      <button
-        type="button"
-        onClick={() => setBloqueando(true)}
-        className="mt-2.5 w-full rounded-orion border border-line py-2 text-sm text-ink"
+      <Bloque
+        tono="melocoton"
+        titulo="Fechas bloqueadas"
+        icono={<CalendarOff size={16} strokeWidth={2.2} />}
       >
-        Bloquear una fecha
-      </button>
+        {(excepciones.data ?? []).length === 0 ? (
+          <p className="text-[12.5px] text-warning">
+            Ninguna por ahora. Bloquea un día cuando no puedas dar clases.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {excepciones.data!.map((excepcion) => (
+              <FilaExcepcion key={excepcion.id} excepcion={excepcion} />
+            ))}
+          </ul>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setBloqueando(true)}
+          className="mt-3 w-full rounded-base border-[1.5px] border-dashed border-warning py-2.5 text-[13px] font-bold text-warning hover:bg-white/60"
+        >
+          Bloquear una fecha
+        </button>
+      </Bloque>
 
       {diaNuevaFranja !== null && (
         <ModalNuevaFranja weekday={diaNuevaFranja} onCerrar={() => setDiaNuevaFranja(null)} />
@@ -139,39 +153,35 @@ function ChipFranja({ regla }: { regla: RuleResponse }) {
 
   return (
     <>
-      <span className="inline-flex items-center gap-1.5 rounded-orion bg-accent-soft px-2.5 py-1.5 text-xs font-semibold text-accent-ink">
+      <span className="inline-flex items-center gap-2 rounded-base bg-primary py-1.5 pl-3.5 pr-1.5 text-[12.5px] font-bold text-white">
         {franja}
         <button
           type="button"
           aria-label={`Eliminar la franja ${franja}`}
           onClick={() => setConfirmando(true)}
-          className="text-accent-ink/70"
+          className="grid h-5 w-5 place-items-center rounded-full bg-white/20 hover:bg-accent"
         >
-          ✕
+          <X size={12} strokeWidth={2.6} />
         </button>
       </span>
 
       {confirmando && (
         <Modal titulo="¿Eliminar esta franja?" onCerrar={() => setConfirmando(false)}>
-          <p className="text-sm text-ink-soft">
+          <p className="text-[13px] text-text-secondary">
             {franja}. Los estudiantes dejarán de ver estos cupos.
           </p>
-          <div className="mt-4 flex gap-2">
-            <button
-              type="button"
-              onClick={() => setConfirmando(false)}
-              className="flex-1 rounded-orion border border-line py-2 text-sm text-ink-soft"
-            >
+          <div className="mt-5 flex gap-2.5">
+            <Boton variante="outline" onClick={() => setConfirmando(false)} className="h-12 flex-1">
               Volver
-            </button>
-            <button
-              type="button"
+            </Boton>
+            <Boton
+              variante="peligro"
               disabled={borrar.isPending}
               onClick={() => borrar.mutate()}
-              className="flex-1 rounded-orion bg-accent py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="h-12 flex-1"
             >
               Eliminar
-            </button>
+            </Boton>
           </div>
         </Modal>
       )}
@@ -196,8 +206,8 @@ function FilaExcepcion({ excepcion }: { excepcion: ExceptionResponse }) {
     : "todo el día";
 
   return (
-    <li className="flex items-center justify-between rounded-orion border border-line px-2.5 py-2">
-      <span className="text-xs">
+    <li className="flex items-center justify-between gap-2 rounded-base bg-surface-raised px-3.5 py-2.5">
+      <span className="text-[12px] font-semibold text-text">
         {/* La fecha llega como YYYY-MM-DD; el mediodía evita que la zona la corra un día. */}
         {fechaLarga(`${excepcion.date}T12:00:00-05:00`)} · {cuando}
         {excepcion.reason ? ` · ${excepcion.reason}` : ""}
@@ -207,9 +217,9 @@ function FilaExcepcion({ excepcion }: { excepcion: ExceptionResponse }) {
         aria-label="Eliminar bloqueo"
         disabled={borrar.isPending}
         onClick={() => borrar.mutate()}
-        className="pl-2 text-ink-muted"
+        className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-text-muted hover:bg-error-bg hover:text-error"
       >
-        ✕
+        <X size={13} strokeWidth={2.4} />
       </button>
     </li>
   );
@@ -239,13 +249,13 @@ function ModalNuevaFranja({ weekday, onCerrar }: { weekday: number; onCerrar: ()
 
   return (
     <Modal titulo={`Nueva franja · ${nombreDia}`} onCerrar={onCerrar}>
-      <div className="flex items-center gap-2">
-        <label className="flex-1 text-xs font-semibold text-ink-soft">
+      <div className="flex items-center gap-2.5">
+        <label className="flex-1 text-[12.5px] font-bold text-text-secondary">
           Desde
           <select
             value={inicio}
             onChange={(event) => setInicio(event.target.value)}
-            className="mt-1 w-full rounded-orion border border-line bg-card px-2 py-2 text-sm"
+            className="mt-1.5 w-full rounded-base border-[1.5px] border-border bg-surface-raised px-3 py-3 text-sm font-semibold text-text"
           >
             {HORAS.map((hora) => (
               <option key={hora} value={hora}>
@@ -254,12 +264,12 @@ function ModalNuevaFranja({ weekday, onCerrar }: { weekday: number; onCerrar: ()
             ))}
           </select>
         </label>
-        <label className="flex-1 text-xs font-semibold text-ink-soft">
+        <label className="flex-1 text-[12.5px] font-bold text-text-secondary">
           Hasta
           <select
             value={fin}
             onChange={(event) => setFin(event.target.value)}
-            className="mt-1 w-full rounded-orion border border-line bg-card px-2 py-2 text-sm"
+            className="mt-1.5 w-full rounded-base border-[1.5px] border-border bg-surface-raised px-3 py-3 text-sm font-semibold text-text"
           >
             {HORAS.map((hora) => (
               <option key={hora} value={hora}>
@@ -271,25 +281,23 @@ function ModalNuevaFranja({ weekday, onCerrar }: { weekday: number; onCerrar: ()
       </div>
 
       {error && (
-        <p className="mt-3 rounded-orion bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>
+        <div className="mt-3">
+          <AvisoError mensaje={error} />
+        </div>
       )}
 
-      <div className="mt-4 flex gap-2">
-        <button
-          type="button"
-          onClick={onCerrar}
-          className="flex-1 rounded-orion border border-line py-2 text-sm text-ink-soft"
-        >
-          Volver
-        </button>
-        <button
-          type="button"
+      <div className="mt-5 flex gap-2.5">
+        <Boton variante="outline" onClick={onCerrar} className="h-12 flex-1">
+          Cancelar
+        </Boton>
+        <Boton
+          variante="coral"
           disabled={crear.isPending}
           onClick={() => crear.mutate()}
-          className="flex-1 rounded-orion bg-accent py-2 text-sm font-semibold text-white disabled:opacity-60"
+          className="h-12 flex-1"
         >
-          {crear.isPending ? "Guardando…" : "Añadir"}
-        </button>
+          {crear.isPending ? "Guardando…" : "Añadir franja"}
+        </Boton>
       </div>
     </Modal>
   );
@@ -325,82 +333,83 @@ function ModalBloquearFecha({ onCerrar }: { onCerrar: () => void }) {
 
   return (
     <Modal titulo="Bloquear una fecha" onCerrar={onCerrar}>
-      <label className="block text-xs font-semibold text-ink-soft" htmlFor="fecha">
+      <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="fecha">
         Fecha
       </label>
-      <input
+      <Campo
         id="fecha"
         type="date"
         value={fecha}
         onChange={(event) => setFecha(event.target.value)}
-        className="mt-1 w-full rounded-orion border border-line bg-card px-3 py-2 text-sm"
+        className="mt-1.5"
       />
 
-      <label className="mt-3 flex items-center justify-between">
-        <span className="text-sm">Todo el día</span>
+      <label className="mt-4 flex items-center justify-between">
+        <span className="text-[13.5px] font-semibold">Todo el día</span>
         <input
           type="checkbox"
           checked={todoElDia}
           onChange={(event) => setTodoElDia(event.target.checked)}
-          className="h-4 w-4 accent-[var(--color-accent)]"
+          className="h-5 w-5 accent-[var(--color-accent)]"
         />
       </label>
 
       {!todoElDia && (
-        <div className="mt-3 flex items-center gap-2">
-          <label className="flex-1 text-xs font-semibold text-ink-soft">
+        <div className="mt-3 flex items-center gap-2.5">
+          <label className="flex-1 text-[12.5px] font-bold text-text-secondary">
             Desde
-            <input
+            <Campo
               type="time"
               value={inicio}
               onChange={(event) => setInicio(event.target.value)}
-              className="mt-1 w-full rounded-orion border border-line bg-card px-2 py-2 text-sm"
+              className="mt-1.5"
             />
           </label>
-          <label className="flex-1 text-xs font-semibold text-ink-soft">
+          <label className="flex-1 text-[12.5px] font-bold text-text-secondary">
             Hasta
-            <input
+            <Campo
               type="time"
               value={fin}
               onChange={(event) => setFin(event.target.value)}
-              className="mt-1 w-full rounded-orion border border-line bg-card px-2 py-2 text-sm"
+              className="mt-1.5"
             />
           </label>
         </div>
       )}
 
-      <label className="mt-3 block text-xs font-semibold text-ink-soft" htmlFor="motivo-bloqueo">
+      <label
+        className="mt-4 block text-[12.5px] font-bold text-text-secondary"
+        htmlFor="motivo-bloqueo"
+      >
         Motivo (opcional)
       </label>
-      <input
+      <Campo
         id="motivo-bloqueo"
         type="text"
         maxLength={200}
         value={motivo}
         onChange={(event) => setMotivo(event.target.value)}
-        className="mt-1 w-full rounded-orion border border-line bg-card px-3 py-2 text-sm"
+        className="mt-1.5"
       />
 
       {error && (
-        <p className="mt-3 rounded-orion bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>
+        <div className="mt-3">
+          <AvisoError mensaje={error} />
+        </div>
       )}
 
-      <div className="mt-4 flex gap-2">
-        <button
-          type="button"
-          onClick={onCerrar}
-          className="flex-1 rounded-orion border border-line py-2 text-sm text-ink-soft"
-        >
-          Volver
-        </button>
-        <button
-          type="button"
+      <div className="mt-5 flex gap-2.5">
+        <Boton variante="outline" onClick={onCerrar} className="h-12 flex-1">
+          Cancelar
+        </Boton>
+        <Boton
+          variante="coral"
           disabled={!fecha || crear.isPending}
           onClick={() => crear.mutate()}
-          className="flex-1 rounded-orion bg-accent py-2 text-sm font-semibold text-white disabled:opacity-50"
+          className="h-12 flex-1"
         >
           {crear.isPending ? "Guardando…" : "Bloquear"}
-        </button>
+        </Boton>
       </div>
     </Modal>
   );

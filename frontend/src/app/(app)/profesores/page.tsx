@@ -1,10 +1,13 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { ChevronRight, Search, Users } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { Cargando, ErrorCarga, Vacio } from "@/components/estados";
+import { HeroNoche } from "@/components/marca";
+import { Campo, Tarjeta } from "@/components/ui";
 import { apiFetch } from "@/lib/api/fetch";
 import type { ProfessorSummary } from "@/lib/api/types";
 
@@ -22,29 +25,34 @@ export default function ProfesoresPage() {
   );
 
   return (
-    <main className="mx-auto max-w-md p-4">
-      <h1 className="text-xl font-semibold">Profesores</h1>
+    <main>
+      <HeroNoche className="rounded-b-sheet px-5 pb-5 pt-4">
+        <h1 className="text-[20px] font-extrabold text-white">Profesores</h1>
+        <div className="mt-3.5">
+          <Campo
+            type="text"
+            value={busqueda}
+            onChange={(event) => setBusqueda(event.target.value)}
+            placeholder="Buscar profesor"
+            icono={<Search size={18} strokeWidth={2.2} />}
+            className="border-transparent"
+          />
+        </div>
+      </HeroNoche>
 
-      <input
-        type="text"
-        value={busqueda}
-        onChange={(event) => setBusqueda(event.target.value)}
-        placeholder="Buscar profesor"
-        className="mt-3.5 w-full rounded-orion border border-line bg-card px-3 py-2 text-sm outline-none focus:border-accent"
-      />
-
-      <div className="mt-3.5">
+      <div className="px-5 py-5">
         {isPending && <Cargando />}
 
         {isError && (
           <ErrorCarga
-            mensaje="No pudimos cargar los profesores."
+            mensaje="No pudimos cargar los profesores. Revisa tu conexión e inténtalo otra vez."
             onReintentar={() => void refetch()}
           />
         )}
 
         {data && profesores.length === 0 && (
           <Vacio
+            icono={<Users size={24} strokeWidth={2.2} />}
             titulo={busqueda ? "Sin resultados" : "Aún no hay profesores"}
             texto={
               busqueda
@@ -54,25 +62,30 @@ export default function ProfesoresPage() {
           />
         )}
 
-        <ul className="space-y-2.5">
+        <ul className="space-y-3">
           {profesores.map((profesor) => (
-            <li key={profesor.id} className="rounded-card border border-line bg-card p-3">
-              <div className="flex items-center gap-2.5">
-                <Avatar nombre={profesor.fullName ?? ""} fotoUrl={profesor.photoUrl} />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">{profesor.fullName}</p>
-                  <p className="truncate text-xs text-ink-soft">{profesor.headline}</p>
+            <li key={profesor.id}>
+              <Tarjeta>
+                <div className="flex items-center gap-3">
+                  <Avatar nombre={profesor.fullName ?? ""} fotoUrl={profesor.photoUrl} />
+                  <div className="min-w-0">
+                    <p className="truncate text-[15px] font-bold">{profesor.fullName}</p>
+                    <p className="truncate text-[12.5px] text-text-secondary">
+                      {profesor.headline}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              <div className="mt-2.5 flex justify-end">
-                <Link
-                  href={`/profesores/${profesor.id}`}
-                  className="rounded-orion border border-line px-3 py-1.5 text-xs text-ink"
-                >
-                  Ver agenda
-                </Link>
-              </div>
+                <div className="mt-3.5 flex justify-end">
+                  <Link
+                    href={`/profesores/${profesor.id}`}
+                    className="inline-flex items-center gap-1 rounded-base bg-primary px-4 py-2 text-[13px] font-bold text-white hover:bg-primary-strong"
+                  >
+                    Ver agenda
+                    <ChevronRight size={16} strokeWidth={2.2} />
+                  </Link>
+                </div>
+              </Tarjeta>
             </li>
           ))}
         </ul>

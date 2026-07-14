@@ -22,17 +22,18 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-ink/40 p-4"
+      className="fixed inset-0 z-50 grid place-items-center p-5"
+      style={{ background: "rgba(20,16,46,0.45)" }}
       role="dialog"
       aria-modal="true"
       aria-label={titulo}
       onClick={onCerrar}
     >
       <div
-        className="w-full max-w-sm rounded-card border border-line bg-card p-5"
+        className="w-full max-w-sm rounded-sheet bg-surface p-6 shadow-[0_24px_48px_rgba(20,16,46,0.35)]"
         onClick={(event) => event.stopPropagation()}
       >
-        <h2 className="text-base font-semibold">{titulo}</h2>
+        <h2 className="text-[16px] font-extrabold">{titulo}</h2>
         <div className="mt-3">{children}</div>
       </div>
     </div>

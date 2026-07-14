@@ -20,7 +20,7 @@ export default function Home() {
 
   return (
     <main className="flex-1 grid place-items-center">
-      <p className="text-sm text-ink-muted">{isPending ? "Cargando…" : ""}</p>
+      <p className="text-sm text-text-muted">{isPending ? "Cargando…" : ""}</p>
     </main>
   );
 }

@@ -1,16 +1,18 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertCircle, Calendar, CalendarHeart, Check, MapPin, Video, X } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { Avatar } from "@/components/Avatar";
-import { Cargando, ErrorCarga, Vacio } from "@/components/estados";
+import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Modal } from "@/components/Modal";
+import { Badge, Boton, Segmento, Tarjeta } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type { MyBookingResponse } from "@/lib/api/types";
 import { useMe } from "@/lib/auth/session";
-import { colorEstado, etiquetaEstado } from "@/lib/estados-clase";
+import { etiquetaEstado } from "@/lib/estados-clase";
 import { fechaYRango } from "@/lib/format";
 import { linkWhatsapp } from "@/lib/whatsapp";
 
@@ -28,29 +30,25 @@ export default function MisClasesPage() {
   const esProfesor = me?.role === "PROFESSOR";
 
   return (
-    <main className="mx-auto max-w-md p-4">
+    <main className="px-5 py-5">
       <Suspense fallback={null}>
         <BannerReserva />
       </Suspense>
 
-      <h1 className="text-xl font-semibold">Mis clases</h1>
-
-      <div className="mt-3 flex overflow-hidden rounded-orion border border-line">
-        {(["upcoming", "past"] as const).map((valor) => (
-          <button
-            key={valor}
-            type="button"
-            onClick={() => setScope(valor)}
-            className={`flex-1 py-1.5 text-xs ${
-              scope === valor ? "bg-accent-soft font-semibold text-accent-ink" : "text-ink-soft"
-            }`}
-          >
-            {valor === "upcoming" ? "Próximas" : "Pasadas"}
-          </button>
-        ))}
-      </div>
+      <h1 className="text-[20px] font-extrabold">Mis clases</h1>
 
       <div className="mt-3.5">
+        <Segmento<Scope>
+          valor={scope}
+          onCambio={setScope}
+          opciones={[
+            { valor: "upcoming", etiqueta: "Próximas" },
+            { valor: "past", etiqueta: "Pasadas" },
+          ]}
+        />
+      </div>
+
+      <div className="mt-4">
         {isPending && <Cargando />}
 
         {isError && (
@@ -60,6 +58,7 @@ export default function MisClasesPage() {
         {data?.length === 0 &&
           (scope === "upcoming" ? (
             <Vacio
+              icono={<CalendarHeart size={24} strokeWidth={2.2} />}
               titulo="Aún no tienes clases"
               texto={
                 esProfesor
@@ -70,7 +69,7 @@ export default function MisClasesPage() {
                 esProfesor ? undefined : (
                   <Link
                     href="/profesores"
-                    className="inline-block rounded-orion bg-accent px-4 py-2 text-sm font-semibold text-white"
+                    className="inline-flex h-11 items-center rounded-base bg-accent px-5 text-[14px] font-bold text-white shadow-[0_5px_0_var(--color-accent-pressed)] hover:bg-accent-strong"
                   >
                     Ver profesores
                   </Link>
@@ -78,10 +77,14 @@ export default function MisClasesPage() {
               }
             />
           ) : (
-            <Vacio titulo="Nada por aquí todavía" texto="Tus clases pasadas aparecerán en esta pestaña." />
+            <Vacio
+              icono={<Calendar size={24} strokeWidth={2.2} />}
+              titulo="Nada por aquí todavía"
+              texto="Tus clases pasadas aparecerán en esta pestaña."
+            />
           ))}
 
-        <ul className="space-y-2.5">
+        <ul className="space-y-3">
           {data?.map((clase) => (
             <TarjetaClase
               key={clase.id}
@@ -123,90 +126,96 @@ function TarjetaClase({
   });
 
   // Una clase futura y confirmada que NO se puede cancelar solo puede ser por la regla de 24 h.
-  const dentroDeLas24 =
-    scope === "upcoming" && clase.status === "CONFIRMED" && !clase.canCancel;
+  const dentroDeLas24 = scope === "upcoming" && clase.status === "CONFIRMED" && !clase.canCancel;
 
   // El profesor registra asistencia de lo que ya ocurrió y sigue confirmado.
   const puedeRegistrar = esProfesor && scope === "past" && clase.status === "CONFIRMED";
 
   return (
-    <li className="rounded-card border border-line bg-card p-3">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[13px] font-semibold">
-          {fechaYRango(clase.startsAt!, clase.endsAt!)}
-        </span>
-        <span
-          className={`rounded-orion px-2 py-0.5 text-[11px] ${
-            virtual ? "bg-success-soft text-success" : "bg-warning-soft text-warning"
-          }`}
-        >
-          {virtual ? "Virtual" : "Presencial"}
-        </span>
-      </div>
+    <li>
+      <Tarjeta>
+        <div className="flex items-center justify-between gap-2">
+          <span className="flex items-center gap-1.5 text-[13.5px] font-bold">
+            <Calendar size={15} strokeWidth={2.2} className="text-accent" />
+            {fechaYRango(clase.startsAt!, clase.endsAt!)}
+          </span>
+          <Badge tono={virtual ? "menta" : "melocoton"}>
+            {virtual ? <Video size={12} strokeWidth={2.4} /> : <MapPin size={12} strokeWidth={2.4} />}
+            {virtual ? "Virtual" : "Presencial"}
+          </Badge>
+        </div>
 
-      <div className="mt-2 flex items-center gap-2">
-        <Avatar nombre={nombreContraparte} size="sm" />
-        <span className="text-[13px]">
-          {esProfesor ? nombreContraparte : `Prof. ${nombreContraparte}`}
-        </span>
-      </div>
+        <div className="mt-3 flex items-center gap-2.5">
+          <Avatar nombre={nombreContraparte} size="sm" />
+          <span className="text-[13.5px] font-semibold">
+            {esProfesor ? nombreContraparte : `Prof. ${nombreContraparte}`}
+          </span>
+        </div>
 
-      {clase.locationNote && (
-        <p className="mt-1 ml-10 text-xs text-ink-muted">Lugar: {clase.locationNote}</p>
-      )}
-
-      {scope === "past" && clase.status !== "CONFIRMED" && (
-        <span
-          className={`mt-2 inline-block rounded-orion px-2 py-0.5 text-[11px] ${colorEstado(clase.status)}`}
-        >
-          {etiquetaEstado(clase.status)}
-        </span>
-      )}
-
-      <div className="mt-2.5 flex gap-2">
-        {whatsapp && (
-          <a
-            href={whatsapp}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 rounded-orion border border-line py-1.5 text-center text-xs text-ink"
-          >
-            WhatsApp
-          </a>
+        {clase.locationNote && (
+          <p className="ml-11 mt-1 text-[12px] text-text-muted">Lugar: {clase.locationNote}</p>
         )}
 
-        {scope === "upcoming" && clase.status === "CONFIRMED" && (
-          <button
-            type="button"
-            disabled={!clase.canCancel}
-            onClick={() => setCancelando(true)}
-            className={`flex-1 rounded-orion py-1.5 text-xs ${
-              clase.canCancel
-                ? "border border-line text-ink"
-                : "border border-transparent text-ink-disabled"
-            }`}
-          >
-            Cancelar
-          </button>
+        {scope === "past" && clase.status !== "CONFIRMED" && (
+          <div className="mt-3">
+            <Badge
+              tono={
+                clase.status === "COMPLETED"
+                  ? "menta"
+                  : clase.status === "NO_SHOW"
+                    ? "melocoton"
+                    : "error"
+              }
+            >
+              {clase.status === "COMPLETED" ? (
+                <Check size={12} strokeWidth={2.4} />
+              ) : (
+                <X size={12} strokeWidth={2.4} />
+              )}
+              {etiquetaEstado(clase.status)}
+            </Badge>
+          </div>
         )}
 
-        {puedeRegistrar && (
-          <button
-            type="button"
-            onClick={() => setRegistrando(true)}
-            className="flex-1 rounded-orion bg-accent py-1.5 text-xs font-semibold text-white"
-          >
-            Registrar asistencia
-          </button>
-        )}
-      </div>
+        <div className="mt-3.5 flex gap-2">
+          {whatsapp && (
+            <a
+              href={whatsapp}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-base border-[1.5px] border-success py-2.5 text-[13px] font-bold text-success hover:bg-success-bg"
+            >
+              <LogoWhatsapp />
+              WhatsApp
+            </a>
+          )}
 
-      {/* El texto institucional lo dicta el servidor con canCancel; aquí solo se explica. */}
-      {dentroDeLas24 && (
-        <p className="mt-2 text-center text-[11px] text-ink-muted">
-          Faltan menos de 24 h — la clase se considera impartida
-        </p>
-      )}
+          {scope === "upcoming" && clase.status === "CONFIRMED" && (
+            <Boton
+              variante="outline"
+              disabled={!clase.canCancel}
+              onClick={() => setCancelando(true)}
+              className="h-10 flex-1"
+            >
+              Cancelar
+            </Boton>
+          )}
+
+          {puedeRegistrar && (
+            <Boton variante="tinta" onClick={() => setRegistrando(true)} className="h-10 flex-1">
+              Registrar asistencia
+            </Boton>
+          )}
+        </div>
+
+        {/* El servidor decide con canCancel; aquí solo se explica por qué está bloqueado. */}
+        {dentroDeLas24 && (
+          <p className="mt-2.5 flex items-center justify-center gap-1.5 text-center text-[11.5px] text-text-muted">
+            <AlertCircle size={13} strokeWidth={2.2} />
+            Faltan menos de 24 h — la clase se considera impartida
+          </p>
+        )}
+      </Tarjeta>
 
       {cancelando && <ModalCancelar clase={clase} onCerrar={() => setCancelando(false)} />}
       {registrando && <ModalAsistencia clase={clase} onCerrar={() => setRegistrando(false)} />}
@@ -236,42 +245,41 @@ function ModalCancelar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
 
   return (
     <Modal titulo="¿Cancelar esta clase?" onCerrar={onCerrar}>
-      <p className="text-sm text-ink-soft">
-        {fechaYRango(clase.startsAt!, clase.endsAt!)} con {clase.counterpart?.fullName}.
+      <p className="text-[13px] text-text-secondary">
+        {fechaYRango(clase.startsAt!, clase.endsAt!)} con {clase.counterpart?.fullName}. Puedes
+        agendar otra cuando quieras.
       </p>
 
-      <label className="mt-3 block text-xs font-semibold text-ink-soft" htmlFor="motivo">
+      <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="motivo">
         Motivo (opcional)
       </label>
-      <input
+      <textarea
         id="motivo"
-        type="text"
+        rows={2}
         maxLength={300}
         value={motivo}
         onChange={(event) => setMotivo(event.target.value)}
-        className="mt-1 w-full rounded-orion border border-line bg-card px-3 py-2 text-sm outline-none focus:border-accent"
+        className="mt-1.5 w-full rounded-[18px] border-[1.5px] border-border bg-surface-raised px-4 py-3 text-sm focus:border-accent"
       />
 
       {error && (
-        <p className="mt-3 rounded-orion bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>
+        <div className="mt-3">
+          <AvisoError mensaje={error} />
+        </div>
       )}
 
-      <div className="mt-4 flex gap-2">
-        <button
-          type="button"
-          onClick={onCerrar}
-          className="flex-1 rounded-orion border border-line py-2 text-sm text-ink-soft"
-        >
-          Volver
-        </button>
-        <button
-          type="button"
+      <div className="mt-5 flex gap-2.5">
+        <Boton variante="outline" onClick={onCerrar} className="h-12 flex-1">
+          Mantener clase
+        </Boton>
+        <Boton
+          variante="peligro"
           disabled={cancelar.isPending}
           onClick={() => cancelar.mutate()}
-          className="flex-1 rounded-orion bg-accent py-2 text-sm font-semibold text-white disabled:opacity-60"
+          className="h-12 flex-1"
         >
           {cancelar.isPending ? "Cancelando…" : "Sí, cancelar"}
-        </button>
+        </Boton>
       </div>
     </Modal>
   );
@@ -280,6 +288,7 @@ function ModalCancelar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
 function ModalAsistencia({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar: () => void }) {
   const queryClient = useQueryClient();
   const [notas, setNotas] = useState("");
+  const [asistio, setAsistio] = useState<boolean | null>(null);
 
   const registrar = useMutation({
     mutationFn: (present: boolean) =>
@@ -296,44 +305,57 @@ function ModalAsistencia({ clase, onCerrar }: { clase: MyBookingResponse; onCerr
   const error = registrar.error instanceof ApiError ? registrar.error.message : null;
 
   return (
-    <Modal titulo="Registrar asistencia" onCerrar={onCerrar}>
-      <p className="text-sm text-ink-soft">
-        {fechaYRango(clase.startsAt!, clase.endsAt!)} con {clase.counterpart?.fullName}.
-      </p>
+    <Modal
+      titulo={`¿Cómo fue la clase con ${clase.counterpart?.fullName?.split(" ")[0] ?? ""}?`}
+      onCerrar={onCerrar}
+    >
+      <div className="flex gap-2">
+        <Boton
+          variante={asistio === true ? "tinta" : "outline"}
+          onClick={() => setAsistio(true)}
+          className="h-11 flex-1"
+        >
+          Asistió
+        </Boton>
+        <Boton
+          variante={asistio === false ? "tinta" : "outline"}
+          onClick={() => setAsistio(false)}
+          className="h-11 flex-1"
+        >
+          No asistió
+        </Boton>
+      </div>
 
-      <label className="mt-3 block text-xs font-semibold text-ink-soft" htmlFor="notas">
+      <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="notas">
         Notas (opcional)
       </label>
-      <input
+      <textarea
         id="notas"
-        type="text"
+        rows={3}
         maxLength={500}
         value={notas}
         onChange={(event) => setNotas(event.target.value)}
-        className="mt-1 w-full rounded-orion border border-line bg-card px-3 py-2 text-sm outline-none focus:border-accent"
+        className="mt-1.5 w-full rounded-[18px] border-[1.5px] border-border bg-surface-raised px-4 py-3 text-sm focus:border-accent"
       />
 
       {error && (
-        <p className="mt-3 rounded-orion bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>
+        <div className="mt-3">
+          <AvisoError mensaje={error} />
+        </div>
       )}
 
-      <div className="mt-4 flex gap-2">
-        <button
-          type="button"
-          disabled={registrar.isPending}
-          onClick={() => registrar.mutate(false)}
-          className="flex-1 rounded-orion border border-line py-2 text-sm text-ink-soft disabled:opacity-60"
+      <div className="mt-5 flex gap-2.5">
+        <Boton variante="outline" onClick={onCerrar} className="h-12 flex-1">
+          Ahora no
+        </Boton>
+        <Boton
+          variante="coral"
+          disabled={asistio === null || registrar.isPending}
+          onClick={() => asistio !== null && registrar.mutate(asistio)}
+          className="h-12 flex-1"
         >
-          No asistió
-        </button>
-        <button
-          type="button"
-          disabled={registrar.isPending}
-          onClick={() => registrar.mutate(true)}
-          className="flex-1 rounded-orion bg-accent py-2 text-sm font-semibold text-white disabled:opacity-60"
-        >
-          Asistió
-        </button>
+          {registrar.isPending ? "Guardando…" : "Guardar"}
+        </Boton>
       </div>
     </Modal>
   );
@@ -344,8 +366,19 @@ function BannerReserva() {
   if (params.get("reservada") !== "1") return null;
 
   return (
-    <p className="mb-3.5 rounded-card bg-success-soft px-3 py-2.5 text-sm text-success">
+    <p className="mb-4 flex items-center gap-2 rounded-card bg-success-bg px-4 py-3 text-[13px] font-semibold text-success">
+      <Check size={16} strokeWidth={2.4} />
       ¡Clase reservada! Te enviamos la confirmación al correo.
     </p>
+  );
+}
+
+/** El logo de WhatsApp: SVG inline, como todo en este diseño. */
+function LogoWhatsapp() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true">
+      <path d="M17.5 14.4c-.3-.2-1.7-.9-2-1-.3-.1-.5-.2-.7.1s-.8 1-.9 1.2c-.2.2-.3.2-.6.1-.3-.2-1.2-.5-2.3-1.4-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.5.1-.6l.5-.5c.1-.2.2-.3.3-.5 0-.2 0-.4-.1-.5l-.9-2.2c-.2-.5-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5 4.4.7.3 1.2.5 1.7.6.7.2 1.3.2 1.8.1.6-.1 1.7-.7 1.9-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.5-.3z" />
+      <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2z" />
+    </svg>
   );
 }

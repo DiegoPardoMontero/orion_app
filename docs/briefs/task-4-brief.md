@@ -184,3 +184,19 @@ Tests backend mínimos: cada endpoint con su rol (`403` a no-admin), email dupli
 ## 10. Fuera de alcance de esta tarea — NO construir
 
 Despliegue y configuración de producción (Tarea 5), service worker y modo offline, subida de archivos/fotos, paginación real, notificaciones push, modo oscuro, i18n, edición de reservas (se cancela y se vuelve a reservar), integración con la API de Google Calendar, y cualquier pantalla de features del MVP 2+. Si algo parece faltar, pregunta antes de agregarlo.
+
+## Adendum al brief — Entregable de Claude Design (aprobado por Pardo)
+
+1. En `docs/design/` está el diseño de alta fidelidad (pantallas, fundamentos
+   y tokens). Es el **contrato visual** del frontend.
+2. **Prohibido copiar código de `docs/design/` al frontend.** Es referencia
+   visual. La arquitectura del brief (decisiones 1–10: apiFetch, TanStack
+   Query, tipos generados, client components, dependencias) sigue mandando.
+3. Acción inmediata: localiza el bloque de tokens `@theme` del entregable e
+   instálalo en el CSS global reemplazando los provisionales. Si el diseño
+   define una Google Font, cárgala con `next/font` (una sola familia). Si usa
+   Lucide, queda aprobada la dependencia `lucide-react` — ninguna otra.
+4. Al construir cada pantalla (Pasos 2–5): wireframes = contrato de
+   estructura; el diseño de esa pantalla = contrato de estilo. Ante conflicto
+   entre ambos, gana el wireframe y le preguntas a Pardo.
+5. La checklist visual de cada paso suma una pregunta: "¿se parece al diseño?"

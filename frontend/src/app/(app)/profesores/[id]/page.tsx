@@ -1,11 +1,14 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Calendar, CalendarX, Check, Clock, Mail, MapPin, Pencil, Video } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Avatar } from "@/components/Avatar";
-import { Cargando, ErrorCarga, Vacio } from "@/components/estados";
+import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
+import { HeroNoche } from "@/components/marca";
+import { Bloque, BotonPrincipal, Campo, Chip, Segmento } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type {
   BookingResponse,
@@ -55,7 +58,7 @@ export default function AgendaProfesorPage() {
         },
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["me", "bookings"] });
+      void queryClient.invalidateQueries({ queryKey: ["me", "bookings"] });
       router.push("/mis-clases?reservada=1");
     },
     onError: () => {
@@ -70,7 +73,7 @@ export default function AgendaProfesorPage() {
 
   if (profesor.isPending || cupos.isPending) {
     return (
-      <main className="mx-auto max-w-md p-4">
+      <main className="px-5 py-5">
         <Cargando filas={4} />
       </main>
     );
@@ -78,7 +81,7 @@ export default function AgendaProfesorPage() {
 
   if (profesor.isError) {
     return (
-      <main className="mx-auto max-w-md p-4">
+      <main className="px-5 py-5">
         <ErrorCarga
           mensaje="No pudimos cargar este profesor."
           onReintentar={() => void profesor.refetch()}
@@ -90,127 +93,162 @@ export default function AgendaProfesorPage() {
   const detalle = profesor.data;
 
   return (
-    <main className="mx-auto max-w-md p-4">
-      <div className="flex items-center gap-2.5">
-        <Link href="/profesores" aria-label="Volver" className="text-ink-muted">
-          ←
+    <main>
+      <HeroNoche className="rounded-b-sheet px-5 pb-6 pt-4">
+        <Link
+          href="/profesores"
+          aria-label="Volver"
+          className="grid h-9 w-9 place-items-center rounded-full bg-white/15 text-white"
+        >
+          <ArrowLeft size={18} strokeWidth={2.2} />
         </Link>
-        <Avatar nombre={detalle.fullName ?? ""} fotoUrl={detalle.photoUrl} />
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold">{detalle.fullName}</p>
-          <p className="truncate text-xs text-ink-soft">{detalle.headline}</p>
+
+        <p className="mt-4 text-[11.5px] font-bold tracking-[0.12em] text-[#c9bff0]">
+          RESERVAR CLASE
+        </p>
+
+        <div className="mt-2 flex items-center gap-3">
+          <div className="relative">
+            <Avatar
+              nombre={detalle.fullName ?? ""}
+              fotoUrl={detalle.photoUrl}
+              size="lg"
+              className="border-[2.5px] border-accent"
+            />
+            <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-[#241e4e] bg-[#4ade80]" />
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-[18px] font-bold text-white">{detalle.fullName}</p>
+            <p className="truncate text-[12.5px] text-[#c9bff0]">{detalle.headline}</p>
+          </div>
         </div>
-      </div>
 
-      {detalle.bio && <p className="mt-3.5 text-xs leading-relaxed text-ink-muted">{detalle.bio}</p>}
+        {detalle.bio && (
+          <p className="mt-3 text-[12.5px] leading-relaxed text-[#c9bff0]">{detalle.bio}</p>
+        )}
+      </HeroNoche>
 
-      {cupos.isError ? (
-        <div className="mt-4">
+      <div className="space-y-3 px-5 py-5">
+        {cupos.isError ? (
           <ErrorCarga
             mensaje="No pudimos cargar la agenda."
             onReintentar={() => void cupos.refetch()}
           />
-        </div>
-      ) : dias.length === 0 ? (
-        <div className="mt-4">
+        ) : dias.length === 0 ? (
           <Vacio
+            icono={<CalendarX size={24} strokeWidth={2.2} />}
             titulo="Sin cupos esta semana"
-            texto="Vuelve en unos días o escribe a otro profesor: seguro encontramos un horario que te sirva."
+            texto="Vuelve en unos días: seguro encontramos un horario que te sirva."
           />
-        </div>
-      ) : (
-        <>
-          <p className="mt-4 text-xs font-semibold text-ink-soft">Elige un día</p>
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
-            {dias.map((dia) => (
-              <button
-                key={dia}
-                type="button"
-                onClick={() => {
-                  setDiaElegido(dia);
-                  setCupoElegido(null);
-                }}
-                className={chipClass(dia === diaActivo)}
-              >
-                {fechaCorta(porDia[dia][0].startsAt!)}
-              </button>
-            ))}
-          </div>
+        ) : (
+          <>
+            <Bloque
+              tono="melocoton"
+              titulo="Elige un día"
+              icono={<Calendar size={16} strokeWidth={2.2} />}
+            >
+              <div className="flex flex-wrap gap-2">
+                {dias.map((dia) => (
+                  <Chip
+                    key={dia}
+                    activo={dia === diaActivo}
+                    tono="coral"
+                    onClick={() => {
+                      setDiaElegido(dia);
+                      setCupoElegido(null);
+                    }}
+                  >
+                    {fechaCorta(porDia[dia][0].startsAt!)}
+                  </Chip>
+                ))}
+              </div>
+            </Bloque>
 
-          <p className="mt-3 text-xs font-semibold text-ink-soft">Cupos disponibles</p>
-          <div className="mt-1.5 grid grid-cols-3 gap-1.5">
-            {cuposDelDia.map((cupo) => (
-              <button
-                key={cupo.startsAt}
-                type="button"
-                onClick={() => setCupoElegido(cupo.startsAt!)}
-                className={`${chipClass(cupo.startsAt === cupoElegido)} justify-center`}
-              >
-                {horaBogota(cupo.startsAt!)}
-              </button>
-            ))}
-          </div>
+            <Bloque
+              tono="lavanda"
+              titulo="Cupos disponibles"
+              icono={<Clock size={16} strokeWidth={2.2} />}
+              extra={
+                <span className="text-[11.5px] font-bold text-info">
+                  {cuposDelDia.length} {cuposDelDia.length === 1 ? "libre" : "libres"}
+                </span>
+              }
+            >
+              <div className="grid grid-cols-3 gap-2">
+                {cuposDelDia.map((cupo) => (
+                  <Chip
+                    key={cupo.startsAt}
+                    activo={cupo.startsAt === cupoElegido}
+                    tono="tinta"
+                    onClick={() => setCupoElegido(cupo.startsAt!)}
+                  >
+                    {horaBogota(cupo.startsAt!)}
+                  </Chip>
+                ))}
+              </div>
+            </Bloque>
 
-          <p className="mt-3.5 text-xs font-semibold text-ink-soft">Modalidad</p>
-          <div className="mt-1.5 flex overflow-hidden rounded-orion border border-line">
-            {(["VIRTUAL", "IN_PERSON"] as const).map((valor) => (
-              <button
-                key={valor}
-                type="button"
-                onClick={() => setModalidad(valor)}
-                className={`flex-1 py-1.5 text-xs ${
-                  modalidad === valor
-                    ? "bg-accent-soft font-semibold text-accent-ink"
-                    : "text-ink-soft"
-                }`}
-              >
-                {valor === "VIRTUAL" ? "Virtual" : "Presencial"}
-              </button>
-            ))}
-          </div>
+            <Bloque
+              tono="menta"
+              titulo="Modalidad"
+              icono={<Video size={16} strokeWidth={2.2} />}
+            >
+              <Segmento<Modality>
+                valor={modalidad}
+                onCambio={setModalidad}
+                opciones={[
+                  {
+                    valor: "VIRTUAL",
+                    etiqueta: (
+                      <>
+                        <Video size={15} strokeWidth={2.2} /> Virtual
+                      </>
+                    ),
+                  },
+                  {
+                    valor: "IN_PERSON",
+                    etiqueta: (
+                      <>
+                        <MapPin size={15} strokeWidth={2.2} /> Presencial
+                      </>
+                    ),
+                  },
+                ]}
+              />
+            </Bloque>
 
-          <input
-            type="text"
-            value={nota}
-            onChange={(event) => setNota(event.target.value)}
-            maxLength={300}
-            placeholder={
-              modalidad === "VIRTUAL"
-                ? "Link de la videollamada (opcional)"
-                : "Lugar del encuentro (opcional)"
-            }
-            className="mt-3 w-full rounded-orion border border-line bg-card px-3 py-2 text-sm outline-none focus:border-accent"
-          />
+            <Campo
+              type="text"
+              value={nota}
+              onChange={(event) => setNota(event.target.value)}
+              maxLength={300}
+              icono={<Pencil size={16} strokeWidth={2.2} />}
+              placeholder={
+                modalidad === "VIRTUAL"
+                  ? "Link de la videollamada (opcional)"
+                  : "Lugar del encuentro (opcional)"
+              }
+            />
 
-          {errorReserva && (
-            <p className="mt-3 rounded-orion bg-danger-soft px-3 py-2 text-sm text-danger">
-              {errorReserva}
+            {errorReserva && <AvisoError mensaje={errorReserva} />}
+
+            <BotonPrincipal
+              disabled={!cupoElegido || reservar.isPending}
+              onClick={() => cupoElegido && reservar.mutate(cupoElegido)}
+            >
+              {reservar.isPending ? "Reservando…" : "Confirmar reserva"}
+              {!reservar.isPending && <Check size={18} strokeWidth={2.2} />}
+            </BotonPrincipal>
+
+            <p className="flex items-center justify-center gap-1.5 text-[11.5px] text-text-muted">
+              <Mail size={13} strokeWidth={2.2} />
+              Recibirás confirmación por correo con invitación al calendario
             </p>
-          )}
-
-          <button
-            type="button"
-            disabled={!cupoElegido || reservar.isPending}
-            onClick={() => cupoElegido && reservar.mutate(cupoElegido)}
-            className="mt-3.5 w-full rounded-orion bg-accent py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-          >
-            {reservar.isPending ? "Reservando…" : "Confirmar reserva"}
-          </button>
-          <p className="mt-2 text-center text-[11px] text-ink-muted">
-            Recibirás confirmación por correo con invitación al calendario
-          </p>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </main>
   );
-}
-
-function chipClass(activo: boolean): string {
-  return `inline-flex items-center rounded-orion border px-2.5 py-1.5 text-xs ${
-    activo
-      ? "border-transparent bg-accent-soft font-semibold text-accent-ink"
-      : "border-line text-ink-soft"
-  }`;
 }
 
 /** Los cupos vienen planos; la agenda los necesita por día (en fecha de Bogotá, no del navegador). */

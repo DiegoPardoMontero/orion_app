@@ -1,8 +1,10 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Check, Eye } from "lucide-react";
 import { useState } from "react";
-import { Cargando, ErrorCarga } from "@/components/estados";
+import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
+import { BotonPrincipal, Campo, Toggle } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type { ProfileResponse } from "@/lib/api/types";
 
@@ -14,7 +16,7 @@ export default function PerfilPage() {
 
   if (perfil.isPending) {
     return (
-      <main className="mx-auto max-w-md p-4">
+      <main className="px-5 py-5">
         <Cargando filas={3} />
       </main>
     );
@@ -22,7 +24,7 @@ export default function PerfilPage() {
 
   if (perfil.isError) {
     return (
-      <main className="mx-auto max-w-md p-4">
+      <main className="px-5 py-5">
         <ErrorCarga
           mensaje="No pudimos cargar tu perfil."
           onReintentar={() => void perfil.refetch()}
@@ -68,24 +70,24 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
   const error = guardar.error instanceof ApiError ? guardar.error.message : null;
 
   return (
-    <main className="mx-auto max-w-md p-4">
-      <h1 className="text-xl font-semibold">Mi perfil</h1>
-      <p className="mt-0.5 text-xs text-ink-muted">Esto es lo que ven los estudiantes.</p>
+    <main className="px-5 py-5">
+      <h1 className="text-[20px] font-extrabold">Mi perfil</h1>
+      <p className="mt-1 text-[12.5px] text-text-secondary">Esto es lo que ven los estudiantes.</p>
 
-      <label className="mt-4 block text-xs font-semibold text-ink-soft" htmlFor="headline">
+      <label className="mt-5 block text-[12.5px] font-bold text-text-secondary" htmlFor="headline">
         Titular
       </label>
-      <input
+      <Campo
         id="headline"
         type="text"
         maxLength={120}
         value={headline}
         onChange={(event) => setHeadline(event.target.value)}
         placeholder="Conversación y confianza · A1–B1"
-        className="mt-1 w-full rounded-orion border border-line bg-card px-3 py-2 text-sm outline-none focus:border-accent"
+        className="mt-1.5"
       />
 
-      <label className="mt-3 block text-xs font-semibold text-ink-soft" htmlFor="bio">
+      <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="bio">
         Sobre ti
       </label>
       <textarea
@@ -94,62 +96,64 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
         value={bio}
         onChange={(event) => setBio(event.target.value)}
         placeholder="Cuéntales cómo son tus clases."
-        className="mt-1 w-full rounded-orion border border-line bg-card px-3 py-2 text-sm outline-none focus:border-accent"
+        className="mt-1.5 w-full rounded-[18px] border-[1.5px] border-border bg-surface-raised px-4 py-3 text-sm placeholder:text-text-muted focus:border-accent"
       />
 
-      <label className="mt-3 block text-xs font-semibold text-ink-soft" htmlFor="foto">
+      <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="foto">
         URL de tu foto
       </label>
-      <input
+      <Campo
         id="foto"
         type="url"
         maxLength={500}
         value={fotoUrl}
         onChange={(event) => setFotoUrl(event.target.value)}
         placeholder="https://…"
-        className="mt-1 w-full rounded-orion border border-line bg-card px-3 py-2 text-sm outline-none focus:border-accent"
+        className="mt-1.5"
       />
 
-      <div className="mt-4 flex items-center justify-between border-t border-line pt-3">
-        <div>
-          <p className="text-[13px] font-semibold">Perfil visible</p>
-          <p className="text-[11px] text-ink-muted">Los estudiantes pueden verte y reservar</p>
+      <section className="mt-5 rounded-card bg-success-bg p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="flex items-center gap-1.5 text-[13.5px] font-bold text-success">
+              <Eye size={15} strokeWidth={2.2} />
+              Perfil visible
+            </p>
+            <p className="mt-0.5 text-[11.5px] text-text-secondary">
+              Los estudiantes pueden verte y reservar
+            </p>
+          </div>
+          <Toggle activo={publicado} onCambio={setPublicado} etiqueta="Perfil visible" />
         </div>
-        <input
-          type="checkbox"
-          role="switch"
-          aria-label="Perfil visible"
-          checked={publicado}
-          onChange={(event) => setPublicado(event.target.checked)}
-          className="h-5 w-5 accent-[var(--color-accent)]"
-        />
-      </div>
 
-      {!publicado && (
-        <p className="mt-2 rounded-orion bg-warning-soft px-3 py-2 text-xs text-warning">
-          Los estudiantes dejarán de verte y no podrán reservar contigo. Tus clases ya agendadas
-          siguen en pie.
-        </p>
-      )}
+        {!publicado && (
+          <p className="mt-3 rounded-base bg-warning-bg px-3.5 py-2.5 text-[12px] text-warning">
+            Los estudiantes dejarán de verte y no podrán reservar contigo. Tus clases ya agendadas
+            siguen en pie.
+          </p>
+        )}
+      </section>
 
       {error && (
-        <p className="mt-3 rounded-orion bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>
+        <div className="mt-4">
+          <AvisoError mensaje={error} />
+        </div>
       )}
 
       {guardado && (
-        <p className="mt-3 rounded-orion bg-success-soft px-3 py-2 text-sm text-success">
+        <p className="mt-4 flex items-center gap-2 rounded-card bg-success-bg px-4 py-3 text-[13px] font-semibold text-success">
+          <Check size={16} strokeWidth={2.4} />
           Listo, tu perfil quedó actualizado.
         </p>
       )}
 
-      <button
-        type="button"
+      <BotonPrincipal
         disabled={guardar.isPending}
         onClick={() => guardar.mutate()}
-        className="mt-4 w-full rounded-orion bg-accent py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+        className="mt-5"
       >
         {guardar.isPending ? "Guardando…" : "Guardar cambios"}
-      </button>
+      </BotonPrincipal>
     </main>
   );
 }

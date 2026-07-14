@@ -15,11 +15,3 @@ export function etiquetaEstado(estado?: string): string {
 export function esCancelada(estado?: string): boolean {
   return !!estado && estado.startsWith("CANCELLED");
 }
-
-/** El color del chip: verde lo que salió bien, ámbar lo que no llegó a ocurrir. */
-export function colorEstado(estado?: string): string {
-  if (estado === "COMPLETED") return "bg-success-soft text-success";
-  if (estado === "NO_SHOW") return "bg-warning-soft text-warning";
-  if (esCancelada(estado)) return "bg-danger-soft text-danger";
-  return "bg-accent-soft text-accent-ink";
-}

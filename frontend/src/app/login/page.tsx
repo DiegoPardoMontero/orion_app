@@ -1,7 +1,11 @@
 "use client";
 
+import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { AvisoError } from "@/components/estados";
+import { HeroNoche, Wordmark } from "@/components/marca";
+import { BotonPrincipal, Campo } from "@/components/ui";
 import { ApiError } from "@/lib/api/fetch";
 import { HOME_BY_ROLE } from "@/lib/auth/roles";
 import { useLogin } from "@/lib/auth/session";
@@ -11,74 +15,80 @@ export default function LoginPage() {
   const login = useLogin();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [verClave, setVerClave] = useState(false);
 
   function onSubmit(event: FormEvent) {
     event.preventDefault();
     login.mutate(
       { email, password },
-      {
-        // Cada rol aterriza donde le sirve: el estudiante a explorar, la profesora a sus clases.
-        onSuccess: (me) => router.replace(HOME_BY_ROLE[me.role]),
-      },
+      // Cada rol aterriza donde le sirve: el estudiante a explorar, la profesora a sus clases.
+      { onSuccess: (me) => router.replace(HOME_BY_ROLE[me.role]) },
     );
   }
 
   const error = login.error instanceof ApiError ? login.error.message : null;
 
   return (
-    <main className="flex-1 grid place-items-center p-6">
-      <div className="w-full max-w-md">
-        <div className="text-center">
-          <h1 className="text-3xl font-semibold text-accent">Orión</h1>
-          <p className="mt-1 text-sm text-ink-muted">Language Academy</p>
-        </div>
+    <main className="flex-1">
+      <div className="mx-auto flex min-h-full max-w-md flex-col">
+        <HeroNoche className="rounded-b-sheet px-6 py-11 text-center">
+          <Wordmark className="text-[34px] text-white" />
+          <p className="mx-auto mt-2 max-w-[260px] text-[13px] leading-relaxed text-[#c9bff0]">
+            Aprende con confianza. Transforma tus oportunidades.
+          </p>
+        </HeroNoche>
 
-        <form
-          onSubmit={onSubmit}
-          className="mt-8 rounded-card border border-line bg-card p-6"
-        >
-          <h2 className="text-lg font-semibold">Hola de nuevo</h2>
-          <p className="mt-1 text-sm text-ink-soft">Entra para ver tus clases.</p>
-
-          <label className="mt-6 block text-sm font-semibold text-ink-soft" htmlFor="email">
+        <form onSubmit={onSubmit} className="px-5 py-7">
+          <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="email">
             Correo
           </label>
-          <input
+          <Campo
             id="email"
             type="email"
             required
             autoComplete="email"
+            placeholder="tu@correo.com"
+            icono={<Mail size={18} strokeWidth={2.2} />}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="mt-1.5 w-full rounded-orion border border-line bg-card px-3 py-2 text-sm outline-none focus:border-accent"
+            className={`mt-1.5 ${error ? "border-[#e2544f]" : ""}`}
           />
 
-          <label className="mt-4 block text-sm font-semibold text-ink-soft" htmlFor="password">
+          <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="password">
             Contraseña
           </label>
-          <input
-            id="password"
-            type="password"
-            required
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="mt-1.5 w-full rounded-orion border border-line bg-card px-3 py-2 text-sm outline-none focus:border-accent"
-          />
+          <div className="relative">
+            <Campo
+              id="password"
+              type={verClave ? "text" : "password"}
+              required
+              autoComplete="current-password"
+              placeholder="••••••••"
+              icono={<Lock size={18} strokeWidth={2.2} />}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className={`mt-1.5 pr-12 ${error ? "border-[#e2544f]" : ""}`}
+            />
+            <button
+              type="button"
+              aria-label={verClave ? "Ocultar contraseña" : "Mostrar contraseña"}
+              onClick={() => setVerClave((valor) => !valor)}
+              className="absolute right-4 top-1/2 mt-[3px] -translate-y-1/2 text-text-muted"
+            >
+              {verClave ? <EyeOff size={18} strokeWidth={2.2} /> : <Eye size={18} strokeWidth={2.2} />}
+            </button>
+          </div>
 
           {error && (
-            <p className="mt-4 rounded-orion bg-danger-soft px-3 py-2 text-sm text-danger">
-              {error}
-            </p>
+            <div className="mt-4">
+              <AvisoError mensaje={error} />
+            </div>
           )}
 
-          <button
-            type="submit"
-            disabled={login.isPending}
-            className="mt-6 w-full rounded-orion bg-accent py-2.5 text-sm font-semibold text-white disabled:opacity-60"
-          >
+          <BotonPrincipal type="submit" disabled={login.isPending} className="mt-6">
             {login.isPending ? "Entrando…" : "Entrar"}
-          </button>
+            {!login.isPending && <ArrowRight size={18} strokeWidth={2.2} />}
+          </BotonPrincipal>
         </form>
       </div>
     </main>

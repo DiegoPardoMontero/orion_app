@@ -1,31 +1,52 @@
 import { iniciales } from "@/lib/format";
 
-/** Foto si la hay; si no, iniciales sobre el azul de la marca. */
+/**
+ * Iniciales sobre un tinte. El tinte no es aleatorio: se deriva del nombre, así una misma
+ * persona siempre tiene el mismo color, en todas las pantallas y entre recargas.
+ */
+const TINTES = [
+  "bg-accent-bg text-on-accent-bg",
+  "bg-info-bg text-info",
+  "bg-warning-bg text-warning",
+  "bg-success-bg text-success",
+];
+
+function tinteDe(nombre: string): string {
+  const suma = [...nombre].reduce((acc, letra) => acc + letra.charCodeAt(0), 0);
+  return TINTES[suma % TINTES.length];
+}
+
+const TAMANOS = {
+  sm: "h-[34px] w-[34px] text-[12px]",
+  md: "h-12 w-12 text-[14px]",
+  lg: "h-14 w-14 text-[16px]",
+} as const;
+
 export function Avatar({
   nombre,
   fotoUrl,
   size = "md",
+  className = "",
 }: {
   nombre: string;
   fotoUrl?: string | null;
-  size?: "sm" | "md";
+  size?: keyof typeof TAMANOS;
+  className?: string;
 }) {
-  const dimensions = size === "sm" ? "h-8 w-8 text-[11px]" : "h-10 w-10 text-[13px]";
-
   if (fotoUrl) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element -- la URL es libre (campo de texto en el MVP)
+      // eslint-disable-next-line @next/next/no-img-element -- la URL la escribe el profesor (campo de texto en el MVP)
       <img
         src={fotoUrl}
         alt={nombre}
-        className={`${dimensions} shrink-0 rounded-full object-cover`}
+        className={`${TAMANOS[size]} shrink-0 rounded-full object-cover ${className}`}
       />
     );
   }
 
   return (
     <span
-      className={`${dimensions} grid shrink-0 place-items-center rounded-full bg-accent-soft font-semibold text-accent-ink`}
+      className={`${TAMANOS[size]} ${tinteDe(nombre)} grid shrink-0 place-items-center rounded-full font-bold ${className}`}
     >
       {iniciales(nombre)}
     </span>

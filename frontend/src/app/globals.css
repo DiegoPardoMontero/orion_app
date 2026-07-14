@@ -1,43 +1,112 @@
 @import "tailwindcss";
 
 /*
- * Tailwind v4: la configuración vive aquí, en CSS, no en un tailwind.config.js.
- * Cada token de @theme genera utilidades automáticamente: --color-accent produce
- * bg-accent, text-accent, border-accent, etc.
+ * Sistema de diseño "Aurora cálida" (docs/design/README.md): tinta violeta-nocturna —la
+ * constelación de Orión— con coral de amanecer. Tokens copiados literalmente del entregable.
  *
- * Paleta tomada del contrato visual (docs/wireframes-mvp1.html): azul profundo de Orión
- * (la constelación) sobre neutros cálidos, con verde de éxito y ámbar de aviso.
- * Sin modo oscuro: está fuera de alcance en esta tarea.
+ * Tailwind v4: la configuración vive aquí, en CSS, no en un tailwind.config.js. Cada token
+ * genera utilidades automáticamente (--color-accent → bg-accent, text-accent, border-accent…).
  */
 @theme {
-  --color-surface: #f5f4f0;
-  --color-card: #ffffff;
-  --color-line: #d6d3cc;
+  --color-primary: #241e4e;          /* tinta nocturna — botones secundarios, seleccionado */
+  --color-primary-strong: #3a3272;   /* hover / énfasis */
+  --color-on-primary: #ffffff;
+  --color-accent: #ff5c38;           /* coral — CTA principal, selección de día */
+  --color-accent-strong: #ff6e4e;    /* hover del CTA */
+  --color-accent-pressed: #c93d1e;   /* sombra táctil */
+  --color-accent-bg: #ffe8e0;        /* tinte coral — avatares, chips */
+  --color-on-accent-bg: #9a2f12;
+  --color-surface: #fffdf8;          /* fondo de página */
+  --color-surface-raised: #ffffff;   /* tarjetas */
+  --color-surface-sunken: #f2efe7;   /* pistas de tabs, base del skeleton */
+  --color-border: #e5e0d4;
+  --color-border-subtle: #eee9dd;
+  --color-text: #221d33;
+  --color-text-secondary: #6a657a;
+  --color-text-muted: #979283;
+  --color-text-disabled: #bbb6a8;
+  --color-success: #1e6b4e;
+  --color-success-bg: #e4f4ee;
+  --color-warning: #8a4b12;
+  --color-warning-bg: #fff4e8;
+  --color-error: #b3261e;
+  --color-error-bg: #fde9e4;
+  --color-error-text: #8c2318;
+  --color-info: #3a3272;
+  --color-info-bg: #edeafb;
 
-  --color-ink: #2d2c28;
-  --color-ink-soft: #5f5d55;
-  --color-ink-muted: #8a877c;
-  --color-ink-disabled: #b8b5a9;
+  --font-sans: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
 
-  --color-accent: #3b4d8f;
-  --color-accent-soft: #e4e9f7;
-  --color-accent-ink: #33427a;
-
-  --color-success: #2c6b45;
-  --color-success-soft: #e2f0e6;
-
-  --color-warning: #8a5a17;
-  --color-warning-soft: #f7ecd9;
-
-  --color-danger: #9b2c2c;
-  --color-danger-soft: #fbeaea;
-
-  --radius-orion: 8px;
-  --radius-card: 12px;
+  --radius-base: 999px;              /* pill: botones, chips, inputs, badges, tabs */
+  --radius-card: 20px;
+  --radius-sheet: 24px;
 }
 
 body {
   background: var(--color-surface);
-  color: var(--color-ink);
-  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}
+
+/* El foco nunca es el anillo azul del navegador: es coral, y siempre visible. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* --- Motivo de marca: el degradado nocturno de las cabeceras hero --- */
+.hero-noche {
+  background: linear-gradient(160deg, #241e4e 0%, #352b68 70%, #4a3a7e 100%);
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes pulseGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(36, 30, 78, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgba(36, 30, 78, 0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -300px 0;
+  }
+  100% {
+    background-position: 300px 0;
+  }
+}
+
+.estrella {
+  animation: twinkle 2.8s ease-in-out infinite;
+}
+
+.hora-elegida {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #f2efe7 0%, #faf8f1 50%, #f2efe7 100%);
+  background-size: 600px 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+/* Quien pide menos movimiento, no lo recibe. */
+@media (prefers-reduced-motion: reduce) {
+  .estrella,
+  .hora-elegida,
+  .shimmer {
+    animation: none;
+  }
 }
