@@ -1,0 +1,44 @@
+import type { Role } from "./session";
+
+export type NavItem = { href: string; label: string };
+
+/** A dónde llega cada rol al entrar. */
+export const HOME_BY_ROLE: Record<Role, string> = {
+  STUDENT: "/profesores",
+  PROFESSOR: "/mis-clases",
+  ADMIN: "/admin/usuarios",
+};
+
+export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
+  STUDENT: [
+    { href: "/profesores", label: "Profesores" },
+    { href: "/mis-clases", label: "Mis clases" },
+  ],
+  PROFESSOR: [
+    { href: "/mis-clases", label: "Mis clases" },
+    { href: "/disponibilidad", label: "Disponibilidad" },
+    { href: "/perfil", label: "Perfil" },
+  ],
+  ADMIN: [
+    { href: "/admin/usuarios", label: "Usuarios" },
+    { href: "/admin/reservas", label: "Reservas" },
+  ],
+};
+
+/** Qué roles pueden entrar a cada zona de la app. */
+const ACCESS: { prefix: string; roles: Role[] }[] = [
+  { prefix: "/profesores", roles: ["STUDENT"] },
+  { prefix: "/mis-clases", roles: ["STUDENT", "PROFESSOR"] },
+  { prefix: "/disponibilidad", roles: ["PROFESSOR"] },
+  { prefix: "/perfil", roles: ["PROFESSOR"] },
+  { prefix: "/admin", roles: ["ADMIN"] },
+];
+
+/**
+ * La guarda del cliente es comodidad, no seguridad: quien la salte se topa igual con el 403 del
+ * backend, que es quien de verdad decide. Aquí solo evitamos enseñar una pantalla que no aplica.
+ */
+export function canAccess(role: Role, pathname: string): boolean {
+  const rule = ACCESS.find((entry) => pathname.startsWith(entry.prefix));
+  return rule ? rule.roles.includes(role) : true;
+}
