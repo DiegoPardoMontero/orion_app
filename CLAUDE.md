@@ -36,9 +36,18 @@ de `docker compose` no necesita estar arriba.
 
 ## Architecture
 
-**Monolito modular** bajo `co.orion`. Módulos actuales: `identity` y `shared`. Dentro de cada
-módulo: `api/` (controllers y DTOs) · `application/` (servicios) · `domain/` (entidades) ·
-`persistence/` (repositorios).
+**Monolito modular** bajo `co.orion`. Módulos actuales: `identity`, `scheduling` y `shared`.
+Dentro de cada módulo: `api/` (controllers y DTOs) · `application/` (servicios) · `domain/`
+(entidades) · `persistence/` (repositorios). `scheduling` puede depender de `identity` (por
+ejemplo para comprobar que un profesor está publicado), nunca al revés. Entre módulos no hay
+relaciones JPA: `scheduling` guarda un `UUID professorId` plano y la integridad la garantiza la
+FK de la base, no el grafo de objetos.
+
+**El cálculo de cupos vive en `SlotCalculator`, una clase pura** (sin Spring, sin repositorios,
+sin reloj del sistema: el "ahora" entra por parámetro). Sus 12 tests corren en ~150 ms porque no
+levantan nada. No mover esa lógica a SQL ni inyectarle dependencias — es lo que la hace
+exhaustivamente testeable. Reglas del dominio: clases de 60 min alineadas a la hora, intervalos
+semiabiertos `[inicio, fin)`, todo razonado en `BusinessZone.BOGOTA`, y nunca cupos ya iniciados.
 
 **Flyway es el dueño del esquema.** `spring.jpa.hibernate.ddl-auto=validate`, siempre.
 Hibernate nunca crea ni altera tablas; solo valida que las entidades coincidan con lo que
@@ -54,6 +63,11 @@ El email se normaliza a minúsculas en el constructor de `User`, no en la base.
 **El `Clock` de `shared/config` es la única fuente de la hora.** Nunca `Instant.now()` directo:
 la auditoría JPA (`@CreatedDate`/`@LastModifiedDate`) lee de ese bean a través de un
 `DateTimeProvider`, para que congelarlo en un test congele también las marcas de auditoría.
+`ProfessorSlotsIT` lo sustituye por un `Clock.fixed` y así el endpoint de cupos es determinista.
+
+**No configurar `hibernate.jdbc.time_zone`.** Desplaza también las columnas `TIME` (hora de pared,
+sin zona) por el offset del servidor: una regla 18:00–21:00 se guardaría como 23:00–02:00. Los
+`Instant` sobre `TIMESTAMPTZ` ya almacenan el instante absoluto sin ayuda.
 
 **Autenticación por sesión, sin JWT.** Cookie `ORION_SESSION` httpOnly + CSRF con cookie
 `XSRF-TOKEN` legible por JS y header `X-XSRF-TOKEN` en toda petición mutante (el login está

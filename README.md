@@ -61,6 +61,9 @@ migraciones y la semilla crea los usuarios de desarrollo (es idempotente: reinic
 
 El admin se puede sobreescribir con `ORION_ADMIN_EMAIL` y `ORION_ADMIN_PASSWORD`.
 
+La semilla también crea disponibilidad: María los lunes 18:00–21:00 y los miércoles 08:00–11:00;
+Juan los martes 15:00–18:00.
+
 ### Autenticarse contra la API
 
 ```bash
@@ -74,6 +77,58 @@ curl -b /tmp/orion.txt http://localhost:8080/api/v1/auth/me
 
 Toda petición **mutante** (POST/PUT/PATCH/DELETE) exige el header `X-XSRF-TOKEN` con el
 valor de la cookie `XSRF-TOKEN`. El login está exento (se protege con las credenciales mismas).
+
+### Endpoints
+
+Autenticación e identidad:
+
+| Método | Ruta | Quién | Qué hace |
+|---|---|---|---|
+| POST | `/api/v1/auth/login` | público | Abre sesión |
+| GET | `/api/v1/auth/me` | autenticado | Usuario de la sesión |
+| POST | `/api/v1/auth/logout` | autenticado | Cierra sesión (204) |
+| GET | `/api/v1/admin/ping` | ADMIN | Smoke test de rol |
+
+Perfil y directorio de profesores:
+
+| Método | Ruta | Quién | Qué hace |
+|---|---|---|---|
+| PUT | `/api/v1/me/profile` | PROFESSOR | Edita y publica/despublica su perfil |
+| GET | `/api/v1/professors` | autenticado | Profesores publicados y activos |
+| GET | `/api/v1/professors/{id}` | autenticado | Detalle (404 si no está publicado) |
+
+Disponibilidad (todo el módulo exige rol PROFESSOR y opera sobre el profesor de la sesión):
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| GET / POST | `/api/v1/me/availability/rules` | Franjas semanales recurrentes |
+| DELETE | `/api/v1/me/availability/rules/{id}` | Borra una franja (404 si es ajena) |
+| GET / POST | `/api/v1/me/availability/exceptions` | Bloqueos puntuales (día completo o parcial) |
+| DELETE | `/api/v1/me/availability/exceptions/{id}` | Borra un bloqueo (404 si es ajeno) |
+
+Cupos disponibles:
+
+```bash
+GET /api/v1/professors/{id}/slots?from=2026-07-15&to=2026-07-15
+```
+
+Cualquier usuario autenticado. Sin parámetros el rango es hoy → hoy+6 (7 días); el máximo son
+31 días. Un profesor no publicado responde 404 aunque tenga disponibilidad.
+
+```json
+{
+  "professorId": "…",
+  "timezone": "America/Bogota",
+  "slots": [
+    { "startsAt": "2026-07-15T08:00:00-05:00", "endsAt": "2026-07-15T09:00:00-05:00" }
+  ]
+}
+```
+
+Reglas del cálculo: clases de 60 minutos que empiezan en punto; las franjas y bloqueos se
+expresan en hora local de Bogotá; los intervalos son semiabiertos `[inicio, fin)`, así que un
+bloqueo de 10:00–11:00 elimina el cupo de las 10:00 pero no el de las 11:00; nunca se devuelven
+cupos que ya empezaron.
 
 ## 3. Tests
 
