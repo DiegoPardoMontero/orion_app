@@ -44,6 +44,7 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/me/availability/**").hasRole("PROFESSOR")
+                .requestMatchers("/api/v1/me/profile").hasRole("PROFESSOR")
                 .anyRequest().authenticated())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .exceptionHandling(e -> e
