@@ -15,8 +15,13 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
 
+import org.springframework.http.converter.HttpMessageNotReadableException;
+
 import co.orion.shared.error.BusinessRuleViolationException;
+import co.orion.shared.error.ConflictException;
+import co.orion.shared.error.ForbiddenException;
 import co.orion.shared.error.ResourceNotFoundException;
+import co.orion.shared.error.UnprocessableException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -50,6 +55,27 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNotFound(ResourceNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<Map<String, Object>> handleForbidden(ForbiddenException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(UnprocessableException.class)
+    public ResponseEntity<Map<String, Object>> handleUnprocessable(UnprocessableException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<Map<String, Object>> handleConflict(ConflictException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
+
+    /** Un JSON malformado o un enum inválido es culpa del cliente: 400, no 500. */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleUnreadableBody(HttpMessageNotReadableException ex) {
+        return ResponseEntity.badRequest().body(Map.of("error", "El cuerpo de la petición no es válido"));
     }
 
     @ExceptionHandler(ResponseStatusException.class)
