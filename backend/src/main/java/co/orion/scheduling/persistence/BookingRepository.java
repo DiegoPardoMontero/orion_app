@@ -24,6 +24,32 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
                                                              Instant from,
                                                              Instant to);
 
+    /** Próximas: confirmadas y que aún no empiezan, de la más cercana a la más lejana. */
+    List<Booking> findByStudentIdAndStatusAndStartsAtAfterOrderByStartsAtAsc(
+            UUID studentId, BookingStatus status, Instant now);
+
+    List<Booking> findByProfessorIdAndStatusAndStartsAtAfterOrderByStartsAtAsc(
+            UUID professorId, BookingStatus status, Instant now);
+
+    /** Pasadas: todo lo demás — ya ocurrieron o están en un estado terminal. */
+    @Query("""
+            select b from Booking b
+            where b.studentId = :userId
+              and (b.status <> co.orion.scheduling.domain.BookingStatus.CONFIRMED
+                   or b.startsAt <= :now)
+            order by b.startsAt desc
+            """)
+    List<Booking> findPastOfStudent(@Param("userId") UUID studentId, @Param("now") Instant now);
+
+    @Query("""
+            select b from Booking b
+            where b.professorId = :userId
+              and (b.status <> co.orion.scheduling.domain.BookingStatus.CONFIRMED
+                   or b.startsAt <= :now)
+            order by b.startsAt desc
+            """)
+    List<Booking> findPastOfProfessor(@Param("userId") UUID professorId, @Param("now") Instant now);
+
     /**
      * Un estudiante no puede tener dos clases confirmadas que se pisen, ni siquiera con
      * profesores distintos. Misma semántica semiabierta [inicio, fin) que el resto del dominio:

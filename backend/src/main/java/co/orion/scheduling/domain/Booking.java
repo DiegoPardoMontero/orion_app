@@ -1,5 +1,6 @@
 package co.orion.scheduling.domain;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -29,6 +30,9 @@ import jakarta.persistence.Table;
 @Table(name = "bookings")
 @EntityListeners(AuditingEntityListener.class)
 public class Booking {
+
+    /** Con menos de esto por delante, la clase se considera impartida (política Orión). */
+    public static final Duration CANCELLATION_WINDOW = Duration.ofHours(24);
 
     @Id
     @Generated(event = EventType.INSERT)
@@ -99,6 +103,18 @@ public class Booking {
 
     public boolean isConfirmed() {
         return status == BookingStatus.CONFIRMED;
+    }
+
+    /**
+     * Regla institucional: se puede cancelar hasta 24 horas antes. La comparación es entre
+     * instantes, no entre horas de pared, así que la zona horaria no interviene — la distancia
+     * entre dos momentos del tiempo es la misma la mires desde Bogotá o desde Tokio.
+     *
+     * El ADMIN está exento de esta regla, pero esa excepción vive en el servicio: es una regla
+     * sobre QUIÉN cancela, no sobre la reserva misma.
+     */
+    public boolean isCancellableAt(Instant now) {
+        return isConfirmed() && !startsAt.minus(CANCELLATION_WINDOW).isBefore(now);
     }
 
     /** Autoservicio: la reservó el propio estudiante, no un admin en su nombre. */

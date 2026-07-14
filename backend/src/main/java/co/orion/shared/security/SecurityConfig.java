@@ -48,6 +48,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/me/profile").hasRole("PROFESSOR")
                 // Reservar es cosa de estudiantes (y de un admin en nombre de uno): un profesor no.
                 .requestMatchers(HttpMethod.POST, "/api/v1/bookings").hasAnyRole("STUDENT", "ADMIN")
+                // "Mis clases" solo tiene sentido para quien asiste o imparte.
+                .requestMatchers("/api/v1/me/bookings").hasAnyRole("STUDENT", "PROFESSOR")
                 .anyRequest().authenticated())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .exceptionHandling(e -> e
