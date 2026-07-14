@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+/*
+ * Tailwind v4: la configuración vive aquí, en CSS, no en un tailwind.config.js.
+ * Cada token de @theme genera utilidades automáticamente: --color-accent produce
+ * bg-accent, text-accent, border-accent, etc.
+ *
+ * Paleta tomada del contrato visual (docs/wireframes-mvp1.html): azul profundo de Orión
+ * (la constelación) sobre neutros cálidos, con verde de éxito y ámbar de aviso.
+ * Sin modo oscuro: está fuera de alcance en esta tarea.
+ */
+@theme {
+  --color-surface: #f5f4f0;
+  --color-card: #ffffff;
+  --color-line: #d6d3cc;
+
+  --color-ink: #2d2c28;
+  --color-ink-soft: #5f5d55;
+  --color-ink-muted: #8a877c;
+  --color-ink-disabled: #b8b5a9;
+
+  --color-accent: #3b4d8f;
+  --color-accent-soft: #e4e9f7;
+  --color-accent-ink: #33427a;
+
+  --color-success: #2c6b45;
+  --color-success-soft: #e2f0e6;
+
+  --color-warning: #8a5a17;
+  --color-warning-soft: #f7ecd9;
+
+  --color-danger: #9b2c2c;
+  --color-danger-soft: #fbeaea;
+
+  --radius-orion: 8px;
+  --radius-card: 12px;
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+}

@@ -9,13 +9,13 @@ Sin pagos en el MVP 1.
 - **Backend:** Java 21, Spring Boot 4.1, Maven (wrapper), monolito modular bajo `co.orion`.
 - **Base de datos:** PostgreSQL 16. Flyway es el dueño del esquema (`ddl-auto=validate`).
 - **Autenticación:** sesión de servidor con cookie httpOnly + CSRF (sin JWT).
-- **Frontend:** pendiente (Tarea 4).
+- **Frontend:** Next.js 16 (App Router), React 19, TanStack Query, Tailwind v4.
 
 ## Estructura
 
 ```
 backend/    Aplicación Spring Boot
-frontend/   Pendiente (Tarea 4)
+frontend/   Aplicación Next.js (App Router)
 docs/       Briefs de las tareas y documentación
 ```
 
@@ -155,11 +155,33 @@ los captura Mailpit — ábrelos en http://localhost:8025. Los de confirmación 
 `.ics` y un link para añadir la clase a Google Calendar. Un fallo del servidor de correo **no**
 afecta a la reserva: el envío ocurre después del commit y su error solo se registra en el log.
 
-## 3. Probar a mano
+## 3. Levantar el frontend
+
+Requiere Node 20+ (probado con 22). Con el backend arriba:
+
+```bash
+cd frontend
+npm install
+npm run dev          # http://localhost:3000
+```
+
+El navegador **solo habla con `:3000`**: Next reescribe `/api/*` y `/actuator/*` hacia el backend
+(`API_URL`, por defecto `http://localhost:8080`). Al ser un único origen para el navegador, las
+cookies de sesión y de CSRF fluyen sin CORS ni preflights.
+
+Los tipos de TypeScript del API **se generan del backend vivo**, no se escriben a mano:
+
+```bash
+npm run types:api    # openapi-typescript contra /v3/api-docs → src/lib/api/schema.d.ts
+```
+
+Regenéralos cada vez que cambie un DTO del backend.
+
+## 4. Probar a mano
 
 Guía paso a paso con Postman, con todos los casos de error: [docs/postman-guide.md](docs/postman-guide.md)
 
-## 4. Tests
+## 5. Tests
 
 ```bash
 cd backend
@@ -172,7 +194,7 @@ Los tests levantan un **PostgreSQL real** con Testcontainers (no H2), así que D
 estar corriendo. No hace falta que la infra de `docker compose` esté arriba: Testcontainers
 crea y destruye sus propios contenedores.
 
-## 5. Variables de entorno
+## 6. Variables de entorno
 
 | Variable | Default |
 |---|---|
