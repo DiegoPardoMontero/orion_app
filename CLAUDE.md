@@ -36,12 +36,23 @@ de `docker compose` no necesita estar arriba.
 
 ## Architecture
 
-**Monolito modular** bajo `co.orion`. Módulos actuales: `identity`, `scheduling` y `shared`.
-Dentro de cada módulo: `api/` (controllers y DTOs) · `application/` (servicios) · `domain/`
-(entidades) · `persistence/` (repositorios). `scheduling` puede depender de `identity` (por
-ejemplo para comprobar que un profesor está publicado), nunca al revés. Entre módulos no hay
+**Monolito modular** bajo `co.orion`. Módulos: `identity`, `scheduling`, `notifications` y
+`shared`. Dentro de cada módulo: `api/` (controllers y DTOs) · `application/` (servicios) ·
+`domain/` (entidades) · `persistence/` (repositorios). `scheduling` puede depender de `identity`
+(por ejemplo para comprobar que un profesor está publicado), nunca al revés. Entre módulos no hay
 relaciones JPA: `scheduling` guarda un `UUID professorId` plano y la integridad la garantiza la
 FK de la base, no el grafo de objetos.
+
+**`notifications` se acopla por eventos, no por llamadas.** `BookingService` publica
+`BookingCreatedEvent` / `BookingCancelledEvent` y no sabe que existen los correos. El listener
+usa `@TransactionalEventListener(AFTER_COMMIT)`: así nunca se notifica una reserva que hizo
+rollback, y un fallo de correo (try/catch + log) nunca tumba una reserva.
+
+**Las invariantes duras viven en la base, no en el código.** Doble reserva: índice único parcial
+`(professor_id, starts_at) WHERE status='CONFIRMED'`. Doble asistencia: `UNIQUE` sobre
+`booking_id`. El servicio hace un chequeo amable con buen mensaje (422), pero el árbitro final
+—el que cierra la ventana entre el chequeo y el INSERT— es la constraint, y su violación se
+traduce a 409. Nada de locks pesimistas.
 
 **El cálculo de cupos vive en `SlotCalculator`, una clase pura** (sin Spring, sin repositorios,
 sin reloj del sistema: el "ahora" entra por parámetro). Sus 12 tests corren en ~150 ms porque no

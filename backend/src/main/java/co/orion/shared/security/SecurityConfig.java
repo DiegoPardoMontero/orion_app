@@ -50,6 +50,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/bookings").hasAnyRole("STUDENT", "ADMIN")
                 // "Mis clases" solo tiene sentido para quien asiste o imparte.
                 .requestMatchers("/api/v1/me/bookings").hasAnyRole("STUDENT", "PROFESSOR")
+                // La asistencia la registra quien dio la clase.
+                .requestMatchers(HttpMethod.POST, "/api/v1/bookings/*/attendance").hasRole("PROFESSOR")
                 .anyRequest().authenticated())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .exceptionHandling(e -> e

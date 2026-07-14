@@ -136,12 +136,21 @@ Reservas:
 |---|---|---|---|
 | POST | `/api/v1/bookings` | STUDENT, ADMIN | Reserva un cupo (el admin, en nombre de un estudiante) |
 | POST | `/api/v1/bookings/{id}/cancel` | dueño o ADMIN | Cancela (body opcional `{"reason": "..."}`) |
+| POST | `/api/v1/bookings/{id}/attendance` | PROFESSOR | Registra asistencia de una clase ya terminada |
 | GET | `/api/v1/me/bookings?scope=upcoming\|past` | STUDENT, PROFESSOR | Mis clases, con la contraparte y su WhatsApp |
 
 Una reserva `CONFIRMED` oculta su cupo; al cancelarla, el cupo reaparece. **Regla de las 24
 horas:** estudiantes y profesores solo pueden cancelar con 24 h o más de anticipación (si no,
 422); el ADMIN está exento. El campo `canCancel` de "mis clases" ya trae esa decisión resuelta
 desde el servidor.
+
+Registrar asistencia (`{"present": true, "notes": "..."}`) cierra la clase: pasa a `COMPLETED`
+o a `NO_SHOW`. Solo se puede sobre clases ya terminadas (si no, 422) y una sola vez (si no, 409).
+
+**Correos:** cada reserva y cada cancelación envía un correo a cada participante. En desarrollo
+los captura Mailpit — ábrelos en http://localhost:8025. Los de confirmación llevan adjunto un
+`.ics` y un link para añadir la clase a Google Calendar. Un fallo del servidor de correo **no**
+afecta a la reserva: el envío ocurre después del commit y su error solo se registra en el log.
 
 ## 3. Probar a mano
 

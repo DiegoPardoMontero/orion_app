@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import co.orion.scheduling.application.AttendanceService;
 import co.orion.scheduling.application.BookingService;
 import co.orion.shared.security.OrionUserDetails;
 import jakarta.validation.Valid;
@@ -20,9 +21,11 @@ import jakarta.validation.Valid;
 public class BookingsController {
 
     private final BookingService bookingService;
+    private final AttendanceService attendanceService;
 
-    public BookingsController(BookingService bookingService) {
+    public BookingsController(BookingService bookingService, AttendanceService attendanceService) {
         this.bookingService = bookingService;
+        this.attendanceService = attendanceService;
     }
 
     @PostMapping
@@ -44,5 +47,15 @@ public class BookingsController {
                                   @Valid @RequestBody(required = false) CancelBookingRequest body) {
         String reason = body != null ? body.reason() : null;
         return BookingResponse.from(bookingService.cancel(principal.user(), id, reason));
+    }
+
+    @PostMapping("/{id}/attendance")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AttendanceResponse recordAttendance(@AuthenticationPrincipal OrionUserDetails principal,
+                                               @PathVariable UUID id,
+                                               @Valid @RequestBody RecordAttendanceRequest body) {
+        AttendanceService.AttendanceResult result = attendanceService.record(
+                principal.user(), id, body.present(), body.notes());
+        return AttendanceResponse.of(result.record(), result.booking());
     }
 }

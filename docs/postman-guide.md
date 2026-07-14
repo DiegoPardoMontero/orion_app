@@ -250,6 +250,69 @@ admin → 200.
 
 ---
 
+### Paso 6.5 — Los correos (Mailpit)
+
+Cada reserva y cada cancelación envía **un correo a cada participante**. En desarrollo no sale
+nada a internet: los captura Mailpit.
+
+Abre **http://localhost:8025** después de reservar. Deberías ver 2 correos:
+
+- **Para Ana:** *"¡Listo! Tu clase con María Gómez quedó agendada"*
+- **Para María:** *"Nueva clase agendada con Ana Ramírez"*
+
+Cada uno lleva la hora **en Bogotá**, el **link de WhatsApp** de la contraparte, un botón
+**"Añadir a Google Calendar"** y un adjunto **`clase-orion.ics`**. Descarga el `.ics` y ábrelo
+con tu calendario: la clase debe aparecer a la hora correcta (el archivo guarda la hora en UTC
+y el calendario la traduce a tu zona).
+
+Al cancelar llegan 2 correos más, **sin adjunto** (la clase ya no existe, no hay nada que
+añadir al calendario) y con el motivo si lo indicaste.
+
+Para vaciar la bandeja entre pruebas: botón **Delete all** en Mailpit, o
+`curl -X DELETE http://localhost:8025/api/v1/messages`.
+
+> Si Mailpit está caído, las reservas **siguen funcionando**: el correo se envía después de
+> confirmar la reserva y su fallo solo se registra en el log. Es deliberado.
+
+---
+
+### Paso 6.6 — Registrar asistencia
+
+Solo funciona sobre clases **ya terminadas**, así que necesitas una en el pasado. Insértala
+directamente:
+
+```bash
+docker exec -it orion-postgres psql -U orion -d orion -c "
+insert into bookings (student_id, professor_id, starts_at, ends_at, modality, created_by)
+select s.id, p.id, now() - interval '1 day', now() - interval '1 day' + interval '1 hour',
+       'VIRTUAL', s.id
+from users s, users p
+where s.email = 'ana@orion.local' and p.email = 'maria@orion.local';"
+```
+
+Login como **María** y busca el id con `GET /api/v1/me/bookings?scope=past`.
+
+```
+POST {{baseUrl}}/api/v1/bookings/{{bookingId}}/attendance
+```
+```json
+{ "present": true, "notes": "Excelente participación" }
+```
+
+→ **201** con `bookingStatus: "COMPLETED"`. Con `"present": false` → `"NO_SHOW"`.
+
+| Qué haces | Resultado |
+|---|---|
+| Registrar una clase que **aún no termina** | **422** `"La clase aún no termina"` |
+| Registrar dos veces la misma clase | **409** — ya no está `CONFIRMED` |
+| Registrar una clase cancelada | **409** |
+| Registrar la clase de **otro profesor** | **404** |
+| Registrar como **Ana** (estudiante) | **403** |
+
+Vuelve a `GET /api/v1/me/bookings?scope=past`: la clase ahora aparece como `COMPLETED`.
+
+---
+
 ### Paso 7 — Como profesora: disponibilidad y perfil
 
 Login como `maria@orion.local`.
@@ -310,8 +373,9 @@ también. Vuelve a ponerlo en `true` para dejarlo como estaba.
 ## 4. Dejar la base como la semilla
 
 ```bash
-docker exec -it orion-postgres psql -U orion -d orion -c "delete from bookings;"
-docker exec -it orion-postgres psql -U orion -d orion -c "delete from availability_exceptions;"
+docker exec -it orion-postgres psql -U orion -d orion -c \
+  "delete from attendance_records; delete from bookings; delete from availability_exceptions;"
+curl -X DELETE http://localhost:8025/api/v1/messages     # vacía Mailpit
 ```
 
 Si además creaste reglas nuevas, bórralas por la API o resetea del todo:

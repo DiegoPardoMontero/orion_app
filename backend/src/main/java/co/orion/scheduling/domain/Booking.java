@@ -127,6 +127,22 @@ public class Booking {
      * son finales, y volver a cancelar algo ya cancelado es un conflicto, no una operación idempotente.
      * Quién puede cancelar y cuándo lo decide el servicio; aquí solo se guarda el hecho.
      */
+    /** ¿Ya terminó la clase? Comparación entre instantes: la zona horaria no interviene. */
+    public boolean hasEndedAt(Instant now) {
+        return !endsAt.isAfter(now);
+    }
+
+    /**
+     * Cierra la clase con el resultado de la asistencia. Es la otra salida de CONFIRMED, junto a
+     * la cancelación: la reserva no se queda confirmada para siempre después de ocurrir.
+     */
+    public void closeWithAttendance(boolean present) {
+        if (!isConfirmed()) {
+            throw new IllegalStateException("Solo una reserva CONFIRMED admite registro de asistencia");
+        }
+        this.status = present ? BookingStatus.COMPLETED : BookingStatus.NO_SHOW;
+    }
+
     public void cancel(BookingStatus cancelledStatus, UUID cancelledBy, Instant cancelledAt, String reason) {
         if (!isConfirmed()) {
             throw new IllegalStateException("Solo una reserva CONFIRMED se puede cancelar");
