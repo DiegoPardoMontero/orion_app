@@ -121,6 +121,26 @@ class ProfessorDirectoryIT extends ApiIntegrationSupport {
     }
 
     @Test
+    void aProfessorReadsTheirOwnProfileEvenWhenUnpublished() {
+        Session juanSession = login("juan@orion.test");
+
+        ResponseEntity<ProfileResponse> response = get(MY_PROFILE, juanSession, ProfileResponse.class);
+
+        // Juan no está publicado: GET /professors/{id} le daría 404. Su propio perfil sí lo ve,
+        // porque si no, no podría editarlo para publicarse por primera vez.
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().id()).isEqualTo(juan.getId());
+        assertThat(response.getBody().isPublished()).isFalse();
+    }
+
+    @Test
+    void aStudentCannotReadTheProfessorProfileEndpoint() {
+        ResponseEntity<Map> response = get(MY_PROFILE, anaSession, Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
     void aStudentCannotUpdateAProfessorProfile() {
         ResponseEntity<Map> response = put(
                 MY_PROFILE, anaSession,

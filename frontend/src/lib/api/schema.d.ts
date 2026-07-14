@@ -11,7 +11,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["myProfile"];
         put: operations["update"];
         post?: never;
         delete?: never;
@@ -405,6 +405,26 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    myProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ProfileResponse"];
+                };
+            };
+        };
+    };
     update: {
         parameters: {
             query?: never;

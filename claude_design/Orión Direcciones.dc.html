@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; background: #ECEAE4; }
+    @keyframes twinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+    @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 0 rgba(36,30,78,0.35); } 50% { box-shadow: 0 0 0 7px rgba(36,30,78,0); } }
+    a { color: #3A4A8C; } a:hover { color: #2C3768; }
+  </style>
+</helmet>
+
+<section style="padding: 48px 56px 40px; display: flex; flex-direction: column; gap: 28px; font-family: 'Sora', ui-sans-serif, system-ui, sans-serif;">
+  <div style="max-width: 720px; display: flex; flex-direction: column; gap: 8px;">
+    <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #8A877C;">Orión · Paso 2</div>
+    <h1 style="margin: 0; font-size: 26px; font-weight: 800; color: #23262E;">Aurora cálida, subida de energía</h1>
+    <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #5A5E6B;"><a href="#2a">2a</a> evoluciona <a href="#1b">1b</a>: cabecera nocturna con constelación animada, iconos en cada sección, bloques de color de fondo y microanimaciones (estrellas que titilan, cupo seleccionado que late, botón con sombra táctil).</p>
+  </div>
+
+  <div style="display: flex; flex-wrap: wrap; gap: 48px; align-items: flex-start;">
+    <div id="2a" style="display: flex; flex-direction: column; gap: 20px; width: 430px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 26px; border-radius: 8px; background: #241E4E; color: #FF6A43; font-size: 13px; font-weight: 800;">2a</span>
+        <span style="font-size: 17px; font-weight: 800; color: #23262E;">Aurora cálida · enriquecida</span>
+      </div>
+
+      <!-- phone -->
+      <div style="width: 390px; background: #FFFDF8; border-radius: 28px; box-shadow: 0 24px 48px rgba(34,29,51,0.16), 0 2px 6px rgba(34,29,51,0.08); overflow: hidden; font-family: 'Sora', ui-sans-serif, system-ui, sans-serif; color: #221D33;">
+
+        <!-- hero nocturno -->
+        <div style="position: relative; background: linear-gradient(160deg, #241E4E 0%, #352B68 70%, #4A3A7E 100%); padding: 20px 20px 24px; color: #FFFFFF; overflow: hidden;">
+          <svg width="390" height="100%" viewBox="0 0 390 180" style="position: absolute; inset: 0; pointer-events: none;" preserveAspectRatio="xMidYMid slice">
+            <circle cx="330" cy="30" r="2.2" fill="#FFD9A8" style="animation: twinkle 2.4s ease-in-out infinite;"></circle>
+            <circle cx="300" cy="70" r="1.6" fill="#FFFFFF" opacity="0.8" style="animation: twinkle 3.1s ease-in-out 0.6s infinite;"></circle>
+            <circle cx="352" cy="88" r="1.8" fill="#FF9C7E" style="animation: twinkle 2.8s ease-in-out 1.1s infinite;"></circle>
+            <circle cx="262" cy="34" r="1.4" fill="#FFFFFF" opacity="0.7" style="animation: twinkle 3.5s ease-in-out 0.3s infinite;"></circle>
+            <circle cx="230" cy="96" r="1.8" fill="#FFD9A8" style="animation: twinkle 2.2s ease-in-out 1.6s infinite;"></circle>
+            <path d="M330 30 L300 70 L352 88 M300 70 L262 34 M262 34 L230 96" stroke="#FFFFFF" stroke-opacity="0.25" stroke-width="1" fill="none"></path>
+          </svg>
+          <div style="position: relative; display: flex; flex-direction: column; gap: 14px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.14); color: #FFFFFF; cursor: pointer;" style-hover="background: rgba(255,255,255,0.26);">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><path d="M12 19l-7-7 7-7"></path></svg>
+              </span>
+              <span style="font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #C9BFF0;">Reservar clase</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <span style="position: relative; display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 50%; background: #FFE8E0; color: #9A2F12; font-size: 17px; font-weight: 700; border: 2.5px solid #FF5C38;">MP
+                <span style="position: absolute; right: -2px; bottom: -2px; width: 14px; height: 14px; border-radius: 50%; background: #4ADE80; border: 2.5px solid #241E4E;"></span>
+              </span>
+              <div style="display: flex; flex-direction: column; gap: 3px;">
+                <span style="font-size: 18px; font-weight: 700;">María P.</span>
+                <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: #C9BFF0;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="#FFC24B"><path d="M12 2l2.6 6.6L21 11l-6.4 2.4L12 20l-2.6-6.6L3 11l6.4-2.4z"></path></svg>
+                  Conversación y confianza · 4 años
+                </span>
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <span style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,0.12); font-size: 12px; font-weight: 600; color: #FFE8E0;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M8 12l3 3 5-6"></path><circle cx="12" cy="12" r="10"></circle></svg>
+                100% conversacional
+              </span>
+              <span style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,0.12); font-size: 12px; font-weight: 600; color: #FFE8E0;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
+                Lic. en lenguas
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding: 20px 20px 28px; display: flex; flex-direction: column; gap: 16px;">
+
+          <!-- día -->
+          <div style="background: #FFF4E8; border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+            <span style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #8A4B12;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="4"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
+              Elige un día
+            </span>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <span style="padding: 10px 16px; border-radius: 999px; background: #FFFFFF; font-size: 13.5px; font-weight: 600; color: #6A657A; cursor: pointer;" style-hover="background: #FFE8E0;">lun 14</span>
+              <span style="padding: 10px 16px; border-radius: 999px; background: #FF5C38; font-size: 13.5px; font-weight: 700; color: #FFFFFF; box-shadow: 0 3px 0 #C93D1E;">mié 16</span>
+              <span style="padding: 10px 16px; border-radius: 999px; background: #FFFFFF; font-size: 13.5px; font-weight: 600; color: #6A657A; cursor: pointer;" style-hover="background: #FFE8E0;">jue 17</span>
+              <span style="padding: 10px 16px; border-radius: 999px; background: #FFFFFF; font-size: 13.5px; font-weight: 600; color: #6A657A; cursor: pointer;" style-hover="background: #FFE8E0;">vie 18</span>
+            </div>
+          </div>
+
+          <!-- horas -->
+          <div style="background: #EDEAFB; border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #3A3272;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+                Cupos disponibles
+              </span>
+              <span style="font-size: 11.5px; font-weight: 700; color: #7A6FC9;">5 libres</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+              <span style="padding: 12px 0; text-align: center; border-radius: 999px; background: #FFFFFF; font-size: 13.5px; font-weight: 600; cursor: pointer;" style-hover="background: #FFE8E0;">08:00</span>
+              <span style="padding: 12px 0; text-align: center; border-radius: 999px; background: #241E4E; font-size: 13.5px; font-weight: 700; color: #FFFFFF; animation: pulseGlow 2s ease-in-out infinite;">10:00</span>
+              <span style="padding: 12px 0; text-align: center; border-radius: 999px; background: #FFFFFF; font-size: 13.5px; font-weight: 600; cursor: pointer;" style-hover="background: #FFE8E0;">15:00</span>
+              <span style="padding: 12px 0; text-align: center; border-radius: 999px; background: #FFFFFF; font-size: 13.5px; font-weight: 600; cursor: pointer;" style-hover="background: #FFE8E0;">16:00</span>
+              <span style="padding: 12px 0; text-align: center; border-radius: 999px; background: #FFFFFF; font-size: 13.5px; font-weight: 600; cursor: pointer;" style-hover="background: #FFE8E0;">18:00</span>
+              <span style="padding: 12px 0; text-align: center; border-radius: 999px; background: rgba(255,255,255,0.45); font-size: 13.5px; font-weight: 600; color: #B3AECB; text-decoration: line-through;">19:00</span>
+            </div>
+          </div>
+
+          <!-- modalidad -->
+          <div style="background: #E4F4EE; border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+            <span style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #1E6B4E;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"></path><rect x="1" y="5" width="15" height="14" rx="3"></rect></svg>
+              Modalidad
+            </span>
+            <div style="display: flex; background: #FFFFFF; border-radius: 999px; padding: 4px; gap: 4px;">
+              <span style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 0; border-radius: 999px; background: #241E4E; font-size: 13.5px; font-weight: 700; color: #FFFFFF;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"></path><rect x="1" y="5" width="15" height="14" rx="3"></rect></svg>
+                Virtual
+              </span>
+              <span style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 0; border-radius: 999px; font-size: 13.5px; font-weight: 600; color: #6A657A; cursor: pointer;" style-hover="background: #F2EFE7;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                Presencial
+              </span>
+            </div>
+          </div>
+
+          <div style="position: relative;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B3ADA0" stroke-width="2.2" stroke-linecap="round" style="position: absolute; left: 18px; top: 50%; transform: translateY(-50%);"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
+            <input placeholder="Lugar o nota (opcional)" style="width: 100%; box-sizing: border-box; font-family: inherit; font-size: 14px; padding: 13px 18px 13px 44px; border: 1.5px solid #E5E0D4; border-radius: 999px; background: #FFFFFF; color: #221D33; outline: none;" style-focus="border-color: #FF5C38;">
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <button style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 16px 0; border: none; border-radius: 999px; background: #FF5C38; color: #FFFFFF; font-family: inherit; font-size: 15.5px; font-weight: 700; cursor: pointer; box-shadow: 0 5px 0 #C93D1E; transition: transform 0.1s;" style-hover="background: #FF6E4E;" style-active="transform: translateY(4px); box-shadow: 0 1px 0 #C93D1E;">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"></path></svg>
+              Confirmar reserva
+            </button>
+            <p style="margin: 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-align: center; font-size: 12px; line-height: 1.5; color: #979283;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"></rect><path d="M22 6l-10 7L2 6"></path></svg>
+              Recibirás confirmación por correo con invitación al calendario
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="padding: 48px 56px 80px; display: flex; flex-direction: column; gap: 28px; font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif; opacity: 0.55;">
+  <div style="max-width: 720px; display: flex; flex-direction: column; gap: 8px;">
+    <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #8A877C;">Orión · Paso 1</div>
+    <h1 style="margin: 0; font-size: 26px; font-weight: 800; color: #23262E;">Dos direcciones visuales — agenda y reserva</h1>
+    <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #5A5E6B;">Misma estructura (contrato de wireframes), dos personalidades. <a href="#1a">1a</a> es calma nocturna: el azul de la constelación con un punto de ámbar. <a href="#1b">1b</a> es energía cálida: tinta nocturna con coral, más cercana al espíritu Preply/Duolingo sin volverse infantil.</p>
+  </div>
+
+  <div style="display: flex; flex-wrap: wrap; gap: 48px; align-items: flex-start;">
+
+    <!-- ══════════ 1a · Cielo nocturno ══════════ -->
+    <div id="1a" style="display: flex; flex-direction: column; gap: 20px; width: 430px;">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 26px; border-radius: 8px; background: #3A4A8C; color: #fff; font-size: 13px; font-weight: 800;">1a</span>
+          <span style="font-size: 17px; font-weight: 800; color: #23262E;">Cielo nocturno</span>
+        </div>
+        <p style="margin: 0; font-size: 13px; line-height: 1.55; color: #5A5E6B;">Azul índigo profundo sobre papel cálido; ámbar como estrella de guía, en dosis mínimas. Serena, profesional, adulta. Tipografía: <strong>Plus Jakarta Sans</strong>.</p>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <span style="width: 44px; height: 32px; border-radius: 8px; background: #3A4A8C;" title="#3A4A8C primario"></span>
+          <span style="width: 44px; height: 32px; border-radius: 8px; background: #2C3768;" title="#2C3768 hover"></span>
+          <span style="width: 44px; height: 32px; border-radius: 8px; background: #E8A13D;" title="#E8A13D acento"></span>
+          <span style="width: 44px; height: 32px; border-radius: 8px; background: #E8EBF7;" title="#E8EBF7 tinte"></span>
+          <span style="width: 44px; height: 32px; border-radius: 8px; background: #F6F5F1; border: 1px solid #E2DFD7;" title="#F6F5F1 fondo"></span>
+          <span style="width: 44px; height: 32px; border-radius: 8px; background: #23262E;" title="#23262E texto"></span>
+        </div>
+      </div>
+
+      <!-- phone -->
+      <div style="width: 390px; background: #F6F5F1; border-radius: 28px; box-shadow: 0 24px 48px rgba(35,38,46,0.14), 0 2px 6px rgba(35,38,46,0.08); overflow: hidden; font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif; color: #23262E;">
+        <div style="padding: 20px 20px 28px; display: flex; flex-direction: column; gap: 20px;">
+          <!-- header -->
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E2DFD7; color: #3A4A8C;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><path d="M12 19l-7-7 7-7"></path></svg>
+            </span>
+            <span style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: #E8EBF7; color: #33427A; font-size: 15px; font-weight: 800;">MP</span>
+            <div style="display: flex; flex-direction: column; gap: 1px;">
+              <span style="font-size: 17px; font-weight: 800;">María P.</span>
+              <span style="font-size: 13px; color: #5A5E6B;">Conversación y confianza</span>
+            </div>
+          </div>
+          <p style="margin: 0; font-size: 13.5px; line-height: 1.6; color: #5A5E6B;">Lic. en lenguas, 4 años enseñando adultos. Mis clases son 100% conversacionales.</p>
+
+          <!-- día -->
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <span style="font-size: 13px; font-weight: 700; color: #23262E;">Elige un día</span>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <span style="padding: 10px 14px; border-radius: 12px; background: #FFFFFF; border: 1.5px solid #E2DFD7; font-size: 13.5px; font-weight: 600; color: #5A5E6B;">lun 14</span>
+              <span style="padding: 10px 14px; border-radius: 12px; background: #3A4A8C; border: 1.5px solid #3A4A8C; font-size: 13.5px; font-weight: 700; color: #FFFFFF;">mié 16</span>
+              <span style="padding: 10px 14px; border-radius: 12px; background: #FFFFFF; border: 1.5px solid #E2DFD7; font-size: 13.5px; font-weight: 600; color: #5A5E6B;">jue 17</span>
+              <span style="padding: 10px 14px; border-radius: 12px; background: #FFFFFF; border: 1.5px solid #E2DFD7; font-size: 13.5px; font-weight: 600; color: #5A5E6B;">vie 18</span>
+            </div>
+          </div>
+
+          <!-- horas -->
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <span style="font-size: 13px; font-weight: 700; color: #23262E;">Cupos disponibles</span>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+              <span style="padding: 11px 0; text-align: center; border-radius: 12px; background: #FFFFFF; border: 1.5px solid #E2DFD7; font-size: 13.5px; font-weight: 600; color: #23262E;">08:00</span>
+              <span style="position: relative; padding: 11px 0; text-align: center; border-radius: 12px; background: #E8EBF7; border: 1.5px solid #3A4A8C; font-size: 13.5px; font-weight: 800; color: #2C3768;">10:00<svg width="12" height="12" viewBox="0 0 24 24" fill="#E8A13D" style="position: absolute; top: -5px; right: -5px;"><path d="M12 2l2.6 6.6L21 11l-6.4 2.4L12 20l-2.6-6.6L3 11l6.4-2.4z"></path></svg></span>
+              <span style="padding: 11px 0; text-align: center; border-radius: 12px; background: #FFFFFF; border: 1.5px solid #E2DFD7; font-size: 13.5px; font-weight: 600; color: #23262E;">15:00</span>
+              <span style="padding: 11px 0; text-align: center; border-radius: 12px; background: #FFFFFF; border: 1.5px solid #E2DFD7; font-size: 13.5px; font-weight: 600; color: #23262E;">16:00</span>
+              <span style="padding: 11px 0; text-align: center; border-radius: 12px; background: #FFFFFF; border: 1.5px solid #E2DFD7; font-size: 13.5px; font-weight: 600; color: #23262E;">18:00</span>
+              <span style="padding: 11px 0; text-align: center; border-radius: 12px; background: #F1F0EA; border: 1.5px solid transparent; font-size: 13.5px; font-weight: 600; color: #B8B5A9; text-decoration: line-through;">19:00</span>
+            </div>
+          </div>
+
+          <!-- modalidad -->
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <span style="font-size: 13px; font-weight: 700; color: #23262E;">Modalidad</span>
+            <div style="display: flex; background: #EDECE6; border-radius: 12px; padding: 4px; gap: 4px;">
+              <span style="flex: 1; text-align: center; padding: 9px 0; border-radius: 9px; background: #FFFFFF; box-shadow: 0 1px 3px rgba(35,38,46,0.12); font-size: 13.5px; font-weight: 700; color: #3A4A8C;">Virtual</span>
+              <span style="flex: 1; text-align: center; padding: 9px 0; border-radius: 9px; font-size: 13.5px; font-weight: 600; color: #5A5E6B;">Presencial</span>
+            </div>
+          </div>
+
+          <input placeholder="Lugar o nota (opcional)" style="width: 100%; box-sizing: border-box; font-family: inherit; font-size: 14px; padding: 13px 14px; border: 1.5px solid #E2DFD7; border-radius: 12px; background: #FFFFFF; color: #23262E; outline: none;">
+
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <button style="width: 100%; padding: 15px 0; border: none; border-radius: 14px; background: #3A4A8C; color: #FFFFFF; font-family: inherit; font-size: 15.5px; font-weight: 800; cursor: pointer;" style-hover="background: #2C3768;">Confirmar reserva</button>
+            <p style="margin: 0; text-align: center; font-size: 12px; line-height: 1.5; color: #8A877C;">Recibirás confirmación por correo con invitación al calendario</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ 1b · Aurora cálida ══════════ -->
+    <div id="1b" style="display: flex; flex-direction: column; gap: 20px; width: 430px;">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 26px; border-radius: 8px; background: #241E4E; color: #FF6A43; font-size: 13px; font-weight: 800;">1b</span>
+          <span style="font-size: 17px; font-weight: 800; color: #23262E;">Aurora cálida</span>
+        </div>
+        <p style="margin: 0; font-size: 13px; line-height: 1.55; color: #5A5E6B;">Tinta violeta-nocturna como color de acción, coral de amanecer para lo seleccionado. Formas pill, más energía y cercanía — el ánimo de Preply/Duolingo, en versión adulta. Tipografía: <strong>Sora</strong>.</p>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <span style="width: 44px; height: 32px; border-radius: 8px; background: #241E4E;" title="#241E4E primario"></span>
+          <span style="width: 44px; height: 32px; border-radius: 8px; background: #3A3272;" title="#3A3272 hover"></span>
+          <span style="width: 44px; height: 32px; border-radius: 8px; background: #FF5C38;" title="#FF5C38 acento"></span>
+          <span style="width: 44px; height: 32px; border-radius: 8px; background: #FFE8E0;" title="#FFE8E0 tinte"></span>
+          <span style="width: 44px; height: 32px; border-radius: 8px; background: #FFFDF8; border: 1px solid #EBE6DB;" title="#FFFDF8 fondo"></span>
+          <span style="width: 44px; height: 32px; border-radius: 8px; background: #221D33;" title="#221D33 texto"></span>
+        </div>
+      </div>
+
+      <!-- phone -->
+      <div style="width: 390px; background: #FFFDF8; border-radius: 28px; box-shadow: 0 24px 48px rgba(34,29,51,0.16), 0 2px 6px rgba(34,29,51,0.08); overflow: hidden; font-family: 'Sora', ui-sans-serif, system-ui, sans-serif; color: #221D33;">
+        <div style="padding: 20px 20px 28px; display: flex; flex-direction: column; gap: 20px;">
+          <!-- header -->
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: #F4F0E7; color: #241E4E;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><path d="M12 19l-7-7 7-7"></path></svg>
+            </span>
+            <span style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: #FFE8E0; color: #9A2F12; font-size: 15px; font-weight: 700;">MP</span>
+            <div style="display: flex; flex-direction: column; gap: 1px;">
+              <span style="font-size: 17px; font-weight: 700;">María P.</span>
+              <span style="font-size: 13px; color: #6A657A;">Conversación y confianza</span>
+            </div>
+          </div>
+          <p style="margin: 0; font-size: 13.5px; line-height: 1.6; color: #6A657A;">Lic. en lenguas, 4 años enseñando adultos. Mis clases son 100% conversacionales.</p>
+
+          <!-- día -->
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <span style="font-size: 13px; font-weight: 700;">Elige un día</span>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <span style="padding: 10px 16px; border-radius: 999px; background: #FFFFFF; border: 1.5px solid #E5E0D4; font-size: 13.5px; font-weight: 600; color: #6A657A;">lun 14</span>
+              <span style="padding: 10px 16px; border-radius: 999px; background: #FF5C38; border: 1.5px solid #FF5C38; font-size: 13.5px; font-weight: 700; color: #FFFFFF;">mié 16</span>
+              <span style="padding: 10px 16px; border-radius: 999px; background: #FFFFFF; border: 1.5px solid #E5E0D4; font-size: 13.5px; font-weight: 600; color: #6A657A;">jue 17</span>
+              <span style="padding: 10px 16px; border-radius: 999px; background: #FFFFFF; border: 1.5px solid #E5E0D4; font-size: 13.5px; font-weight: 600; color: #6A657A;">vie 18</span>
+            </div>
+          </div>
+
+          <!-- horas -->
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <span style="font-size: 13px; font-weight: 700;">Cupos disponibles</span>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+              <span style="padding: 12px 0; text-align: center; border-radius: 999px; background: #FFFFFF; border: 1.5px solid #E5E0D4; font-size: 13.5px; font-weight: 600;">08:00</span>
+              <span style="padding: 12px 0; text-align: center; border-radius: 999px; background: #FFE8E0; border: 1.5px solid #FF5C38; font-size: 13.5px; font-weight: 700; color: #9A2F12;">10:00</span>
+              <span style="padding: 12px 0; text-align: center; border-radius: 999px; background: #FFFFFF; border: 1.5px solid #E5E0D4; font-size: 13.5px; font-weight: 600;">15:00</span>
+              <span style="padding: 12px 0; text-align: center; border-radius: 999px; background: #FFFFFF; border: 1.5px solid #E5E0D4; font-size: 13.5px; font-weight: 600;">16:00</span>
+              <span style="padding: 12px 0; text-align: center; border-radius: 999px; background: #FFFFFF; border: 1.5px solid #E5E0D4; font-size: 13.5px; font-weight: 600;">18:00</span>
+              <span style="padding: 12px 0; text-align: center; border-radius: 999px; background: #F2EFE7; border: 1.5px solid transparent; font-size: 13.5px; font-weight: 600; color: #BBB6A8; text-decoration: line-through;">19:00</span>
+            </div>
+          </div>
+
+          <!-- modalidad -->
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <span style="font-size: 13px; font-weight: 700;">Modalidad</span>
+            <div style="display: flex; background: #F2EFE7; border-radius: 999px; padding: 4px; gap: 4px;">
+              <span style="flex: 1; text-align: center; padding: 9px 0; border-radius: 999px; background: #241E4E; font-size: 13.5px; font-weight: 700; color: #FFFFFF;">Virtual</span>
+              <span style="flex: 1; text-align: center; padding: 9px 0; border-radius: 999px; font-size: 13.5px; font-weight: 600; color: #6A657A;">Presencial</span>
+            </div>
+          </div>
+
+          <input placeholder="Lugar o nota (opcional)" style="width: 100%; box-sizing: border-box; font-family: inherit; font-size: 14px; padding: 13px 18px; border: 1.5px solid #E5E0D4; border-radius: 999px; background: #FFFFFF; color: #221D33; outline: none;">
+
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <button style="width: 100%; padding: 16px 0; border: none; border-radius: 999px; background: #241E4E; color: #FFFFFF; font-family: inherit; font-size: 15.5px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 0 #14102E;" style-hover="background: #3A3272;">Confirmar reserva</button>
+            <p style="margin: 0; text-align: center; font-size: 12px; line-height: 1.5; color: #979283;">Recibirás confirmación por correo con invitación al calendario</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+</x-dc>
+</body>
+</html>

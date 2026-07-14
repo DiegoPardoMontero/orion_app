@@ -1,5 +1,6 @@
 package co.orion.identity.api;
 
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,6 +19,11 @@ public class MyProfileController {
 
     public MyProfileController(ProfessorProfileService profileService) {
         this.profileService = profileService;
+    }
+
+    @GetMapping
+    public ProfileResponse myProfile(@AuthenticationPrincipal OrionUserDetails principal) {
+        return ProfileResponse.from(profileService.getOwnProfile(principal.user().getId()));
     }
 
     @PutMapping

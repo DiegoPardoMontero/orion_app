@@ -23,6 +23,16 @@ public class ProfessorProfileService {
         this.users = users;
     }
 
+    /**
+     * El perfil propio, publicado o no. Hace falta para poder editarlo: getPublished() no sirve
+     * (responde 404 a los no publicados, que es precisamente quien va a publicarse por primera vez).
+     */
+    @Transactional(readOnly = true)
+    public ProfessorProfile getOwnProfile(UUID professorId) {
+        return profiles.findByIdWithUser(professorId)
+                .orElseGet(() -> createEmptyProfileFor(professorId));
+    }
+
     @Transactional
     public ProfessorProfile updateOwnProfile(UUID professorId, String headline, String bio,
                                              String photoUrl, boolean published) {
