@@ -16,8 +16,11 @@ Sin pagos en el MVP 1.
 ```
 backend/    Aplicación Spring Boot
 frontend/   Pendiente (Tarea 4)
-docs/       Briefs de las tareas
+docs/       Briefs de las tareas y documentación
 ```
+
+**[docs/features.md](docs/features.md)** — qué hace Orión hoy, por rol y por regla de negocio.
+Empieza por ahí si vienes nuevo al proyecto.
 
 ## 1. Levantar la infraestructura
 
