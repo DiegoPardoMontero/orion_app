@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
 
+import co.orion.shared.error.BusinessRuleViolationException;
+import co.orion.shared.error.ResourceNotFoundException;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -37,6 +40,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleAuthentication(AuthenticationException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("error", "Invalid credentials"));
+    }
+
+    @ExceptionHandler(BusinessRuleViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleBusinessRule(BusinessRuleViolationException ex) {
+        return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNotFound(ResourceNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", ex.getMessage()));
     }
 
     @ExceptionHandler(ResponseStatusException.class)
