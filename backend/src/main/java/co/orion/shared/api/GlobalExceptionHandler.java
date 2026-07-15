@@ -14,6 +14,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import org.springframework.http.converter.HttpMessageNotReadableException;
 
@@ -83,6 +84,12 @@ public class GlobalExceptionHandler {
         String message = ex.getReason() != null ? ex.getReason() : ex.getStatusCode().toString();
         return ResponseEntity.status(ex.getStatusCode())
                 .body(Map.of("error", message));
+    }
+
+    /** Una ruta que no existe es 404, no 500. Si no, cualquier URL inválida parecería un fallo del servidor. */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNoResource(NoResourceFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Recurso no encontrado"));
     }
 
     @ExceptionHandler(Exception.class)

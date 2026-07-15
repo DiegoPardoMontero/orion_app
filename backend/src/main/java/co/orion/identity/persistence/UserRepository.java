@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import co.orion.identity.domain.User;
+import co.orion.identity.domain.UserRole;
 
 /**
  * La búsqueda del panel usa Specification y no un @Query con "(:q is null or ...)": Postgres no
@@ -19,4 +20,5 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
 
     boolean existsByEmailIgnoreCase(String email);
 
+    boolean existsByRole(UserRole role);
 }

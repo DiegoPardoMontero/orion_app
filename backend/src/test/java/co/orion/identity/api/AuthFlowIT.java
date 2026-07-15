@@ -153,6 +153,15 @@ class AuthFlowIT {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 
+    @Test
+    void aPublicButNonexistentRouteReturnsNotFoundNotServerError() {
+        // /swagger-ui/** es permitAll pero no existe (springdoc apagado), así que llega a MVC
+        // como NoResourceFoundException. Debe ser 404, no el 500 del catch-all.
+        ResponseEntity<Map> response = rest.getForEntity("/swagger-ui/index.html", Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
     private <T> ResponseEntity<T> login(String email, String password, Class<T> responseType) {
         return rest.postForEntity("/api/v1/auth/login", new LoginRequest(email, password), responseType);
     }

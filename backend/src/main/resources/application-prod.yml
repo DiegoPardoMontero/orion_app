@@ -1,0 +1,50 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+
+server:
+  # TLS termina en el edge de Railway; el backend ve HTTP plano. Con esto Spring confía en los
+  # X-Forwarded-*, así las cookies Secure y las URLs generadas salen bien. Sin esto, todo parece
+  # funcionar hasta que las cookies no llegan.
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      cookie:
+        name: ORION_SESSION
+        http-only: true
+        secure: true
+        same-site: lax
+
+orion:
+  mail:
+    from: ${ORION_MAIL_FROM}
+  cors:
+    allowed-origins: ${ORION_CORS_ALLOWED_ORIGINS:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  # health.mail.enabled=false se hereda de application.yml: un SMTP caído no marca la app como
+  # "no saludable", porque el envío es AFTER_COMMIT y su fallo no afecta a las reservas.
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
