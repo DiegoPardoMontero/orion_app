@@ -1,0 +1,48 @@
+# Ensayo general local: las MISMAS imágenes que correrán en Railway, con Postgres y Mailpit
+# de apoyo. Si esto funciona, Railway es solo cambiar dónde corren estas imágenes.
+#   docker compose -f docker-compose.prod.yml up --build
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: orion
+      POSTGRES_USER: orion
+      POSTGRES_PASSWORD: orion_local
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orion -d orion"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025"
+
+  backend:
+    build: ./backend
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://postgres:5432/orion
+      DB_USER: orion
+      DB_PASSWORD: orion_local
+      ORION_ADMIN_EMAIL: admin@orion.local
+      ORION_ADMIN_PASSWORD: admin-prod-ensayo-9
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      MAIL_USERNAME: dummy
+      MAIL_PASSWORD: dummy
+      ORION_MAIL_FROM: no-reply@orion.local
+      ORION_CORS_ALLOWED_ORIGINS: http://localhost:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    environment:
+      API_URL: http://backend:8080
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
