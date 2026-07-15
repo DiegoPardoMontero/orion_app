@@ -177,6 +177,20 @@ npm run types:api    # openapi-typescript contra /v3/api-docs → src/lib/api/sc
 
 Regenéralos cada vez que cambie un DTO del backend.
 
+Es una **PWA instalable** (Chrome: "Instalar aplicación"): manifest, iconos y theme-color, sin
+service worker (un caché offline es la fuente clásica de "veo una versión vieja"; no lo necesita
+el MVP).
+
+### Suite de humo (Playwright)
+
+```bash
+cd frontend
+npm run e2e          # levanta next dev solo; requiere backend + docker con la semilla arriba
+```
+
+Cubre los caminos que no pueden romperse: login/logout de cada rol, Ana reserva y el cupo
+desaparece, María ve la reserva, Ana cancela y el cupo vuelve. Corre en un viewport móvil.
+
 ## 4. Probar a mano
 
 Guía paso a paso con Postman, con todos los casos de error: [docs/postman-guide.md](docs/postman-guide.md)

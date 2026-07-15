@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Sora } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -17,6 +17,15 @@ const sora = Sora({
 export const metadata: Metadata = {
   title: "Orión Language Academy",
   description: "Aprende con confianza. Transforma tus oportunidades.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "Orión", statusBarStyle: "black-translucent" },
+};
+
+/** El theme-color tiñe la barra del navegador y la barra de estado en modo instalado. */
+export const viewport: Viewport = {
+  themeColor: "#241E4E",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
