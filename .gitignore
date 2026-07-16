@@ -38,3 +38,10 @@ pnpm-debug.log*
 nbproject/private/
 .DS_Store
 Thumbs.db
+
+# Logs descargados de Railway (diagnóstico puntual)
+logs.*.json
+logs.*.csv
+
+# Metadatos que Windows pega al descargar archivos
+*:Zone.Identifier
