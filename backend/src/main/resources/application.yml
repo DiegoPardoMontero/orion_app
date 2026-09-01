@@ -32,6 +32,9 @@ spring:
             enable: false
 
 orion:
+  app:
+    # Origen público del frontend; base de los enlaces que van en correos (recuperación, etc.).
+    base-url: ${ORION_APP_BASE_URL:http://localhost:3000}
   cors:
     allowed-origins: ${ORION_CORS_ALLOWED_ORIGINS:http://localhost:3000}
   mail:

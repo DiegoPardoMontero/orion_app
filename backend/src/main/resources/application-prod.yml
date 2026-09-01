@@ -30,6 +30,8 @@ server:
         same-site: lax
 
 orion:
+  app:
+    base-url: ${ORION_APP_BASE_URL}
   mail:
     from: ${ORION_MAIL_FROM}
   cors:

@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import co.orion.identity.application.PasswordResetService;
 import co.orion.identity.application.RegistrationService;
 import co.orion.shared.security.OrionUserDetails;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,12 +29,15 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final RegistrationService registrationService;
+    private final PasswordResetService passwordResetService;
     private final SecurityContextRepository contextRepository = new HttpSessionSecurityContextRepository();
 
     public AuthController(AuthenticationManager authenticationManager,
-                          RegistrationService registrationService) {
+                          RegistrationService registrationService,
+                          PasswordResetService passwordResetService) {
         this.authenticationManager = authenticationManager;
         this.registrationService = registrationService;
+        this.passwordResetService = passwordResetService;
     }
 
     @PostMapping("/login")
@@ -55,6 +59,23 @@ public class AuthController {
                                  HttpServletResponse response) {
         registrationService.register(body.fullName(), body.email(), body.password(), body.whatsappPhone());
         return authenticateAndOpenSession(body.email(), body.password(), request, response);
+    }
+
+    /**
+     * Pide un enlace de recuperación. Responde 204 SIEMPRE, exista o no el correo: no revelamos qué
+     * direcciones tienen cuenta. Quien tenga acceso al buzón recibe el enlace; los demás, nada.
+     */
+    @PostMapping("/forgot-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void forgotPassword(@Valid @RequestBody ForgotPasswordRequest body) {
+        passwordResetService.request(body.email());
+    }
+
+    /** Restablece la contraseña con el token del enlace. Token inválido o vencido → 422. */
+    @PostMapping("/reset-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resetPassword(@Valid @RequestBody ResetPasswordRequest body) {
+        passwordResetService.reset(body.token(), body.newPassword());
     }
 
     private UserResponse authenticateAndOpenSession(String email, String password,

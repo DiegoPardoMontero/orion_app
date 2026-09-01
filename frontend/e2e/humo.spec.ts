@@ -163,3 +163,21 @@ test("un estudiante reprograma una clase a otro cupo", async ({ page }) => {
   // Éxito: el modal se cierra. Si hubiera fallado (cupo ocupado, etc.) seguiría abierto con aviso.
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });
+
+test("recuperar contraseña: pide enlace y rechaza un token inválido", async ({ page }) => {
+  await page.goto("/login");
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("link", { name: "¿Olvidaste tu contraseña?" }).click();
+  await expect(page).toHaveURL(/\/recuperar/);
+
+  await page.locator("#email").fill("ana@orion.local");
+  await page.getByRole("button", { name: "Enviar enlace" }).click();
+  // Mensaje neutro (no revela si el correo existe).
+  await expect(page.getByText("Revisa tu correo")).toBeVisible();
+
+  // Un token inválido no cambia nada: el backend responde 422 y se ve el aviso.
+  await page.goto("/restablecer?token=token-invalido-de-prueba");
+  await page.locator("#password").fill("clave-nueva-1");
+  await page.getByRole("button", { name: "Guardar contraseña" }).click();
+  await expect(page.getByText(/no es válido|expiró/i)).toBeVisible();
+});

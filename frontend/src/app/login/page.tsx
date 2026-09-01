@@ -104,6 +104,15 @@ export default function LoginPage() {
             </button>
           </div>
 
+          <div className="mt-2 text-right">
+            <Link
+              href="/recuperar"
+              className="text-[13px] font-semibold text-primary-strong hover:underline"
+            >
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
+
           {error && (
             <div className="mt-4">
               <AvisoError mensaje={error} />

@@ -37,13 +37,16 @@ public class SecurityConfig {
             .csrf(csrf -> csrf
                 .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                 .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
-                // Login y registro son anónimos: no hay sesión ni token todavía que exigir.
-                .ignoringRequestMatchers("/api/v1/auth/login", "/api/v1/auth/register"))
+                // Endpoints anónimos: no hay sesión ni token todavía que exigir.
+                .ignoringRequestMatchers("/api/v1/auth/login", "/api/v1/auth/register",
+                        "/api/v1/auth/forgot-password", "/api/v1/auth/reset-password"))
             .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers("/api/v1/auth/login").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/register").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/forgot-password").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/reset-password").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/me/availability/**").hasRole("PROFESSOR")
