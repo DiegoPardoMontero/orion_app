@@ -106,9 +106,9 @@ Dime "dale a 4 y 5" y los hago con capturas para tu revisión.
   **subir foto** (bloqueado por Cloudinary). El backend sí los cubre con ITs.
 - **Lighthouse de la landing** (DoD del minibrief: ≥95 en Perf/SEO/A11y) no se ha corrido — hazlo
   desde Chrome DevTools sobre la URL de producción.
-- **Tests de componentes frontend**: hoy la cobertura frontend es solo e2e de humo. Vitest +
-  Testing Library para `SlotCalculator`-equivalentes del cliente (agrupar cupos, `fuerzaClave`,
-  `PhoneInput` parse/emit) sería barato y valioso.
+- **Tests de componentes frontend**: ✅ se añadió **Vitest** con 15 tests de lógica pura
+  (`lib/phone`, `fuerzaClave`, helpers de fecha/iniciales). Falta cobertura de *componentes* con
+  render (Testing Library) — p. ej. `PhoneInput`, `CambiarFoto`, los modales.
 
 ### Accesibilidad
 - Repaso formal con lector de pantalla y teclado de las pantallas nuevas (registro, /cuenta,
