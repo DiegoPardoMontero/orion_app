@@ -30,7 +30,10 @@ public class SmtpPasswordResetMailer implements PasswordResetMailer {
     public void sendResetLink(String toEmail, String fullName, String resetLink) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, false, StandardCharsets.UTF_8.name());
+            // multipart = true: setText(plano, html) exige modo multipart para adjuntar la alternativa
+            // de texto plano. Con `false` lanzaría "Not in multipart mode" y el correo no saldría.
+            MimeMessageHelper helper = new MimeMessageHelper(
+                    message, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, StandardCharsets.UTF_8.name());
             helper.setFrom(from);
             helper.setTo(toEmail);
             helper.setSubject("Recupera tu contraseña de Orión");
