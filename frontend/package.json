@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "types:api": "openapi-typescript http://localhost:8080/v3/api-docs -o src/lib/api/schema.d.ts",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "test:unit": "vitest run"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.2",
@@ -27,6 +28,7 @@
     "eslint-config-next": "16.2.10",
     "openapi-typescript": "^7.13.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.11"
   }
 }

@@ -2,34 +2,14 @@
 
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
+import { componerE164, PAISES, parseTelefono } from "@/lib/phone";
 
 /**
  * Teléfono con selector de país. Produce y consume E.164 (`+573001112233`). Sin librerías: lista
  * curada de países (LatAm + US + ES), Colombia por defecto. El componente se inicializa del valor
  * y a partir de ahí gestiona país y número, emitiendo el E.164 al padre; número vacío → "".
+ * La lógica pura (parseo/composición) vive en `lib/phone` para poder testearla sin React.
  */
-const PAISES = [
-  { code: "CO", flag: "🇨🇴", dial: "57" },
-  { code: "MX", flag: "🇲🇽", dial: "52" },
-  { code: "AR", flag: "🇦🇷", dial: "54" },
-  { code: "CL", flag: "🇨🇱", dial: "56" },
-  { code: "PE", flag: "🇵🇪", dial: "51" },
-  { code: "EC", flag: "🇪🇨", dial: "593" },
-  { code: "VE", flag: "🇻🇪", dial: "58" },
-  { code: "US", flag: "🇺🇸", dial: "1" },
-  { code: "ES", flag: "🇪🇸", dial: "34" },
-];
-
-// Los indicativos más largos primero, para que "+593" gane sobre "+59"/"+5".
-const POR_DIAL = [...PAISES].sort((a, b) => b.dial.length - a.dial.length);
-
-function parse(value?: string): { dial: string; local: string } {
-  const digits = (value ?? "").replace(/\D/g, "");
-  const pais = POR_DIAL.find((p) => digits.startsWith(p.dial));
-  if (!pais) return { dial: "57", local: digits };
-  return { dial: pais.dial, local: digits.slice(pais.dial.length) };
-}
-
 export function PhoneInput({
   value,
   onChange,
@@ -43,12 +23,12 @@ export function PhoneInput({
   placeholder?: string;
   className?: string;
 }) {
-  const inicial = parse(value);
+  const inicial = parseTelefono(value);
   const [dial, setDial] = useState(inicial.dial);
   const [local, setLocal] = useState(inicial.local);
 
   function emitir(nuevoDial: string, nuevoLocal: string) {
-    onChange(nuevoLocal ? `+${nuevoDial}${nuevoLocal}` : "");
+    onChange(componerE164(nuevoDial, nuevoLocal));
   }
 
   return (
