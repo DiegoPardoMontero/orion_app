@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Figtree } from "next/font/google";
+import { InstalarApp } from "@/components/InstalarApp";
 import "./globals.css";
 import { Providers } from "./providers";
 
@@ -49,6 +50,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>
+        <InstalarApp />
       </body>
     </html>
   );

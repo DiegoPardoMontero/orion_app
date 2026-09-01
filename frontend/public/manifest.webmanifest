@@ -3,6 +3,8 @@
   "short_name": "Orión",
   "description": "Aprende con confianza. Transforma tus oportunidades.",
   "start_url": "/",
+  "scope": "/",
+  "id": "/",
   "display": "standalone",
   "background_color": "#FFF6EE",
   "theme_color": "#2E1E4E",
