@@ -32,6 +32,12 @@ type ApiFetchOptions = {
   method?: string;
   body?: unknown;
   signal?: AbortSignal;
+  /**
+   * Un 401 normalmente manda al login. La landing pública consulta la sesión de forma opcional
+   * (para mostrar "Ir a mi panel") y NO quiere ese redirect: pasa `false` y trata el 401 como
+   * "anónimo".
+   */
+  redirectOn401?: boolean;
 };
 
 export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
@@ -58,7 +64,11 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
     signal: options.signal,
   });
 
-  if (response.status === 401 && !window.location.pathname.startsWith("/login")) {
+  if (
+    response.status === 401 &&
+    (options.redirectOn401 ?? true) &&
+    !window.location.pathname.startsWith("/login")
+  ) {
     window.location.href = "/login";
     throw new ApiError(401, "Tu sesión expiró");
   }

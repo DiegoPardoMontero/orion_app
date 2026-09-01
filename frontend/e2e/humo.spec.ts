@@ -181,3 +181,10 @@ test("recuperar contraseña: pide enlace y rechaza un token inválido", async ({
   await page.getByRole("button", { name: "Guardar contraseña" }).click();
   await expect(page.getByText(/no es válido|expiró/i)).toBeVisible();
 });
+
+test("la landing pública lleva al registro en un clic", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: /Learn with confidence/i })).toBeVisible();
+  await page.getByRole("link", { name: "Crea tu cuenta" }).first().click();
+  await expect(page).toHaveURL(/\/registro/);
+});

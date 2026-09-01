@@ -25,6 +25,7 @@ const figtree = Figtree({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://orionidiomas.com"),
   title: "Orión Language Academy",
   description: "Aprende con confianza. Transforma tus oportunidades.",
   manifest: "/manifest.webmanifest",
