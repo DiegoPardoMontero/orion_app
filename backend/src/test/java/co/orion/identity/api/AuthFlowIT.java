@@ -162,6 +162,45 @@ class AuthFlowIT {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
+    @Test
+    void aNewStudentCanRegisterAndLandsLoggedIn() {
+        RegisterRequest body = new RegisterRequest("Camila Ortiz", "camila@orion.test", "orion123*", "+573001112233");
+
+        ResponseEntity<UserResponse> response = rest.postForEntity("/api/v1/auth/register", body, UserResponse.class);
+
+        // Nace STUDENT, con la sesión ya abierta: el registro no obliga a un login extra.
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().role()).isEqualTo("STUDENT");
+        assertThat(response.getBody().email()).isEqualTo("camila@orion.test");
+        assertThat(sessionCookie(response)).isNotNull();
+
+        // Y esa sesión sirve de verdad: /me la reconoce.
+        ResponseEntity<UserResponse> me = get("/api/v1/auth/me", sessionCookie(response), UserResponse.class);
+        assertThat(me.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(me.getBody().email()).isEqualTo("camila@orion.test");
+    }
+
+    @Test
+    void registeringWithAnExistingEmailIsRejected() {
+        RegisterRequest body = new RegisterRequest("Ana Otra", STUDENT_EMAIL, "orion123*", null);
+
+        ResponseEntity<Map> response = rest.postForEntity("/api/v1/auth/register", body, Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody()).containsEntry("error", "Ya existe una cuenta con ese correo");
+    }
+
+    @Test
+    void registeringWithAShortPasswordIsRejected() {
+        RegisterRequest body = new RegisterRequest("Clave Corta", "corta@orion.test", "1234567", null);
+
+        ResponseEntity<Map> response = rest.postForEntity("/api/v1/auth/register", body, Map.class);
+
+        // Lo ataja la validación del DTO (@Size min 8) antes de tocar la base: 400.
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
     private <T> ResponseEntity<T> login(String email, String password, Class<T> responseType) {
         return rest.postForEntity("/api/v1/auth/login", new LoginRequest(email, password), responseType);
     }

@@ -37,11 +37,13 @@ public class SecurityConfig {
             .csrf(csrf -> csrf
                 .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                 .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
-                .ignoringRequestMatchers("/api/v1/auth/login"))
+                // Login y registro son anónimos: no hay sesión ni token todavía que exigir.
+                .ignoringRequestMatchers("/api/v1/auth/login", "/api/v1/auth/register"))
             .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers("/api/v1/auth/login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/register").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/me/availability/**").hasRole("PROFESSOR")
