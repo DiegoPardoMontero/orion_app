@@ -1,25 +1,15 @@
 import { iniciales } from "@/lib/format";
 
 /**
- * Iniciales sobre un tinte. El tinte no es aleatorio: se deriva del nombre, así una misma
- * persona siempre tiene el mismo color, en todas las pantallas y entre recargas.
+ * Iniciales sobre el degradado del amanecer en diagonal (135°, coral → lavanda). El fondo es fijo
+ * por diseño —la identidad se lee en las iniciales, no en el color—; si el profesor sube foto,
+ * esta manda y el degradado queda de fallback.
  */
-const TINTES = [
-  "bg-accent-bg text-on-accent-bg",
-  "bg-info-bg text-info",
-  "bg-warning-bg text-warning",
-  "bg-success-bg text-success",
-];
-
-function tinteDe(nombre: string): string {
-  const suma = [...nombre].reduce((acc, letra) => acc + letra.charCodeAt(0), 0);
-  return TINTES[suma % TINTES.length];
-}
-
 const TAMANOS = {
-  sm: "h-[34px] w-[34px] text-[12px]",
-  md: "h-12 w-12 text-[14px]",
-  lg: "h-14 w-14 text-[16px]",
+  sm: "h-[34px] w-[34px] text-[13px]",
+  md: "h-[46px] w-[46px] text-[15px]",
+  lg: "h-14 w-14 text-[17px]",
+  xl: "h-[92px] w-[92px] text-[30px]",
 } as const;
 
 export function Avatar({
@@ -46,7 +36,7 @@ export function Avatar({
 
   return (
     <span
-      className={`${TAMANOS[size]} ${tinteDe(nombre)} grid shrink-0 place-items-center rounded-full font-bold ${className}`}
+      className={`${TAMANOS[size]} gradient-avatar grid shrink-0 place-items-center rounded-full font-display font-extrabold text-on-primary ${className}`}
     >
       {iniciales(nombre)}
     </span>

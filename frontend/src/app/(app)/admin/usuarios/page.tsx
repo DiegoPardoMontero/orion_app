@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Copy, RefreshCw, Search, UserPlus, Users } from "lucide-react";
+import { Check, Copy, RefreshCw, Search, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Modal } from "@/components/Modal";
@@ -44,8 +44,8 @@ export default function AdminUsuariosPage() {
   return (
     <main className="mx-auto max-w-5xl px-6 py-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-[20px] font-extrabold">Usuarios</h1>
-        <Boton variante="coral" onClick={() => setCreando(true)} className="h-11">
+        <h1 className="font-display text-h1 font-bold">Usuarios</h1>
+        <Boton variante="primario" onClick={() => setCreando(true)} className="h-11">
           <UserPlus size={16} strokeWidth={2.2} />
           Crear usuario
         </Boton>
@@ -68,7 +68,7 @@ export default function AdminUsuariosPage() {
             onClick={() => setRol(filtro.valor)}
             className={`rounded-base px-3.5 py-2 text-[12.5px] transition-colors ${
               rol === filtro.valor
-                ? "bg-primary font-bold text-white"
+                ? "bg-night font-bold text-on-primary"
                 : "border-[1.5px] border-border bg-surface-raised font-semibold text-text-secondary hover:bg-surface-sunken"
             }`}
           >
@@ -89,17 +89,16 @@ export default function AdminUsuariosPage() {
 
         {usuarios.data?.length === 0 && (
           <Vacio
-            icono={<Users size={24} strokeWidth={2.2} />}
             titulo="Sin resultados"
             texto="Prueba con otro filtro o crea un usuario nuevo."
           />
         )}
 
         {!!usuarios.data?.length && (
-          <div className="overflow-x-auto rounded-card border-[1.5px] border-border-subtle bg-surface-raised">
+          <div className="overflow-x-auto rounded-card bg-surface-raised shadow-md">
             <table className="w-full text-[13px]">
               <thead>
-                <tr className="bg-[#f7f4ec] text-left text-[11.5px] font-bold uppercase tracking-wide text-text-muted">
+                <tr className="bg-surface text-left text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted">
                   <th className="px-4 py-3">Nombre</th>
                   <th className="px-4 py-3">Correo</th>
                   <th className="px-4 py-3">WhatsApp</th>
@@ -141,7 +140,7 @@ function FilaUsuario({ usuario }: { usuario: AdminUserResponse }) {
   });
 
   return (
-    <tr className="border-t border-border-subtle hover:bg-[#fbf9f3]">
+    <tr className="border-t border-surface-sunken hover:bg-surface">
       <td className="px-4 py-3 font-semibold">{usuario.fullName}</td>
       <td className="px-4 py-3 text-text-secondary">{usuario.email}</td>
       <td className="px-4 py-3 text-text-secondary">{usuario.whatsappPhone ?? "—"}</td>
@@ -159,7 +158,7 @@ function FilaUsuario({ usuario }: { usuario: AdminUserResponse }) {
       </td>
       <td className="px-4 py-3 text-right">
         <Boton
-          variante="outline"
+          variante="contorno"
           disabled={cambiarEstado.isPending || usuario.role === "ADMIN"}
           onClick={() => cambiarEstado.mutate()}
           className="h-9"
@@ -246,7 +245,7 @@ function ModalCrearUsuario({ onCerrar }: { onCerrar: () => void }) {
         {(["STUDENT", "PROFESSOR"] as const).map((valor) => (
           <Boton
             key={valor}
-            variante={rol === valor ? "tinta" : "outline"}
+            variante={rol === valor ? "tinta" : "contorno"}
             onClick={() => setRol(valor)}
             className="h-10 flex-1"
           >
@@ -288,11 +287,11 @@ function ModalCrearUsuario({ onCerrar }: { onCerrar: () => void }) {
       )}
 
       <div className="mt-5 flex gap-2.5">
-        <Boton variante="outline" onClick={onCerrar} className="h-12 flex-1">
+        <Boton variante="contorno" onClick={onCerrar} className="h-12 flex-1">
           Cancelar
         </Boton>
         <Boton
-          variante="coral"
+          variante="primario"
           disabled={!email.trim() || !nombre.trim() || crear.isPending}
           onClick={() => crear.mutate()}
           className="h-12 flex-1"

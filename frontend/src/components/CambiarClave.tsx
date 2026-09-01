@@ -32,7 +32,7 @@ export function CambiarClave({ onCerrar }: { onCerrar: () => void }) {
           <p className="text-[13px] text-text-secondary">
             Listo, tu contraseña quedó actualizada. Úsala la próxima vez que entres.
           </p>
-          <Boton variante="coral" onClick={onCerrar} className="mt-5 h-12 w-full">
+          <Boton variante="primario" onClick={onCerrar} className="mt-5 h-12 w-full">
             Entendido
           </Boton>
         </>
@@ -70,11 +70,11 @@ export function CambiarClave({ onCerrar }: { onCerrar: () => void }) {
           )}
 
           <div className="mt-5 flex gap-2.5">
-            <Boton variante="outline" onClick={onCerrar} className="h-12 flex-1">
+            <Boton variante="contorno" onClick={onCerrar} className="h-12 flex-1">
               Cancelar
             </Boton>
             <Boton
-              variante="coral"
+              variante="primario"
               disabled={!actual || nueva.length < 8 || corta || cambiar.isPending}
               onClick={() => cambiar.mutate()}
               className="h-12 flex-1"

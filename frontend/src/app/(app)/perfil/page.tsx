@@ -71,7 +71,7 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
 
   return (
     <main className="px-5 py-5">
-      <h1 className="text-[20px] font-extrabold">Mi perfil</h1>
+      <h1 className="font-display text-h1 font-bold">Mi perfil</h1>
       <p className="mt-1 text-[12.5px] text-text-secondary">Esto es lo que ven los estudiantes.</p>
 
       <label className="mt-5 block text-[12.5px] font-bold text-text-secondary" htmlFor="headline">
@@ -96,7 +96,7 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
         value={bio}
         onChange={(event) => setBio(event.target.value)}
         placeholder="Cuéntales cómo son tus clases."
-        className="mt-1.5 w-full rounded-[18px] border-[1.5px] border-border bg-surface-raised px-4 py-3 text-sm placeholder:text-text-muted focus:border-accent"
+        className="mt-1.5 w-full rounded-base border-[1.5px] border-border bg-surface-raised px-4 py-3 text-sm placeholder:text-text-muted focus:border-primary focus:shadow-focus focus:outline-none"
       />
 
       <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="foto">

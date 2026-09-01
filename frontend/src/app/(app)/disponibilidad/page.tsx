@@ -60,7 +60,7 @@ export default function DisponibilidadPage() {
   return (
     <main className="space-y-3 px-5 py-5">
       <div>
-        <h1 className="text-[20px] font-extrabold">Mi disponibilidad</h1>
+        <h1 className="font-display text-h1 font-bold">Mi disponibilidad</h1>
         <p className="mt-1 flex items-center gap-1.5 text-[12.5px] text-text-secondary">
           <Clock size={14} strokeWidth={2.2} />
           Horario semanal recurrente · hora de Bogotá
@@ -81,14 +81,14 @@ export default function DisponibilidadPage() {
                   type="button"
                   aria-label={`Añadir franja el ${dia.nombre.toLowerCase()}`}
                   onClick={() => setDiaNuevaFranja(dia.valor)}
-                  className="grid h-7 w-7 place-items-center rounded-full bg-white text-info hover:bg-accent hover:text-white"
+                  className="grid h-7 w-7 place-items-center rounded-full bg-white text-info transition-colors hover:bg-primary hover:text-on-primary"
                 >
                   <Plus size={15} strokeWidth={2.4} />
                 </button>
               </div>
 
               {delDia.length === 0 ? (
-                <p className="mt-2 text-[12px] text-[#7a6fc9]">Sin franjas — toca + para añadir</p>
+                <p className="mt-2 text-[12px] text-info/70">Sin franjas — toca + para añadir</p>
               ) : (
                 <div className="mt-2 flex flex-wrap gap-2">
                   {delDia.map((regla) => (
@@ -153,13 +153,13 @@ function ChipFranja({ regla }: { regla: RuleResponse }) {
 
   return (
     <>
-      <span className="inline-flex items-center gap-2 rounded-base bg-primary py-1.5 pl-3.5 pr-1.5 text-[12.5px] font-bold text-white">
+      <span className="inline-flex items-center gap-2 rounded-pill bg-night py-1.5 pl-3.5 pr-1.5 text-[12.5px] font-bold text-on-primary">
         {franja}
         <button
           type="button"
           aria-label={`Eliminar la franja ${franja}`}
           onClick={() => setConfirmando(true)}
-          className="grid h-5 w-5 place-items-center rounded-full bg-white/20 hover:bg-accent"
+          className="grid h-5 w-5 place-items-center rounded-full bg-white/20 transition-colors hover:bg-primary"
         >
           <X size={12} strokeWidth={2.6} />
         </button>
@@ -171,7 +171,7 @@ function ChipFranja({ regla }: { regla: RuleResponse }) {
             {franja}. Los estudiantes dejarán de ver estos cupos.
           </p>
           <div className="mt-5 flex gap-2.5">
-            <Boton variante="outline" onClick={() => setConfirmando(false)} className="h-12 flex-1">
+            <Boton variante="contorno" onClick={() => setConfirmando(false)} className="h-12 flex-1">
               Volver
             </Boton>
             <Boton
@@ -287,11 +287,11 @@ function ModalNuevaFranja({ weekday, onCerrar }: { weekday: number; onCerrar: ()
       )}
 
       <div className="mt-5 flex gap-2.5">
-        <Boton variante="outline" onClick={onCerrar} className="h-12 flex-1">
+        <Boton variante="contorno" onClick={onCerrar} className="h-12 flex-1">
           Cancelar
         </Boton>
         <Boton
-          variante="coral"
+          variante="primario"
           disabled={crear.isPending}
           onClick={() => crear.mutate()}
           className="h-12 flex-1"
@@ -399,11 +399,11 @@ function ModalBloquearFecha({ onCerrar }: { onCerrar: () => void }) {
       )}
 
       <div className="mt-5 flex gap-2.5">
-        <Boton variante="outline" onClick={onCerrar} className="h-12 flex-1">
+        <Boton variante="contorno" onClick={onCerrar} className="h-12 flex-1">
           Cancelar
         </Boton>
         <Boton
-          variante="coral"
+          variante="primario"
           disabled={!fecha || crear.isPending}
           onClick={() => crear.mutate()}
           className="h-12 flex-1"

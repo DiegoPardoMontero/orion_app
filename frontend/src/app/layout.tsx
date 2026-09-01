@@ -1,16 +1,25 @@
 import type { Metadata, Viewport } from "next";
-import { Sora } from "next/font/google";
+import { Bricolage_Grotesque, Figtree } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
 /**
- * next/font descarga Sora en build y la sirve desde nuestro origen: sin petición a Google en
- * tiempo de ejecución y sin salto de tipografía al cargar.
+ * next/font descarga y sirve las fuentes desde nuestro origen: sin petición a Google en tiempo
+ * de ejecución y sin salto de tipografía al cargar. Dos familias del sistema v2:
+ *   · Bricolage Grotesque — display: heros, títulos, cifras.
+ *   · Figtree — sans: texto corrido, controles, etiquetas.
  */
-const sora = Sora({
+const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
   weight: ["400", "600", "700", "800"],
-  variable: "--font-sora",
+  variable: "--font-bricolage",
+  display: "swap",
+});
+
+const figtree = Figtree({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-figtree",
   display: "swap",
 });
 
@@ -23,7 +32,7 @@ export const metadata: Metadata = {
 
 /** El theme-color tiñe la barra del navegador y la barra de estado en modo instalado. */
 export const viewport: Viewport = {
-  themeColor: "#241E4E",
+  themeColor: "#2E1E4E",
   width: "device-width",
   initialScale: 1,
 };
@@ -34,7 +43,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${sora.variable} h-full antialiased`}>
+    <html
+      lang="es"
+      className={`${bricolage.variable} ${figtree.variable} h-full antialiased`}
+    >
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>
       </body>

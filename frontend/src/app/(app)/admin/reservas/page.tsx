@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { CalendarRange, Sparkles, TrendingUp } from "lucide-react";
+import { CalendarRange, Sparkles } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Badge, Campo } from "@/components/ui";
@@ -48,7 +48,7 @@ export default function AdminReservasPage() {
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-6">
-      <h1 className="text-[20px] font-extrabold">Reservas</h1>
+      <h1 className="font-display text-h1 font-bold">Reservas</h1>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <Metrica
@@ -109,7 +109,7 @@ export default function AdminReservasPage() {
             onClick={() => setEstado(opcion.valor)}
             className={`rounded-base px-3.5 py-2 text-[12.5px] transition-colors ${
               estado === opcion.valor
-                ? "bg-primary font-bold text-white"
+                ? "bg-night font-bold text-on-primary"
                 : "border-[1.5px] border-border bg-surface-raised font-semibold text-text-secondary hover:bg-surface-sunken"
             }`}
           >
@@ -130,17 +130,16 @@ export default function AdminReservasPage() {
 
         {reservas.data?.length === 0 && (
           <Vacio
-            icono={<TrendingUp size={24} strokeWidth={2.2} />}
             titulo="Sin reservas"
             texto="Cuando los estudiantes empiecen a agendar, las verás aquí."
           />
         )}
 
         {!!reservas.data?.length && (
-          <div className="overflow-x-auto rounded-card border-[1.5px] border-border-subtle bg-surface-raised">
+          <div className="overflow-x-auto rounded-card bg-surface-raised shadow-md">
             <table className="w-full text-[13px]">
               <thead>
-                <tr className="bg-[#f7f4ec] text-left text-[11.5px] font-bold uppercase tracking-wide text-text-muted">
+                <tr className="bg-surface text-left text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted">
                   <th className="px-4 py-3">Cuándo</th>
                   <th className="px-4 py-3">Estudiante</th>
                   <th className="px-4 py-3">Profesor</th>
@@ -151,7 +150,7 @@ export default function AdminReservasPage() {
               </thead>
               <tbody>
                 {reservas.data.map((reserva) => (
-                  <tr key={reserva.id} className="border-t border-border-subtle hover:bg-[#fbf9f3]">
+                  <tr key={reserva.id} className="border-t border-surface-sunken hover:bg-surface">
                     <td className="px-4 py-3 font-semibold">
                       {fechaYRango(reserva.startsAt!, reserva.endsAt!)}
                     </td>

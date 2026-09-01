@@ -1,13 +1,12 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Search, Users } from "lucide-react";
+import { ChevronRight, Search } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { Cargando, ErrorCarga, Vacio } from "@/components/estados";
-import { HeroNoche } from "@/components/marca";
-import { Campo, Tarjeta } from "@/components/ui";
+import { Campo } from "@/components/ui";
 import { apiFetch } from "@/lib/api/fetch";
 import type { ProfessorSummary } from "@/lib/api/types";
 
@@ -25,22 +24,23 @@ export default function ProfesoresPage() {
   );
 
   return (
-    <main>
-      <HeroNoche className="rounded-b-sheet px-5 pb-5 pt-4">
-        <h1 className="text-[20px] font-extrabold text-white">Profesores</h1>
-        <div className="mt-3.5">
-          <Campo
-            type="text"
-            value={busqueda}
-            onChange={(event) => setBusqueda(event.target.value)}
-            placeholder="Buscar profesor"
-            icono={<Search size={18} strokeWidth={2.2} />}
-            className="border-transparent"
-          />
-        </div>
-      </HeroNoche>
+    <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-5xl lg:px-12 lg:py-8">
+      <h1 className="font-display text-h1 font-bold">Profesores</h1>
+      <p className="mt-1 text-[14px] text-text-secondary">
+        Elige con quién quieres practicar y reserva tu clase.
+      </p>
 
-      <div className="px-5 py-5">
+      <div className="mt-4 lg:max-w-md">
+        <Campo
+          type="text"
+          value={busqueda}
+          onChange={(event) => setBusqueda(event.target.value)}
+          placeholder="Buscar profesor"
+          icono={<Search size={18} strokeWidth={1.75} />}
+        />
+      </div>
+
+      <div className="mt-5">
         {isPending && <Cargando />}
 
         {isError && (
@@ -52,40 +52,38 @@ export default function ProfesoresPage() {
 
         {data && profesores.length === 0 && (
           <Vacio
-            icono={<Users size={24} strokeWidth={2.2} />}
+            mascota
             titulo={busqueda ? "Sin resultados" : "Aún no hay profesores"}
             texto={
               busqueda
-                ? "Prueba con otro nombre."
-                : "Muy pronto vas a poder agendar tu primera clase."
+                ? "Prueba con otro nombre; quizá lo escribiste distinto."
+                : "Muy pronto vas a poder agendar tu primera clase. Cada proceso es diferente; lo importante es empezar."
             }
           />
         )}
 
-        <ul className="space-y-3">
-          {profesores.map((profesor) => (
-            <li key={profesor.id}>
-              <Tarjeta>
+        <ul className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+          {profesores.map((profesor, i) => (
+            <li key={profesor.id} className="anim-rise" style={{ animationDelay: `${Math.min(i, 6) * 40}ms` }}>
+              <div className="flex h-full flex-col justify-between rounded-card bg-surface-raised p-5 shadow-md transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-lg">
                 <div className="flex items-center gap-3">
                   <Avatar nombre={profesor.fullName ?? ""} fotoUrl={profesor.photoUrl} />
                   <div className="min-w-0">
-                    <p className="truncate text-[15px] font-bold">{profesor.fullName}</p>
-                    <p className="truncate text-[12.5px] text-text-secondary">
-                      {profesor.headline}
-                    </p>
+                    <p className="truncate font-display text-[17px] font-bold">{profesor.fullName}</p>
+                    <p className="truncate text-[13px] text-text-secondary">{profesor.headline}</p>
                   </div>
                 </div>
 
-                <div className="mt-3.5 flex justify-end">
+                <div className="mt-4 flex justify-end">
                   <Link
                     href={`/profesores/${profesor.id}`}
-                    className="inline-flex items-center gap-1 rounded-base bg-primary px-4 py-2 text-[13px] font-bold text-white hover:bg-primary-strong"
+                    className="inline-flex min-h-11 items-center gap-1 rounded-pill bg-primary px-5 text-[14px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus"
                   >
                     Ver agenda
-                    <ChevronRight size={16} strokeWidth={2.2} />
+                    <ChevronRight size={16} strokeWidth={1.75} />
                   </Link>
                 </div>
-              </Tarjeta>
+              </div>
             </li>
           ))}
         </ul>

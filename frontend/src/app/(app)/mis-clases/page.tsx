@@ -1,13 +1,14 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Calendar, CalendarHeart, Check, MapPin, Video, X } from "lucide-react";
+import { AlertCircle, Calendar, Check, MapPin, Video, X } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Modal } from "@/components/Modal";
+import { Rigel } from "@/components/Rigel";
 import { Badge, Boton, Segmento, Tarjeta } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type { MyBookingResponse } from "@/lib/api/types";
@@ -30,14 +31,14 @@ export default function MisClasesPage() {
   const esProfesor = me?.role === "PROFESSOR";
 
   return (
-    <main className="px-5 py-5">
+    <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-3xl lg:px-12 lg:py-8">
       <Suspense fallback={null}>
         <BannerReserva />
       </Suspense>
 
-      <h1 className="text-[20px] font-extrabold">Mis clases</h1>
+      <h1 className="font-display text-h1 font-bold">Mis clases</h1>
 
-      <div className="mt-3.5">
+      <div className="mt-4 lg:max-w-sm">
         <Segmento<Scope>
           valor={scope}
           onCambio={setScope}
@@ -58,18 +59,18 @@ export default function MisClasesPage() {
         {data?.length === 0 &&
           (scope === "upcoming" ? (
             <Vacio
-              icono={<CalendarHeart size={24} strokeWidth={2.2} />}
+              mascota
               titulo="Aún no tienes clases"
               texto={
                 esProfesor
                   ? "En cuanto un estudiante reserve contigo, la verás aquí."
-                  : "Explora los profesores y reserva la primera."
+                  : "Explora los profesores y reserva la primera. Cada proceso es diferente; lo importante es empezar."
               }
               accion={
                 esProfesor ? undefined : (
                   <Link
                     href="/profesores"
-                    className="inline-flex h-11 items-center rounded-base bg-accent px-5 text-[14px] font-bold text-white shadow-[0_5px_0_var(--color-accent-pressed)] hover:bg-accent-strong"
+                    className="inline-flex min-h-11 items-center rounded-pill bg-primary px-6 text-[15px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus"
                   >
                     Ver profesores
                   </Link>
@@ -78,13 +79,13 @@ export default function MisClasesPage() {
             />
           ) : (
             <Vacio
-              icono={<Calendar size={24} strokeWidth={2.2} />}
+              mascota
               titulo="Nada por aquí todavía"
               texto="Tus clases pasadas aparecerán en esta pestaña."
             />
           ))}
 
-        <ul className="space-y-3">
+        <ul className="grid gap-3 lg:grid-cols-2">
           {data?.map((clase) => (
             <TarjetaClase
               key={clase.id}
@@ -136,7 +137,7 @@ function TarjetaClase({
       <Tarjeta>
         <div className="flex items-center justify-between gap-2">
           <span className="flex items-center gap-1.5 text-[13.5px] font-bold">
-            <Calendar size={15} strokeWidth={2.2} className="text-accent" />
+            <Calendar size={15} strokeWidth={1.75} className="text-primary" />
             {fechaYRango(clase.startsAt!, clase.endsAt!)}
           </span>
           <Badge tono={virtual ? "menta" : "melocoton"}>
@@ -192,7 +193,7 @@ function TarjetaClase({
 
           {scope === "upcoming" && clase.status === "CONFIRMED" && (
             <Boton
-              variante="outline"
+              variante="contorno"
               disabled={!clase.canCancel}
               onClick={() => setCancelando(true)}
               className="h-10 flex-1"
@@ -259,7 +260,7 @@ function ModalCancelar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
         maxLength={300}
         value={motivo}
         onChange={(event) => setMotivo(event.target.value)}
-        className="mt-1.5 w-full rounded-[18px] border-[1.5px] border-border bg-surface-raised px-4 py-3 text-sm focus:border-accent"
+        className="mt-1.5 w-full rounded-base border-[1.5px] border-border bg-surface-raised px-4 py-3 text-sm focus:border-primary focus:shadow-focus focus:outline-none"
       />
 
       {error && (
@@ -269,7 +270,7 @@ function ModalCancelar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
       )}
 
       <div className="mt-5 flex gap-2.5">
-        <Boton variante="outline" onClick={onCerrar} className="h-12 flex-1">
+        <Boton variante="contorno" onClick={onCerrar} className="h-12 flex-1">
           Mantener clase
         </Boton>
         <Boton
@@ -311,14 +312,14 @@ function ModalAsistencia({ clase, onCerrar }: { clase: MyBookingResponse; onCerr
     >
       <div className="flex gap-2">
         <Boton
-          variante={asistio === true ? "tinta" : "outline"}
+          variante={asistio === true ? "tinta" : "contorno"}
           onClick={() => setAsistio(true)}
           className="h-11 flex-1"
         >
           Asistió
         </Boton>
         <Boton
-          variante={asistio === false ? "tinta" : "outline"}
+          variante={asistio === false ? "tinta" : "contorno"}
           onClick={() => setAsistio(false)}
           className="h-11 flex-1"
         >
@@ -335,7 +336,7 @@ function ModalAsistencia({ clase, onCerrar }: { clase: MyBookingResponse; onCerr
         maxLength={500}
         value={notas}
         onChange={(event) => setNotas(event.target.value)}
-        className="mt-1.5 w-full rounded-[18px] border-[1.5px] border-border bg-surface-raised px-4 py-3 text-sm focus:border-accent"
+        className="mt-1.5 w-full rounded-base border-[1.5px] border-border bg-surface-raised px-4 py-3 text-sm focus:border-primary focus:shadow-focus focus:outline-none"
       />
 
       {error && (
@@ -345,11 +346,11 @@ function ModalAsistencia({ clase, onCerrar }: { clase: MyBookingResponse; onCerr
       )}
 
       <div className="mt-5 flex gap-2.5">
-        <Boton variante="outline" onClick={onCerrar} className="h-12 flex-1">
+        <Boton variante="contorno" onClick={onCerrar} className="h-12 flex-1">
           Ahora no
         </Boton>
         <Boton
-          variante="coral"
+          variante="primario"
           disabled={asistio === null || registrar.isPending}
           onClick={() => asistio !== null && registrar.mutate(asistio)}
           className="h-12 flex-1"
@@ -365,11 +366,17 @@ function BannerReserva() {
   const params = useSearchParams();
   if (params.get("reservada") !== "1") return null;
 
+  // El momento de deleite: Rigel celebra la reserva recién confirmada.
   return (
-    <p className="mb-4 flex items-center gap-2 rounded-card bg-success-bg px-4 py-3 text-[13px] font-semibold text-success">
-      <Check size={16} strokeWidth={2.4} />
-      ¡Clase reservada! Te enviamos la confirmación al correo.
-    </p>
+    <div className="anim-rise mb-4 flex items-center gap-3 rounded-card bg-success-bg p-4">
+      <Rigel pose="celebracion" decorativo className="h-[118px] w-auto shrink-0" />
+      <div>
+        <p className="font-display text-[17px] font-bold text-success">¡Clase reservada!</p>
+        <p className="mt-1 text-[13px] leading-relaxed text-text-secondary">
+          Te enviamos la confirmación al correo, con la invitación al calendario.
+        </p>
+      </div>
+    </div>
   );
 }
 

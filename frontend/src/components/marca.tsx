@@ -1,58 +1,100 @@
 import type { ReactNode } from "react";
 
-/** La estrella de 4 puntas del wordmark. Path literal del entregable de diseño. */
-export function EstrellaCoral({ className = "" }: { className?: string }) {
+/**
+ * Logotipo «ORIÓN ✦». El ✦ es el único glifo emoji permitido en toda la interfaz. Toma el color
+ * del contexto (coral sobre superficie clara, on-primary sobre el degradado del amanecer).
+ */
+export function Wordmark({ className = "text-[16px]" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className={className} fill="currentColor">
-      <path d="M12 2l2.6 6.6L21 11l-6.4 2.4L12 20l-2.6-6.6L3 11l6.4-2.4z" />
-    </svg>
-  );
-}
-
-export function Wordmark({ className = "text-[20px]" }: { className?: string }) {
-  return (
-    <span className={`inline-flex items-center gap-1.5 font-extrabold ${className}`}>
-      Orión
-      <EstrellaCoral className="h-[0.55em] w-[0.55em] text-accent" />
+    <span
+      className={`inline-flex items-center gap-1.5 font-display font-extrabold tracking-[0.02em] ${className}`}
+    >
+      ORIÓN
+      <span aria-hidden="true" className="text-[0.9em] leading-none">
+        ✦
+      </span>
     </span>
   );
 }
 
-/** Estrellas que titilan sobre el degradado. Posiciones fijas: nada aleatorio entre renders. */
+/**
+ * Constelación de Orión: ocho estrellas del asterismo con sus líneas. Coordenadas literales del
+ * entregable (viewBox 120×130). Betelgeuse y Rigel van en durazno y con radio mayor. Las estrellas
+ * titilan en opacidad —nunca se mueven de sitio— con fases desfasadas.
+ */
 const ESTRELLAS = [
-  { top: "18%", left: "12%", size: 7, delay: "0s", color: "#FFD9A8" },
-  { top: "30%", left: "78%", size: 5, delay: "0.6s", color: "#FF9C7E" },
-  { top: "62%", left: "22%", size: 4, delay: "1.2s", color: "#FFFFFF" },
-  { top: "12%", left: "56%", size: 5, delay: "1.8s", color: "#FFFFFF" },
-  { top: "72%", left: "88%", size: 6, delay: "0.9s", color: "#FFD9A8" },
+  { cx: 58, cy: 8, r: 2.2, peach: false, dur: "3.4s", delay: "0s" }, // Meissa
+  { cx: 28, cy: 26, r: 3.4, peach: true, dur: "4.2s", delay: "0.8s" }, // Betelgeuse
+  { cx: 88, cy: 20, r: 2.2, peach: false, dur: "3.8s", delay: "1.6s" }, // Bellatrix
+  { cx: 50, cy: 58, r: 2.4, peach: false, dur: "4.6s", delay: "0.4s" }, // Alnitak
+  { cx: 58, cy: 63, r: 2.4, peach: false, dur: "3.2s", delay: "1.2s" }, // Alnilam
+  { cx: 66, cy: 68, r: 2.4, peach: false, dur: "5s", delay: "2s" }, // Mintaka
+  { cx: 34, cy: 112, r: 2.2, peach: false, dur: "4s", delay: "0.6s" }, // Saiph
+  { cx: 92, cy: 106, r: 3.4, peach: true, dur: "4.8s", delay: "1.4s" }, // Rigel
 ];
 
-/** Cabecera nocturna con la constelación: el motivo de marca de Orión. */
-export function HeroNoche({
+const LINEAS = [
+  [58, 8, 28, 26],
+  [58, 8, 88, 20],
+  [28, 26, 50, 58],
+  [88, 20, 66, 68],
+  [50, 58, 58, 63],
+  [58, 63, 66, 68],
+  [50, 58, 34, 112],
+  [66, 68, 92, 106],
+] as const;
+
+export function Constelacion({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 120 130"
+      aria-hidden="true"
+      className={className}
+      fill="none"
+    >
+      {LINEAS.map(([x1, y1, x2, y2], i) => (
+        <line
+          key={i}
+          x1={x1}
+          y1={y1}
+          x2={x2}
+          y2={y2}
+          stroke="rgba(255,255,255,0.32)"
+          strokeWidth={0.9}
+        />
+      ))}
+      {ESTRELLAS.map((estrella, i) => (
+        <circle
+          key={i}
+          className="estrella"
+          cx={estrella.cx}
+          cy={estrella.cy}
+          r={estrella.r}
+          fill={estrella.peach ? "var(--color-accent-peach)" : "var(--color-on-primary)"}
+          style={{ animationDuration: estrella.dur, animationDelay: estrella.delay }}
+        />
+      ))}
+    </svg>
+  );
+}
+
+/**
+ * Panel de marca con el degradado del amanecer y la constelación. Es el motivo hero de las
+ * pantallas de autenticación y de la cabecera de reserva. Nunca detrás de texto de lectura largo.
+ */
+export function PanelAmanecer({
   children,
   className = "",
+  constelacion = "h-[150px] w-[150px]",
 }: {
-  children: ReactNode;
+  children?: ReactNode;
   className?: string;
+  /** Tamaño/posición de la constelación (arriba a la derecha por defecto). */
+  constelacion?: string;
 }) {
   return (
-    <div className={`hero-noche relative overflow-hidden ${className}`}>
-      {ESTRELLAS.map((estrella, i) => (
-        <span
-          key={i}
-          className="estrella absolute"
-          style={{
-            top: estrella.top,
-            left: estrella.left,
-            width: estrella.size,
-            height: estrella.size,
-            color: estrella.color,
-            animationDelay: estrella.delay,
-          }}
-        >
-          <EstrellaCoral className="h-full w-full" />
-        </span>
-      ))}
+    <div className={`gradient-dawn relative overflow-hidden ${className}`}>
+      <Constelacion className={`pointer-events-none absolute -right-4 -top-6 ${constelacion}`} />
       <div className="relative">{children}</div>
     </div>
   );

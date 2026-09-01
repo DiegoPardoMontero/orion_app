@@ -68,7 +68,8 @@ test("Ana reserva un cupo de María: aparece en Mis clases y desaparece de la ag
 
 test("María ve en sus próximas clases la reserva de Ana", async ({ page }) => {
   await login(page, USERS.maria);
-  await expect(page.getByText("Ana Ramírez")).toBeVisible();
+  // .first(): basta con que Ana aparezca entre sus clases; puede tener más de una reserva.
+  await expect(page.getByText("Ana Ramírez").first()).toBeVisible();
 });
 
 test("Ana reserva un cupo lejano y lo cancela: el cupo vuelve a la agenda", async ({ page }) => {
@@ -85,8 +86,10 @@ test("Ana reserva un cupo lejano y lo cancela: el cupo vuelve a la agenda", asyn
   await page.getByRole("button", { name: "Confirmar reserva" }).click();
   await expect(page).toHaveURL(/\/mis-clases/);
 
-  // Puede haber más de una clase; tomamos el botón Cancelar que esté habilitado (el de la lejana).
-  const cancelar = page.getByRole("button", { name: "Cancelar" }).and(page.locator(":not([disabled])")).first();
+  // Cancelamos exactamente la clase que acabamos de reservar (la de `hora`), no "la primera
+  // cancelable": si Ana tiene varias reservas el mismo día, un .first() tocaría la equivocada
+  // y el cupo que verificamos abajo nunca reaparecería.
+  const cancelar = page.locator("main li", { hasText: hora }).getByRole("button", { name: "Cancelar" });
   await expect(cancelar).toBeEnabled();
   await cancelar.click();
   await expect(page.getByText("¿Cancelar esta clase?")).toBeVisible();
@@ -98,4 +101,22 @@ test("Ana reserva un cupo lejano y lo cancela: el cupo vuelve a la agenda", asyn
   await expect(page.getByText("Cupos disponibles")).toBeVisible();
   await dias.last().click();
   await expect(page.locator("main .grid-cols-3 button", { hasText: hora })).toBeVisible();
+});
+
+test("un estudiante nuevo se registra desde el login y aterriza dentro", async ({ page }) => {
+  await page.goto("/login");
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("link", { name: "Crea tu cuenta" }).click();
+  await expect(page).toHaveURL(/\/registro/);
+
+  // Correo único por corrida: el registro es idempotente-hostil (un email solo se puede usar una vez).
+  const email = `nuevo.${Date.now()}@orion.local`;
+  await page.locator("#nombre").fill("Nueva Estudiante");
+  await page.locator("#email").fill(email);
+  await page.locator("#password").fill("orion123*");
+  await page.getByRole("button", { name: "Crear cuenta" }).click();
+
+  // El backend crea la cuenta y abre sesión de una vez: el estudiante cae en su home, ya dentro.
+  await expect(page).toHaveURL(/\/profesores/);
+  await expect(page.getByRole("heading", { name: "Profesores" })).toBeVisible();
 });
