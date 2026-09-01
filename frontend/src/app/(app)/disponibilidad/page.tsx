@@ -12,13 +12,13 @@ import { fechaLarga } from "@/lib/format";
 
 /** ISO 1–7, igual que el backend: 1 = lunes … 7 = domingo. */
 const DIAS = [
-  { valor: 1, nombre: "Lunes" },
-  { valor: 2, nombre: "Martes" },
-  { valor: 3, nombre: "Miércoles" },
-  { valor: 4, nombre: "Jueves" },
-  { valor: 5, nombre: "Viernes" },
-  { valor: 6, nombre: "Sábado" },
-  { valor: 7, nombre: "Domingo" },
+  { valor: 1, nombre: "Lunes", corto: "Lun" },
+  { valor: 2, nombre: "Martes", corto: "Mar" },
+  { valor: 3, nombre: "Miércoles", corto: "Mié" },
+  { valor: 4, nombre: "Jueves", corto: "Jue" },
+  { valor: 5, nombre: "Viernes", corto: "Vie" },
+  { valor: 6, nombre: "Sábado", corto: "Sáb" },
+  { valor: 7, nombre: "Domingo", corto: "Dom" },
 ];
 
 /** Las franjas empiezan y terminan en punto: la regla la impone el backend, aquí solo se refleja. */
@@ -58,74 +58,80 @@ export default function DisponibilidadPage() {
   }
 
   return (
-    <main className="space-y-3 px-5 py-5">
+    <main className="mx-auto w-full max-w-md px-5 py-5 lg:max-w-[1180px] lg:px-12 lg:py-8">
       <div>
         <h1 className="font-display text-h1 font-bold">Mi disponibilidad</h1>
         <p className="mt-1 flex items-center gap-1.5 text-[12.5px] text-text-secondary">
-          <Clock size={14} strokeWidth={2.2} />
+          <Clock size={14} strokeWidth={1.75} />
           Horario semanal recurrente · hora de Bogotá
         </p>
       </div>
 
-      <section className="rounded-card bg-info-bg p-4">
-        {DIAS.map((dia, indice) => {
-          const delDia = (reglas.data ?? []).filter((regla) => regla.weekday === dia.valor);
-          return (
-            <div
-              key={dia.valor}
-              className={indice > 0 ? "border-t border-[rgba(58,50,114,0.12)] pt-3 mt-3" : ""}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[13.5px] font-bold text-info">{dia.nombre}</span>
-                <button
-                  type="button"
-                  aria-label={`Añadir franja el ${dia.nombre.toLowerCase()}`}
-                  onClick={() => setDiaNuevaFranja(dia.valor)}
-                  className="grid h-7 w-7 place-items-center rounded-full bg-white text-info transition-colors hover:bg-primary hover:text-on-primary"
-                >
-                  <Plus size={15} strokeWidth={2.4} />
-                </button>
-              </div>
-
-              {delDia.length === 0 ? (
-                <p className="mt-2 text-[12px] text-info/70">Sin franjas — toca + para añadir</p>
-              ) : (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {delDia.map((regla) => (
-                    <ChipFranja key={regla.id} regla={regla} />
-                  ))}
+      <div className="mt-4 lg:grid lg:grid-cols-[1fr_260px] lg:items-start lg:gap-6">
+        {/* Días: tarjetas apiladas en móvil, grilla de 7 columnas en desktop (todo sin scroll). */}
+        <div className="grid gap-2.5 lg:grid-cols-7 lg:gap-2">
+          {DIAS.map((dia) => {
+            const delDia = (reglas.data ?? []).filter((regla) => regla.weekday === dia.valor);
+            return (
+              <div key={dia.valor} className="rounded-card bg-info-bg p-3 lg:p-2.5">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-[13.5px] font-bold text-info lg:text-[12.5px]">
+                    <span className="lg:hidden">{dia.nombre}</span>
+                    <span className="hidden lg:inline">{dia.corto}</span>
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={`Añadir franja el ${dia.nombre.toLowerCase()}`}
+                    onClick={() => setDiaNuevaFranja(dia.valor)}
+                    className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white text-info transition-colors hover:bg-primary hover:text-on-primary"
+                  >
+                    <Plus size={15} strokeWidth={2.4} />
+                  </button>
                 </div>
-              )}
-            </div>
-          );
-        })}
-      </section>
 
-      <Bloque
-        tono="melocoton"
-        titulo="Fechas bloqueadas"
-        icono={<CalendarOff size={16} strokeWidth={2.2} />}
-      >
-        {(excepciones.data ?? []).length === 0 ? (
-          <p className="text-[12.5px] text-warning">
-            Ninguna por ahora. Bloquea un día cuando no puedas dar clases.
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {excepciones.data!.map((excepcion) => (
-              <FilaExcepcion key={excepcion.id} excepcion={excepcion} />
-            ))}
-          </ul>
-        )}
+                {delDia.length === 0 ? (
+                  <p className="mt-2 text-[11.5px] text-info/70">Sin franjas</p>
+                ) : (
+                  <div className="mt-2 flex flex-wrap gap-1.5 lg:flex-col lg:items-start">
+                    {delDia.map((regla) => (
+                      <ChipFranja key={regla.id} regla={regla} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
 
-        <button
-          type="button"
-          onClick={() => setBloqueando(true)}
-          className="mt-3 w-full rounded-base border-[1.5px] border-dashed border-warning py-2.5 text-[13px] font-bold text-warning hover:bg-white/60"
-        >
-          Bloquear una fecha
-        </button>
-      </Bloque>
+        {/* Fechas bloqueadas: al costado en desktop, debajo en móvil. */}
+        <aside className="mt-3 lg:mt-0">
+          <Bloque
+            tono="melocoton"
+            titulo="Fechas bloqueadas"
+            icono={<CalendarOff size={16} strokeWidth={1.75} />}
+          >
+            {(excepciones.data ?? []).length === 0 ? (
+              <p className="text-[12.5px] text-warning">
+                Ninguna por ahora. Bloquea un día cuando no puedas dar clases.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {excepciones.data!.map((excepcion) => (
+                  <FilaExcepcion key={excepcion.id} excepcion={excepcion} />
+                ))}
+              </ul>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setBloqueando(true)}
+              className="mt-3 w-full rounded-base border-[1.5px] border-dashed border-warning py-2.5 text-[13px] font-bold text-warning hover:bg-white/60"
+            >
+              Bloquear una fecha
+            </button>
+          </Bloque>
+        </aside>
+      </div>
 
       {diaNuevaFranja !== null && (
         <ModalNuevaFranja weekday={diaNuevaFranja} onCerrar={() => setDiaNuevaFranja(null)} />
@@ -150,16 +156,18 @@ function ChipFranja({ regla }: { regla: RuleResponse }) {
   });
 
   const franja = `${corta(regla.startTime)}–${corta(regla.endTime)}`;
+  // En la grilla estrecha de desktop las horas en punto se muestran compactas ("18–21").
+  const franjaCorta = `${horaCompacta(regla.startTime)}–${horaCompacta(regla.endTime)}`;
 
   return (
     <>
-      <span className="inline-flex items-center gap-2 rounded-pill bg-night py-1.5 pl-3.5 pr-1.5 text-[12.5px] font-bold text-on-primary">
-        {franja}
+      <span className="inline-flex items-center gap-1.5 rounded-pill bg-night py-1.5 pl-3 pr-1.5 text-[12px] font-bold text-on-primary">
+        {franjaCorta}
         <button
           type="button"
           aria-label={`Eliminar la franja ${franja}`}
           onClick={() => setConfirmando(true)}
-          className="grid h-5 w-5 place-items-center rounded-full bg-white/20 transition-colors hover:bg-primary"
+          className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white/20 transition-colors hover:bg-primary"
         >
           <X size={12} strokeWidth={2.6} />
         </button>
@@ -418,4 +426,10 @@ function ModalBloquearFecha({ onCerrar }: { onCerrar: () => void }) {
 /** El backend manda "18:00:00"; en pantalla sobra el segundero. */
 function corta(hora?: string): string {
   return (hora ?? "").slice(0, 5);
+}
+
+/** "18:00" → "18"; "18:30" → "18:30". Para la grilla estrecha de días en desktop. */
+function horaCompacta(hora?: string): string {
+  const hhmm = corta(hora);
+  return hhmm.endsWith(":00") ? String(Number(hhmm.slice(0, 2))) : hhmm;
 }

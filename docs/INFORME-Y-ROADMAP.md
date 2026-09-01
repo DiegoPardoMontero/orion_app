@@ -62,7 +62,7 @@ Cada pieza pasa `./mvnw verify` (backend, Testcontainers) + `next build`/`tsc`/`
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots, Rigel protagonista, CTA
   consciente de sesión, WhatsApp).
 
-### Brief de pulido (`orion-brief-pulido-v1`) — Pasos 0, 1, 2, 3 y 6 hechos
+### Brief de pulido (`orion-brief-pulido-v1`) — Pasos 0–6 hechos (completo)
 - **Paso 0**: foto + titular en Mis Clases, tarjetas de profesores con bio (clamp 3 líneas), fix
   de capas de Rigel (mano detrás del cuerpo).
 - **Paso 1**: teléfonos en **E.164** con `PhoneInput` (país + número), normalización central +
@@ -71,28 +71,25 @@ Cada pieza pasa `./mvnw verify` (backend, Testcontainers) + `next build`/`tsc`/`
   foto"). ⚠️ pendiente del secreto correcto (sección 0).
 - **Paso 3**: **link de videollamada automático** (Jitsi) — migración V8, `MeetingLinkProvider`,
   botón "Unirse a la clase", link en correo y `.ics`. El campo de link manual desapareció.
+- **Paso 4**: **reserva desktop — perfil compacto + semana navegable**. En ≥1024px la agenda del
+  profesor es una grilla de 7 días navegable (← →, con query por semana `["slots", id, "semana", from]`);
+  **móvil conserva los chips día+hora** (la grilla en 390px sería scroll horizontal). Layout
+  `lg:grid-cols-[340px_minmax(0,1fr)]` (el `minmax(0,1fr)` evita que la card desborde el sidebar).
+- **Paso 5**: **disponibilidad sin scroll (desktop)**. Los 7 días como columnas (`lg:grid-cols-7`) +
+  panel de fechas bloqueadas al costado (`lg:grid-cols-[1fr_260px]`), todo visible en 1280×800; móvil
+  con tarjetas apiladas y pills compactas ("18–21"). `useMediaQuery` con `useSyncExternalStore`.
 - **Paso 6**: **invitación de profesores** — migración V9 (tabla `professor_invites` dedicada),
   `POST /admin/professors/invite`, pantalla `/invitacion`, el profesor nace INACTIVE y se activa al
   aceptar. Mata el flujo de claves temporales por WhatsApp.
 
 ---
 
-## 2. Lo que falta por implementar (brief de pulido, Pasos 4 y 5)
+## 2. Lo que falta por implementar (brief de pulido)
 
-Son **rediseños de layout de desktop**. El propio brief los marca como *"propuesta tuya con
-captura"* + DETENTE: quiere ver y aprobar la dirección visual antes de que se despliegue al piloto.
-Por eso los dejo propuestos aquí en vez de empujarlos a producción sin tu visto bueno.
-
-- **Paso 4 · Reserva desktop: perfil compacto + semana navegable** — en ≥1024px, grilla de 7 días
-  × franjas horarias (semana navegable ← →) en vez de chips de día+hora; **móvil conserva los
-  chips** (la grilla semanal en 390px es scroll horizontal infernal — decisión consciente). Perfil
-  rediseñado para bios cortas (foto grande, chips de modalidad/nivel, sin océanos de espacio vacío).
-- **Paso 5 · Disponibilidad sin scroll (desktop)** — los 7 días como columnas + panel de fechas
-  bloqueadas al costado, todo visible sin scroll en 1280×800; móvil con filas densas (los días sin
-  franjas colapsan a una línea).
-
-Ambos son de bajo riesgo (frontend puro, el e2e móvil no los toca) pero se benefician de tu ojo.
-Dime "dale a 4 y 5" y los hago con capturas para tu revisión.
+**Nada — el brief de pulido está completo (Pasos 0–6).** Los Pasos 4 y 5 (rediseños de layout de
+desktop) se implementaron y verificaron con capturas en 1280×800 (desktop, sin scroll) y 390px
+(móvil, sin regresiones): reserva con semana navegable y disponibilidad en columnas. La suite e2e
+móvil (10/10) sigue en verde sobre semilla fresca.
 
 ---
 
