@@ -62,35 +62,37 @@ Cada pieza pasa `./mvnw verify` (backend, Testcontainers) + `next build`/`tsc`/`
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots, Rigel protagonista, CTA
   consciente de sesión, WhatsApp).
 
-### Brief de pulido (`orion-brief-pulido-v1`)
+### Brief de pulido (`orion-brief-pulido-v1`) — Pasos 0, 1, 2, 3 y 6 hechos
 - **Paso 0**: foto + titular en Mis Clases, tarjetas de profesores con bio (clamp 3 líneas), fix
   de capas de Rigel (mano detrás del cuerpo).
 - **Paso 1**: teléfonos en **E.164** con `PhoneInput` (país + número), normalización central +
   backfill (V6), `wa.me` robusto con números extranjeros.
 - **Paso 2**: **fotos para todos** vía Cloudinary (migración V7, `POST /me/photo`, UI "Cambiar
   foto"). ⚠️ pendiente del secreto correcto (sección 0).
+- **Paso 3**: **link de videollamada automático** (Jitsi) — migración V8, `MeetingLinkProvider`,
+  botón "Unirse a la clase", link en correo y `.ics`. El campo de link manual desapareció.
+- **Paso 6**: **invitación de profesores** — migración V9 (tabla `professor_invites` dedicada),
+  `POST /admin/professors/invite`, pantalla `/invitacion`, el profesor nace INACTIVE y se activa al
+  aceptar. Mata el flujo de claves temporales por WhatsApp.
 
 ---
 
-## 2. Lo que falta por implementar (brief de pulido, Pasos 3–6)
+## 2. Lo que falta por implementar (brief de pulido, Pasos 4 y 5)
 
-Orden sugerido y plan. Todos verificables localmente salvo lo que dependa de credenciales.
+Son **rediseños de layout de desktop**. El propio brief los marca como *"propuesta tuya con
+captura"* + DETENTE: quiere ver y aprobar la dirección visual antes de que se despliegue al piloto.
+Por eso los dejo propuestos aquí en vez de empujarlos a producción sin tu visto bueno.
 
-- **Paso 3 · Link de videollamada automático (Jitsi)** — migración `bookings.meeting_link`,
-  interfaz `MeetingLinkProvider` + `JitsiMeetingLinkProvider` (`meet.jit.si/OrionIdiomas-<8 chars>`),
-  generación al crear reserva VIRTUAL, botón "Unirse a la clase" en Mis Clases, link en correos y en
-  la `DESCRIPTION` del `.ics`. El campo de link manual desaparece del formulario (el de lugar se
-  queda para presencial). *Contenido y de bajo riesgo — es lo siguiente.*
 - **Paso 4 · Reserva desktop: perfil compacto + semana navegable** — en ≥1024px, grilla de 7 días
-  × franjas en vez de chips; móvil conserva los chips (decisión consciente). Perfil rediseñado
-  para bios cortas.
-- **Paso 5 · Disponibilidad sin scroll (desktop)** — 7 días como columnas + panel de bloqueos al
-  costado; móvil con filas densas.
-- **Paso 6 · Invitación de profesores** — **decisión tomada:** en vez de la tabla genérica
-  `auth_tokens` que asume el brief (no existe; construí `password_reset_tokens` dedicada), haré una
-  tabla **`professor_invites`** dedicada, consistente con ese patrón. Endpoint
-  `POST /admin/professors/invite`, pantalla `/invitacion?token=`, el profesor nace `INACTIVE` y se
-  activa al aceptar. Mata el flujo de claves temporales por WhatsApp.
+  × franjas horarias (semana navegable ← →) en vez de chips de día+hora; **móvil conserva los
+  chips** (la grilla semanal en 390px es scroll horizontal infernal — decisión consciente). Perfil
+  rediseñado para bios cortas (foto grande, chips de modalidad/nivel, sin océanos de espacio vacío).
+- **Paso 5 · Disponibilidad sin scroll (desktop)** — los 7 días como columnas + panel de fechas
+  bloqueadas al costado, todo visible sin scroll en 1280×800; móvil con filas densas (los días sin
+  franjas colapsan a una línea).
+
+Ambos son de bajo riesgo (frontend puro, el e2e móvil no los toca) pero se benefician de tu ojo.
+Dime "dale a 4 y 5" y los hago con capturas para tu revisión.
 
 ---
 
