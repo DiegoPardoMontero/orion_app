@@ -17,7 +17,7 @@ public record ProfessorDetail(UUID id,
                 profile.getUser().getFullName(),
                 profile.getHeadline(),
                 profile.getBio(),
-                profile.getPhotoUrl(),
+                profile.getUser().getPhotoUrl(),
                 profile.getUser().getWhatsappPhone());
     }
 }

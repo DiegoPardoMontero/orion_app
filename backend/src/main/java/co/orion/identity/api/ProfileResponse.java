@@ -24,7 +24,7 @@ public record ProfileResponse(UUID id,
                 profile.getUser().getFullName(),
                 profile.getHeadline(),
                 profile.getBio(),
-                profile.getPhotoUrl(),
+                profile.getUser().getPhotoUrl(),
                 profile.isPublished());
     }
 }

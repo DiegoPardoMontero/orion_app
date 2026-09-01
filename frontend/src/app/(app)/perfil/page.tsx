@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Eye } from "lucide-react";
 import { useState } from "react";
+import { CambiarFoto } from "@/components/CambiarFoto";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
 import { BotonPrincipal, Campo, Toggle } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
@@ -43,7 +44,6 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
 
   const [headline, setHeadline] = useState(inicial.headline ?? "");
   const [bio, setBio] = useState(inicial.bio ?? "");
-  const [fotoUrl, setFotoUrl] = useState(inicial.photoUrl ?? "");
   const [publicado, setPublicado] = useState(inicial.isPublished ?? false);
   const [guardado, setGuardado] = useState(false);
 
@@ -54,7 +54,6 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
         body: {
           headline: headline.trim() || undefined,
           bio: bio.trim() || undefined,
-          photoUrl: fotoUrl.trim() || undefined,
           isPublished: publicado,
         },
       }),
@@ -73,6 +72,10 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
     <main className="px-5 py-5">
       <h1 className="font-display text-h1 font-bold">Mi perfil</h1>
       <p className="mt-1 text-[12.5px] text-text-secondary">Esto es lo que ven los estudiantes.</p>
+
+      <div className="mt-5">
+        <CambiarFoto nombre={inicial.fullName ?? ""} fotoUrl={inicial.photoUrl} />
+      </div>
 
       <label className="mt-5 block text-[12.5px] font-bold text-text-secondary" htmlFor="headline">
         Titular
@@ -97,19 +100,6 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
         onChange={(event) => setBio(event.target.value)}
         placeholder="Cuéntales cómo son tus clases."
         className="mt-1.5 w-full rounded-base border-[1.5px] border-border bg-surface-raised px-4 py-3 text-sm placeholder:text-text-muted focus:border-primary focus:shadow-focus focus:outline-none"
-      />
-
-      <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="foto">
-        URL de tu foto
-      </label>
-      <Campo
-        id="foto"
-        type="url"
-        maxLength={500}
-        value={fotoUrl}
-        onChange={(event) => setFotoUrl(event.target.value)}
-        placeholder="https://…"
-        className="mt-1.5"
       />
 
       <section className="mt-5 rounded-card bg-success-bg p-4">

@@ -96,7 +96,7 @@ class ProfessorDirectoryIT extends ApiIntegrationSupport {
     void unpublishingRemovesTheProfessorFromTheDirectoryAndFromTheDetail() {
         ResponseEntity<ProfileResponse> updated = put(
                 MY_PROFILE, mariaSession,
-                new UpdateProfileRequest("Inglés conversacional", "Diez años de experiencia.", null, false),
+                new UpdateProfileRequest("Inglés conversacional", "Diez años de experiencia.", false),
                 ProfileResponse.class);
 
         assertThat(updated.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -109,8 +109,14 @@ class ProfessorDirectoryIT extends ApiIntegrationSupport {
 
     @Test
     void republishingBringsTheProfessorBack() {
+        // La foto ahora vive en el usuario (se sube por /me/photo); la fijamos directo para
+        // comprobar que fluye al directorio, sin depender del update del perfil.
+        User m = users.findById(maria.getId()).orElseThrow();
+        m.changePhotoUrl("https://fotos/maria.jpg");
+        users.save(m);
+
         put(MY_PROFILE, mariaSession,
-                new UpdateProfileRequest("Inglés de negocios", "Nueva bio.", "https://fotos/maria.jpg", true),
+                new UpdateProfileRequest("Inglés de negocios", "Nueva bio.", true),
                 ProfileResponse.class);
 
         ResponseEntity<ProfessorSummary[]> response = get(PROFESSORS, anaSession, ProfessorSummary[].class);
@@ -144,7 +150,7 @@ class ProfessorDirectoryIT extends ApiIntegrationSupport {
     void aStudentCannotUpdateAProfessorProfile() {
         ResponseEntity<Map> response = put(
                 MY_PROFILE, anaSession,
-                new UpdateProfileRequest("Me autoproclamo profesora", null, null, true),
+                new UpdateProfileRequest("Me autoproclamo profesora", null, true),
                 Map.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);

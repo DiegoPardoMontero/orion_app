@@ -12,6 +12,6 @@ public record ProfessorSummary(UUID id, String fullName, String headline, String
                 profile.getUser().getFullName(),
                 profile.getHeadline(),
                 profile.getBio(),
-                profile.getPhotoUrl());
+                profile.getUser().getPhotoUrl());
     }
 }

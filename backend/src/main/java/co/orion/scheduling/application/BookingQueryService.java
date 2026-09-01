@@ -70,11 +70,14 @@ public class BookingQueryService {
         return found.stream()
                 .map(booking -> {
                     UUID counterpartId = asStudent ? booking.getProfessorId() : booking.getStudentId();
+                    User counterpart = counterparts.get(counterpartId);
                     ProfessorProfile profile = professorProfiles.get(counterpartId);
                     return new MyBookingsView(
                             booking,
-                            counterparts.get(counterpartId),
-                            profile != null ? profile.getPhotoUrl() : null,
+                            counterpart,
+                            // La foto ahora vive en el usuario (sirve para estudiantes y profesores);
+                            // el titular sigue viniendo del perfil público del profesor.
+                            counterpart != null ? counterpart.getPhotoUrl() : null,
                             profile != null ? profile.getHeadline() : null,
                             now);
                 })

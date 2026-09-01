@@ -43,6 +43,9 @@ public class User {
     @Column(name = "whatsapp_phone", length = 20)
     private String whatsappPhone;
 
+    @Column(name = "photo_url", length = 500)
+    private String photoUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, length = 20)
     private UserRole role;
@@ -88,6 +91,10 @@ public class User {
         this.whatsappPhone = whatsappPhone;
     }
 
+    public void changePhotoUrl(String photoUrl) {
+        this.photoUrl = photoUrl;
+    }
+
     public void changeFullName(String fullName) {
         this.fullName = Objects.requireNonNull(fullName, "fullName");
     }
@@ -122,6 +129,10 @@ public class User {
 
     public String getWhatsappPhone() {
         return whatsappPhone;
+    }
+
+    public String getPhotoUrl() {
+        return photoUrl;
     }
 
     public UserRole getRole() {

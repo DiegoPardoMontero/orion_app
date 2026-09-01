@@ -36,6 +36,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["upload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/password": {
         parameters: {
             query?: never;
@@ -411,7 +427,6 @@ export interface components {
         UpdateProfileRequest: {
             headline?: string;
             bio?: string;
-            photoUrl?: string;
             isPublished?: boolean;
         };
         ProfileResponse: {
@@ -432,6 +447,7 @@ export interface components {
             email?: string;
             whatsappPhone?: string;
             role?: string;
+            photoUrl?: string;
         };
         ChangePasswordRequest: {
             currentPassword: string;
@@ -532,6 +548,7 @@ export interface components {
             email?: string;
             fullName?: string;
             role?: string;
+            photoUrl?: string;
         };
         LoginRequest: {
             /** Format: email */
@@ -726,6 +743,35 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["MeAccountResponse"];
+                };
+            };
+        };
+    };
+    upload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": {
+                        [key: string]: string;
+                    };
                 };
             };
         };

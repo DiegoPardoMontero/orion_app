@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, KeyRound, Mail, User } from "lucide-react";
 import { useState } from "react";
 import { CambiarClave } from "@/components/CambiarClave";
+import { CambiarFoto } from "@/components/CambiarFoto";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
 import { PhoneInput } from "@/components/PhoneInput";
 import { BotonPrincipal, Campo } from "@/components/ui";
@@ -15,6 +16,7 @@ type Cuenta = {
   email: string;
   whatsappPhone: string | null;
   role: string;
+  photoUrl: string | null;
 };
 
 export default function CuentaPage() {
@@ -73,6 +75,10 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
       <p className="mt-1 text-[14px] text-text-secondary">
         Tus datos para coordinar las clases con tu profesor.
       </p>
+
+      <div className="mt-5">
+        <CambiarFoto nombre={inicial.fullName} fotoUrl={inicial.photoUrl} />
+      </div>
 
       <label className="mt-6 block text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary" htmlFor="nombre">
         Nombre completo

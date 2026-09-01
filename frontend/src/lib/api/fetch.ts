@@ -86,6 +86,34 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
 }
 
 /**
+ * Subida de foto de perfil (multipart). No usa apiFetch porque el cuerpo es FormData, no JSON:
+ * dejamos que el navegador ponga el Content-Type con su boundary. El header CSRF sí va, como en
+ * cualquier mutación.
+ */
+export async function uploadFoto(file: File): Promise<{ photoUrl: string }> {
+  const form = new FormData();
+  form.append("file", file);
+
+  const headers: Record<string, string> = {};
+  const token = csrfToken();
+  if (token) {
+    headers["X-XSRF-TOKEN"] = token;
+  }
+
+  const response = await fetch("/api/v1/me/photo", {
+    method: "POST",
+    headers,
+    body: form,
+    credentials: "same-origin",
+  });
+
+  if (!response.ok) {
+    throw await toApiError(response);
+  }
+  return (await response.json()) as { photoUrl: string };
+}
+
+/**
  * Los errores del backend ya vienen redactados y con la voz institucional
  * ({"error": "Con menos de 24 horas..."}), así que se propagan tal cual: el frontend no
  * reescribe mensajes de negocio.

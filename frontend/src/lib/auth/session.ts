@@ -10,6 +10,7 @@ export type Me = {
   email: string;
   fullName: string;
   role: Role;
+  photoUrl?: string | null;
 };
 
 export const meQueryKey = ["auth", "me"] as const;

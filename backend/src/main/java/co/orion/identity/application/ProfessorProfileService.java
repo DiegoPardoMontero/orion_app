@@ -35,14 +35,13 @@ public class ProfessorProfileService {
 
     @Transactional
     public ProfessorProfile updateOwnProfile(UUID professorId, String headline, String bio,
-                                             String photoUrl, boolean published) {
+                                             boolean published) {
         // findByIdWithUser y no findById: el controlador lee profile.getUser() ya fuera de la
         // transacción, y un proxy perezoso sin sesión explotaría con LazyInitializationException.
         ProfessorProfile profile = profiles.findByIdWithUser(professorId)
                 .orElseGet(() -> createEmptyProfileFor(professorId));
 
         profile.describe(headline, bio);
-        profile.changePhotoUrl(photoUrl);
         if (published) {
             profile.publish();
         } else {

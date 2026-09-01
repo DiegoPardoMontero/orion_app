@@ -19,6 +19,12 @@ spring:
     enabled: true
     locations: classpath:db/migration
 
+  # Fotos de perfil: el default de Spring es 1 MB; el negocio permite hasta 5 MB.
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+
   # El módulo notifications necesita el bean JavaMailSender, así que la config de correo vive
   # aquí y no solo en el perfil local. En desarrollo apunta a Mailpit (SMTP falso, puerto 1025).
   mail:

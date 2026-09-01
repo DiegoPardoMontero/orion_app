@@ -83,7 +83,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 }
 
 /** Cabecera móvil: 64 px, logotipo coral + menú de usuario. Sobre superficie clara. */
-function MobileHeader({ me }: { me: { fullName: string; email: string; role: Role } }) {
+function MobileHeader({ me }: { me: { fullName: string; email: string; role: Role; photoUrl?: string | null } }) {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-surface-sunken bg-surface px-5 lg:hidden">
       <Wordmark className="text-[16px] text-primary" />
@@ -134,7 +134,7 @@ function Sidebar({
   nav,
   pathname,
 }: {
-  me: { fullName: string; email: string; role: Role };
+  me: { fullName: string; email: string; role: Role; photoUrl?: string | null };
   nav: NavItem[];
   pathname: string;
 }) {
@@ -185,7 +185,7 @@ function MenuUsuario({
   me,
   posicion,
 }: {
-  me: { fullName: string; email: string; role: Role };
+  me: { fullName: string; email: string; role: Role; photoUrl?: string | null };
   posicion: "abajo" | "arriba";
 }) {
   const router = useRouter();
@@ -201,7 +201,7 @@ function MenuUsuario({
         onClick={() => setAbierto((v) => !v)}
         className="rounded-full ring-2 ring-transparent transition hover:ring-primary-soft focus-visible:shadow-focus"
       >
-        <Avatar nombre={me.fullName} size="sm" />
+        <Avatar nombre={me.fullName} fotoUrl={me.photoUrl} size="sm" />
       </button>
     ) : (
       <button
@@ -210,7 +210,7 @@ function MenuUsuario({
         onClick={() => setAbierto((v) => !v)}
         className="flex w-full items-center gap-2.5 rounded-pill bg-surface-raised px-3 py-2 text-left shadow-sm transition hover:shadow-md focus-visible:shadow-focus"
       >
-        <Avatar nombre={me.fullName} size="sm" />
+        <Avatar nombre={me.fullName} fotoUrl={me.photoUrl} size="sm" />
         <span className="min-w-0">
           <span className="block truncate text-[13px] font-bold text-text">{me.fullName}</span>
           <span className="block truncate text-[11px] text-text-muted">{ETIQUETA_ROL[me.role]}</span>

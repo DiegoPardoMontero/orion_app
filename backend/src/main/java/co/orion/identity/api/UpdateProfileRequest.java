@@ -10,8 +10,6 @@ public record UpdateProfileRequest(
 
         String bio,
 
-        @Size(max = 500, message = "photoUrl no puede superar 500 caracteres")
-        String photoUrl,
-
+        // La foto ya no se edita por URL: se sube por POST /api/v1/me/photo.
         @JsonProperty("isPublished") boolean isPublished) {
 }

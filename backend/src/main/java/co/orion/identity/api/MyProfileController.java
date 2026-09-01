@@ -33,7 +33,6 @@ public class MyProfileController {
                 principal.user().getId(),
                 body.headline(),
                 body.bio(),
-                body.photoUrl(),
                 body.isPublished()));
     }
 }
