@@ -67,12 +67,14 @@ Corrido con Chromium sobre `http://localhost:3000/`. **Todas las categorías cum
 
 Métricas de perf: FCP 0.8 s · LCP 2.0 s · TBT 120 ms · CLS 0 · Speed Index 0.8 s.
 
-**Dos hallazgos por encima del DoD (opcionales, decisión de Pardo):**
-1. **Contraste del coral de marca.** El CTA principal (coral `#E8503A` + texto crema `#FFF6EE`) da
-   **3.48:1**, bajo el 4.5:1 de AA para texto normal (el bold 15px queda a un pelo del umbral de
-   "texto grande", que solo pide 3:1). Igual pasa con el coral como *texto* sobre cremas y con el
-   `primary-strong` (`#C93A26`, **4.48:1**, a 0.02 de pasar). Subir a AA-pleno exige **oscurecer el
-   coral** → cambia la identidad visual aprobada. Es tu llamada; A11y ya pasa en 95.
+**Hallazgos por encima del DoD:**
+1. **Contraste del coral de marca.** *(Parcialmente resuelto — 01/09/2026.)* El coral como *texto*
+   pequeño sobre cremas/durazno quedaba bajo AA (3.17–3.48). Se oscureció `primary-strong` a
+   `#C0341F` (imperceptible) y se pasaron a esa variante los coral-texto de la landing (wordmark del
+   footer, número de paso) y del banner de instalación: ahora pasan 4.5:1. **Lo que queda:** el coral
+   de *fondo* del hero/botones (`#E8503A` + texto crema = 3.48) se dejó igual por decisión de diseño,
+   así que el score agregado de A11y sigue en **95** (pasa el DoD). Subirlo por encima de 95 exigiría
+   oscurecer el fondo de los botones → cambia la cara de la marca. Disponible cuando quieras.
 2. **Un 401 en consola.** La landing pública consulta `/auth/me` para decidir el CTA; sin sesión
    responde 401 (correcto) y el navegador lo loguea solo. El JS ya lo maneja (`redirectOn401:false`),
    pero el log de red no se puede silenciar sin evitar la petición (chequeo de sesión server-side, que
