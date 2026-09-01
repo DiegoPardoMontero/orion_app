@@ -7,15 +7,17 @@ spring:
     hibernate:
       ddl-auto: validate
     open-in-view: false
+  # Producción envía por la API HTTP de Resend, no por SMTP (ver orion.mail.transport abajo). Los
+  # MAIL_* llevan default para que el arranque no dependa de ellos; solo importan si se conmuta a
+  # ORION_MAIL_TRANSPORT=smtp (p. ej. en un host que sí permita el 587).
   mail:
-    host: ${MAIL_HOST}
-    port: ${MAIL_PORT}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
-      mail.smtp.auth: true
+      mail.smtp.auth: ${MAIL_SMTP_AUTH:true}
       mail.smtp.starttls.enable: true
-      # Un SMTP colgado no debe colgar la reserva: falla rápido, se registra y se sigue.
       mail.smtp.connectiontimeout: 5000
       mail.smtp.timeout: 5000
       mail.smtp.writetimeout: 5000
@@ -38,6 +40,10 @@ orion:
     base-url: ${ORION_APP_BASE_URL}
   mail:
     from: ${ORION_MAIL_FROM}
+    # Producción envía por la API HTTP de Resend (443), no por SMTP: Railway bloquea el puerto 587.
+    transport: ${ORION_MAIL_TRANSPORT:resend}
+    resend:
+      api-key: ${RESEND_API_KEY:}
   cors:
     allowed-origins: ${ORION_CORS_ALLOWED_ORIGINS:}
 

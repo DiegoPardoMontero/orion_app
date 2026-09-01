@@ -17,6 +17,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.Executor;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.task.SyncTaskExecutor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -65,6 +67,16 @@ class BookingNotificationIT extends ApiIntegrationSupport {
         @Primary
         Clock fixedClock() {
             return Clock.fixed(FROZEN_NOW, ZoneOffset.UTC);
+        }
+
+        /**
+         * En producción el listener de reservas es @Async (la reserva no espera al correo). Aquí lo
+         * volvemos síncrono con un SyncTaskExecutor: así los correos se envían en el hilo de la
+         * llamada y verify(...) es determinista, sin tareas async solapándose entre tests.
+         */
+        @Bean
+        Executor taskExecutor() {
+            return new SyncTaskExecutor();
         }
     }
 
@@ -172,10 +184,22 @@ class BookingNotificationIT extends ApiIntegrationSupport {
         // 2 de la creación + 2 de la cancelación.
         verify(mailSender, timeout(5000).times(4)).send(sent.capture());
 
-        MimeMessage cancellation = sent.getAllValues().get(2);
-        assertThat(cancellation.getSubject()).contains("cancelada");
-        assertThat(messageAsString(cancellation)).doesNotContain("clase-orion.ics");
-        assertThat(messageAsString(cancellation)).contains("Viaje imprevisto");
+        // El envío es async: no asumimos orden. Filtramos las cancelaciones por asunto.
+        List<MimeMessage> cancellations = sent.getAllValues().stream()
+                .filter(message -> {
+                    try {
+                        return message.getSubject().contains("cancelada");
+                    } catch (Exception ex) {
+                        throw new IllegalStateException(ex);
+                    }
+                })
+                .toList();
+
+        assertThat(cancellations).hasSize(2);
+        assertThat(cancellations).allSatisfy(cancellation ->
+                assertThat(messageAsString(cancellation)).doesNotContain("clase-orion.ics"));
+        assertThat(cancellations).anySatisfy(cancellation ->
+                assertThat(messageAsString(cancellation)).contains("Viaje imprevisto"));
     }
 
     @Test

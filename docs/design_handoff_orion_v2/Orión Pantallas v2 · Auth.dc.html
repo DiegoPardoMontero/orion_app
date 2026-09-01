@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700;800&display=swap">
+  <style>
+    body { margin:0; background:#EFE6DC; }
+    a { color:#C93A26; } a:hover { color:#33203B; }
+    ::selection { background:#FFC189; color:#33203B; }
+    @keyframes tw { 0%,100%{opacity:1} 50%{opacity:.18} }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    @keyframes glow { 0%,100%{box-shadow:0 8px 18px rgba(232,80,58,.3)} 50%{box-shadow:0 8px 26px rgba(232,80,58,.5)} }
+    @keyframes drawCheck { to{stroke-dashoffset:0} }
+    @keyframes popStar { 0%{opacity:0; transform:scale(.4)} 60%{opacity:1; transform:scale(1.15)} 100%{opacity:1; transform:scale(1)} }
+    @media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important} }
+  </style>
+</helmet>
+
+<div style="font-family:'Figtree',sans-serif; color:#33203B; padding:56px 48px 120px; display:flex; flex-direction:column; gap:72px;">
+
+  <div style="display:flex; flex-direction:column; gap:12px; max-width:760px;">
+    <div style="color:#7A6B85; font-size:11px; font-weight:700; letter-spacing:.18em; text-transform:uppercase;">Orión · Design v2 · Etapa 3 — 1 de 3</div>
+    <h1 style="margin:0; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:44px; line-height:1.08;">Suite de autenticación y error</h1>
+    <p style="margin:0; color:#5E4E6B; font-size:16px; line-height:1.65;">Pantallas 1–4 y 12. Split-screen en desktop — formulario a un lado, panel de marca con la constelación al otro — que colapsa a un hero compacto en móvil. Cada marco está dibujado a su ancho real (390 y 1280) y mostrado al 65%.</p>
+  </div>
+
+  <!-- ═══════════ 1 · LOGIN ═══════════ -->
+  <section data-screen-label="01 Login" style="display:flex; flex-direction:column; gap:20px;">
+    <div style="display:flex; gap:16px; align-items:baseline;">
+      <span style="background:#33203B; color:#FFF6EE; font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:13px; padding:5px 12px; border-radius:999px;">01</span>
+      <h2 style="margin:0; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:26px;">Login · <span style="color:#7A6B85; font-weight:400;">/login</span></h2>
+      <span style="color:#5E4E6B; font-size:14px;">Deleite: la constelación respira detrás del amanecer.</span>
+    </div>
+    <div style="display:flex; gap:32px; align-items:flex-start;">
+
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <span style="color:#7A6B85; font-size:11px; font-weight:700; letter-spacing:.12em;">MÓVIL · 390</span>
+        <div style="zoom:.65; width:390px; height:844px; background:#FFF6EE; border-radius:20px; overflow:hidden; box-shadow:0 20px 50px rgba(51,32,59,.18); display:flex; flex-direction:column;">
+          <div style="position:relative; height:290px; background:linear-gradient(180deg,#2E1E4E 0%,#7A4A8C 46%,#E8764F 82%,#FFC189 100%); padding:26px 28px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:space-between; overflow:hidden;">
+            <svg width="150" height="162" viewBox="0 0 120 130" style="position:absolute; right:20px; top:26px;">
+              <g stroke="rgba(255,255,255,.3)" stroke-width="1"><line x1="58" y1="8" x2="28" y2="26"></line><line x1="58" y1="8" x2="88" y2="20"></line><line x1="28" y1="26" x2="50" y2="58"></line><line x1="88" y1="20" x2="66" y2="68"></line><line x1="50" y1="58" x2="58" y2="63"></line><line x1="58" y1="63" x2="66" y2="68"></line><line x1="50" y1="58" x2="34" y2="112"></line><line x1="66" y1="68" x2="92" y2="106"></line></g>
+              <circle cx="58" cy="8" r="2" fill="#FFF6EE" style="animation:tw 4s ease-in-out infinite;"></circle><circle cx="28" cy="26" r="3.4" fill="#FFC189" style="animation:tw 3s ease-in-out infinite .6s;"></circle><circle cx="88" cy="20" r="2.6" fill="#FFF6EE" style="animation:tw 5s ease-in-out infinite 1.2s;"></circle><circle cx="50" cy="58" r="2.2" fill="#FFF6EE" style="animation:tw 4.5s ease-in-out infinite .3s;"></circle><circle cx="58" cy="63" r="2.4" fill="#FFF6EE" style="animation:tw 3.5s ease-in-out infinite 1.8s;"></circle><circle cx="66" cy="68" r="2.2" fill="#FFF6EE" style="animation:tw 4s ease-in-out infinite .9s;"></circle><circle cx="34" cy="112" r="2.4" fill="#FFF6EE" style="animation:tw 5s ease-in-out infinite 2.1s;"></circle><circle cx="92" cy="106" r="3.2" fill="#FFC189" style="animation:tw 3.2s ease-in-out infinite 1.5s;"></circle>
+            </svg>
+            <div style="color:#FFF6EE; font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:15px; letter-spacing:.04em;">ORIÓN ✦</div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div style="color:#FFF6EE; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:32px; line-height:1.1;">Tu inglés está a punto de amanecer.</div>
+              <div style="color:rgba(255,246,238,.72); font-size:13px; font-style:italic;">Learn with confidence.</div>
+            </div>
+          </div>
+          <div style="flex:1; padding:28px; display:flex; flex-direction:column; gap:16px;">
+            <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:26px;">Qué bueno verte</div>
+            <label style="display:flex; flex-direction:column; gap:7px;">
+              <span style="color:#33203B; font-size:13px; font-weight:600;">Correo</span>
+              <input type="email" placeholder="tu@correo.com" style="height:52px; padding:0 18px; background:#FFFFFF; border:1.5px solid #EADFD4; border-radius:14px; color:#33203B; font-size:15px; font-family:'Figtree',sans-serif; outline:none;">
+            </label>
+            <label style="display:flex; flex-direction:column; gap:7px;">
+              <span style="color:#33203B; font-size:13px; font-weight:600;">Contraseña</span>
+              <div style="position:relative; display:flex;">
+                <input type="password" value="••••••••••" style="flex:1; height:52px; padding:0 46px 0 18px; background:#FFFFFF; border:1.5px solid #EADFD4; border-radius:14px; color:#33203B; font-size:15px; font-family:'Figtree',sans-serif; outline:none;">
+                <span style="position:absolute; right:16px; top:50%; transform:translateY(-50%); color:#7A6B85; display:flex;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"></path><circle cx="12" cy="12" r="3"></circle></svg></span>
+              </div>
+            </label>
+            <a href="#recuperar" style="color:#C93A26; font-size:13px; font-weight:600; text-decoration:none; align-self:flex-end;">¿Olvidaste tu contraseña?</a>
+            <button style="height:52px; background:#E8503A; color:#FFF6EE; border:none; border-radius:999px; font-family:'Figtree',sans-serif; font-size:16px; font-weight:700; cursor:pointer; white-space:nowrap; box-shadow:0 10px 24px rgba(232,80,58,.35);">Entrar</button>
+            <div style="text-align:center; color:#7A6B85; font-size:13px;">¿Primera vez? <a href="#registro" style="color:#C93A26; font-weight:700;">Crea tu cuenta</a></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <span style="color:#7A6B85; font-size:11px; font-weight:700; letter-spacing:.12em;">DESKTOP · 1280</span>
+        <div style="zoom:.65; width:1280px; height:844px; background:#FFF6EE; border-radius:20px; overflow:hidden; box-shadow:0 20px 50px rgba(51,32,59,.18); display:flex;">
+          <div style="flex:1; display:flex; align-items:center; justify-content:center; padding:56px;">
+            <div style="width:400px; display:flex; flex-direction:column; gap:18px;">
+              <div style="color:#E8503A; font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:18px; letter-spacing:.04em;">ORIÓN ✦</div>
+              <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">
+                <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:38px; line-height:1.12;">Qué bueno verte</div>
+                <div style="color:#5E4E6B; font-size:16px;">Tu próxima clase te está esperando.</div>
+              </div>
+              <label style="display:flex; flex-direction:column; gap:7px;">
+                <span style="color:#33203B; font-size:13px; font-weight:600;">Correo</span>
+                <input type="email" placeholder="tu@correo.com" style="height:52px; padding:0 18px; background:#FFFFFF; border:1.5px solid #EADFD4; border-radius:14px; color:#33203B; font-size:15px; font-family:'Figtree',sans-serif; outline:none;">
+              </label>
+              <label style="display:flex; flex-direction:column; gap:7px;">
+                <span style="color:#33203B; font-size:13px; font-weight:600;">Contraseña</span>
+                <div style="position:relative; display:flex;">
+                  <input type="password" value="••••••••••" style="flex:1; height:52px; padding:0 46px 0 18px; background:#FFFFFF; border:1.5px solid #EADFD4; border-radius:14px; color:#33203B; font-size:15px; font-family:'Figtree',sans-serif; outline:none;">
+                  <span style="position:absolute; right:16px; top:50%; transform:translateY(-50%); color:#7A6B85; display:flex;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"></path><circle cx="12" cy="12" r="3"></circle></svg></span>
+                </div>
+              </label>
+              <a href="#recuperar" style="color:#C93A26; font-size:13px; font-weight:600; text-decoration:none; align-self:flex-end;">¿Olvidaste tu contraseña?</a>
+              <button style="height:52px; background:#E8503A; color:#FFF6EE; border:none; border-radius:999px; font-family:'Figtree',sans-serif; font-size:16px; font-weight:700; cursor:pointer; white-space:nowrap; box-shadow:0 10px 24px rgba(232,80,58,.35);">Entrar</button>
+              <div style="text-align:center; color:#7A6B85; font-size:13px;">¿Primera vez? <a href="#registro" style="color:#C93A26; font-weight:700;">Crea tu cuenta</a></div>
+            </div>
+          </div>
+          <div style="width:47%; margin:20px; border-radius:22px; position:relative; overflow:hidden; background:linear-gradient(180deg,#2E1E4E 0%,#7A4A8C 46%,#E8764F 82%,#FFC189 100%); padding:52px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:flex-end;">
+            <svg width="360" height="390" viewBox="0 0 120 130" style="position:absolute; right:36px; top:40px;">
+              <g stroke="rgba(255,255,255,.28)" stroke-width=".8"><line x1="58" y1="8" x2="28" y2="26"></line><line x1="58" y1="8" x2="88" y2="20"></line><line x1="28" y1="26" x2="50" y2="58"></line><line x1="88" y1="20" x2="66" y2="68"></line><line x1="50" y1="58" x2="58" y2="63"></line><line x1="58" y1="63" x2="66" y2="68"></line><line x1="50" y1="58" x2="34" y2="112"></line><line x1="66" y1="68" x2="92" y2="106"></line></g>
+              <circle cx="58" cy="8" r="1.7" fill="#FFF6EE" style="animation:tw 4s ease-in-out infinite;"></circle><circle cx="28" cy="26" r="2.9" fill="#FFC189" style="animation:tw 3s ease-in-out infinite .6s;"></circle><circle cx="88" cy="20" r="2.2" fill="#FFF6EE" style="animation:tw 5s ease-in-out infinite 1.2s;"></circle><circle cx="50" cy="58" r="1.9" fill="#FFF6EE" style="animation:tw 4.5s ease-in-out infinite .3s;"></circle><circle cx="58" cy="63" r="2.1" fill="#FFF6EE" style="animation:tw 3.5s ease-in-out infinite 1.8s;"></circle><circle cx="66" cy="68" r="1.9" fill="#FFF6EE" style="animation:tw 4s ease-in-out infinite .9s;"></circle><circle cx="34" cy="112" r="2.1" fill="#FFF6EE" style="animation:tw 5s ease-in-out infinite 2.1s;"></circle><circle cx="92" cy="106" r="2.7" fill="#FFC189" style="animation:tw 3.2s ease-in-out infinite 1.5s;"></circle>
+              <text x="20" y="34" font-family="Figtree" font-size="3.4" fill="rgba(255,255,255,.5)" letter-spacing=".4">BETELGEUSE</text>
+              <text x="80" y="114" font-family="Figtree" font-size="3.4" fill="rgba(255,255,255,.5)" letter-spacing=".4">RIGEL</text>
+            </svg>
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <div style="color:#FFF6EE; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:46px; line-height:1.08; max-width:440px;">Tu inglés está a punto de amanecer.</div>
+              <div style="color:rgba(255,246,238,.75); font-size:16px; font-style:italic;">Learn with confidence. Transform your opportunities.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 2 · REGISTRO ═══════════ -->
+  <section id="registro" data-screen-label="02 Registro" style="display:flex; flex-direction:column; gap:20px;">
+    <div style="display:flex; gap:16px; align-items:baseline; flex-wrap:wrap;">
+      <span style="background:#33203B; color:#FFF6EE; font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:13px; padding:5px 12px; border-radius:999px;">02</span>
+      <h2 style="margin:0; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:26px;">Registro · <span style="color:#7A6B85; font-weight:400;">/registro</span></h2>
+      <span style="color:#5E4E6B; font-size:14px;">Deleite: al elegir tu nivel se enciende una estrella del cinturón — la constelación se completa contigo.</span>
+    </div>
+    <div style="display:flex; gap:32px; align-items:flex-start;">
+
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <span style="color:#7A6B85; font-size:11px; font-weight:700; letter-spacing:.12em;">MÓVIL · 390</span>
+        <div style="zoom:.65; width:390px; height:844px; background:#FFF6EE; border-radius:20px; overflow:hidden; box-shadow:0 20px 50px rgba(51,32,59,.18); display:flex; flex-direction:column;">
+          <div style="position:relative; height:210px; background:linear-gradient(180deg,#2E1E4E 0%,#7A4A8C 50%,#E8764F 88%,#FFC189 100%); padding:24px 28px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:space-between; overflow:hidden;">
+            <svg width="118" height="128" viewBox="0 0 120 130" style="position:absolute; right:18px; top:18px;">
+              <g stroke="rgba(255,255,255,.28)" stroke-width="1"><line x1="58" y1="8" x2="28" y2="26"></line><line x1="58" y1="8" x2="88" y2="20"></line><line x1="28" y1="26" x2="50" y2="58"></line><line x1="88" y1="20" x2="66" y2="68"></line><line x1="50" y1="58" x2="58" y2="63"></line><line x1="58" y1="63" x2="66" y2="68"></line><line x1="50" y1="58" x2="34" y2="112"></line><line x1="66" y1="68" x2="92" y2="106"></line></g>
+              <circle cx="58" cy="8" r="2" fill="#FFF6EE" style="animation:tw 4s ease-in-out infinite;"></circle><circle cx="28" cy="26" r="3.2" fill="#FFC189" style="animation:tw 3s ease-in-out infinite .6s;"></circle><circle cx="88" cy="20" r="2.4" fill="#FFF6EE" style="animation:tw 5s ease-in-out infinite 1.2s;"></circle><circle cx="50" cy="58" r="2.6" fill="#FFC189" style="animation:tw 2.6s ease-in-out infinite .3s;"></circle><circle cx="58" cy="63" r="2.2" fill="#FFF6EE" style="animation:tw 3.5s ease-in-out infinite 1.8s;"></circle><circle cx="66" cy="68" r="2" fill="#FFF6EE" style="animation:tw 4s ease-in-out infinite .9s;"></circle><circle cx="34" cy="112" r="2.2" fill="#FFF6EE" style="animation:tw 5s ease-in-out infinite 2.1s;"></circle><circle cx="92" cy="106" r="2.8" fill="#FFC189" style="animation:tw 3.2s ease-in-out infinite 1.5s;"></circle>
+            </svg>
+            <div style="color:#FFF6EE; font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:15px; letter-spacing:.04em;">ORIÓN ✦</div>
+            <div style="color:#FFF6EE; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:28px; line-height:1.12; max-width:250px;">Empieza a hablar<br>en dos minutos.</div>
+          </div>
+          <div style="flex:1; padding:24px 28px; display:flex; flex-direction:column; gap:14px; overflow:hidden;">
+            <label style="display:flex; flex-direction:column; gap:6px;">
+              <span style="color:#33203B; font-size:13px; font-weight:600;">Nombre</span>
+              <input type="text" value="Ana Castro" style="height:50px; padding:0 18px; background:#FFFFFF; border:1.5px solid #EADFD4; border-radius:14px; color:#33203B; font-size:15px; font-family:'Figtree',sans-serif; outline:none;">
+            </label>
+            <label style="display:flex; flex-direction:column; gap:6px;">
+              <span style="color:#33203B; font-size:13px; font-weight:600;">Correo</span>
+              <div style="position:relative; display:flex;">
+                <input type="email" value="ana.castro@correo.com" style="flex:1; height:50px; padding:0 44px 0 18px; background:#FFFFFF; border:1.5px solid #7FC49F; border-radius:14px; color:#33203B; font-size:15px; font-family:'Figtree',sans-serif; outline:none;">
+                <span style="position:absolute; right:16px; top:50%; transform:translateY(-50%); color:#2E6B4A; display:flex;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>
+              </div>
+            </label>
+            <label style="display:flex; flex-direction:column; gap:6px;">
+              <span style="color:#33203B; font-size:13px; font-weight:600;">Contraseña</span>
+              <input type="password" value="•••••••••••••" style="height:50px; padding:0 18px; background:#FFFFFF; border:1.5px solid #EADFD4; border-radius:14px; color:#33203B; font-size:15px; font-family:'Figtree',sans-serif; outline:none;">
+              <div style="display:flex; gap:5px; margin-top:2px;">
+                <span style="flex:1; height:5px; background:#2E6B4A; border-radius:999px;"></span><span style="flex:1; height:5px; background:#2E6B4A; border-radius:999px;"></span><span style="flex:1; height:5px; background:#2E6B4A; border-radius:999px;"></span><span style="flex:1; height:5px; background:#EADFD4; border-radius:999px;"></span>
+              </div>
+              <span style="color:#2E6B4A; font-size:12px; font-weight:600;">Buena contraseña</span>
+            </label>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <span style="color:#33203B; font-size:13px; font-weight:600;">¿Dónde estás hoy?</span>
+              <div style="display:flex; gap:8px;">
+                <span style="flex:1; padding:12px 0; text-align:center; background:#FFE9D6; border-radius:999px; color:#8A5A33; font-size:13px; font-weight:600;">A1</span>
+                <span style="flex:1; padding:12px 0; text-align:center; background:#33203B; border-radius:999px; color:#FFF6EE; font-size:13px; font-weight:700;">A2</span>
+                <span style="flex:1; padding:12px 0; text-align:center; background:#FFE9D6; border-radius:999px; color:#8A5A33; font-size:13px; font-weight:600;">B1</span>
+                <span style="flex:1; padding:12px 0; text-align:center; background:#FFE9D6; border-radius:999px; color:#8A5A33; font-size:13px; font-weight:600;">No sé</span>
+              </div>
+              <span style="color:#7A6B85; font-size:12px;">Puedes cambiarlo cuando quieras. Cada proceso es diferente.</span>
+            </div>
+            <button style="height:52px; background:#E8503A; color:#FFF6EE; border:none; border-radius:999px; font-family:'Figtree',sans-serif; font-size:16px; font-weight:700; cursor:pointer; white-space:nowrap; box-shadow:0 10px 24px rgba(232,80,58,.35); margin-top:2px;">Crear mi cuenta</button>
+            <div style="text-align:center; color:#7A6B85; font-size:12px; line-height:1.5;">Al continuar aceptas los <a href="#" style="color:#C93A26; font-weight:600;">términos</a> y la <a href="#" style="color:#C93A26; font-weight:600;">privacidad</a>.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <span style="color:#7A6B85; font-size:11px; font-weight:700; letter-spacing:.12em;">DESKTOP · 1280</span>
+        <div style="zoom:.65; width:1280px; height:844px; background:#FFF6EE; border-radius:20px; overflow:hidden; box-shadow:0 20px 50px rgba(51,32,59,.18); display:flex;">
+          <div style="width:47%; margin:20px; border-radius:22px; position:relative; overflow:hidden; background:linear-gradient(180deg,#2E1E4E 0%,#7A4A8C 46%,#E8764F 82%,#FFC189 100%); padding:52px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:space-between;">
+            <div style="color:#FFF6EE; font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:18px; letter-spacing:.04em;">ORIÓN ✦</div>
+            <svg width="330" height="358" viewBox="0 0 120 130" style="position:absolute; right:30px; top:110px;">
+              <g stroke="rgba(255,255,255,.26)" stroke-width=".8"><line x1="58" y1="8" x2="28" y2="26"></line><line x1="58" y1="8" x2="88" y2="20"></line><line x1="28" y1="26" x2="50" y2="58"></line><line x1="88" y1="20" x2="66" y2="68"></line><line x1="50" y1="58" x2="58" y2="63"></line><line x1="58" y1="63" x2="66" y2="68"></line><line x1="50" y1="58" x2="34" y2="112"></line><line x1="66" y1="68" x2="92" y2="106"></line></g>
+              <circle cx="58" cy="8" r="1.7" fill="#FFF6EE" style="animation:tw 4s ease-in-out infinite;"></circle><circle cx="28" cy="26" r="2.9" fill="#FFC189" style="animation:tw 3s ease-in-out infinite .6s;"></circle><circle cx="88" cy="20" r="2.2" fill="#FFF6EE" style="animation:tw 5s ease-in-out infinite 1.2s;"></circle>
+              <circle cx="50" cy="58" r="4.2" fill="#FFC189" opacity=".28"></circle><circle cx="50" cy="58" r="2.4" fill="#FFC189" style="animation:tw 2.4s ease-in-out infinite;"></circle>
+              <circle cx="58" cy="63" r="2.1" fill="#FFF6EE" style="animation:tw 3.5s ease-in-out infinite 1.8s;"></circle><circle cx="66" cy="68" r="1.9" fill="#FFF6EE" style="animation:tw 4s ease-in-out infinite .9s;"></circle><circle cx="34" cy="112" r="2.1" fill="#FFF6EE" style="animation:tw 5s ease-in-out infinite 2.1s;"></circle><circle cx="92" cy="106" r="2.7" fill="#FFC189" style="animation:tw 3.2s ease-in-out infinite 1.5s;"></circle>
+            </svg>
+            <div style="display:flex; flex-direction:column; gap:24px;">
+              <div style="color:#FFF6EE; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:44px; line-height:1.08; max-width:420px;">Empieza a hablar en dos minutos.</div>
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                <div style="display:flex; align-items:center; gap:12px; color:rgba(255,246,238,.9); font-size:15px;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>Clases 100% conversacionales</div>
+                <div style="display:flex; align-items:center; gap:12px; color:rgba(255,246,238,.9); font-size:15px;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>Reservas en un minuto, virtual o presencial</div>
+                <div style="display:flex; align-items:center; gap:12px; color:rgba(255,246,238,.9); font-size:15px;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>Profesores que enseñan a adultos</div>
+              </div>
+            </div>
+          </div>
+          <div style="flex:1; display:flex; align-items:center; justify-content:center; padding:56px;">
+            <div style="width:420px; display:flex; flex-direction:column; gap:16px;">
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:38px; line-height:1.12;">Crea tu cuenta</div>
+                <div style="color:#5E4E6B; font-size:16px;">Es gratis y toma menos de dos minutos.</div>
+              </div>
+              <label style="display:flex; flex-direction:column; gap:6px;">
+                <span style="color:#33203B; font-size:13px; font-weight:600;">Nombre</span>
+                <input type="text" value="Ana Castro" style="height:52px; padding:0 18px; background:#FFFFFF; border:1.5px solid #EADFD4; border-radius:14px; color:#33203B; font-size:15px; font-family:'Figtree',sans-serif; outline:none;">
+              </label>
+              <label style="display:flex; flex-direction:column; gap:6px;">
+                <span style="color:#33203B; font-size:13px; font-weight:600;">Correo</span>
+                <div style="position:relative; display:flex;">
+                  <input type="email" value="ana.castro@correo.com" style="flex:1; height:52px; padding:0 46px 0 18px; background:#FFFFFF; border:1.5px solid #7FC49F; border-radius:14px; color:#33203B; font-size:15px; font-family:'Figtree',sans-serif; outline:none;">
+                  <span style="position:absolute; right:16px; top:50%; transform:translateY(-50%); color:#2E6B4A; display:flex;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>
+                </div>
+              </label>
+              <label style="display:flex; flex-direction:column; gap:6px;">
+                <span style="color:#33203B; font-size:13px; font-weight:600;">Contraseña</span>
+                <div style="position:relative; display:flex;">
+                  <input type="password" value="•••••••••••••" style="flex:1; height:52px; padding:0 46px 0 18px; background:#FFFFFF; border:1.5px solid #EADFD4; border-radius:14px; color:#33203B; font-size:15px; font-family:'Figtree',sans-serif; outline:none;">
+                  <span style="position:absolute; right:16px; top:50%; transform:translateY(-50%); color:#7A6B85; display:flex;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"></path><circle cx="12" cy="12" r="3"></circle></svg></span>
+                </div>
+                <div style="display:flex; gap:5px; margin-top:2px;">
+                  <span style="flex:1; height:5px; background:#2E6B4A; border-radius:999px;"></span><span style="flex:1; height:5px; background:#2E6B4A; border-radius:999px;"></span><span style="flex:1; height:5px; background:#2E6B4A; border-radius:999px;"></span><span style="flex:1; height:5px; background:#EADFD4; border-radius:999px;"></span>
+                </div>
+                <span style="color:#2E6B4A; font-size:12px; font-weight:600;">Buena contraseña — puedes hacerla aún más fuerte con un símbolo</span>
+              </label>
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                <span style="color:#33203B; font-size:13px; font-weight:600;">¿Dónde estás hoy?</span>
+                <div style="display:flex; gap:10px;">
+                  <span style="flex:1; padding:13px 0; text-align:center; background:#FFE9D6; border-radius:999px; color:#8A5A33; font-size:14px; font-weight:600;">A1</span>
+                  <span style="flex:1; padding:13px 0; text-align:center; background:#33203B; border-radius:999px; color:#FFF6EE; font-size:14px; font-weight:700;">A2</span>
+                  <span style="flex:1; padding:13px 0; text-align:center; background:#FFE9D6; border-radius:999px; color:#8A5A33; font-size:14px; font-weight:600;">B1</span>
+                  <span style="flex:1; padding:13px 0; text-align:center; background:#FFE9D6; border-radius:999px; color:#8A5A33; font-size:14px; font-weight:600;">No sé</span>
+                </div>
+                <span style="color:#7A6B85; font-size:12px;">Puedes cambiarlo cuando quieras. Cada proceso es diferente.</span>
+              </div>
+              <button style="height:52px; background:#E8503A; color:#FFF6EE; border:none; border-radius:999px; font-family:'Figtree',sans-serif; font-size:16px; font-weight:700; cursor:pointer; white-space:nowrap; box-shadow:0 10px 24px rgba(232,80,58,.35);">Crear mi cuenta</button>
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                <span style="color:#7A6B85; font-size:12px; line-height:1.5;">Al continuar aceptas los <a href="#" style="color:#C93A26; font-weight:600;">términos</a>.</span>
+                <span style="color:#7A6B85; font-size:13px;">¿Ya tienes cuenta? <a href="#" style="color:#C93A26; font-weight:700;">Entrar</a></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 3 · REVISA TU CORREO + VERIFICACIÓN ═══════════ -->
+  <section data-screen-label="03 Verificación" style="display:flex; flex-direction:column; gap:20px;">
+    <div style="display:flex; gap:16px; align-items:baseline; flex-wrap:wrap;">
+      <span style="background:#33203B; color:#FFF6EE; font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:13px; padding:5px 12px; border-radius:999px;">03</span>
+      <h2 style="margin:0; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:26px;">Revisa tu correo · verificación</h2>
+      <span style="color:#5E4E6B; font-size:14px;">Tres momentos: espera, éxito y enlace expirado. Deleite: el check se dibuja y tres estrellas aparecen.</span>
+    </div>
+    <div style="display:flex; gap:32px; align-items:flex-start; flex-wrap:wrap;">
+
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <span style="color:#7A6B85; font-size:11px; font-weight:700; letter-spacing:.12em;">MÓVIL · 390 — REVISA TU CORREO</span>
+        <div style="zoom:.65; width:390px; height:844px; background:#FFF6EE; border-radius:20px; overflow:hidden; box-shadow:0 20px 50px rgba(51,32,59,.18); display:flex; flex-direction:column; padding:28px; box-sizing:border-box; gap:24px;">
+          <div style="color:#E8503A; font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:15px; letter-spacing:.04em;">ORIÓN ✦</div>
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; text-align:center;">
+            <div style="position:relative; width:150px; height:150px; display:flex; align-items:center; justify-content:center;">
+              <div style="position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle at 50% 45%, #FFE9D6, #FFF6EE 70%);"></div>
+              <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#E8503A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="position:relative;"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="#FFC189" style="position:absolute; top:14px; right:22px; animation:tw 3s ease-in-out infinite;"><path d="M12 2l2.2 6.8H21l-5.5 4 2.1 6.6L12 15.3 6.4 19.4l2.1-6.6L3 8.8h6.8z"/></svg>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="#B9A7E6" style="position:absolute; bottom:24px; left:18px; animation:tw 4s ease-in-out infinite 1s;"><path d="M12 2l2.2 6.8H21l-5.5 4 2.1 6.6L12 15.3 6.4 19.4l2.1-6.6L3 8.8h6.8z"/></svg>
+            </div>
+            <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:28px; line-height:1.15;">Revisa tu correo</div>
+            <p style="margin:0; color:#5E4E6B; font-size:16px; line-height:1.6; max-width:300px;">Te enviamos un enlace a <span style="color:#33203B; font-weight:700;">ana.castro@correo.com</span> para confirmar tu cuenta.</p>
+            <button style="height:52px; padding:0 28px; background:#E8503A; color:#FFF6EE; border:none; border-radius:999px; font-family:'Figtree',sans-serif; font-size:15px; font-weight:700; cursor:pointer; white-space:nowrap; box-shadow:0 10px 24px rgba(232,80,58,.35);">Abrir mi correo</button>
+            <div style="color:#7A6B85; font-size:14px;">¿No llegó? <a href="#" style="color:#C93A26; font-weight:700;">Reenviar en 0:42</a></div>
+          </div>
+          <div style="text-align:center; color:#7A6B85; font-size:13px;">¿Correo equivocado? <a href="#" style="color:#C93A26; font-weight:700;">Cámbialo</a></div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <span style="color:#7A6B85; font-size:11px; font-weight:700; letter-spacing:.12em;">DESKTOP · 1280 — VERIFICADO (ÉXITO)</span>
+        <div style="zoom:.65; width:1280px; height:844px; background:#FFF6EE; border-radius:20px; overflow:hidden; box-shadow:0 20px 50px rgba(51,32,59,.18); display:flex;">
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; text-align:center; padding:56px;">
+            <div style="position:relative; width:170px; height:170px; display:flex; align-items:center; justify-content:center;">
+              <div style="position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle at 50% 45%, #DEF3E7, #FFF6EE 70%);"></div>
+              <svg width="96" height="96" viewBox="0 0 24 24" fill="none" stroke="#2E6B4A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:relative;"><path d="M20 6 9 17l-5-5" stroke-dasharray="30" stroke-dashoffset="30" style="animation:drawCheck .38s cubic-bezier(.16,1,.3,1) .2s forwards;"></path></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#FFC189" style="position:absolute; top:10px; right:24px; opacity:0; animation:popStar .3s ease-out .5s forwards;"><path d="M12 2l2.2 6.8H21l-5.5 4 2.1 6.6L12 15.3 6.4 19.4l2.1-6.6L3 8.8h6.8z"/></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="#B9A7E6" style="position:absolute; bottom:22px; left:16px; opacity:0; animation:popStar .3s ease-out .62s forwards;"><path d="M12 2l2.2 6.8H21l-5.5 4 2.1 6.6L12 15.3 6.4 19.4l2.1-6.6L3 8.8h6.8z"/></svg>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="#E8503A" style="position:absolute; top:44px; left:6px; opacity:0; animation:popStar .3s ease-out .74s forwards;"><path d="M12 2l2.2 6.8H21l-5.5 4 2.1 6.6L12 15.3 6.4 19.4l2.1-6.6L3 8.8h6.8z"/></svg>
+            </div>
+            <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:44px; line-height:1.1;">Tu cuenta está lista, Ana</div>
+            <p style="margin:0; color:#5E4E6B; font-size:17px; line-height:1.6; max-width:420px;">Ya puedes explorar profesores y reservar tu primera clase. Lo importante es empezar.</p>
+            <button style="height:52px; padding:0 32px; background:#E8503A; color:#FFF6EE; border:none; border-radius:999px; font-family:'Figtree',sans-serif; font-size:16px; font-weight:700; cursor:pointer; white-space:nowrap; box-shadow:0 10px 24px rgba(232,80,58,.35);">Ver profesores</button>
+          </div>
+          <div style="width:38%; margin:20px; border-radius:22px; position:relative; overflow:hidden; background:linear-gradient(180deg,#2E1E4E 0%,#7A4A8C 46%,#E8764F 82%,#FFC189 100%); padding:44px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:flex-end;">
+            <svg width="280" height="304" viewBox="0 0 120 130" style="position:absolute; right:20px; top:60px;">
+              <g stroke="rgba(255,255,255,.26)" stroke-width=".8"><line x1="58" y1="8" x2="28" y2="26"></line><line x1="58" y1="8" x2="88" y2="20"></line><line x1="28" y1="26" x2="50" y2="58"></line><line x1="88" y1="20" x2="66" y2="68"></line><line x1="50" y1="58" x2="58" y2="63"></line><line x1="58" y1="63" x2="66" y2="68"></line><line x1="50" y1="58" x2="34" y2="112"></line><line x1="66" y1="68" x2="92" y2="106"></line></g>
+              <circle cx="58" cy="8" r="1.8" fill="#FFF6EE" style="animation:tw 4s ease-in-out infinite;"></circle><circle cx="28" cy="26" r="3" fill="#FFC189" style="animation:tw 3s ease-in-out infinite .6s;"></circle><circle cx="88" cy="20" r="2.3" fill="#FFF6EE" style="animation:tw 5s ease-in-out infinite 1.2s;"></circle><circle cx="50" cy="58" r="2" fill="#FFF6EE" style="animation:tw 4.5s ease-in-out infinite .3s;"></circle><circle cx="58" cy="63" r="2.2" fill="#FFF6EE" style="animation:tw 3.5s ease-in-out infinite 1.8s;"></circle><circle cx="66" cy="68" r="2" fill="#FFF6EE" style="animation:tw 4s ease-in-out infinite .9s;"></circle><circle cx="34" cy="112" r="2.2" fill="#FFF6EE" style="animation:tw 5s ease-in-out infinite 2.1s;"></circle><circle cx="92" cy="106" r="2.8" fill="#FFC189" style="animation:tw 3.2s ease-in-out infinite 1.5s;"></circle>
+            </svg>
+            <div style="color:#FFF6EE; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:30px; line-height:1.15;">Bienvenida a la constelación.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <span style="color:#7A6B85; font-size:11px; font-weight:700; letter-spacing:.12em;">MÓVIL · 390 — ENLACE EXPIRADO</span>
+        <div style="zoom:.65; width:390px; height:844px; background:#FFF6EE; border-radius:20px; overflow:hidden; box-shadow:0 20px 50px rgba(51,32,59,.18); display:flex; flex-direction:column; padding:28px; box-sizing:border-box; gap:24px;">
+          <div style="color:#E8503A; font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:15px; letter-spacing:.04em;">ORIÓN ✦</div>
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; text-align:center;">
+            <div style="position:relative; width:150px; height:150px; display:flex; align-items:center; justify-content:center;">
+              <div style="position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle at 50% 45%, #FFE9D6, #FFF6EE 70%);"></div>
+              <svg width="78" height="78" viewBox="0 0 24 24" fill="none" stroke="#8A5A33" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="position:relative;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </div>
+            <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:28px; line-height:1.15;">Este enlace ya venció</div>
+            <p style="margin:0; color:#5E4E6B; font-size:16px; line-height:1.6; max-width:300px;">Los enlaces duran 24 horas por seguridad. Te enviamos uno nuevo en un segundo.</p>
+            <button style="height:52px; padding:0 28px; background:#E8503A; color:#FFF6EE; border:none; border-radius:999px; font-family:'Figtree',sans-serif; font-size:15px; font-weight:700; cursor:pointer; white-space:nowrap; box-shadow:0 10px 24px rgba(232,80,58,.35);">Enviarme otro enlace</button>
+            <a href="#" style="color:#5E4E6B; font-size:14px; font-weight:600; text-decoration:none;">Volver a entrar</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 4 · RECUPERAR CONTRASEÑA ═══════════ -->
+  <section id="recuperar" data-screen-label="04 Recuperar contraseña" style="display:flex; flex-direction:column; gap:20px;">
+    <div style="display:flex; gap:16px; align-items:baseline; flex-wrap:wrap;">
+      <span style="background:#33203B; color:#FFF6EE; font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:13px; padding:5px 12px; border-radius:999px;">04</span>
+      <h2 style="margin:0; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:26px;">Recuperar contraseña · <span style="color:#7A6B85; font-weight:400;">solicitar + establecer nueva</span></h2>
+    </div>
+    <div style="display:flex; gap:32px; align-items:flex-start; flex-wrap:wrap;">
+
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <span style="color:#7A6B85; font-size:11px; font-weight:700; letter-spacing:.12em;">MÓVIL · 390 — SOLICITAR</span>
+        <div style="zoom:.65; width:390px; height:844px; background:#FFF6EE; border-radius:20px; overflow:hidden; box-shadow:0 20px 50px rgba(51,32,59,.18); display:flex; flex-direction:column;">
+          <div style="position:relative; height:190px; background:linear-gradient(180deg,#2E1E4E 0%,#7A4A8C 52%,#E8764F 90%,#FFC189 100%); padding:24px 28px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:space-between; overflow:hidden;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span style="width:38px; height:38px; border-radius:50%; background:rgba(255,246,238,.16); color:#FFF6EE; display:flex; align-items:center; justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg></span>
+              <span style="color:#FFF6EE; font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:15px; letter-spacing:.04em;">ORIÓN ✦</span>
+            </div>
+            <div style="color:#FFF6EE; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:28px; line-height:1.12;">Volvamos a tu cuenta.</div>
+            <svg width="100" height="108" viewBox="0 0 120 130" style="position:absolute; right:16px; top:14px; opacity:.85;">
+              <g stroke="rgba(255,255,255,.24)" stroke-width="1"><line x1="58" y1="8" x2="28" y2="26"></line><line x1="28" y1="26" x2="50" y2="58"></line><line x1="50" y1="58" x2="58" y2="63"></line><line x1="58" y1="63" x2="66" y2="68"></line></g>
+              <circle cx="58" cy="8" r="2" fill="#FFF6EE" style="animation:tw 4s ease-in-out infinite;"></circle><circle cx="28" cy="26" r="3" fill="#FFC189" style="animation:tw 3s ease-in-out infinite .6s;"></circle><circle cx="50" cy="58" r="2.2" fill="#FFF6EE" style="animation:tw 4.5s ease-in-out infinite .3s;"></circle><circle cx="58" cy="63" r="2.2" fill="#FFF6EE" style="animation:tw 3.5s ease-in-out infinite 1.8s;"></circle><circle cx="66" cy="68" r="2" fill="#FFF6EE" style="animation:tw 4s ease-in-out infinite .9s;"></circle>
+            </svg>
+          </div>
+          <div style="flex:1; padding:28px; display:flex; flex-direction:column; gap:16px;">
+            <p style="margin:0; color:#5E4E6B; font-size:16px; line-height:1.6;">Escribe tu correo y te enviamos un enlace para crear una contraseña nueva.</p>
+            <label style="display:flex; flex-direction:column; gap:7px;">
+              <span style="color:#33203B; font-size:13px; font-weight:600;">Correo</span>
+              <input type="email" placeholder="tu@correo.com" style="height:52px; padding:0 18px; background:#FFFFFF; border:1.5px solid #EADFD4; border-radius:14px; color:#33203B; font-size:15px; font-family:'Figtree',sans-serif; outline:none;">
+            </label>
+            <button style="height:52px; background:#E8503A; color:#FFF6EE; border:none; border-radius:999px; font-family:'Figtree',sans-serif; font-size:16px; font-weight:700; cursor:pointer; white-space:nowrap; box-shadow:0 10px 24px rgba(232,80,58,.35);">Enviarme el enlace</button>
+            <div style="display:flex; gap:12px; align-items:flex-start; background:#EFE9F9; border-radius:16px; padding:14px 16px;">
+              <span style="color:#5E4A8A; display:flex; flex-shrink:0;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg></span>
+              <span style="color:#4A3C6B; font-size:13px; line-height:1.55;">Si el correo está registrado, el enlace llega en menos de un minuto.</span>
+            </div>
+            <div style="margin-top:auto; text-align:center; color:#7A6B85; font-size:13px;">¿Ya la recordaste? <a href="#" style="color:#C93A26; font-weight:700;">Entrar</a></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <span style="color:#7A6B85; font-size:11px; font-weight:700; letter-spacing:.12em;">DESKTOP · 1280 — ESTABLECER NUEVA</span>
+        <div style="zoom:.65; width:1280px; height:844px; background:#FFF6EE; border-radius:20px; overflow:hidden; box-shadow:0 20px 50px rgba(51,32,59,.18); display:flex;">
+          <div style="flex:1; display:flex; align-items:center; justify-content:center; padding:56px;">
+            <div style="width:420px; display:flex; flex-direction:column; gap:18px;">
+              <div style="color:#E8503A; font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:18px; letter-spacing:.04em;">ORIÓN ✦</div>
+              <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">
+                <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:38px; line-height:1.12;">Crea tu nueva contraseña</div>
+                <div style="color:#5E4E6B; font-size:16px;">Para <span style="color:#33203B; font-weight:700;">ana.castro@correo.com</span></div>
+              </div>
+              <label style="display:flex; flex-direction:column; gap:7px;">
+                <span style="color:#33203B; font-size:13px; font-weight:600;">Nueva contraseña</span>
+                <div style="position:relative; display:flex;">
+                  <input type="password" value="•••••••••••" style="flex:1; height:52px; padding:0 46px 0 18px; background:#FFFFFF; border:1.5px solid #E8503A; border-radius:14px; color:#33203B; font-size:15px; font-family:'Figtree',sans-serif; outline:none; box-shadow:0 0 0 4px rgba(232,80,58,.22);">
+                  <span style="position:absolute; right:16px; top:50%; transform:translateY(-50%); color:#7A6B85; display:flex;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"></path><circle cx="12" cy="12" r="3"></circle></svg></span>
+                </div>
+                <div style="display:flex; gap:5px; margin-top:2px;">
+                  <span style="flex:1; height:5px; background:#2E6B4A; border-radius:999px;"></span><span style="flex:1; height:5px; background:#2E6B4A; border-radius:999px;"></span><span style="flex:1; height:5px; background:#EADFD4; border-radius:999px;"></span><span style="flex:1; height:5px; background:#EADFD4; border-radius:999px;"></span>
+                </div>
+              </label>
+              <div style="display:flex; flex-direction:column; gap:8px; background:#FFFFFF; border-radius:16px; padding:16px 18px;">
+                <div style="display:flex; align-items:center; gap:10px; color:#2E6B4A; font-size:13px; font-weight:600;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>Mínimo 8 caracteres</div>
+                <div style="display:flex; align-items:center; gap:10px; color:#2E6B4A; font-size:13px; font-weight:600;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>Mayúsculas y minúsculas</div>
+                <div style="display:flex; align-items:center; gap:10px; color:#7A6B85; font-size:13px; font-weight:600;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle></svg>Al menos un número</div>
+              </div>
+              <label style="display:flex; flex-direction:column; gap:7px;">
+                <span style="color:#33203B; font-size:13px; font-weight:600;">Confírmala</span>
+                <input type="password" value="•••••••••••" style="height:52px; padding:0 18px; background:#FFFFFF; border:1.5px solid #EADFD4; border-radius:14px; color:#33203B; font-size:15px; font-family:'Figtree',sans-serif; outline:none;">
+              </label>
+              <button style="height:52px; background:#E8503A; color:#FFF6EE; border:none; border-radius:999px; font-family:'Figtree',sans-serif; font-size:16px; font-weight:700; cursor:pointer; white-space:nowrap; box-shadow:0 10px 24px rgba(232,80,58,.35);">Guardar y entrar</button>
+            </div>
+          </div>
+          <div style="width:44%; margin:20px; border-radius:22px; position:relative; overflow:hidden; background:linear-gradient(180deg,#2E1E4E 0%,#7A4A8C 46%,#E8764F 82%,#FFC189 100%); padding:52px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:flex-end;">
+            <svg width="320" height="347" viewBox="0 0 120 130" style="position:absolute; right:28px; top:56px;">
+              <g stroke="rgba(255,255,255,.26)" stroke-width=".8"><line x1="58" y1="8" x2="28" y2="26"></line><line x1="58" y1="8" x2="88" y2="20"></line><line x1="28" y1="26" x2="50" y2="58"></line><line x1="88" y1="20" x2="66" y2="68"></line><line x1="50" y1="58" x2="58" y2="63"></line><line x1="58" y1="63" x2="66" y2="68"></line><line x1="50" y1="58" x2="34" y2="112"></line><line x1="66" y1="68" x2="92" y2="106"></line></g>
+              <circle cx="58" cy="8" r="1.8" fill="#FFF6EE" style="animation:tw 4s ease-in-out infinite;"></circle><circle cx="28" cy="26" r="3" fill="#FFC189" style="animation:tw 3s ease-in-out infinite .6s;"></circle><circle cx="88" cy="20" r="2.3" fill="#FFF6EE" style="animation:tw 5s ease-in-out infinite 1.2s;"></circle><circle cx="50" cy="58" r="2" fill="#FFF6EE" style="animation:tw 4.5s ease-in-out infinite .3s;"></circle><circle cx="58" cy="63" r="2.2" fill="#FFF6EE" style="animation:tw 3.5s ease-in-out infinite 1.8s;"></circle><circle cx="66" cy="68" r="2" fill="#FFF6EE" style="animation:tw 4s ease-in-out infinite .9s;"></circle><circle cx="34" cy="112" r="2.2" fill="#FFF6EE" style="animation:tw 5s ease-in-out infinite 2.1s;"></circle><circle cx="92" cy="106" r="2.8" fill="#FFC189" style="animation:tw 3.2s ease-in-out infinite 1.5s;"></circle>
+            </svg>
+            <div style="color:#FFF6EE; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:34px; line-height:1.12; max-width:380px;">Tus clases te siguen esperando.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 12 · 404 ═══════════ -->
+  <section data-screen-label="12 Error 404" style="display:flex; flex-direction:column; gap:20px;">
+    <div style="display:flex; gap:16px; align-items:baseline; flex-wrap:wrap;">
+      <span style="background:#33203B; color:#FFF6EE; font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:13px; padding:5px 12px; border-radius:999px;">12</span>
+      <h2 style="margin:0; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:26px;">404 y error de servidor</h2>
+      <span style="color:#5E4E6B; font-size:14px;">Deleite: a la constelación le falta una estrella — el hueco parpadea buscándola.</span>
+    </div>
+    <div style="display:flex; gap:32px; align-items:flex-start; flex-wrap:wrap;">
+
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <span style="color:#7A6B85; font-size:11px; font-weight:700; letter-spacing:.12em;">MÓVIL · 390 — 404</span>
+        <div style="zoom:.65; width:390px; height:844px; background:#FFF6EE; border-radius:20px; overflow:hidden; box-shadow:0 20px 50px rgba(51,32,59,.18); display:flex; flex-direction:column; padding:28px; box-sizing:border-box;">
+          <div style="color:#E8503A; font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:15px; letter-spacing:.04em;">ORIÓN ✦</div>
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; text-align:center;">
+            <svg width="180" height="195" viewBox="0 0 120 130">
+              <g stroke="#EADFD4" stroke-width="1.4"><line x1="58" y1="8" x2="28" y2="26"></line><line x1="58" y1="8" x2="88" y2="20"></line><line x1="28" y1="26" x2="50" y2="58"></line><line x1="88" y1="20" x2="66" y2="68"></line><line x1="50" y1="58" x2="58" y2="63"></line><line x1="58" y1="63" x2="66" y2="68"></line><line x1="50" y1="58" x2="34" y2="112"></line><line x1="66" y1="68" x2="92" y2="106"></line></g>
+              <circle cx="58" cy="8" r="2.4" fill="#FFC189"></circle><circle cx="28" cy="26" r="3.6" fill="#E8503A"></circle><circle cx="88" cy="20" r="3" fill="#B9A7E6"></circle><circle cx="50" cy="58" r="2.6" fill="#FFC189"></circle>
+              <circle cx="58" cy="63" r="4" fill="none" stroke="#E8503A" stroke-width="1.2" stroke-dasharray="3 3" style="animation:tw 2s ease-in-out infinite;"></circle>
+              <circle cx="66" cy="68" r="2.6" fill="#FFC189"></circle><circle cx="34" cy="112" r="2.8" fill="#B9A7E6"></circle><circle cx="92" cy="106" r="3.4" fill="#E8503A"></circle>
+            </svg>
+            <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:52px; line-height:1; color:#33203B;">404</div>
+            <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:24px; line-height:1.2;">Esta estrella no está en el mapa</div>
+            <p style="margin:0; color:#5E4E6B; font-size:15px; line-height:1.6; max-width:290px;">La página que buscas se movió o nunca existió. Volvamos a terreno conocido.</p>
+            <div style="display:flex; flex-direction:column; gap:10px; width:100%; margin-top:6px;">
+              <button style="height:52px; background:#E8503A; color:#FFF6EE; border:none; border-radius:999px; font-family:'Figtree',sans-serif; font-size:15px; font-weight:700; cursor:pointer; white-space:nowrap; box-shadow:0 10px 24px rgba(232,80,58,.35);">Ir a profesores</button>
+              <button style="height:52px; background:transparent; color:#5E4E6B; border:1.5px solid #EADFD4; border-radius:999px; font-family:'Figtree',sans-serif; font-size:15px; font-weight:600; cursor:pointer; white-space:nowrap;">Volver atrás</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <span style="color:#7A6B85; font-size:11px; font-weight:700; letter-spacing:.12em;">DESKTOP · 1280 — 404</span>
+        <div style="zoom:.65; width:1280px; height:844px; background:#FFF6EE; border-radius:20px; overflow:hidden; box-shadow:0 20px 50px rgba(51,32,59,.18); display:flex; flex-direction:column;">
+          <div style="height:68px; display:flex; align-items:center; padding:0 48px;">
+            <span style="color:#E8503A; font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:18px; letter-spacing:.04em;">ORIÓN ✦</span>
+          </div>
+          <div style="flex:1; display:flex; align-items:center; padding:0 96px; gap:80px;">
+            <div style="flex:1; display:flex; flex-direction:column; gap:20px;">
+              <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:120px; line-height:.92; color:#33203B; letter-spacing:-.03em;">404</div>
+              <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:38px; line-height:1.14; max-width:440px;">Esta estrella no está en el mapa</div>
+              <p style="margin:0; color:#5E4E6B; font-size:17px; line-height:1.6; max-width:420px;">La página que buscas se movió o nunca existió. Volvamos a terreno conocido — tus clases siguen justo donde las dejaste.</p>
+              <div style="display:flex; gap:12px; margin-top:6px;">
+                <button style="height:52px; padding:0 30px; background:#E8503A; color:#FFF6EE; border:none; border-radius:999px; font-family:'Figtree',sans-serif; font-size:15px; font-weight:700; cursor:pointer; white-space:nowrap; box-shadow:0 10px 24px rgba(232,80,58,.35);">Ir a profesores</button>
+                <button style="height:52px; padding:0 26px; background:transparent; color:#5E4E6B; border:1.5px solid #EADFD4; border-radius:999px; font-family:'Figtree',sans-serif; font-size:15px; font-weight:600; cursor:pointer; white-space:nowrap;">Volver atrás</button>
+              </div>
+            </div>
+            <svg width="340" height="368" viewBox="0 0 120 130" style="flex-shrink:0;">
+              <g stroke="#EADFD4" stroke-width="1.1"><line x1="58" y1="8" x2="28" y2="26"></line><line x1="58" y1="8" x2="88" y2="20"></line><line x1="28" y1="26" x2="50" y2="58"></line><line x1="88" y1="20" x2="66" y2="68"></line><line x1="50" y1="58" x2="58" y2="63"></line><line x1="58" y1="63" x2="66" y2="68"></line><line x1="50" y1="58" x2="34" y2="112"></line><line x1="66" y1="68" x2="92" y2="106"></line></g>
+              <circle cx="58" cy="8" r="2" fill="#FFC189"></circle><circle cx="28" cy="26" r="3.2" fill="#E8503A"></circle><circle cx="88" cy="20" r="2.6" fill="#B9A7E6"></circle><circle cx="50" cy="58" r="2.2" fill="#FFC189"></circle>
+              <circle cx="58" cy="63" r="4.2" fill="none" stroke="#E8503A" stroke-width="1" stroke-dasharray="3 3" style="animation:tw 2s ease-in-out infinite;"></circle>
+              <circle cx="66" cy="68" r="2.2" fill="#FFC189"></circle><circle cx="34" cy="112" r="2.4" fill="#B9A7E6"></circle><circle cx="92" cy="106" r="3" fill="#E8503A"></circle>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <span style="color:#7A6B85; font-size:11px; font-weight:700; letter-spacing:.12em;">MÓVIL · 390 — ERROR DE CARGA</span>
+        <div style="zoom:.65; width:390px; height:844px; background:#FFF6EE; border-radius:20px; overflow:hidden; box-shadow:0 20px 50px rgba(51,32,59,.18); display:flex; flex-direction:column;">
+          <div style="height:64px; padding:0 20px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #F4EAE0;">
+            <span style="color:#E8503A; font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:16px;">ORIÓN ✦</span>
+            <span style="width:36px; height:36px; border-radius:50%; background:#B9A7E6; color:#33203B; display:flex; align-items:center; justify-content:center; font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:13px;">AC</span>
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; text-align:center; padding:28px;">
+            <span style="width:76px; height:76px; border-radius:50%; background:#FFE9D6; color:#8A5A33; display:flex; align-items:center; justify-content:center;"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"></path></svg></span>
+            <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:24px; line-height:1.2;">No pudimos cargar esto</div>
+            <p style="margin:0; color:#5E4E6B; font-size:15px; line-height:1.6; max-width:280px;">Puede ser tu conexión o algo de nuestro lado. Inténtalo otra vez en un momento.</p>
+            <button style="height:48px; padding:0 26px; background:#E8503A; color:#FFF6EE; border:none; border-radius:999px; font-family:'Figtree',sans-serif; font-size:15px; font-weight:700; cursor:pointer; white-space:nowrap; box-shadow:0 10px 24px rgba(232,80,58,.35); margin-top:4px;">Reintentar</button>
+          </div>
+          <div style="height:68px; border-top:1px solid #F4EAE0; display:grid; grid-template-columns:repeat(4,1fr); align-items:center;">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#E8503A;"><span style="padding:5px 14px; background:#FDE4E0; border-radius:999px; display:flex;"><svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span><span style="font-size:11px; font-weight:700;">Profesores</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#7A6B85;"><span style="padding:5px 14px; display:flex;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg></span><span style="font-size:11px; font-weight:600;">Mis clases</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#7A6B85;"><span style="padding:5px 14px; display:flex;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg></span><span style="font-size:11px; font-weight:600;">Mensajes</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; color:#7A6B85;"><span style="padding:5px 14px; display:flex;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span><span style="font-size:11px; font-weight:600;">Perfil</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+</x-dc>
+</body>
+</html>

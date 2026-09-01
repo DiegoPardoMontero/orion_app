@@ -51,6 +51,11 @@ orion:
     allowed-origins: ${ORION_CORS_ALLOWED_ORIGINS:http://localhost:3000}
   mail:
     from: ${ORION_MAIL_FROM:no-reply@orion.local}
+    # Transporte del correo: 'smtp' (Mailpit en local) o 'resend' (API HTTP en prod, porque Railway
+    # bloquea los puertos SMTP salientes). Se sobrescribe en el perfil prod.
+    transport: ${ORION_MAIL_TRANSPORT:smtp}
+    resend:
+      api-key: ${RESEND_API_KEY:}
 
 server:
   servlet:
