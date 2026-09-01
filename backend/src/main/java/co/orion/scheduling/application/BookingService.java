@@ -105,6 +105,49 @@ public class BookingService {
         return cancelled;
     }
 
+    /**
+     * Reprograma una reserva a otro cupo del MISMO profesor. Mismas reglas de quién y cuándo que la
+     * cancelación (el dueño con 24 h de margen; el admin sin límite): reprogramar dentro de la
+     * ventana equivaldría a cancelar dentro de ella. El nuevo cupo se valida como en una reserva
+     * nueva y la constraint sigue siendo el árbitro de la carrera. Emite `BookingCreatedEvent` para
+     * que salga una confirmación con el nuevo horario y su invitación de calendario.
+     */
+    @Transactional
+    public Booking reschedule(User actor, UUID bookingId, Instant newStartsAt) {
+        Booking booking = bookings.findById(bookingId)
+                .filter(candidate -> canSee(actor, candidate))
+                .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada"));
+
+        if (!booking.isConfirmed()) {
+            throw new ConflictException("La reserva ya no está confirmada");
+        }
+
+        Instant now = clock.instant();
+        boolean isAdmin = actor.getRole() == UserRole.ADMIN;
+        if (!isAdmin && !booking.isCancellableAt(now)) {
+            throw new UnprocessableException(
+                    "Con menos de 24 horas de anticipación la clase se considera impartida (política Orión)");
+        }
+
+        if (newStartsAt.equals(booking.getStartsAt())) {
+            throw new BusinessRuleViolationException("Elige un horario distinto al actual");
+        }
+
+        Instant newEndsAt = newStartsAt.plus(CLASS_LENGTH);
+        requireSlotIsAvailable(booking.getProfessorId(), newStartsAt);
+
+        // El cupo nuevo no solapa el viejo (cupos alineados a la hora), así que la reserva actual
+        // no cuenta; sí cuenta cualquier OTRA clase confirmada del estudiante a esa hora.
+        if (bookings.studentHasOverlappingBooking(booking.getStudentId(), newStartsAt, newEndsAt)) {
+            throw new UnprocessableException("El estudiante ya tiene una clase confirmada a esa hora");
+        }
+
+        booking.reschedule(newStartsAt, newEndsAt);
+        Booking saved = saveOrLoseTheRace(booking);
+        events.publishEvent(new BookingCreatedEvent(saved.getId()));
+        return saved;
+    }
+
     /** Una reserva ajena responde 404, no 403: no confirmamos que exista. El admin lo ve todo. */
     private boolean canSee(User actor, Booking booking) {
         return switch (actor.getRole()) {

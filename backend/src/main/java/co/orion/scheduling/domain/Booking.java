@@ -153,6 +153,19 @@ public class Booking {
         this.cancellationReason = reason;
     }
 
+    /**
+     * Mueve la clase a otro horario, conservando id, modalidad y nota. Solo desde CONFIRMED: una
+     * clase cancelada o ya impartida no se reprograma. Quién puede reprogramar y con cuánta
+     * antelación lo decide el servicio; aquí solo se guarda el nuevo instante.
+     */
+    public void reschedule(Instant newStartsAt, Instant newEndsAt) {
+        if (!isConfirmed()) {
+            throw new IllegalStateException("Solo una reserva CONFIRMED se puede reprogramar");
+        }
+        this.startsAt = Objects.requireNonNull(newStartsAt, "startsAt");
+        this.endsAt = Objects.requireNonNull(newEndsAt, "endsAt");
+    }
+
     public UUID getId() {
         return id;
     }
