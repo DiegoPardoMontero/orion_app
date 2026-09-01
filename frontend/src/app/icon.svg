@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Orión">
+  <rect width="32" height="32" rx="8" fill="#FFC189" />
+  <path
+    transform="translate(4 4)"
+    d="M12 2l2.6 6.6L21 11l-6.4 2.4L12 20l-2.6-6.6L3 11l6.4-2.4z"
+    fill="#2E1E4E"
+  />
+</svg>
