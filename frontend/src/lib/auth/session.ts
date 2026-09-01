@@ -40,6 +40,29 @@ export function useLogin() {
   });
 }
 
+export type RegisterInput = {
+  fullName: string;
+  email: string;
+  password: string;
+  whatsappPhone?: string;
+};
+
+/**
+ * Auto-registro de estudiantes. El backend crea la cuenta y abre la sesión de una vez, así que
+ * al igual que en login sembramos la caché con el usuario devuelto y nadie pide /me de nuevo.
+ */
+export function useRegister() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: RegisterInput) =>
+      apiFetch<Me>("/api/v1/auth/register", { method: "POST", body: input }),
+    onSuccess: (me) => {
+      queryClient.setQueryData(meQueryKey, me);
+    },
+  });
+}
+
 export function useLogout() {
   const queryClient = useQueryClient();
 

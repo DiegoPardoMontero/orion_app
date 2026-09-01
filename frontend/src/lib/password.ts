@@ -18,3 +18,32 @@ export function generarClave(): string {
 
   return `${palabras.join("-")}-${numero}`;
 }
+
+/**
+ * Fuerza de la contraseña para el medidor de 4 segmentos del registro. Un punto por cada regla:
+ * longitud ≥8, mayúscula y minúscula, número y símbolo. El mensaje describe qué falta —nunca un
+ * escueto «débil/fuerte»— para que el usuario sepa cómo mejorarla.
+ */
+export type FuerzaClave = { nivel: 0 | 1 | 2 | 3 | 4; mensaje: string };
+
+const MENSAJES_FUERZA = [
+  "Mínimo 8 caracteres",
+  "Muy corta todavía",
+  "Débil — súmale una mayúscula",
+  "Vas bien — añade un número",
+  "Fuerte — un símbolo la blinda",
+  "Excelente contraseña",
+] as const;
+
+export function fuerzaClave(clave: string): FuerzaClave {
+  if (!clave) return { nivel: 0, mensaje: MENSAJES_FUERZA[0] };
+
+  let nivel = 0;
+  if (clave.length >= 8) nivel++;
+  if (/[a-z]/.test(clave) && /[A-Z]/.test(clave)) nivel++;
+  if (/[0-9]/.test(clave)) nivel++;
+  if (/[^A-Za-z0-9]/.test(clave)) nivel++;
+
+  const n = nivel as 0 | 1 | 2 | 3 | 4;
+  return { nivel: n, mensaje: MENSAJES_FUERZA[n + 1] ?? MENSAJES_FUERZA[5] };
+}
