@@ -36,6 +36,12 @@ spring:
           auth: false
           starttls:
             enable: false
+          # Sin timeouts, JavaMail espera para siempre: un SMTP inalcanzable colgaría el hilo de la
+          # petición (el envío tras el commit es síncrono). Con esto, un correo que no sale FALLA
+          # rápido —se registra y se sigue— en vez de colgar la reserva. Milisegundos.
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
 orion:
   app:

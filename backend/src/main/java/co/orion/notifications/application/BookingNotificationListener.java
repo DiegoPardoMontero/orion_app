@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -24,8 +25,9 @@ import co.orion.scheduling.persistence.BookingRepository;
  *  - jamás se debe notificar una reserva que acabó haciendo rollback — si la transacción no
  *    confirma, este listener ni siquiera se ejecuta.
  *
- * Sin @Async por ahora: el envío es síncrono tras el commit, lo que mantiene los tests
- * deterministas. Cuando el volumen lo pida, se mueve a una cola.
+ * @Async además de AFTER_COMMIT: el commit responde de inmediato y los correos salen en un hilo
+ * aparte. Así la latencia del SMTP (o un servidor lento) nunca hace esperar la reserva. Los tests
+ * usan verify(..., timeout(...)) para no depender del momento exacto del envío.
  */
 @Component
 public class BookingNotificationListener {
@@ -47,6 +49,7 @@ public class BookingNotificationListener {
         this.mailSender = mailSender;
     }
 
+    @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onBookingCreated(BookingCreatedEvent event) {
         participants(event.bookingId()).ifPresent(trio -> {
@@ -55,6 +58,7 @@ public class BookingNotificationListener {
         });
     }
 
+    @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onBookingCancelled(BookingCancelledEvent event) {
         participants(event.bookingId()).ifPresent(trio -> {

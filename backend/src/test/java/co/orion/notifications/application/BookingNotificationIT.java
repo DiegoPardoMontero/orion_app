@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -128,7 +129,7 @@ class BookingNotificationIT extends ApiIntegrationSupport {
         book();
 
         ArgumentCaptor<MimeMessage> sent = ArgumentCaptor.forClass(MimeMessage.class);
-        verify(mailSender, times(2)).send(sent.capture());
+        verify(mailSender, timeout(5000).times(2)).send(sent.capture());
 
         List<String> recipients = sent.getAllValues().stream()
                 .map(message -> {
@@ -148,7 +149,7 @@ class BookingNotificationIT extends ApiIntegrationSupport {
         book();
 
         ArgumentCaptor<MimeMessage> sent = ArgumentCaptor.forClass(MimeMessage.class);
-        verify(mailSender, times(2)).send(sent.capture());
+        verify(mailSender, timeout(5000).times(2)).send(sent.capture());
 
         MimeMessage message = sent.getAllValues().getFirst();
         assertThat(message.getSubject()).contains("agendada");
@@ -169,7 +170,7 @@ class BookingNotificationIT extends ApiIntegrationSupport {
                 new CancelBookingRequest("Viaje imprevisto"), BookingResponse.class);
 
         // 2 de la creación + 2 de la cancelación.
-        verify(mailSender, times(4)).send(sent.capture());
+        verify(mailSender, timeout(5000).times(4)).send(sent.capture());
 
         MimeMessage cancellation = sent.getAllValues().get(2);
         assertThat(cancellation.getSubject()).contains("cancelada");
@@ -195,7 +196,7 @@ class BookingNotificationIT extends ApiIntegrationSupport {
         book();
 
         ArgumentCaptor<MimeMessage> sent = ArgumentCaptor.forClass(MimeMessage.class);
-        verify(mailSender, times(2)).send(sent.capture());
+        verify(mailSender, timeout(5000).times(2)).send(sent.capture());
 
         String toAna = sent.getAllValues().stream()
                 .filter(message -> {

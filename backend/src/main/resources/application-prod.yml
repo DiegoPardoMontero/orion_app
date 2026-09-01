@@ -15,6 +15,10 @@ spring:
     properties:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
+      # Un SMTP colgado no debe colgar la reserva: falla rápido, se registra y se sigue.
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
 
 server:
   # TLS termina en el edge de Railway; el backend ve HTTP plano. Con esto Spring confía en los
