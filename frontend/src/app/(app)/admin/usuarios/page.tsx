@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Copy, RefreshCw, Search, UserPlus } from "lucide-react";
+import { Check, Copy, Mail, RefreshCw, Search, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Modal } from "@/components/Modal";
@@ -31,6 +31,7 @@ export default function AdminUsuariosPage() {
   const [rol, setRol] = useState<Rol>("");
   const [busqueda, setBusqueda] = useState("");
   const [creando, setCreando] = useState(false);
+  const [invitando, setInvitando] = useState(false);
 
   const params = new URLSearchParams();
   if (rol) params.set("role", rol);
@@ -46,10 +47,16 @@ export default function AdminUsuariosPage() {
     <main className="mx-auto max-w-5xl px-6 py-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-h1 font-bold">Usuarios</h1>
-        <Boton variante="primario" onClick={() => setCreando(true)} className="h-11">
-          <UserPlus size={16} strokeWidth={2.2} />
-          Crear usuario
-        </Boton>
+        <div className="flex items-center gap-2">
+          <Boton variante="secundario" onClick={() => setInvitando(true)} className="h-11">
+            <Mail size={16} strokeWidth={1.75} />
+            Invitar profesor
+          </Boton>
+          <Boton variante="primario" onClick={() => setCreando(true)} className="h-11">
+            <UserPlus size={16} strokeWidth={1.75} />
+            Crear usuario
+          </Boton>
+        </div>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -119,7 +126,82 @@ export default function AdminUsuariosPage() {
       </div>
 
       {creando && <ModalCrearUsuario onCerrar={() => setCreando(false)} />}
+      {invitando && <ModalInvitarProfesor onCerrar={() => setInvitando(false)} />}
     </main>
+  );
+}
+
+function ModalInvitarProfesor({ onCerrar }: { onCerrar: () => void }) {
+  const queryClient = useQueryClient();
+  const [email, setEmail] = useState("");
+  const [enviado, setEnviado] = useState(false);
+
+  const invitar = useMutation({
+    mutationFn: () =>
+      apiFetch<void>("/api/v1/admin/professors/invite", {
+        method: "POST",
+        body: { email: email.trim() },
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      setEnviado(true);
+    },
+  });
+
+  const error = invitar.error instanceof ApiError ? invitar.error.message : null;
+
+  return (
+    <Modal titulo="Invitar profesor" onCerrar={onCerrar}>
+      {enviado ? (
+        <>
+          <p className="text-[13px] text-text-secondary">
+            Le enviamos la invitación a <span className="font-semibold text-text">{email.trim()}</span>.
+            Aparecerá como profesor inactivo hasta que complete su perfil.
+          </p>
+          <Boton variante="primario" onClick={onCerrar} className="mt-5 h-12 w-full">
+            Entendido
+          </Boton>
+        </>
+      ) : (
+        <>
+          <p className="text-[13px] text-text-secondary">
+            Le enviamos un correo para que complete su perfil y active su cuenta. Nada de claves
+            temporales.
+          </p>
+          <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="invite-email">
+            Correo
+          </label>
+          <Campo
+            id="invite-email"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="profesor@correo.com"
+            className="mt-1.5"
+          />
+
+          {error && (
+            <div className="mt-3">
+              <AvisoError mensaje={error} />
+            </div>
+          )}
+
+          <div className="mt-5 flex gap-2.5">
+            <Boton variante="contorno" onClick={onCerrar} className="h-12 flex-1">
+              Cancelar
+            </Boton>
+            <Boton
+              variante="primario"
+              disabled={!email.trim() || invitar.isPending}
+              onClick={() => invitar.mutate()}
+              className="h-12 flex-1"
+            >
+              {invitar.isPending ? "Enviando…" : "Enviar invitación"}
+            </Boton>
+          </div>
+        </>
+      )}
+    </Modal>
   );
 }
 

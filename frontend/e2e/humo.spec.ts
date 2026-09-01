@@ -193,3 +193,18 @@ test("la landing pública lleva al registro en un clic", async ({ page }) => {
   await page.getByRole("link", { name: "Crea tu cuenta" }).first().click();
   await expect(page).toHaveURL(/\/registro/);
 });
+
+test("el admin invita a un profesor; un enlace inválido se rechaza", async ({ page }) => {
+  await login(page, USERS.admin);
+  await expect(page).toHaveURL(/\/admin\/usuarios/);
+
+  await page.getByRole("button", { name: "Invitar profesor" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.locator("#invite-email").fill(`profe.${Date.now()}@orion.local`);
+  await dialog.getByRole("button", { name: "Enviar invitación" }).click();
+  await expect(page.getByText(/Le enviamos la invitación/)).toBeVisible();
+
+  // Un enlace de invitación inválido no deja pasar.
+  await page.goto("/invitacion?token=token-inventado");
+  await expect(page.getByRole("heading", { name: "Invitación no válida" })).toBeVisible();
+});

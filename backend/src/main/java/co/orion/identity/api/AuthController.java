@@ -16,8 +16,14 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Map;
+
+import org.springframework.web.bind.annotation.RequestParam;
+
 import co.orion.identity.application.PasswordResetService;
+import co.orion.identity.application.ProfessorInviteService;
 import co.orion.identity.application.RegistrationService;
+import co.orion.identity.domain.User;
 import co.orion.shared.security.OrionUserDetails;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,14 +36,17 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final RegistrationService registrationService;
     private final PasswordResetService passwordResetService;
+    private final ProfessorInviteService professorInviteService;
     private final SecurityContextRepository contextRepository = new HttpSessionSecurityContextRepository();
 
     public AuthController(AuthenticationManager authenticationManager,
                           RegistrationService registrationService,
-                          PasswordResetService passwordResetService) {
+                          PasswordResetService passwordResetService,
+                          ProfessorInviteService professorInviteService) {
         this.authenticationManager = authenticationManager;
         this.registrationService = registrationService;
         this.passwordResetService = passwordResetService;
+        this.professorInviteService = professorInviteService;
     }
 
     @PostMapping("/login")
@@ -76,6 +85,25 @@ public class AuthController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void resetPassword(@Valid @RequestBody ResetPasswordRequest body) {
         passwordResetService.reset(body.token(), body.newPassword());
+    }
+
+    /** Datos mínimos de una invitación (valida el token) para pintar la pantalla /invitacion. */
+    @GetMapping("/invite")
+    public Map<String, String> inviteInfo(@RequestParam String token) {
+        return Map.of("email", professorInviteService.invitedEmail(token));
+    }
+
+    /**
+     * El profesor acepta la invitación: completa sus datos y su contraseña, la cuenta pasa a ACTIVE
+     * y abrimos sesión (mismo camino que login) para que aterrice directo en su disponibilidad.
+     */
+    @PostMapping("/accept-invite")
+    public UserResponse acceptInvite(@Valid @RequestBody AcceptInviteRequest body,
+                                     HttpServletRequest request,
+                                     HttpServletResponse response) {
+        User professor = professorInviteService.accept(body.token(), body.fullName(), body.password(),
+                body.whatsappPhone(), body.headline(), body.bio());
+        return authenticateAndOpenSession(professor.getEmail(), body.password(), request, response);
     }
 
     private UserResponse authenticateAndOpenSession(String email, String password,

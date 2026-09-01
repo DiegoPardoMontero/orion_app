@@ -39,7 +39,8 @@ public class SecurityConfig {
                 .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
                 // Endpoints anónimos: no hay sesión ni token todavía que exigir.
                 .ignoringRequestMatchers("/api/v1/auth/login", "/api/v1/auth/register",
-                        "/api/v1/auth/forgot-password", "/api/v1/auth/reset-password"))
+                        "/api/v1/auth/forgot-password", "/api/v1/auth/reset-password",
+                        "/api/v1/auth/accept-invite"))
             .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health").permitAll()
@@ -47,6 +48,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/register").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/forgot-password").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/reset-password").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/auth/invite").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/accept-invite").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/me/availability/**").hasRole("PROFESSOR")
