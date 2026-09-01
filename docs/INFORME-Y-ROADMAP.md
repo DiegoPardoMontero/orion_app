@@ -5,26 +5,23 @@
 
 ---
 
-## 0. ⚠️ ACCIÓN URGENTE — el `api_secret` de Cloudinary es incorrecto
+## 0. ✅ Cloudinary — subida de fotos verificada de extremo a extremo
 
-La subida de fotos (Paso 2 del brief de pulido) está **implementada y desplegada**, pero **no
-funcionará** hasta que arregles esto:
+La subida de fotos (Paso 2 del brief de pulido) está **implementada, verificada y lista**. El
+secreto correcto es el que probamos el 01/09/2026:
 
-- Probé la `CLOUDINARY_URL` que me diste **directamente contra la API de Cloudinary** (no solo
-  desde la app). El `cloud_name` (`sifqjzh1`) y el `api_key` son válidos, **pero el `api_secret`
-  no coincide**: el endpoint de Cloudinary responde literalmente `{"error":{"message":"api_secret
-  mismatch"}}`.
-- **Qué hacer:** entra a tu **Cloudinary Dashboard → Product Environment Credentials** (o Settings
-  → API Keys), copia el **API Secret** exacto de la cuenta `sifqjzh1`, arma la URL
-  `cloudinary://<api_key>:<api_secret>@sifqjzh1` y actualiza la variable `CLOUDINARY_URL` en
-  **Railway** (servicio backend). No necesitas tocar código.
-- **Cómo verificar rápido** (reemplaza `SECRET`):
-  ```
-  curl -s -u "987923776991672:SECRET" "https://api.cloudinary.com/v1_1/sifqjzh1/usage"
-  ```
-  Si devuelve un JSON con tu uso (no `api_secret mismatch`), el secreto es correcto.
-- El código de firma usa **SHA-1** (el algoritmo por defecto de Cloudinary). Si tu cuenta está
-  configurada en **SHA-256**, avísame y lo cambio en una línea (`CloudinaryPhotoUploader`).
+- **`CLOUDINARY_URL` correcta:** `cloudinary://987923776991672:<API_SECRET>@sifqjzh1`
+  (el `API_SECRET` válido lo tienes tú; **nunca se commitea al repo**, vive solo como variable de
+  entorno en Railway).
+- **Verificado en tres niveles:** (1) ping directo a la API (`/usage` devolvió el uso real, no
+  `api_secret mismatch`); (2) subida firmada con el esquema exacto del backend (`timestamp +
+  transformation`, SHA-1) → imagen creada; (3) **flujo real por `POST /api/v1/me/photo`** con
+  sesión + CSRF → `HTTP 200` con `photoUrl` de Cloudinary, avatar recortado a 400×400 (`c_fill,
+  g_face`).
+- **Qué falta hacer tú:** poner esa `CLOUDINARY_URL` (con el secreto correcto) en **Railway**
+  (servicio backend) si aún no está. No hay que tocar código.
+- El código de firma usa **SHA-1** (el algoritmo por defecto de Cloudinary) y es el correcto para
+  esta cuenta.
 
 Todo lo demás del flujo de fotos (validación de tipo/tamaño, endpoint, UI "Cambiar foto",
 avatares en toda la app, fallback de iniciales) está probado y listo.
@@ -68,7 +65,7 @@ Cada pieza pasa `./mvnw verify` (backend, Testcontainers) + `next build`/`tsc`/`
 - **Paso 1**: teléfonos en **E.164** con `PhoneInput` (país + número), normalización central +
   backfill (V6), `wa.me` robusto con números extranjeros.
 - **Paso 2**: **fotos para todos** vía Cloudinary (migración V7, `POST /me/photo`, UI "Cambiar
-  foto"). ⚠️ pendiente del secreto correcto (sección 0).
+  foto"). ✅ verificado de extremo a extremo con el secreto correcto (sección 0).
 - **Paso 3**: **link de videollamada automático** (Jitsi) — migración V8, `MeetingLinkProvider`,
   botón "Unirse a la clase", link en correo y `.ics`. El campo de link manual desapareció.
 - **Paso 4**: **reserva desktop — perfil compacto + semana navegable**. En ≥1024px la agenda del
@@ -165,7 +162,7 @@ hablar, adultos, curaduría de academia).
 ## 5. Notas de operación / despliegue
 
 Variables de entorno que deben estar en Railway (producción):
-- `CLOUDINARY_URL` — ⚠️ **con el secreto correcto** (sección 0).
+- `CLOUDINARY_URL` — ✅ secreto correcto ya verificado (sección 0); asegúrate de que esté puesta en Railway.
 - `MAIL_HOST` / `MAIL_PORT` / `MAIL_USERNAME` / `MAIL_PASSWORD` / `ORION_MAIL_FROM` — SMTP real para
   que salgan los correos (confirmación, recuperación).
 - `ORION_APP_BASE_URL` — origen del frontend (para los enlaces de los correos, p. ej. recuperación).
