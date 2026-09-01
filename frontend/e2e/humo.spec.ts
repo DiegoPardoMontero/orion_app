@@ -120,3 +120,17 @@ test("un estudiante nuevo se registra desde el login y aterriza dentro", async (
   await expect(page).toHaveURL(/\/profesores/);
   await expect(page.getByRole("heading", { name: "Profesores" })).toBeVisible();
 });
+
+test("un estudiante edita su perfil y persiste", async ({ page }) => {
+  await login(page, USERS.ana);
+  await page.goto("/cuenta");
+  await expect(page.getByRole("heading", { name: "Mi perfil" })).toBeVisible();
+
+  await page.locator("#telefono").fill("+573009998877");
+  await page.getByRole("button", { name: "Guardar cambios" }).click();
+  await expect(page.getByText("tus datos quedaron actualizados")).toBeVisible();
+
+  // Recargar y comprobar que el dato se guardó de verdad.
+  await page.reload();
+  await expect(page.locator("#telefono")).toHaveValue("+573009998877");
+});

@@ -13,6 +13,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   STUDENT: [
     { href: "/profesores", label: "Profesores" },
     { href: "/mis-clases", label: "Mis clases" },
+    { href: "/cuenta", label: "Perfil" },
   ],
   PROFESSOR: [
     { href: "/mis-clases", label: "Mis clases" },
@@ -28,6 +29,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
 /** Qué roles pueden entrar a cada zona de la app. */
 const ACCESS: { prefix: string; roles: Role[] }[] = [
   { prefix: "/profesores", roles: ["STUDENT"] },
+  { prefix: "/cuenta", roles: ["STUDENT"] },
   { prefix: "/mis-clases", roles: ["STUDENT", "PROFESSOR"] },
   { prefix: "/disponibilidad", roles: ["PROFESSOR"] },
   { prefix: "/perfil", roles: ["PROFESSOR"] },

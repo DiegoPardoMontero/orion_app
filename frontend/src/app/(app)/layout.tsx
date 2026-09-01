@@ -24,6 +24,7 @@ import { useLogout, useMe } from "@/lib/auth/session";
 const ICONO: Record<string, LucideIcon> = {
   "/profesores": Users,
   "/mis-clases": CalendarDays,
+  "/cuenta": User,
   "/disponibilidad": CalendarClock,
   "/perfil": User,
   "/admin/usuarios": Users,
