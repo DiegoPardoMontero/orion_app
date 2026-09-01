@@ -143,7 +143,7 @@ export default function LandingPage() {
                   <Icono size={22} strokeWidth={1.75} />
                 </div>
                 <p className="mt-4 font-display text-[19px] font-bold">
-                  <span className="text-primary">{i + 1}.</span> {paso.titulo}
+                  <span className="text-primary-strong">{i + 1}.</span> {paso.titulo}
                 </p>
                 <p className="mt-1.5 text-[15px] leading-relaxed text-text-secondary">{paso.texto}</p>
               </div>
@@ -203,7 +203,7 @@ export default function LandingPage() {
 
       <footer className="border-t border-border bg-surface">
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-4 px-6 py-10 text-center sm:flex-row sm:justify-between sm:text-left lg:px-8">
-          <Wordmark className="text-[15px] text-primary" />
+          <Wordmark className="text-[15px] text-primary-strong" />
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[13.5px] font-semibold text-text-secondary">
             <Link href="/login" className="hover:text-text">
               Entrar

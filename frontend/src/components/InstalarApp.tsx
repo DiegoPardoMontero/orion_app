@@ -83,7 +83,7 @@ export function InstalarApp() {
     <div className="anim-rise fixed bottom-[88px] left-1/2 z-[60] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 sm:bottom-6 sm:left-auto sm:right-6 sm:translate-x-0">
       <div className="flex items-start gap-3 rounded-card border border-border bg-surface-raised p-4 shadow-lg">
         <span className="grid h-11 w-11 shrink-0 place-items-center rounded-base bg-accent-peach-soft">
-          <Wordmark className="text-[12px] text-primary" />
+          <Wordmark className="text-[12px] text-primary-strong" />
         </span>
 
         <div className="min-w-0 flex-1">

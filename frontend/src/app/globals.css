@@ -12,7 +12,7 @@
 @theme {
   /* — Marca y acción — */
   --color-primary: #e8503a; /* coral — CTA principal, hora seleccionada */
-  --color-primary-strong: #c93a26; /* hover / texto coral pequeño (AA) */
+  --color-primary-strong: #c0341f; /* hover / texto coral pequeño — AA 4.5:1 sobre cremas y durazno */
   --color-primary-soft: #fde4e0; /* tinte coral — pastilla de nav activa, chips */
   --color-on-primary: #fff6ee;
   --color-accent-lavender: #b9a7e6;
