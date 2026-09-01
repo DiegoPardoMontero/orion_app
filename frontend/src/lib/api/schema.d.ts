@@ -628,6 +628,7 @@ export interface components {
             modality?: string;
             status?: string;
             locationNote?: string;
+            meetingLink?: string;
             canCancel?: boolean;
             counterpart?: components["schemas"]["Counterpart"];
         };

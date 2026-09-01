@@ -58,6 +58,8 @@ test("Ana reserva un cupo de María: aparece en Mis clases y desaparece de la ag
 
   await expect(page).toHaveURL(/\/mis-clases/);
   await expect(page.getByText("¡Clase reservada!")).toBeVisible();
+  // La clase virtual trae su sala de videollamada automática (Jitsi).
+  await expect(page.getByRole("link", { name: "Unirse a la clase" }).first()).toBeVisible();
 
   // El cupo ya no está en la agenda de María.
   await page.goto("/profesores");

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Calendar, Check, Clock, Mail, MapPin, Pencil, Video } from "lucide-react";
+import { ArrowLeft, Calendar, Check, Clock, Mail, MapPin, Video } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -53,7 +53,8 @@ export default function AgendaProfesorPage() {
           professorId: id,
           startsAt,
           modality: modalidad,
-          locationNote: nota.trim() || undefined,
+          // La nota de lugar es solo para presencial; en virtual la sala se genera sola.
+          locationNote: modalidad === "IN_PERSON" ? nota.trim() || undefined : undefined,
         },
       }),
     onSuccess: () => {
@@ -240,18 +241,22 @@ export default function AgendaProfesorPage() {
                 />
               </Bloque>
 
-              <Campo
-                type="text"
-                value={nota}
-                onChange={(event) => setNota(event.target.value)}
-                maxLength={300}
-                icono={<Pencil size={16} strokeWidth={1.75} />}
-                placeholder={
-                  modalidad === "VIRTUAL"
-                    ? "Link de la videollamada (opcional)"
-                    : "Lugar del encuentro (opcional)"
-                }
-              />
+              {modalidad === "IN_PERSON" ? (
+                <Campo
+                  type="text"
+                  value={nota}
+                  onChange={(event) => setNota(event.target.value)}
+                  maxLength={300}
+                  icono={<MapPin size={16} strokeWidth={1.75} />}
+                  placeholder="¿Dónde se encontrarán? (opcional)"
+                />
+              ) : (
+                <p className="flex items-center gap-2 rounded-base bg-accent-lavender-soft px-4 py-3 text-[12.5px] text-[#5e4a8a]">
+                  <Video size={16} strokeWidth={1.75} className="shrink-0" />
+                  Al confirmar creamos una sala de videollamada; el enlace llega a tu correo y a Mis
+                  clases.
+                </p>
+              )}
 
               {errorReserva && <AvisoError mensaje={errorReserva} />}
 

@@ -36,17 +36,20 @@ public class BookingService {
     private final BookingRepository bookings;
     private final UserRepository users;
     private final SlotQueryService slots;
+    private final MeetingLinkProvider meetingLinks;
     private final ApplicationEventPublisher events;
     private final Clock clock;
 
     public BookingService(BookingRepository bookings,
                           UserRepository users,
                           SlotQueryService slots,
+                          MeetingLinkProvider meetingLinks,
                           ApplicationEventPublisher events,
                           Clock clock) {
         this.bookings = bookings;
         this.users = users;
         this.slots = slots;
+        this.meetingLinks = meetingLinks;
         this.events = events;
         this.clock = clock;
     }
@@ -73,6 +76,12 @@ public class BookingService {
                 studentId, professorId, startsAt, endsAt, modality, locationNote, actor.getId());
 
         Booking saved = saveOrLoseTheRace(booking);
+        // La sala virtual se genera con el id ya asignado por la base y se guarda antes del evento,
+        // para que la confirmación (correo + .ics) salga ya con el link.
+        if (modality == BookingModality.VIRTUAL) {
+            saved.assignMeetingLink(meetingLinks.linkFor(saved.getId()));
+            saved = bookings.save(saved);
+        }
         events.publishEvent(new BookingCreatedEvent(saved.getId()));
         return saved;
     }

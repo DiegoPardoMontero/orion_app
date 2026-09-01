@@ -18,6 +18,7 @@ public record MyBookingResponse(UUID id,
                                 String modality,
                                 String status,
                                 String locationNote,
+                                String meetingLink,
                                 boolean canCancel,
                                 Counterpart counterpart) {
 
@@ -45,6 +46,7 @@ public record MyBookingResponse(UUID id,
                 booking.getModality().name(),
                 booking.getStatus().name(),
                 booking.getLocationNote(),
+                booking.getMeetingLink(),
                 booking.isCancellableAt(now),
                 Counterpart.of(counterpart, counterpartPhotoUrl, counterpartHeadline));
     }

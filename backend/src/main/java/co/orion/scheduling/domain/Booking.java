@@ -63,6 +63,10 @@ public class Booking {
     @Column(name = "location_note", length = 300)
     private String locationNote;
 
+    /** Sala de videollamada para clases VIRTUAL (Jitsi hoy). Null en presenciales. */
+    @Column(name = "meeting_link", length = 300)
+    private String meetingLink;
+
     /** Quién ejecutó la acción. Si coincide con student_id, la reserva fue autoservicio. */
     @Column(name = "created_by", nullable = false, updatable = false)
     private UUID createdBy;
@@ -192,6 +196,15 @@ public class Booking {
 
     public BookingStatus getStatus() {
         return status;
+    }
+
+    /** Asigna la sala de videollamada. Se hace tras el INSERT (el link depende del id generado). */
+    public void assignMeetingLink(String meetingLink) {
+        this.meetingLink = meetingLink;
+    }
+
+    public String getMeetingLink() {
+        return meetingLink;
     }
 
     public String getLocationNote() {

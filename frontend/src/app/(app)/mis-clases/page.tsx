@@ -184,6 +184,18 @@ function TarjetaClase({
           </div>
         )}
 
+        {scope === "upcoming" && clase.status === "CONFIRMED" && virtual && clase.meetingLink && (
+          <a
+            href={clase.meetingLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3.5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-pill bg-primary px-5 text-[14px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus"
+          >
+            <Video size={16} strokeWidth={1.75} />
+            Unirse a la clase
+          </a>
+        )}
+
         <div className="mt-3.5 flex flex-wrap gap-2">
           {whatsapp && (
             <a

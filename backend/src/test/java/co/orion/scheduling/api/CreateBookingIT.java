@@ -132,6 +132,26 @@ class CreateBookingIT extends ApiIntegrationSupport {
     }
 
     @Test
+    void aVirtualBookingGetsAJitsiMeetingLink() {
+        ResponseEntity<BookingResponse> response = post(
+                BOOKINGS, anaSession, request(maria.getId(), 9, null), BookingResponse.class);
+
+        var saved = bookings.findById(response.getBody().id()).orElseThrow();
+        assertThat(saved.getMeetingLink()).startsWith("https://meet.jit.si/OrionIdiomas-");
+    }
+
+    @Test
+    void anInPersonBookingHasNoMeetingLink() {
+        ResponseEntity<BookingResponse> response = post(
+                BOOKINGS, anaSession,
+                new CreateBookingRequest(maria.getId(), wednesdayAt(9), "IN_PERSON", "Café del centro", null),
+                BookingResponse.class);
+
+        var saved = bookings.findById(response.getBody().id()).orElseThrow();
+        assertThat(saved.getMeetingLink()).isNull();
+    }
+
+    @Test
     void bookingRemovesTheSlotFromTheAvailableOnes() {
         post(BOOKINGS, anaSession, request(maria.getId(), 9, null), BookingResponse.class);
 

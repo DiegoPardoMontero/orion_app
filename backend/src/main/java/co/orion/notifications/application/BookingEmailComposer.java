@@ -47,14 +47,26 @@ public class BookingEmailComposer {
                 ? "Tu clase de inglés en Orión con " + counterpart.getFullName() + "."
                 : "Clase de inglés en Orión con " + counterpart.getFullName() + ".";
 
-        String location = booking.getLocationNote() != null ? booking.getLocationNote() : modality;
+        String meetingLink = booking.getMeetingLink();
+        String location = booking.getLocationNote() != null
+                ? booking.getLocationNote()
+                : (meetingLink != null ? meetingLink : modality);
+
+        // La sala de videollamada va en la descripción del evento (y como enlace en el correo).
+        String eventDetails = meetingLink != null ? details + " Únete: " + meetingLink : details;
 
         String ics = icsGenerator.generate(
                 booking.getId(), booking.getStartsAt(), booking.getEndsAt(), clock.instant(),
-                title, details, location);
+                title, eventDetails, location);
 
         String calendarLink = calendarLinks.build(
-                title, booking.getStartsAt(), booking.getEndsAt(), details, location);
+                title, booking.getStartsAt(), booking.getEndsAt(), eventDetails, location);
+
+        String meetingHtml = meetingLink != null
+                ? "<p><strong>Sala de la clase:</strong> <a href=\"" + meetingLink
+                        + "\">Unirse a la videollamada</a></p>"
+                : "";
+        String meetingText = meetingLink != null ? "Sala de la clase: " + meetingLink + "\n" : "";
 
         String subject = recipientIsStudent
                 ? "¡Listo! Tu clase con " + counterpart.getFullName() + " quedó agendada"
@@ -74,6 +86,7 @@ public class BookingEmailComposer {
                   %s
                   <li><strong>Con:</strong> %s</li>
                 </ul>
+                %s
                 <p>Pueden coordinar los detalles por WhatsApp: <a href="%s">%s</a></p>
                 <p><a href="%s">Añadir a Google Calendar</a> — o abre el archivo adjunto para
                 guardarla en el calendario que uses.</p>
@@ -87,6 +100,7 @@ public class BookingEmailComposer {
                         ? "<li><strong>Dónde:</strong> " + booking.getLocationNote() + "</li>"
                         : "",
                 counterpart.getFullName(),
+                meetingHtml,
                 whatsappLink(counterpart),
                 whatsappLabel(counterpart),
                 calendarLink);
@@ -99,14 +113,14 @@ public class BookingEmailComposer {
                 Cuándo: %s
                 Modalidad: %s
                 Con: %s
-                WhatsApp: %s
+                %sWhatsApp: %s
 
                 Añadir a Google Calendar: %s
 
                 ¡Nos vemos en clase!
                 El equipo de Orión
                 """.formatted(greeting, opening, when, modality, counterpart.getFullName(),
-                whatsappLink(counterpart), calendarLink);
+                meetingText, whatsappLink(counterpart), calendarLink);
 
         return new BookingEmail(recipient.getEmail(), subject, html, text, ics);
     }
