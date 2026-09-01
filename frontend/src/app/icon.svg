@@ -1,8 +1,38 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Orión">
-  <rect width="32" height="32" rx="8" fill="#FFC189" />
-  <path
-    transform="translate(4 4)"
-    d="M12 2l2.6 6.6L21 11l-6.4 2.4L12 20l-2.6-6.6L3 11l6.4-2.4z"
-    fill="#2E1E4E"
-  />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Orión">
+  <defs>
+    <linearGradient id="dawn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2E1E4E" />
+      <stop offset="0.5" stop-color="#7A4A8C" />
+      <stop offset="1" stop-color="#E8503A" />
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFE9A8" stop-opacity="0.55" />
+      <stop offset="1" stop-color="#FFE9A8" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <rect width="200" height="200" rx="44" fill="url(#dawn)" />
+  <circle cx="100" cy="100" r="86" fill="url(#glow)" />
+
+  <g transform="translate(100 100) scale(1.12) translate(-100 -96)">
+    <!-- cuerpo estrella dorado (stroke del mismo color = puntas redondeadas) -->
+    <polygon
+      points="100,36 115.3,75 157.1,77.5 124.7,104 135.3,144.5 100,122 64.7,144.5 75.3,104 42.9,77.5 84.7,75"
+      fill="#FFCE3A" stroke="#FFCE3A" stroke-width="26" stroke-linejoin="round" paint-order="stroke fill" />
+    <ellipse cx="80" cy="62" rx="17" ry="9" fill="#FFF6EE" opacity="0.45" transform="rotate(-32 80 62)" />
+
+    <!-- rubor -->
+    <ellipse cx="70" cy="106" rx="10" ry="6.5" fill="#FF8E76" opacity="0.8" />
+    <ellipse cx="130" cy="106" rx="10" ry="6.5" fill="#FF8E76" opacity="0.8" />
+
+    <!-- ojos -->
+    <circle cx="85" cy="91" r="10" fill="#2B2430" />
+    <circle cx="115" cy="91" r="10" fill="#2B2430" />
+    <circle cx="81.5" cy="87" r="3.4" fill="#FFF6EE" />
+    <circle cx="111.5" cy="87" r="3.4" fill="#FFF6EE" />
+
+    <!-- sonrisa + lengua -->
+    <path d="M86,101 Q100,125 114,101 Q100,108 86,101 Z" fill="#5A2436" />
+    <path d="M93,112 Q100,122 107,112 Q100,116 93,112 Z" fill="#FF8FA3" />
+  </g>
 </svg>
