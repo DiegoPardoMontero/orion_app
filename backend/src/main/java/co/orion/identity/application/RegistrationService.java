@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.identity.persistence.UserRepository;
+import co.orion.shared.PhoneNumbers;
 import co.orion.shared.error.BusinessRuleViolationException;
 import co.orion.shared.error.ConflictException;
 
@@ -41,9 +42,7 @@ public class RegistrationService {
         }
 
         User user = new User(email, passwordEncoder.encode(rawPassword), fullName, UserRole.STUDENT);
-        if (whatsappPhone != null && !whatsappPhone.isBlank()) {
-            user.changeWhatsappPhone(whatsappPhone.trim());
-        }
+        user.changeWhatsappPhone(PhoneNumbers.toE164(whatsappPhone));
 
         try {
             return users.saveAndFlush(user);

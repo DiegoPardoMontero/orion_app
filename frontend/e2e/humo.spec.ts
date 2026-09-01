@@ -123,16 +123,19 @@ test("un estudiante nuevo se registra desde el login y aterriza dentro", async (
 
 test("un estudiante edita su perfil y persiste", async ({ page }) => {
   await login(page, USERS.ana);
+  // Esperar a que el login termine (sesión establecida) antes de navegar, o /cuenta rebota a login.
+  await expect(page).toHaveURL(/\/profesores/);
   await page.goto("/cuenta");
   await expect(page.getByRole("heading", { name: "Mi perfil" })).toBeVisible();
 
-  await page.locator("#telefono").fill("+573009998877");
+  // #telefono es el número local del PhoneInput (el país va aparte, Colombia por defecto).
+  await page.locator("#telefono").fill("3009998877");
   await page.getByRole("button", { name: "Guardar cambios" }).click();
   await expect(page.getByText("tus datos quedaron actualizados")).toBeVisible();
 
-  // Recargar y comprobar que el dato se guardó de verdad.
+  // Recargar y comprobar que el dato se guardó de verdad (se re-parsea del E.164 +57...).
   await page.reload();
-  await expect(page.locator("#telefono")).toHaveValue("+573009998877");
+  await expect(page.locator("#telefono")).toHaveValue("3009998877");
 });
 
 test("un estudiante reprograma una clase a otro cupo", async ({ page }) => {

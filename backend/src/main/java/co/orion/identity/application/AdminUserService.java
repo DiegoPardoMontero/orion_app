@@ -19,6 +19,7 @@ import co.orion.identity.domain.UserRole;
 import co.orion.identity.domain.UserStatus;
 import co.orion.identity.persistence.ProfessorProfileRepository;
 import co.orion.identity.persistence.UserRepository;
+import co.orion.shared.PhoneNumbers;
 import co.orion.shared.error.BusinessRuleViolationException;
 import co.orion.shared.error.ConflictException;
 import co.orion.shared.error.ResourceNotFoundException;
@@ -81,7 +82,7 @@ public class AdminUserService {
         }
 
         User user = new User(email, passwordEncoder.encode(rawPassword), fullName, role);
-        user.changeWhatsappPhone(whatsappPhone);
+        user.changeWhatsappPhone(PhoneNumbers.toE164(whatsappPhone));
 
         User saved;
         try {
@@ -107,7 +108,7 @@ public class AdminUserService {
             user.changeFullName(fullName.trim());
         }
         if (whatsappPhone != null) {
-            user.changeWhatsappPhone(whatsappPhone.isBlank() ? null : whatsappPhone.trim());
+            user.changeWhatsappPhone(PhoneNumbers.toE164(whatsappPhone));
         }
         if (status != null) {
             switch (parseStatus(status)) {

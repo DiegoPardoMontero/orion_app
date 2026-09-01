@@ -5,6 +5,7 @@ import { Check, Copy, RefreshCw, Search, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Modal } from "@/components/Modal";
+import { PhoneInput } from "@/components/PhoneInput";
 import { Badge, Boton, Campo } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type { AdminUserResponse } from "@/lib/api/types";
@@ -232,13 +233,7 @@ function ModalCrearUsuario({ onCerrar }: { onCerrar: () => void }) {
       <label className="mt-3 block text-[12.5px] font-bold text-text-secondary" htmlFor="telefono">
         WhatsApp (opcional)
       </label>
-      <Campo
-        id="telefono"
-        value={telefono}
-        onChange={(event) => setTelefono(event.target.value)}
-        placeholder="+573001112233"
-        className="mt-1.5"
-      />
+      <PhoneInput id="telefono" value={telefono} onChange={setTelefono} className="mt-1.5" />
 
       <p className="mt-3 text-[12.5px] font-bold text-text-secondary">Rol</p>
       <div className="mt-1.5 flex gap-2">

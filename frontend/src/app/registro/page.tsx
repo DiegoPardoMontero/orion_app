@@ -1,11 +1,12 @@
 "use client";
 
-import { ArrowRight, Eye, EyeOff, Lock, Mail, MessageCircle, User } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Lock, Mail, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { AvisoError } from "@/components/estados";
 import { Constelacion, Wordmark } from "@/components/marca";
+import { PhoneInput } from "@/components/PhoneInput";
 import { Rigel } from "@/components/Rigel";
 import { BotonPrincipal, Campo, Spinner } from "@/components/ui";
 import { ApiError } from "@/lib/api/fetch";
@@ -168,17 +169,7 @@ export default function RegistroPage() {
           >
             WhatsApp <span className="font-semibold normal-case text-text-muted">(opcional)</span>
           </label>
-          <Campo
-            id="whatsapp"
-            type="tel"
-            autoComplete="tel"
-            maxLength={20}
-            placeholder="+57 300 111 2233"
-            icono={<MessageCircle size={18} strokeWidth={1.75} />}
-            value={whatsapp}
-            onChange={(event) => setWhatsapp(event.target.value)}
-            className="mt-1.5"
-          />
+          <PhoneInput id="whatsapp" value={whatsapp} onChange={setWhatsapp} className="mt-1.5" />
           <p className="mt-1.5 text-[12px] text-text-muted">
             Por aquí coordinas la clase con tu profesor.
           </p>

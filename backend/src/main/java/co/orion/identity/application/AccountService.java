@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import co.orion.identity.domain.User;
 import co.orion.identity.persistence.UserRepository;
+import co.orion.shared.PhoneNumbers;
 import co.orion.shared.error.ResourceNotFoundException;
 
 /**
@@ -35,9 +36,8 @@ public class AccountService {
         if (fullName != null && !fullName.isBlank()) {
             user.changeFullName(fullName.trim());
         }
-        // El WhatsApp es opcional: vacío lo borra (el usuario decidió no dejarlo).
-        String phone = (whatsappPhone == null || whatsappPhone.isBlank()) ? null : whatsappPhone.trim();
-        user.changeWhatsappPhone(phone);
+        // El WhatsApp es opcional (vacío lo borra) y se guarda normalizado a E.164.
+        user.changeWhatsappPhone(PhoneNumbers.toE164(whatsappPhone));
         return users.save(user);
     }
 }

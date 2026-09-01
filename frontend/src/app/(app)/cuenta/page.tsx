@@ -1,10 +1,11 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, KeyRound, Mail, MessageCircle, User } from "lucide-react";
+import { Check, KeyRound, Mail, User } from "lucide-react";
 import { useState } from "react";
 import { CambiarClave } from "@/components/CambiarClave";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
+import { PhoneInput } from "@/components/PhoneInput";
 import { BotonPrincipal, Campo } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import { meQueryKey } from "@/lib/auth/session";
@@ -89,16 +90,7 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
       <label className="mt-4 block text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary" htmlFor="telefono">
         WhatsApp <span className="font-semibold normal-case text-text-muted">(opcional)</span>
       </label>
-      <Campo
-        id="telefono"
-        type="tel"
-        maxLength={20}
-        value={telefono}
-        onChange={(event) => setTelefono(event.target.value)}
-        placeholder="+57 300 111 2233"
-        icono={<MessageCircle size={18} strokeWidth={1.75} />}
-        className="mt-1.5"
-      />
+      <PhoneInput id="telefono" value={telefono} onChange={setTelefono} className="mt-1.5" />
       <p className="mt-1.5 text-[12px] text-text-muted">Por aquí te escribe tu profesor para coordinar.</p>
 
       {/* Correo y rol se muestran, no se editan. */}
