@@ -28,6 +28,66 @@ avatares en toda la app, fallback de iniciales) está probado y listo.
 
 ---
 
+## 0.1 Cierre del piloto — verificación de extremo a extremo (01/09/2026)
+
+Ronda de "cerrar el piloto de verdad". Tres frentes:
+
+### a) Ensayo del flujo real (admin → profesor → estudiante) contra SMTP real (Mailpit)
+Ejecutado por API de punta a punta con base de datos fresca:
+1. Admin inicia sesión → **invita a un profesor** (`POST /admin/professors/invite`, 204).
+2. **El correo de invitación llega** a Mailpit (asunto "Sofía te invita a enseñar en Orión").
+3. Profesor **acepta la invitación** con el token del correo (`POST /auth/accept-invite`, 200):
+   queda ACTIVE y con sesión.
+4. Profesor **publica perfil** (`PUT /me/profile`, 200) y **carga disponibilidad**
+   (`POST /me/availability/rules`, 201).
+5. Estudiante **se auto-registra** (`POST /auth/register`, 201) y **reserva** un cupo
+   (`POST /bookings`, 201 · status CONFIRMED).
+6. **Llegan las 2 confirmaciones** (estudiante + profesor), cada una **con el adjunto `.ics`**.
+7. **Recuperación de contraseña** (`POST /auth/forgot-password`, 204): **el correo llega**.
+
+### b) 🐞 Bug encontrado y corregido — los correos de invitación y recuperación NUNCA salían
+`SmtpProfessorInviteMailer` y `SmtpPasswordResetMailer` creaban el `MimeMessageHelper` en modo
+simple (`multipart=false`) pero componían el cuerpo con `setText(plano, html)`, que **exige
+multipart**. Lanzaban `"Not in multipart mode"`; como el error se traga y se loguea, el correo no
+salía **sin que nada fallara visiblemente**. En producción, ni el profesor recibía su enlace de
+invitación ni el estudiante el de recuperación. **Fix:** `MULTIPART_MODE_MIXED_RELATED` (igual que
+`BookingMailSender`, que sí funcionaba porque adjunta el `.ics`). Se añadió `SmtpMailersTest`, que
+ejercita las implementaciones SMTP reales y falla si `send()` no llega a invocarse. `./mvnw verify`:
+**155 tests en verde**.
+
+### c) Lighthouse de la landing (build de producción, `next start`)
+Corrido con Chromium sobre `http://localhost:3000/`. **Todas las categorías cumplen el DoD (≥95):**
+
+| Categoría | Score | DoD |
+|---|---|---|
+| Performance | **98** | ≥95 ✅ |
+| Accessibility | **95** | ≥95 ✅ |
+| SEO | **100** | ≥95 ✅ |
+| Best Practices | **96** | — ✅ |
+
+Métricas de perf: FCP 0.8 s · LCP 2.0 s · TBT 120 ms · CLS 0 · Speed Index 0.8 s.
+
+**Dos hallazgos por encima del DoD (opcionales, decisión de Pardo):**
+1. **Contraste del coral de marca.** El CTA principal (coral `#E8503A` + texto crema `#FFF6EE`) da
+   **3.48:1**, bajo el 4.5:1 de AA para texto normal (el bold 15px queda a un pelo del umbral de
+   "texto grande", que solo pide 3:1). Igual pasa con el coral como *texto* sobre cremas y con el
+   `primary-strong` (`#C93A26`, **4.48:1**, a 0.02 de pasar). Subir a AA-pleno exige **oscurecer el
+   coral** → cambia la identidad visual aprobada. Es tu llamada; A11y ya pasa en 95.
+2. **Un 401 en consola.** La landing pública consulta `/auth/me` para decidir el CTA; sin sesión
+   responde 401 (correcto) y el navegador lo loguea solo. El JS ya lo maneja (`redirectOn401:false`),
+   pero el log de red no se puede silenciar sin evitar la petición (chequeo de sesión server-side, que
+   volvería dinámica la página hoy estática) o un endpoint público de sesión que devuelva 200. Best
+   Practices ya pasa en 96.
+
+### d) Pendiente que sigue siendo tuyo (no automatizable desde aquí)
+- **Lighthouse sobre la URL real de Railway** (este corrió en local sobre el build de prod; Perf real
+  depende del edge/CDN, pero SEO/A11y son idénticos).
+- **Verificar el SMTP real de producción** (Resend u otro): que `MAIL_*` estén en Railway y que un
+  correo real de invitación/recuperación llegue a una bandeja de verdad. El código ya está probado
+  contra un SMTP real (Mailpit); falta el proveedor de producción.
+
+---
+
 ## 1. Qué tenemos hoy (desplegado y verificado)
 
 Cada pieza pasa `./mvnw verify` (backend, Testcontainers) + `next build`/`tsc`/`lint` (frontend) +
