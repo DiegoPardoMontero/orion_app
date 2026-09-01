@@ -148,10 +148,15 @@ function TarjetaClase({
         </div>
 
         <div className="mt-3 flex items-center gap-2.5">
-          <Avatar nombre={nombreContraparte} size="sm" />
-          <span className="text-[13.5px] font-semibold">
-            {esProfesor ? nombreContraparte : `Prof. ${nombreContraparte}`}
-          </span>
+          <Avatar nombre={nombreContraparte} fotoUrl={contraparte?.photoUrl} size="sm" />
+          <div className="min-w-0">
+            <span className="block text-[13.5px] font-semibold">
+              {esProfesor ? nombreContraparte : `Prof. ${nombreContraparte}`}
+            </span>
+            {contraparte?.headline && (
+              <span className="block truncate text-[12px] text-text-muted">{contraparte.headline}</span>
+            )}
+          </div>
         </div>
 
         {clase.locationNote && (

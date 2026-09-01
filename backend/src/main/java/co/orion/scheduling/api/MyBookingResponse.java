@@ -21,15 +21,23 @@ public record MyBookingResponse(UUID id,
                                 boolean canCancel,
                                 Counterpart counterpart) {
 
-    /** La otra parte: el profesor si mira un estudiante, el estudiante si mira un profesor. */
-    public record Counterpart(UUID id, String fullName, String whatsappPhone) {
+    /**
+     * La otra parte: el profesor si mira un estudiante, el estudiante si mira un profesor. La foto
+     * y el titular solo llegan cuando la contraparte es profesor (los estudiantes aún no tienen
+     * perfil público); si no, van en null y la UI cae al avatar de iniciales.
+     */
+    public record Counterpart(UUID id, String fullName, String whatsappPhone,
+                              String photoUrl, String headline) {
 
-        static Counterpart of(User user) {
-            return new Counterpart(user.getId(), user.getFullName(), user.getWhatsappPhone());
+        static Counterpart of(User user, String photoUrl, String headline) {
+            return new Counterpart(user.getId(), user.getFullName(), user.getWhatsappPhone(),
+                    photoUrl, headline);
         }
     }
 
-    public static MyBookingResponse of(Booking booking, User counterpart, Instant now) {
+    public static MyBookingResponse of(Booking booking, User counterpart,
+                                       String counterpartPhotoUrl, String counterpartHeadline,
+                                       Instant now) {
         return new MyBookingResponse(
                 booking.getId(),
                 booking.getStartsAt().atZone(BusinessZone.BOGOTA),
@@ -38,6 +46,6 @@ public record MyBookingResponse(UUID id,
                 booking.getStatus().name(),
                 booking.getLocationNote(),
                 booking.isCancellableAt(now),
-                Counterpart.of(counterpart));
+                Counterpart.of(counterpart, counterpartPhotoUrl, counterpartHeadline));
     }
 }

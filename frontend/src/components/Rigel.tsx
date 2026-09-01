@@ -83,6 +83,9 @@ export function Rigel({
       <ellipse cx={75} cy={176} rx={21} ry={11} fill="var(--rg-dark)" />
       <ellipse cx={125} cy={176} rx={21} ry={11} fill="var(--rg-dark)" />
 
+      {/* Brazos que van DETRÁS del cuerpo (la mano alzada del saludo asoma por detrás). */}
+      <BrazosDetras pose={pose} />
+
       {/* cuerpo: el stroke de 26 px del mismo color redondea las puntas */}
       <polygon
         points="100,36 115.3,75 157.1,77.5 124.7,104 135.3,144.5 100,122 64.7,144.5 75.3,104 42.9,77.5 84.7,75"
@@ -279,22 +282,29 @@ function Brazos({ pose }: { pose: RigelPose }) {
     );
   }
 
-  // saludo (base): brazo derecho levantado (saluda) + izquierdo en reposo
+  // saludo (base): el brazo que saluda va DETRÁS del cuerpo (ver BrazosDetras); aquí solo el
+  // brazo izquierdo en reposo, que sí va por delante.
+  return <BrazoIzquierdoReposo />;
+}
+
+/**
+ * Brazos que se pintan ANTES del cuerpo, para que queden detrás. Hoy solo el saludo: la mano
+ * alzada asoma por detrás del cuerpo (feedback de producto, decisión 7 del brief de pulido).
+ */
+function BrazosDetras({ pose }: { pose: RigelPose }) {
+  if (pose !== "saludo") return null;
   return (
-    <>
-      <g className="rigel-wave">
-        <path d="M144,94 L166,71" stroke="var(--rg-arm)" strokeWidth={7} strokeLinecap="round" fill="none" />
-        <circle cx={181} cy={77} r={5.5} fill="var(--rg-glove)" stroke="var(--rg-arm)" strokeWidth={3} />
-        <circle cx={172} cy={66} r={13} fill="var(--rg-glove)" stroke="var(--rg-arm)" strokeWidth={3} />
-        <g stroke="var(--rg-arm)" strokeWidth={2} strokeLinecap="round" fill="none">
-          <line x1={168} y1={60} x2={168} y2={68} />
-          <line x1={172} y1={59} x2={172} y2={68} />
-          <line x1={176} y1={60} x2={176} y2={67} />
-          <path d="M163,73 Q172,79 181,72" strokeWidth={2.4} />
-        </g>
+    <g className="rigel-wave">
+      <path d="M144,94 L166,71" stroke="var(--rg-arm)" strokeWidth={7} strokeLinecap="round" fill="none" />
+      <circle cx={181} cy={77} r={5.5} fill="var(--rg-glove)" stroke="var(--rg-arm)" strokeWidth={3} />
+      <circle cx={172} cy={66} r={13} fill="var(--rg-glove)" stroke="var(--rg-arm)" strokeWidth={3} />
+      <g stroke="var(--rg-arm)" strokeWidth={2} strokeLinecap="round" fill="none">
+        <line x1={168} y1={60} x2={168} y2={68} />
+        <line x1={172} y1={59} x2={172} y2={68} />
+        <line x1={176} y1={60} x2={176} y2={67} />
+        <path d="M163,73 Q172,79 181,72" strokeWidth={2.4} />
       </g>
-      <BrazoIzquierdoReposo />
-    </>
+    </g>
   );
 }
 

@@ -27,7 +27,8 @@ public class MyBookingsController {
     public List<MyBookingResponse> myBookings(@AuthenticationPrincipal OrionUserDetails principal,
                                               @RequestParam(defaultValue = "upcoming") String scope) {
         return bookingQueryService.myBookings(principal.user(), parseScope(scope)).stream()
-                .map(view -> MyBookingResponse.of(view.booking(), view.counterpart(), view.now()))
+                .map(view -> MyBookingResponse.of(view.booking(), view.counterpart(),
+                        view.counterpartPhotoUrl(), view.counterpartHeadline(), view.now()))
                 .toList();
     }
 

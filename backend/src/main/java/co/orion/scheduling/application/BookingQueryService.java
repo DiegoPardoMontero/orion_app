@@ -11,8 +11,10 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import co.orion.identity.domain.ProfessorProfile;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
+import co.orion.identity.persistence.ProfessorProfileRepository;
 import co.orion.identity.persistence.UserRepository;
 import co.orion.scheduling.domain.Booking;
 import co.orion.scheduling.domain.BookingStatus;
@@ -28,11 +30,16 @@ public class BookingQueryService {
 
     private final BookingRepository bookings;
     private final UserRepository users;
+    private final ProfessorProfileRepository profiles;
     private final Clock clock;
 
-    public BookingQueryService(BookingRepository bookings, UserRepository users, Clock clock) {
+    public BookingQueryService(BookingRepository bookings,
+                               UserRepository users,
+                               ProfessorProfileRepository profiles,
+                               Clock clock) {
         this.bookings = bookings;
         this.users = users;
+        this.profiles = profiles;
         this.clock = clock;
     }
 
@@ -53,12 +60,24 @@ public class BookingQueryService {
         };
 
         Map<UUID, User> counterparts = loadCounterparts(found, asStudent);
+        // La foto/titular solo existen para profesores: si quien consulta es estudiante, su
+        // contraparte es la profesora y cargamos su perfil público.
+        Map<UUID, ProfessorProfile> professorProfiles = asStudent
+                ? profiles.findAllById(counterparts.keySet()).stream()
+                        .collect(Collectors.toMap(ProfessorProfile::getUserId, Function.identity()))
+                : Map.of();
 
         return found.stream()
-                .map(booking -> new MyBookingsView(
-                        booking,
-                        counterparts.get(asStudent ? booking.getProfessorId() : booking.getStudentId()),
-                        now))
+                .map(booking -> {
+                    UUID counterpartId = asStudent ? booking.getProfessorId() : booking.getStudentId();
+                    ProfessorProfile profile = professorProfiles.get(counterpartId);
+                    return new MyBookingsView(
+                            booking,
+                            counterparts.get(counterpartId),
+                            profile != null ? profile.getPhotoUrl() : null,
+                            profile != null ? profile.getHeadline() : null,
+                            now);
+                })
                 .toList();
     }
 

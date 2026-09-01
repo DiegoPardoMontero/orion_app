@@ -65,16 +65,32 @@ export default function ProfesoresPage() {
         <ul className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
           {profesores.map((profesor, i) => (
             <li key={profesor.id} className="anim-rise" style={{ animationDelay: `${Math.min(i, 6) * 40}ms` }}>
-              <div className="flex h-full flex-col justify-between rounded-card bg-surface-raised p-5 shadow-md transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-lg">
-                <div className="flex items-center gap-3">
-                  <Avatar nombre={profesor.fullName ?? ""} fotoUrl={profesor.photoUrl} />
-                  <div className="min-w-0">
+              <div className="flex h-full flex-col rounded-card bg-surface-raised p-5 shadow-md transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-lg">
+                <div className="flex items-start gap-3">
+                  <Avatar nombre={profesor.fullName ?? ""} fotoUrl={profesor.photoUrl} size="lg" />
+                  <div className="min-w-0 pt-0.5">
                     <p className="truncate font-display text-[17px] font-bold">{profesor.fullName}</p>
-                    <p className="truncate text-[13px] text-text-secondary">{profesor.headline}</p>
+                    {profesor.headline && (
+                      <p className="mt-0.5 text-[14px] font-semibold text-text-secondary">
+                        {profesor.headline}
+                      </p>
+                    )}
                   </div>
                 </div>
 
-                <div className="mt-4 flex justify-end">
+                {profesor.bio && (
+                  <p className="mt-3 line-clamp-3 text-[14px] leading-relaxed text-text-secondary">
+                    {profesor.bio}
+                  </p>
+                )}
+
+                <div className="mt-4 flex items-center justify-between">
+                  <Link
+                    href={`/profesores/${profesor.id}`}
+                    className="text-[13px] font-bold text-primary-strong hover:underline"
+                  >
+                    Ver perfil completo
+                  </Link>
                   <Link
                     href={`/profesores/${profesor.id}`}
                     className="inline-flex min-h-11 items-center gap-1 rounded-pill bg-primary px-5 text-[14px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus"
