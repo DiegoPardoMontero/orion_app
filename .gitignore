@@ -45,3 +45,8 @@ logs.*.csv
 
 # Metadatos que Windows pega al descargar archivos
 *:Zone.Identifier
+
+# Capturas con credenciales/secretos — nunca al repo
+*Credentials*.png
+*credenciales*.png
+*secret*.png
