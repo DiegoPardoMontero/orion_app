@@ -45,6 +45,9 @@ export type AdminUserResponse = Schemas["AdminUserResponse"];
 export type AdminBookingResponse = Schemas["AdminBookingResponse"];
 export type MetricsResponse = Schemas["MetricsResponse"];
 
+export type PagedReviews = Schemas["PagedReviews"];
+export type PublicReviewResponse = Schemas["PublicReviewResponse"];
+
 export type ConversationSummary = Schemas["ConversationSummaryResponse"];
 export type MessageResponse = Schemas["MessageResponse"];
 export type NotificationResponse = Schemas["NotificationResponse"];

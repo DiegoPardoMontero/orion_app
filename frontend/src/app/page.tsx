@@ -19,6 +19,7 @@ import { BuscadorHero } from "@/components/BuscadorHero";
 import { HeroCta } from "@/components/HeroCta";
 import { Constelacion, Wordmark } from "@/components/marca";
 import { NavPublica } from "@/components/NavPublica";
+import { EstrellaRating } from "@/components/Rating";
 import { Rigel } from "@/components/Rigel";
 import { serverFetch } from "@/lib/api/server";
 import type {
@@ -417,6 +418,9 @@ function TarjetaProfesor({ profesor }: { profesor: ProfessorCard }) {
               {profesor.headline}
             </p>
           )}
+          <div className="mt-1.5">
+            <EstrellaRating ratingAvg={profesor.ratingAvg} ratingCount={profesor.ratingCount} />
+          </div>
         </div>
       </div>
       {profesor.languages && profesor.languages.length > 0 && (

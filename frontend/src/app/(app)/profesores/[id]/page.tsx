@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Award,
@@ -22,6 +22,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { Avatar } from "@/components/Avatar";
 import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
+import { EstrellaRating, EstrellasFijas } from "@/components/Rating";
 import { Badge, Bloque, Boton, BotonPrincipal, Campo, Chip, Segmento, Spinner } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type {
@@ -29,12 +30,13 @@ import type {
   ConversationSummary,
   GoalResponse,
   Modality,
+  PagedReviews,
   ProfessorDetail,
   SlotView,
   SlotsResponse,
 } from "@/lib/api/types";
 import { useMe } from "@/lib/auth/session";
-import { diaBogota, fechaCorta, horaBogota, precioCop } from "@/lib/format";
+import { diaBogota, fechaCorta, fechaRelativa, horaBogota, precioCop } from "@/lib/format";
 import { etiquetaNivel, etiquetaObjetivo } from "@/lib/i18n";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 
@@ -229,6 +231,15 @@ export default function AgendaProfesorPage() {
               <span className="ml-1 text-[13px] font-semibold text-text-muted">/ hora</span>
             </p>
           ) : null}
+
+          {/* Rating honesto: estrella + promedio si hay ≥3 reseñas; si no, "Nuevo en Orión". */}
+          <div className="mt-2">
+            <EstrellaRating
+              ratingAvg={detalle.ratingAvg}
+              ratingCount={detalle.ratingCount}
+              conteo="largo"
+            />
+          </div>
 
           <div className="mt-3 flex flex-wrap gap-2">
             <Badge tono="lavanda">
@@ -444,7 +455,95 @@ export default function AgendaProfesorPage() {
           )}
         </section>
       </div>
+
+      <SeccionResenas profesorId={id} />
     </main>
+  );
+}
+
+/**
+ * Sección pública de reseñas del profesor. Carga la primera página del endpoint público paginado y
+ * ofrece "Ver más" mientras queden páginas. Datos honestos: si el profesor no tiene reseñas visibles
+ * no se inventa nada — se muestra "Aún no hay reseñas".
+ */
+function SeccionResenas({ profesorId }: { profesorId: string }) {
+  const resenas = useInfiniteQuery({
+    queryKey: ["professor", profesorId, "reviews"],
+    queryFn: ({ pageParam }) =>
+      apiFetch<PagedReviews>(`/api/v1/professors/${profesorId}/reviews?page=${pageParam}&size=10`),
+    initialPageParam: 0,
+    getNextPageParam: (ultima) => {
+      const siguiente = (ultima.page ?? 0) + 1;
+      return siguiente < (ultima.totalPages ?? 0) ? siguiente : undefined;
+    },
+  });
+
+  const items = resenas.data?.pages.flatMap((p) => p.content ?? []) ?? [];
+  const total = resenas.data?.pages[0]?.totalElements ?? 0;
+
+  return (
+    <section className="mt-10 lg:mt-12">
+      <h2 className="font-display text-[20px] font-bold lg:text-[24px]">
+        Reseñas
+        {total > 0 && <span className="ml-2 text-[15px] font-semibold text-text-muted">{total}</span>}
+      </h2>
+
+      <div className="mt-4">
+        {resenas.isPending ? (
+          <Cargando filas={2} />
+        ) : resenas.isError ? (
+          <ErrorCarga
+            mensaje="No pudimos cargar las reseñas."
+            onReintentar={() => void resenas.refetch()}
+          />
+        ) : items.length === 0 ? (
+          <p className="rounded-card bg-surface-raised px-5 py-8 text-center text-[14px] text-text-secondary shadow-sm">
+            Aún no hay reseñas.
+          </p>
+        ) : (
+          <>
+            <ul className="grid gap-3 lg:grid-cols-2">
+              {items.map((resena) => (
+                <li key={resena.id} className="rounded-card bg-surface-raised p-5 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <Avatar nombre={resena.studentName ?? ""} size="sm" />
+                    <div className="min-w-0">
+                      <p className="truncate text-[14px] font-bold text-text">
+                        {resena.studentName}
+                      </p>
+                      {resena.createdAt && (
+                        <p className="text-[12px] text-text-muted">{fechaRelativa(resena.createdAt)}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-2.5">
+                    <EstrellasFijas rating={resena.rating ?? 0} />
+                  </div>
+                  {resena.comment && (
+                    <p className="mt-2 text-[13.5px] leading-relaxed text-text-secondary">
+                      {resena.comment}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+
+            {resenas.hasNextPage && (
+              <div className="mt-5 flex justify-center">
+                <Boton
+                  variante="contorno"
+                  disabled={resenas.isFetchingNextPage}
+                  onClick={() => void resenas.fetchNextPage()}
+                  className="h-11 px-7"
+                >
+                  {resenas.isFetchingNextPage ? "Cargando…" : "Ver más reseñas"}
+                </Boton>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </section>
   );
 }
 

@@ -68,6 +68,21 @@ export function precioCop(n: number): string {
   return `$${new Intl.NumberFormat(LOCALE).format(Math.round(n))}`;
 }
 
+/**
+ * Fecha relativa breve para reseñas: "hoy", "hace 3 días", "hace 2 meses", "hace 1 año". Usa la hora
+ * del dispositivo como "ahora" (una reseña siempre está en el pasado, así que no hay ambigüedad de
+ * zona relevante). Sin librerías: Intl.RelativeTimeFormat basta.
+ */
+export function fechaRelativa(iso: string): string {
+  const rtf = new Intl.RelativeTimeFormat(LOCALE, { numeric: "auto" });
+  const dias = Math.round((new Date(iso).getTime() - Date.now()) / 86_400_000);
+  const abs = Math.abs(dias);
+  if (abs < 1) return "hoy";
+  if (abs < 30) return rtf.format(dias, "day");
+  if (abs < 365) return rtf.format(Math.round(dias / 30), "month");
+  return rtf.format(Math.round(dias / 365), "year");
+}
+
 /** Iniciales para el avatar: "María Gómez" → "MG" */
 export function iniciales(nombre: string): string {
   return nombre

@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Modal } from "@/components/Modal";
+import { EstrellaRating } from "@/components/Rating";
 import { Boton, Segmento, Toggle } from "@/components/ui";
 import { apiFetch } from "@/lib/api/fetch";
 import type {
@@ -452,6 +453,9 @@ function TarjetaProfesor({ profesor }: { profesor: ProfessorCard }) {
               {profesor.headline}
             </p>
           )}
+          <div className="mt-1.5">
+            <EstrellaRating ratingAvg={profesor.ratingAvg} ratingCount={profesor.ratingCount} />
+          </div>
         </div>
       </div>
 

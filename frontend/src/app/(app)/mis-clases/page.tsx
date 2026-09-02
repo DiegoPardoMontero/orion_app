@@ -1,13 +1,14 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Calendar, Check, Clock, MapPin, Video, X } from "lucide-react";
+import { AlertCircle, Calendar, Check, Clock, MapPin, Star, Video, X } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Modal } from "@/components/Modal";
+import { SelectorEstrellas } from "@/components/Rating";
 import { Rigel } from "@/components/Rigel";
 import { Badge, Bloque, Boton, Chip, Segmento, Tarjeta } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
@@ -115,6 +116,10 @@ function TarjetaClase({
   const [cancelando, setCancelando] = useState(false);
   const [reprogramando, setReprogramando] = useState(false);
   const [registrando, setRegistrando] = useState(false);
+  const [calificando, setCalificando] = useState(false);
+  // Sin flag de "ya reseñada" en el DTO: se recuerda localmente al calificar (o al chocar con el 409
+  // de "ya reseñaste"), para ocultar el botón y agradecer sin recargar la lista.
+  const [resenaHecha, setResenaHecha] = useState(false);
 
   const contraparte = clase.counterpart;
   const nombreContraparte = contraparte?.fullName ?? "";
@@ -132,6 +137,13 @@ function TarjetaClase({
 
   // El profesor registra asistencia de lo que ya ocurrió y sigue confirmado.
   const puedeRegistrar = esProfesor && scope === "past" && clase.status === "CONFIRMED";
+
+  // El estudiante califica una clase pasada que se dio (confirmada o completada). El backend arbitra
+  // el plazo/estado real (422) y el duplicado (409); aquí basta con ofrecer el botón en ese rango.
+  const puedeCalificar =
+    !esProfesor &&
+    scope === "past" &&
+    (clase.status === "CONFIRMED" || clase.status === "COMPLETED");
 
   return (
     <li>
@@ -238,7 +250,25 @@ function TarjetaClase({
               Registrar asistencia
             </Boton>
           )}
+
+          {puedeCalificar && !resenaHecha && (
+            <Boton
+              variante="secundario"
+              onClick={() => setCalificando(true)}
+              className="h-10 min-w-[110px] flex-1"
+            >
+              <Star size={15} strokeWidth={1.9} />
+              Calificar
+            </Boton>
+          )}
         </div>
+
+        {puedeCalificar && resenaHecha && (
+          <p className="mt-2.5 flex items-center justify-center gap-1.5 text-center text-[12px] font-semibold text-success">
+            <Check size={13} strokeWidth={2.2} />
+            ¡Gracias! Ya calificaste esta clase.
+          </p>
+        )}
 
         {/* El servidor decide con canCancel; aquí solo se explica por qué está bloqueado. */}
         {dentroDeLas24 && (
@@ -252,7 +282,108 @@ function TarjetaClase({
       {cancelando && <ModalCancelar clase={clase} onCerrar={() => setCancelando(false)} />}
       {reprogramando && <ModalReprogramar clase={clase} onCerrar={() => setReprogramando(false)} />}
       {registrando && <ModalAsistencia clase={clase} onCerrar={() => setRegistrando(false)} />}
+      {calificando && (
+        <ModalCalificar
+          clase={clase}
+          onCerrar={() => setCalificando(false)}
+          onResenada={() => setResenaHecha(true)}
+        />
+      )}
     </li>
+  );
+}
+
+/**
+ * Calificar una clase pasada (estudiante): estrellas 1..5 + comentario opcional. El backend arbitra
+ * el estado real (422 "aún no puedes calificar" / plazo vencido) y el duplicado (409 "ya reseñaste").
+ * En el 409 ocultamos el botón con gracia (ya está reseñada); en el 422 mostramos el mensaje y
+ * dejamos el modal abierto. Al éxito agradecemos, invalidamos la lista y ocultamos el botón.
+ */
+function ModalCalificar({
+  clase,
+  onCerrar,
+  onResenada,
+}: {
+  clase: MyBookingResponse;
+  onCerrar: () => void;
+  onResenada: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [rating, setRating] = useState(0);
+  const [comentario, setComentario] = useState("");
+
+  const calificar = useMutation({
+    mutationFn: () =>
+      apiFetch(`/api/v1/bookings/${clase.id}/review`, {
+        method: "POST",
+        body: { rating, comment: comentario.trim() || undefined },
+      }),
+    onSuccess: () => {
+      onResenada();
+      void queryClient.invalidateQueries({ queryKey: ["me", "bookings"] });
+      onCerrar();
+    },
+    onError: (err) => {
+      // 409: la clase ya estaba reseñada. No es un error para el usuario: la damos por hecha.
+      if (err instanceof ApiError && err.status === 409) {
+        onResenada();
+        onCerrar();
+      }
+    },
+  });
+
+  // El 422 (aún no puedes / plazo vencido) sí se muestra; el 409 ya se resolvió cerrando el modal.
+  const error =
+    calificar.error instanceof ApiError && calificar.error.status !== 409
+      ? calificar.error.message
+      : null;
+
+  return (
+    <Modal
+      titulo={`¿Cómo estuvo tu clase con ${clase.counterpart?.fullName?.split(" ")[0] ?? "tu profesor"}?`}
+      onCerrar={onCerrar}
+    >
+      <p className="text-[13px] text-text-secondary">
+        Tu reseña ayuda a otros estudiantes a elegir. Elige de 1 a 5 estrellas.
+      </p>
+
+      <div className="mt-4 flex justify-center">
+        <SelectorEstrellas valor={rating} onCambio={setRating} />
+      </div>
+
+      <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="comentario">
+        Comentario (opcional)
+      </label>
+      <textarea
+        id="comentario"
+        rows={3}
+        maxLength={1000}
+        value={comentario}
+        onChange={(event) => setComentario(event.target.value)}
+        placeholder="¿Qué destacarías de la clase?"
+        className="mt-1.5 w-full rounded-base border-[1.5px] border-border bg-surface-raised px-4 py-3 text-sm focus:border-primary focus:shadow-focus focus:outline-none"
+      />
+
+      {error && (
+        <div className="mt-3">
+          <AvisoError mensaje={error} />
+        </div>
+      )}
+
+      <div className="mt-5 flex gap-2.5">
+        <Boton variante="contorno" onClick={onCerrar} className="h-12 flex-1">
+          Ahora no
+        </Boton>
+        <Boton
+          variante="primario"
+          disabled={rating === 0 || calificar.isPending}
+          onClick={() => calificar.mutate()}
+          className="h-12 flex-1"
+        >
+          {calificar.isPending ? "Enviando…" : "Enviar reseña"}
+        </Boton>
+      </div>
+    </Modal>
   );
 }
 
