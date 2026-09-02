@@ -20,6 +20,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/profile/rate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["setRate"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/account": {
         parameters: {
             query?: never;
@@ -29,6 +45,22 @@ export interface paths {
         };
         get: operations["me"];
         put: operations["update_1"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/settings/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["update_2"];
         post?: never;
         delete?: never;
         options?: never;
@@ -228,6 +260,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/accept-invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["acceptInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/users": {
         parameters: {
             query?: never;
@@ -238,6 +286,22 @@ export interface paths {
         get: operations["list_2"];
         put?: never;
         post: operations["create_3"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/professors/invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["invite"];
         delete?: never;
         options?: never;
         head?: never;
@@ -257,7 +321,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch: operations["update_2"];
+        patch: operations["update_3"];
         trace?: never;
     };
     "/api/v1/professors": {
@@ -308,6 +372,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/profile/rate/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ratePreview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/bookings": {
         parameters: {
             query?: never;
@@ -324,6 +404,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/catalog/languages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["languages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/catalog/goals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["goals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/me": {
         parameters: {
             query?: never;
@@ -332,6 +444,38 @@ export interface paths {
             cookie?: never;
         };
         get: operations["me_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["inviteInfo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_4"];
         put?: never;
         post?: never;
         delete?: never;
@@ -424,10 +568,33 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        LanguageEntry: {
+            code?: string;
+            isNative?: boolean;
+            levels?: string[];
+        };
         UpdateProfileRequest: {
             headline?: string;
             bio?: string;
+            countryCode?: string;
+            city?: string;
+            nativeLanguage?: string;
+            /** Format: int32 */
+            yearsExperience?: number;
+            education?: string;
+            certified?: boolean;
+            acceptsTrial?: boolean;
+            languages?: components["schemas"]["LanguageEntry"][];
+            goals?: string[];
             isPublished?: boolean;
+        };
+        ProfileLanguage: {
+            code?: string;
+            nameEs?: string;
+            nameEn?: string;
+            flagEmoji?: string;
+            isNative?: boolean;
+            levels?: string[];
         };
         ProfileResponse: {
             /** Format: uuid */
@@ -436,7 +603,36 @@ export interface components {
             headline?: string;
             bio?: string;
             photoUrl?: string;
+            countryCode?: string;
+            city?: string;
+            nativeLanguage?: string;
+            /** Format: int32 */
+            yearsExperience?: number;
+            education?: string;
+            certified?: boolean;
+            acceptsTrial?: boolean;
+            /** Format: int64 */
+            hourlyRateCop?: number;
+            compensationModel?: string;
+            languages?: components["schemas"]["ProfileLanguage"][];
+            goals?: string[];
+            rate?: components["schemas"]["RateBreakdownResponse"];
             isPublished?: boolean;
+            canPublish?: boolean;
+        };
+        RateBreakdownResponse: {
+            /** Format: int64 */
+            hourlyRateCop?: number;
+            /** Format: int32 */
+            commissionRateBps?: number;
+            /** Format: int64 */
+            commissionCop?: number;
+            /** Format: int64 */
+            earningsCop?: number;
+        };
+        RateRequest: {
+            /** Format: int64 */
+            hourlyRateCop: number;
         };
         UpdateAccountRequest: {
             fullName: string;
@@ -448,6 +644,15 @@ export interface components {
             whatsappPhone?: string;
             role?: string;
             photoUrl?: string;
+        };
+        UpdateSettingRequest: {
+            value: string;
+        };
+        SettingResponse: {
+            key?: string;
+            value?: string;
+            /** Format: date-time */
+            updatedAt?: string;
         };
         ChangePasswordRequest: {
             currentPassword: string;
@@ -559,6 +764,14 @@ export interface components {
             /** Format: email */
             email: string;
         };
+        AcceptInviteRequest: {
+            token: string;
+            fullName: string;
+            password: string;
+            whatsappPhone?: string;
+            headline?: string;
+            bio?: string;
+        };
         CreateUserRequest: {
             /** Format: email */
             email: string;
@@ -576,27 +789,66 @@ export interface components {
             role?: string;
             status?: string;
         };
+        InviteProfessorRequest: {
+            /** Format: email */
+            email: string;
+        };
         UpdateUserRequest: {
             fullName?: string;
             whatsappPhone?: string;
             status?: string;
         };
-        ProfessorSummary: {
+        LanguageBadge: {
+            code?: string;
+            nameEs?: string;
+            nameEn?: string;
+            flagEmoji?: string;
+            isNative?: boolean;
+        };
+        PagedProfessors: {
+            content?: components["schemas"]["ProfessorCard"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+        };
+        ProfessorCard: {
             /** Format: uuid */
             id?: string;
             fullName?: string;
-            headline?: string;
-            bio?: string;
             photoUrl?: string;
+            headline?: string;
+            city?: string;
+            countryCode?: string;
+            certified?: boolean;
+            /** Format: int64 */
+            hourlyRateCop?: number;
+            languages?: components["schemas"]["LanguageBadge"][];
+            levels?: string[];
+            goals?: string[];
         };
         ProfessorDetail: {
             /** Format: uuid */
             id?: string;
             fullName?: string;
+            photoUrl?: string;
             headline?: string;
             bio?: string;
-            photoUrl?: string;
-            whatsappPhone?: string;
+            city?: string;
+            countryCode?: string;
+            /** Format: int32 */
+            yearsExperience?: number;
+            education?: string;
+            certified?: boolean;
+            acceptsTrial?: boolean;
+            /** Format: int64 */
+            hourlyRateCop?: number;
+            languages?: components["schemas"]["ProfileLanguage"][];
+            goals?: string[];
         };
         SlotView: {
             /** Format: date-time */
@@ -631,6 +883,17 @@ export interface components {
             meetingLink?: string;
             canCancel?: boolean;
             counterpart?: components["schemas"]["Counterpart"];
+        };
+        LanguageResponse: {
+            code?: string;
+            nameEs?: string;
+            nameEn?: string;
+            flagEmoji?: string;
+        };
+        GoalResponse: {
+            code?: string;
+            nameEs?: string;
+            nameEn?: string;
         };
         MetricsResponse: {
             /** Format: int64 */
@@ -704,6 +967,30 @@ export interface operations {
             };
         };
     };
+    setRate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RateBreakdownResponse"];
+                };
+            };
+        };
+    };
     me: {
         parameters: {
             query?: never;
@@ -744,6 +1031,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["MeAccountResponse"];
+                };
+            };
+        };
+    };
+    update_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSettingRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SettingResponse"];
                 };
             };
         };
@@ -1081,6 +1394,30 @@ export interface operations {
             };
         };
     };
+    acceptInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptInviteRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UserResponse"];
+                };
+            };
+        };
+    };
     list_2: {
         parameters: {
             query?: {
@@ -1128,7 +1465,29 @@ export interface operations {
             };
         };
     };
-    update_2: {
+    invite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteProfessorRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    update_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -1156,7 +1515,18 @@ export interface operations {
     };
     list_3: {
         parameters: {
-            query?: never;
+            query?: {
+                language?: string;
+                level?: string[];
+                goal?: string[];
+                minPrice?: number;
+                maxPrice?: number;
+                native?: boolean;
+                certified?: boolean;
+                sort?: "RELEVANCE" | "PRICE_ASC" | "PRICE_DESC" | "RATING";
+                page?: number;
+                size?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1169,7 +1539,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ProfessorSummary"][];
+                    "*/*": components["schemas"]["PagedProfessors"];
                 };
             };
         };
@@ -1221,6 +1591,28 @@ export interface operations {
             };
         };
     };
+    ratePreview: {
+        parameters: {
+            query: {
+                rate: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RateBreakdownResponse"];
+                };
+            };
+        };
+    };
     myBookings: {
         parameters: {
             query?: {
@@ -1243,6 +1635,46 @@ export interface operations {
             };
         };
     };
+    languages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LanguageResponse"][];
+                };
+            };
+        };
+    };
+    goals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["GoalResponse"][];
+                };
+            };
+        };
+    };
     me_1: {
         parameters: {
             query?: never;
@@ -1259,6 +1691,50 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["UserResponse"];
+                };
+            };
+        };
+    };
+    inviteInfo: {
+        parameters: {
+            query: {
+                token: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": {
+                        [key: string]: string;
+                    };
+                };
+            };
+        };
+    };
+    list_4: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SettingResponse"][];
                 };
             };
         };

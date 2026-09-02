@@ -3,13 +3,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
+  Award,
+  BadgeCheck,
   Calendar,
   Check,
   ChevronLeft,
   ChevronRight,
   Clock,
+  GraduationCap,
   Mail,
   MapPin,
+  Sparkles,
   Video,
 } from "lucide-react";
 import Link from "next/link";
@@ -21,12 +25,14 @@ import { Badge, Bloque, BotonPrincipal, Campo, Chip, Segmento, Spinner } from "@
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type {
   BookingResponse,
+  GoalResponse,
   Modality,
   ProfessorDetail,
   SlotView,
   SlotsResponse,
 } from "@/lib/api/types";
-import { diaBogota, fechaCorta, horaBogota } from "@/lib/format";
+import { diaBogota, fechaCorta, horaBogota, precioCop } from "@/lib/format";
+import { etiquetaNivel, etiquetaObjetivo } from "@/lib/i18n";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 
 export default function AgendaProfesorPage() {
@@ -45,6 +51,13 @@ export default function AgendaProfesorPage() {
   const profesor = useQuery({
     queryKey: ["professor", id],
     queryFn: () => apiFetch<ProfessorDetail>(`/api/v1/professors/${id}`),
+  });
+
+  // El catálogo de objetivos traduce los códigos (CONVERSATION, BUSINESS…) a su nombre en español.
+  const goals = useQuery({
+    queryKey: ["catalog", "goals"],
+    queryFn: () => apiFetch<GoalResponse[]>("/api/v1/catalog/goals"),
+    staleTime: 5 * 60_000,
   });
 
   // Los próximos 7 días alimentan los chips de móvil (y el estado de carga/vacío inicial).
@@ -192,13 +205,31 @@ export default function AgendaProfesorPage() {
             </div>
           </div>
 
-          <div className="mt-3 hidden flex-wrap gap-2 lg:flex">
+          {/* Precio por hora: dato honesto, prominente. */}
+          {detalle.hourlyRateCop ? (
+            <p className="mt-3 font-display text-[22px] font-bold text-text">
+              {precioCop(detalle.hourlyRateCop)}
+              <span className="ml-1 text-[13px] font-semibold text-text-muted">/ hora</span>
+            </p>
+          ) : null}
+
+          <div className="mt-3 flex flex-wrap gap-2">
             <Badge tono="lavanda">
               <Video size={12} strokeWidth={2.4} /> Virtual
             </Badge>
             <Badge tono="melocoton">
               <MapPin size={12} strokeWidth={2.4} /> Presencial
             </Badge>
+            {detalle.certified && (
+              <Badge tono="menta">
+                <BadgeCheck size={12} strokeWidth={2.4} /> Certificado
+              </Badge>
+            )}
+            {detalle.acceptsTrial && (
+              <Badge tono="coral">
+                <Sparkles size={12} strokeWidth={2.4} /> Ofrece clase de prueba
+              </Badge>
+            )}
           </div>
 
           {detalle.bio && (
@@ -207,6 +238,94 @@ export default function AgendaProfesorPage() {
                 {detalle.bio}
               </p>
             </div>
+          )}
+
+          {/* Idiomas con sus niveles */}
+          {detalle.languages && detalle.languages.length > 0 && (
+            <div className="mt-5">
+              <h2 className="text-[12px] font-bold uppercase tracking-[0.04em] text-text-muted">
+                Idiomas que enseña
+              </h2>
+              <ul className="mt-2 space-y-2">
+                {detalle.languages.map((idioma) => (
+                  <li key={idioma.code} className="rounded-base bg-surface-raised p-3 shadow-sm">
+                    <p className="flex items-center gap-1.5 text-[14px] font-bold text-text">
+                      {idioma.flagEmoji && <span aria-hidden="true">{idioma.flagEmoji}</span>}
+                      {idioma.nameEs}
+                      {idioma.isNative && (
+                        <span className="rounded-pill bg-primary-soft px-2 py-px text-[10.5px] font-bold text-primary-strong">
+                          Nativo
+                        </span>
+                      )}
+                    </p>
+                    {idioma.levels && idioma.levels.length > 0 && (
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {idioma.levels.map((nivel) => (
+                          <span
+                            key={nivel}
+                            className="rounded-pill bg-accent-lavender-soft px-2.5 py-1 text-[11.5px] font-semibold text-[#5e4a8a]"
+                          >
+                            {etiquetaNivel(nivel)}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Objetivos */}
+          {detalle.goals && detalle.goals.length > 0 && (
+            <div className="mt-5">
+              <h2 className="text-[12px] font-bold uppercase tracking-[0.04em] text-text-muted">
+                Ideal para
+              </h2>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {detalle.goals.map((code) => (
+                  <span
+                    key={code}
+                    className="rounded-pill bg-surface-sunken px-3 py-1.5 text-[12.5px] font-semibold text-text-secondary"
+                  >
+                    {etiquetaObjetivo(code, goals.data)}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Datos: ciudad, experiencia, educación */}
+          {(detalle.city ||
+            detalle.yearsExperience != null ||
+            detalle.education) && (
+            <dl className="mt-5 space-y-2.5 text-[13.5px]">
+              {(detalle.city || detalle.countryCode) && (
+                <div className="flex items-start gap-2 text-text-secondary">
+                  <MapPin size={15} strokeWidth={1.75} className="mt-0.5 shrink-0 text-text-muted" />
+                  <dd>{[detalle.city, detalle.countryCode].filter(Boolean).join(", ")}</dd>
+                </div>
+              )}
+              {detalle.yearsExperience != null && detalle.yearsExperience > 0 && (
+                <div className="flex items-start gap-2 text-text-secondary">
+                  <Award size={15} strokeWidth={1.75} className="mt-0.5 shrink-0 text-text-muted" />
+                  <dd>
+                    {detalle.yearsExperience}{" "}
+                    {detalle.yearsExperience === 1 ? "año de experiencia" : "años de experiencia"}
+                  </dd>
+                </div>
+              )}
+              {detalle.education && (
+                <div className="flex items-start gap-2 text-text-secondary">
+                  <GraduationCap
+                    size={15}
+                    strokeWidth={1.75}
+                    className="mt-0.5 shrink-0 text-text-muted"
+                  />
+                  <dd>{detalle.education}</dd>
+                </div>
+              )}
+            </dl>
           )}
         </section>
 

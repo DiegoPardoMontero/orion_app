@@ -7,8 +7,13 @@ import type { components } from "./schema";
  */
 type Schemas = components["schemas"];
 
-export type ProfessorSummary = Schemas["ProfessorSummary"];
+export type ProfessorCard = Schemas["ProfessorCard"];
+export type PagedProfessors = Schemas["PagedProfessors"];
 export type ProfessorDetail = Schemas["ProfessorDetail"];
+export type ProfileLanguage = Schemas["ProfileLanguage"];
+export type LanguageResponse = Schemas["LanguageResponse"];
+export type GoalResponse = Schemas["GoalResponse"];
+export type RateBreakdownResponse = Schemas["RateBreakdownResponse"];
 export type SlotsResponse = Schemas["SlotsResponse"];
 export type SlotView = Schemas["SlotView"];
 export type BookingResponse = Schemas["BookingResponse"];

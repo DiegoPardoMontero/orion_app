@@ -60,6 +60,14 @@ export function diaBogota(iso: string): string {
   }).format(new Date(iso));
 }
 
+/**
+ * Precio en pesos colombianos, sin decimales y con punto de miles: 45000 → "$45.000".
+ * El COP no usa centavos; se redondea al peso. Formato es-CO (separador de miles con punto).
+ */
+export function precioCop(n: number): string {
+  return `$${new Intl.NumberFormat(LOCALE).format(Math.round(n))}`;
+}
+
 /** Iniciales para el avatar: "María Gómez" → "MG" */
 export function iniciales(nombre: string): string {
   return nombre
