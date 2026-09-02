@@ -74,6 +74,14 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/me/bookings").hasAnyRole("STUDENT", "PROFESSOR")
                 // La asistencia la registra quien dio la clase.
                 .requestMatchers(HttpMethod.POST, "/api/v1/bookings/*/attendance").hasRole("PROFESSOR")
+                // Mensajería: abrir un hilo es cosa del estudiante; leer y responder, de cualquiera de
+                // los dos participantes (el servicio verifica que el hilo sea suyo, 403 a terceros).
+                .requestMatchers(HttpMethod.POST, "/api/v1/conversations").hasRole("STUDENT")
+                .requestMatchers("/api/v1/conversations", "/api/v1/conversations/**")
+                        .hasAnyRole("STUDENT", "PROFESSOR")
+                // Las notificaciones in-app son de cualquier usuario autenticado (cae en anyRequest,
+                // pero se deja explícito por claridad junto al resto del Bloque 3).
+                .requestMatchers("/api/v1/me/notifications", "/api/v1/me/notifications/**").authenticated()
                 .anyRequest().authenticated())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .exceptionHandling(e -> e

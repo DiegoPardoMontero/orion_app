@@ -217,7 +217,7 @@ class BookingNotificationIT extends ApiIntegrationSupport {
     }
 
     @Test
-    void theEmailShowsTheTimeInBogotaAndTheWhatsappOfTheCounterpart() throws Exception {
+    void theEmailShowsTheTimeInBogotaAndPointsToOrionNotWhatsapp() throws Exception {
         book();
 
         ArgumentCaptor<MimeMessage> sent = ArgumentCaptor.forClass(MimeMessage.class);
@@ -238,8 +238,10 @@ class BookingNotificationIT extends ApiIntegrationSupport {
         // La hora se muestra en Bogotá (09:00), no en UTC (14:00).
         assertThat(toAna).contains("09:00");
         assertThat(toAna).contains("hora de Bogot");
-        // Y el WhatsApp de María, sin "+" ni espacios, como exige wa.me.
-        assertThat(toAna).contains("wa.me/573009998877");
+        // D4: el contacto ocurre dentro de Orión (mensajería), no por WhatsApp. Ya no hay wa.me.
+        assertThat(toAna).doesNotContain("wa.me");
+        assertThat(toAna).doesNotContain("WhatsApp");
+        assertThat(toAna).contains("Mensajes");
     }
 
     private String messageAsString(MimeMessage message) {

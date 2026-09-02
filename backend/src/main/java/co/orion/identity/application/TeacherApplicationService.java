@@ -251,7 +251,8 @@ public class TeacherApplicationService {
 
     private void notify(UUID userId, TeacherApplicationDecidedEvent.Decision decision, String note) {
         users.findById(userId).ifPresent(user ->
-                publisher.publishEvent(new TeacherApplicationDecidedEvent(user.getEmail(), decision, note)));
+                publisher.publishEvent(new TeacherApplicationDecidedEvent(
+                        user.getId(), user.getEmail(), decision, note)));
     }
 
     private void assertNotSelf(TeacherApplication application, UUID adminId) {

@@ -14,8 +14,10 @@ import co.orion.scheduling.domain.BusinessZone;
 
 /**
  * Redacta los correos con la voz de marca: cercana, clara y positiva. Nada de lenguaje de miedo
- * ni de advertencias en mayúsculas. La hora siempre en Bogotá, y el WhatsApp de la contraparte
- * siempre a un clic — es el canal real por el que se coordinan.
+ * ni de advertencias en mayúsculas. La hora siempre en Bogotá.
+ *
+ * // D4: el contacto ocurre dentro de Orión (mensajería), no por WhatsApp. Los correos invitan a
+ * coordinar en la plataforma; el enlace de la videollamada (cuando la clase es virtual) sigue ahí.
  */
 @Component
 public class BookingEmailComposer {
@@ -87,7 +89,7 @@ public class BookingEmailComposer {
                   <li><strong>Con:</strong> %s</li>
                 </ul>
                 %s
-                <p>Pueden coordinar los detalles por WhatsApp: <a href="%s">%s</a></p>
+                <p>Coordinen los detalles dentro de Orión, en la sección de Mensajes.</p>
                 <p><a href="%s">Añadir a Google Calendar</a> — o abre el archivo adjunto para
                 guardarla en el calendario que uses.</p>
                 <p>¡Nos vemos en clase!<br>El equipo de Orión</p>
@@ -101,8 +103,6 @@ public class BookingEmailComposer {
                         : "",
                 counterpart.getFullName(),
                 meetingHtml,
-                whatsappLink(counterpart),
-                whatsappLabel(counterpart),
                 calendarLink);
 
         String text = """
@@ -113,14 +113,14 @@ public class BookingEmailComposer {
                 Cuándo: %s
                 Modalidad: %s
                 Con: %s
-                %sWhatsApp: %s
+                %sCoordinen los detalles dentro de Orión, en la sección de Mensajes.
 
                 Añadir a Google Calendar: %s
 
                 ¡Nos vemos en clase!
                 El equipo de Orión
                 """.formatted(greeting, opening, when, modality, counterpart.getFullName(),
-                meetingText, whatsappLink(counterpart), calendarLink);
+                meetingText, calendarLink);
 
         return new BookingEmail(recipient.getEmail(), subject, html, text, ics);
     }
@@ -140,7 +140,7 @@ public class BookingEmailComposer {
                 <p>%s la clase del <strong>%s</strong> con %s.</p>
                 %s
                 <p>Cuando quieras, puedes agendar otra clase desde Orión. Y si necesitan hablarlo,
-                aquí está el WhatsApp: <a href="%s">%s</a></p>
+                pueden escribirse dentro de la plataforma, en la sección de Mensajes.</p>
                 <p>Un abrazo,<br>El equipo de Orión</p>
                 """.formatted(
                 firstName(recipient),
@@ -149,9 +149,7 @@ public class BookingEmailComposer {
                 counterpart.getFullName(),
                 reason != null && !reason.isBlank()
                         ? "<p><strong>Motivo:</strong> " + reason + "</p>"
-                        : "",
-                whatsappLink(counterpart),
-                whatsappLabel(counterpart));
+                        : "");
 
         String text = """
                 Hola, %s.
@@ -159,13 +157,12 @@ public class BookingEmailComposer {
                 %s la clase del %s con %s.
                 %s
                 Cuando quieras, puedes agendar otra clase desde Orión.
-                WhatsApp: %s
+                Si necesitan hablarlo, escríbanse dentro de la plataforma, en la sección de Mensajes.
 
                 Un abrazo,
                 El equipo de Orión
                 """.formatted(firstName(recipient), who, when, counterpart.getFullName(),
-                reason != null && !reason.isBlank() ? "Motivo: " + reason + "\n" : "",
-                whatsappLink(counterpart));
+                reason != null && !reason.isBlank() ? "Motivo: " + reason + "\n" : "");
 
         return new BookingEmail(recipient.getEmail(), subject, html, text, null);
     }
@@ -185,19 +182,5 @@ public class BookingEmailComposer {
 
     private String firstName(User user) {
         return user.getFullName().split(" ")[0];
-    }
-
-    /** wa.me exige el número sin "+" ni separadores. */
-    private String whatsappLink(User user) {
-        String phone = user.getWhatsappPhone();
-        if (phone == null || phone.isBlank()) {
-            return "https://wa.me/";
-        }
-        return "https://wa.me/" + phone.replaceAll("[^0-9]", "");
-    }
-
-    private String whatsappLabel(User user) {
-        String phone = user.getWhatsappPhone();
-        return phone == null || phone.isBlank() ? "escríbele por WhatsApp" : phone;
     }
 }
