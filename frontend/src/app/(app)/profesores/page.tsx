@@ -3,7 +3,7 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { BadgeCheck, ChevronRight, MapPin, SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Modal } from "@/components/Modal";
@@ -78,6 +78,27 @@ export default function ProfesoresPage() {
   const esDesktop = useMediaQuery("(min-width: 1024px)");
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_INICIALES);
   const [hojaAbierta, setHojaAbierta] = useState(false);
+
+  // Filtros iniciales desde la URL (el buscador del hero y las landings por idioma enlazan aquí con
+  // ?language=&goal=&level=). Se lee una sola vez al montar, en cliente, para no chocar con la
+  // hidratación. El parámetro `schedule` (MORNING/AFTERNOON/EVENING) del hero se ignora a propósito:
+  // el backend aún no filtra por franja horaria; se conserva en la URL para conectarlo más adelante.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const language = params.get("language");
+    const goals = params.getAll("goal").filter(Boolean);
+    const levels = params.getAll("level").filter(Boolean);
+    if (!language && goals.length === 0 && levels.length === 0) return;
+    // Siembra única desde la URL al montar; a partir de aquí manda el usuario. El setState en el
+    // efecto es deliberado (sincronizar con un sistema externo: la query string) y solo corre una vez.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFiltros((prev) => ({
+      ...prev,
+      language: language ?? prev.language,
+      goals: goals.length > 0 ? goals : prev.goals,
+      levels: levels.length > 0 ? levels : prev.levels,
+    }));
+  }, []);
 
   const languages = useQuery({
     queryKey: ["catalog", "languages"],

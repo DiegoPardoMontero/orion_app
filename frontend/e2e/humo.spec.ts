@@ -189,7 +189,11 @@ test("recuperar contraseña: pide enlace y rechaza un token inválido", async ({
 
 test("la landing pública lleva al registro en un clic", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: /Learn with confidence/i })).toBeVisible();
+  // Portada marketplace (Bloque 7): el titular cambió al nuevo mensaje en español. El botón "Crea
+  // tu cuenta" del hero (isla HeroCta, anónimo) sigue siendo el enlace del funnel hacia /registro.
+  await expect(
+    page.getByRole("heading", { name: /Encuentra al profesor indicado/i }),
+  ).toBeVisible();
   await page.getByRole("link", { name: "Crea tu cuenta" }).first().click();
   await expect(page).toHaveURL(/\/registro/);
 });
