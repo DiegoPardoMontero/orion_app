@@ -90,6 +90,48 @@ Métricas de perf: FCP 0.8 s · LCP 2.0 s · TBT 120 ms · CLS 0 · Speed Index 
 
 ---
 
+## 0.2 Brief maestro marketplace — progreso (02/09/2026)
+
+Avance autónomo del `orion-brief-maestro-marketplace.md`. Decisiones Q1–Q10 acordadas y guardadas
+en memoria (comisión 20% para todos, UI es-CO, cancelación 12h ambos, Wompi + liquidación manual,
+etc.). Orden ejecutado: 1 → 2 → 3 → 7 → 6(reseñas). **Todo lo de abajo está en `master` y verificado
+(`./mvnw verify` 211 tests + `tsc`/`lint`/`build` + e2e 10/10).**
+
+### ✅ Completado y desplegado
+- **Bloque 1 — Marketplace base:** catálogo de idiomas/objetivos (tablas, no enums), precio del
+  profesor con desglose de comisión (recibe/retiene), buscador con filtros combinables
+  (idioma·nivel·objetivo·precio·nativo·certificado), perfil enriquecido. Migraciones V10/V11.
+- **Bloque 2 — Teacher Application:** postulación abierta con wizard, revisión del admin
+  (bandeja + ficha con preview del perfil), documentos privados (Cloudinary authenticated + URL
+  firmada 5 min + auditoría), máquina de estados auditada, y el **gate de acceso**
+  (`assertCanTeach`) que impide que un no-aprobado aparezca en el marketplace, publique o reciba
+  reservas. El invitado por admin nace APPROVED (D3). Migración V12.
+- **Bloque 3 — Mensajería interna + notificaciones (D4):** conversaciones estudiante↔profesor,
+  enmascarado de datos de contacto (teléfonos/correos/menciones a canales externos), notificaciones
+  in-app + campana, y **retiro de WhatsApp** de los correos (contacto dentro de Orión). Migración V13.
+- **Bloque 7 — Portada marketplace pública:** nueva `/` (server-rendered, SEO/JSON-LD) con nav
+  pública, buscador de 3 campos, idiomas destacados, profesores reales (se ocultan si <4), método
+  ORION, y `/ensena-con-orion`.
+- **Bloque 6 (parcial) — Reseñas:** reseñar una clase pasada (una vez), promedio solo con ≥3
+  reseñas ("Nuevo en Orión" si no), reporte del profesor + ocultado del admin. Migración V14.
+
+### ⏸️ Bloqueado / pendiente (NO implementado a propósito)
+- **Bloque 4 — Pagos, comisión, créditos, liquidación (Q4):** requiere tu conversación con el
+  **contador** (retener plata de terceros en Colombia: facturación, retenciones, contrato de
+  mandato) y credenciales reales de **Wompi**. Es dinero real: no se toca sin tu visto bueno.
+- **Bloque 5 — No-show y disputas:** depende de los pagos/créditos del Bloque 4.
+- **Bloque 6 (resto) — métricas, ranking nocturno, sanciones:** dependen del ciclo de vida del
+  Bloque 5 (no-show). El agregado de rating actual es incremental, sin job nocturno.
+
+### Deudas menores anotadas (no bloquean)
+- `TeacherApplicationView` no expone datos de perfil → un estudiante postulante arranca el wizard
+  en blanco (el profesor re-editando sí siembra). Se resuelve exponiendo el perfil en la vista.
+- Falta UI de "reportar reseña" (profesor) y "ocultar reseña" (admin); los endpoints ya existen.
+- Filtros `availableDay`/`availableTime` del buscador quedaron documentados como aproximación
+  pendiente (filtro contra `availability_rules`).
+
+---
+
 ## 1. Qué tenemos hoy (desplegado y verificado)
 
 Cada pieza pasa `./mvnw verify` (backend, Testcontainers) + `next build`/`tsc`/`lint` (frontend) +
