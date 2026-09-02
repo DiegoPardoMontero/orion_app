@@ -2,6 +2,7 @@ package co.orion.identity.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -48,6 +49,8 @@ class ProfessorDirectoryIT extends ApiIntegrationSupport {
 
         ProfessorProfile mariaProfile = new ProfessorProfile(maria);
         mariaProfile.describe("Inglés conversacional", "Diez años de experiencia.");
+        // Bajo COMMISSION (default), sin tarifa no aparecería: se la fijamos para que sea visible.
+        mariaProfile.changeRate(50000L);
         mariaProfile.publish();
         profiles.save(mariaProfile);
 
@@ -58,14 +61,30 @@ class ProfessorDirectoryIT extends ApiIntegrationSupport {
         mariaSession = login("maria@orion.test");
     }
 
+    private UpdateProfileRequest profileRequest(String headline, String bio, boolean published) {
+        return new UpdateProfileRequest(headline, bio, null, null, null, null, null, false, true,
+                List.of(new UpdateProfileRequest.LanguageEntry("EN", false, List.of("BEGINNER"))),
+                List.of("CONVERSATION"), published);
+    }
+
     @Test
     void theDirectoryOnlyListsPublishedProfessors() {
-        ResponseEntity<ProfessorSummary[]> response = get(PROFESSORS, anaSession, ProfessorSummary[].class);
+        ResponseEntity<PagedProfessors> response = get(PROFESSORS, anaSession, PagedProfessors.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).hasSize(1);
-        assertThat(response.getBody()[0].fullName()).isEqualTo("María Gómez");
-        assertThat(response.getBody()[0].headline()).isEqualTo("Inglés conversacional");
+        assertThat(response.getBody().content()).hasSize(1);
+        assertThat(response.getBody().content().get(0).fullName()).isEqualTo("María Gómez");
+        assertThat(response.getBody().content().get(0).headline()).isEqualTo("Inglés conversacional");
+        assertThat(response.getBody().content().get(0).hourlyRateCop()).isEqualTo(50000L);
+    }
+
+    @Test
+    void theDirectoryIsPublic() {
+        // Sin sesión: el marketplace se ve anónimo.
+        ResponseEntity<PagedProfessors> response = rest.getForEntity(PROFESSORS, PagedProfessors.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().content()).hasSize(1);
     }
 
     @Test
@@ -75,11 +94,11 @@ class ProfessorDirectoryIT extends ApiIntegrationSupport {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody().bio()).isEqualTo("Diez años de experiencia.");
+        assertThat(response.getBody().hourlyRateCop()).isEqualTo(50000L);
     }
 
     @Test
     void theDetailOfAnUnpublishedProfessorIsNotFound() {
-        // Juan existe y tiene perfil: aun así responde 404, no revelamos perfiles ocultos.
         ResponseEntity<Map> response = get(PROFESSORS + "/" + juan.getId(), anaSession, Map.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
@@ -96,34 +115,43 @@ class ProfessorDirectoryIT extends ApiIntegrationSupport {
     void unpublishingRemovesTheProfessorFromTheDirectoryAndFromTheDetail() {
         ResponseEntity<ProfileResponse> updated = put(
                 MY_PROFILE, mariaSession,
-                new UpdateProfileRequest("Inglés conversacional", "Diez años de experiencia.", false),
+                profileRequest("Inglés conversacional", "Diez años de experiencia.", false),
                 ProfileResponse.class);
 
         assertThat(updated.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(updated.getBody().isPublished()).isFalse();
 
-        assertThat(get(PROFESSORS, anaSession, ProfessorSummary[].class).getBody()).isEmpty();
+        assertThat(get(PROFESSORS, anaSession, PagedProfessors.class).getBody().content()).isEmpty();
         assertThat(get(PROFESSORS + "/" + maria.getId(), anaSession, Map.class).getStatusCode())
                 .isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @Test
     void republishingBringsTheProfessorBack() {
-        // La foto ahora vive en el usuario (se sube por /me/photo); la fijamos directo para
-        // comprobar que fluye al directorio, sin depender del update del perfil.
         User m = users.findById(maria.getId()).orElseThrow();
         m.changePhotoUrl("https://fotos/maria.jpg");
         users.save(m);
 
         put(MY_PROFILE, mariaSession,
-                new UpdateProfileRequest("Inglés de negocios", "Nueva bio.", true),
+                profileRequest("Inglés de negocios", "Nueva bio.", true),
                 ProfileResponse.class);
 
-        ResponseEntity<ProfessorSummary[]> response = get(PROFESSORS, anaSession, ProfessorSummary[].class);
+        ResponseEntity<PagedProfessors> response = get(PROFESSORS, anaSession, PagedProfessors.class);
 
-        assertThat(response.getBody()).hasSize(1);
-        assertThat(response.getBody()[0].headline()).isEqualTo("Inglés de negocios");
-        assertThat(response.getBody()[0].photoUrl()).isEqualTo("https://fotos/maria.jpg");
+        assertThat(response.getBody().content()).hasSize(1);
+        assertThat(response.getBody().content().get(0).headline()).isEqualTo("Inglés de negocios");
+        assertThat(response.getBody().content().get(0).photoUrl()).isEqualTo("https://fotos/maria.jpg");
+    }
+
+    @Test
+    void publishingWithoutARateIsRejected() {
+        // Juan no tiene tarifa: publicar bajo COMMISSION debe fallar con 422 (chequeo amable).
+        Session juanSession = login("juan@orion.test");
+        ResponseEntity<Map> response = put(MY_PROFILE, juanSession,
+                profileRequest("Inglés", "Bio.", true), Map.class);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(422);
+        assertThat(get(PROFESSORS, anaSession, PagedProfessors.class).getBody().content()).hasSize(1);
     }
 
     @Test
@@ -132,8 +160,6 @@ class ProfessorDirectoryIT extends ApiIntegrationSupport {
 
         ResponseEntity<ProfileResponse> response = get(MY_PROFILE, juanSession, ProfileResponse.class);
 
-        // Juan no está publicado: GET /professors/{id} le daría 404. Su propio perfil sí lo ve,
-        // porque si no, no podría editarlo para publicarse por primera vez.
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody().id()).isEqualTo(juan.getId());
         assertThat(response.getBody().isPublished()).isFalse();
@@ -147,10 +173,17 @@ class ProfessorDirectoryIT extends ApiIntegrationSupport {
     }
 
     @Test
+    void aStudentCannotSetARate() {
+        ResponseEntity<Map> response = put(MY_PROFILE + "/rate", anaSession, new RateRequest(50000L), Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
     void aStudentCannotUpdateAProfessorProfile() {
         ResponseEntity<Map> response = put(
                 MY_PROFILE, anaSession,
-                new UpdateProfileRequest("Me autoproclamo profesora", null, true),
+                profileRequest("Me autoproclamo profesora", null, true),
                 Map.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
@@ -161,7 +194,7 @@ class ProfessorDirectoryIT extends ApiIntegrationSupport {
         maria.deactivate();
         users.save(maria);
 
-        assertThat(get(PROFESSORS, anaSession, ProfessorSummary[].class).getBody()).isEmpty();
+        assertThat(get(PROFESSORS, anaSession, PagedProfessors.class).getBody().content()).isEmpty();
         assertThat(get(PROFESSORS + "/" + maria.getId(), anaSession, Map.class).getStatusCode())
                 .isEqualTo(HttpStatus.NOT_FOUND);
     }

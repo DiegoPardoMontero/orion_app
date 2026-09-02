@@ -5,12 +5,14 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import co.orion.identity.domain.ProfessorProfile;
 
-public interface ProfessorProfileRepository extends JpaRepository<ProfessorProfile, UUID> {
+public interface ProfessorProfileRepository
+        extends JpaRepository<ProfessorProfile, UUID>, JpaSpecificationExecutor<ProfessorProfile> {
 
     /**
      * "join fetch" y no solo "join": con open-in-view apagado, la sesión ya está cerrada cuando

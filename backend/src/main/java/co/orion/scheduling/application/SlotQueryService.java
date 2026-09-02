@@ -49,8 +49,8 @@ public class SlotQueryService {
 
     @Transactional(readOnly = true)
     public List<Slot> availableSlots(UUID professorId, LocalDate from, LocalDate to) {
-        // Un profesor no publicado no expone cupos aunque tenga reglas: lanza 404.
-        profiles.getPublished(professorId);
+        // Un profesor no visible en el marketplace no expone cupos aunque tenga reglas: lanza 404.
+        profiles.ensurePublished(professorId);
 
         LocalDate start = from != null ? from : today();
         LocalDate end = to != null ? to : start.plusDays(DEFAULT_RANGE_DAYS - 1);

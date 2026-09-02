@@ -1,30 +1,34 @@
 package co.orion.identity.api;
 
+import java.util.List;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import co.orion.identity.domain.ProfessorProfile;
-
 /**
- * @JsonProperty en isPublished no es decorativo: sin él Jackson serializa el componente como
- * "published" (le quita el prefijo "is" al accesor) mientras que al leerlo espera "isPublished",
- * de modo que la petición y la respuesta usarían nombres distintos para el mismo campo.
+ * Perfil propio del profesor (para editar). Incluye el modelo de compensación y el desglose de
+ * tarifa — cosas que NUNCA viajan en el detalle público. canPublish avisa si le falta la tarifa.
+ *
+ * @JsonProperty en isPublished: sin él Jackson serializa "published" pero al leer espera "isPublished".
  */
-public record ProfileResponse(UUID id,
-                              String fullName,
-                              String headline,
-                              String bio,
-                              String photoUrl,
-                              @JsonProperty("isPublished") boolean isPublished) {
-
-    public static ProfileResponse from(ProfessorProfile profile) {
-        return new ProfileResponse(
-                profile.getUserId(),
-                profile.getUser().getFullName(),
-                profile.getHeadline(),
-                profile.getBio(),
-                profile.getUser().getPhotoUrl(),
-                profile.isPublished());
-    }
+public record ProfileResponse(
+        UUID id,
+        String fullName,
+        String headline,
+        String bio,
+        String photoUrl,
+        String countryCode,
+        String city,
+        String nativeLanguage,
+        Short yearsExperience,
+        String education,
+        boolean certified,
+        boolean acceptsTrial,
+        Long hourlyRateCop,
+        String compensationModel,
+        List<ProfileLanguage> languages,
+        List<String> goals,
+        RateBreakdownResponse rate,
+        @JsonProperty("isPublished") boolean isPublished,
+        boolean canPublish) {
 }

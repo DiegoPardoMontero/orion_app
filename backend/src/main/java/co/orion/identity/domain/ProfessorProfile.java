@@ -10,6 +10,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -44,6 +46,37 @@ public class ProfessorProfile {
     @Column(name = "is_published", nullable = false)
     private boolean published;
 
+    // --- Marketplace (Bloque 1): precio y datos enriquecidos ---
+
+    /** Tarifa por hora en pesos colombianos enteros. NULL = aún no fijada (no publicable bajo COMMISSION). */
+    @Column(name = "hourly_rate_cop")
+    private Long hourlyRateCop;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "compensation_model", nullable = false, length = 20)
+    private CompensationModel compensationModel;
+
+    @Column(name = "country_code", length = 2)
+    private String countryCode;
+
+    @Column(name = "city", length = 80)
+    private String city;
+
+    @Column(name = "native_language", length = 5)
+    private String nativeLanguage;
+
+    @Column(name = "years_experience")
+    private Short yearsExperience;
+
+    @Column(name = "education", length = 300)
+    private String education;
+
+    @Column(name = "is_certified", nullable = false)
+    private boolean certified;
+
+    @Column(name = "accepts_trial", nullable = false)
+    private boolean acceptsTrial;
+
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
@@ -55,6 +88,10 @@ public class ProfessorProfile {
     public ProfessorProfile(User user) {
         this.user = Objects.requireNonNull(user, "user");
         this.published = false;
+        // Q1: los profesores nuevos nacen bajo el modelo de comisión.
+        this.compensationModel = CompensationModel.COMMISSION;
+        this.acceptsTrial = true;
+        this.certified = false;
     }
 
     public void describe(String headline, String bio) {
@@ -72,6 +109,31 @@ public class ProfessorProfile {
 
     public void unpublish() {
         this.published = false;
+    }
+
+    /** Datos enriquecidos del perfil (todo opcional salvo lo que valide el servicio). */
+    public void enrich(String countryCode, String city, String nativeLanguage, Short yearsExperience,
+                       String education, boolean certified, boolean acceptsTrial) {
+        this.countryCode = countryCode;
+        this.city = city;
+        this.nativeLanguage = nativeLanguage;
+        this.yearsExperience = yearsExperience;
+        this.education = education;
+        this.certified = certified;
+        this.acceptsTrial = acceptsTrial;
+    }
+
+    public void changeRate(Long hourlyRateCop) {
+        this.hourlyRateCop = hourlyRateCop;
+    }
+
+    /**
+     * Bajo COMMISSION, un profesor sin tarifa no puede publicarse: aparecería en el buscador sin
+     * precio. Bajo FIXED_FEE (legado) no aplica. La regla depende del modelo, por eso vive aquí y
+     * no en un CHECK de la base.
+     */
+    public boolean canPublish() {
+        return compensationModel != CompensationModel.COMMISSION || hourlyRateCop != null;
     }
 
     public UUID getUserId() {
@@ -96,6 +158,42 @@ public class ProfessorProfile {
 
     public boolean isPublished() {
         return published;
+    }
+
+    public Long getHourlyRateCop() {
+        return hourlyRateCop;
+    }
+
+    public CompensationModel getCompensationModel() {
+        return compensationModel;
+    }
+
+    public String getCountryCode() {
+        return countryCode;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public String getNativeLanguage() {
+        return nativeLanguage;
+    }
+
+    public Short getYearsExperience() {
+        return yearsExperience;
+    }
+
+    public String getEducation() {
+        return education;
+    }
+
+    public boolean isCertified() {
+        return certified;
+    }
+
+    public boolean acceptsTrial() {
+        return acceptsTrial;
     }
 
     public Instant getUpdatedAt() {

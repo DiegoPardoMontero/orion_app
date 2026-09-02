@@ -51,8 +51,16 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/auth/invite").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/accept-invite").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                // Marketplace público: el catálogo y el directorio/búsqueda de profesores se ven sin
+                // sesión (un visitante anónimo explora antes de registrarse; reservar sí exige login).
+                .requestMatchers(HttpMethod.GET, "/api/v1/catalog/**").permitAll()
+                // Lista y detalle públicos; los cupos (/professors/{id}/slots) siguen tras sesión.
+                .requestMatchers(HttpMethod.GET, "/api/v1/professors").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/professors/*").permitAll()
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/me/availability/**").hasRole("PROFESSOR")
+                // /** para cubrir también /me/profile/rate y /me/profile/rate/preview (solo profesor).
+                .requestMatchers("/api/v1/me/profile/**").hasRole("PROFESSOR")
                 .requestMatchers("/api/v1/me/profile").hasRole("PROFESSOR")
                 // Reservar es cosa de estudiantes (y de un admin en nombre de uno): un profesor no.
                 .requestMatchers(HttpMethod.POST, "/api/v1/bookings").hasAnyRole("STUDENT", "ADMIN")
