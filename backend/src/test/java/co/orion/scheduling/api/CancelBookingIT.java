@@ -25,6 +25,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import co.orion.scheduling.TestBookings;
 import co.orion.TestcontainersConfiguration;
 import co.orion.identity.domain.ProfessorProfile;
 import co.orion.identity.domain.User;
@@ -87,6 +88,7 @@ class CancelBookingIT extends ApiIntegrationSupport {
         createUser("admin@orion.test", "Orion Admin", UserRole.ADMIN);
 
         ProfessorProfile published = new ProfessorProfile(maria);
+        published.changeRate(60_000L);   // sin tarifa no hay precio que cobrar y no se puede reservar
         published.publish();
         profiles.save(published);
         approveTeacher(maria.getId());
@@ -104,8 +106,8 @@ class CancelBookingIT extends ApiIntegrationSupport {
     }
 
     private Booking bookingAt(Instant startsAt) {
-        return bookings.save(new Booking(ana.getId(), maria.getId(), startsAt,
-                startsAt.plus(Duration.ofHours(1)), BookingModality.VIRTUAL, null, ana.getId()));
+        return bookings.save(TestBookings.confirmed(ana.getId(), maria.getId(), startsAt,
+                BookingModality.VIRTUAL, null, ana.getId()));
     }
 
     private String cancelUrl(Booking booking) {

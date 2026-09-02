@@ -24,6 +24,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import co.orion.scheduling.TestBookings;
 import co.orion.TestcontainersConfiguration;
 import co.orion.identity.domain.ProfessorProfile;
 import co.orion.identity.domain.User;
@@ -203,7 +204,7 @@ class ProfessorSlotsIT extends ApiIntegrationSupport {
         UUID ana = users.findByEmailIgnoreCase("ana@orion.test").orElseThrow().getId();
 
         // El cupo de las 09:00 del miércoles queda reservado.
-        bookings.save(new Booking(ana, maria.getId(),
+        bookings.save(TestBookings.confirmed(ana, maria.getId(),
                 wednesdayAt(9), wednesdayAt(10),
                 BookingModality.VIRTUAL, null, ana));
 
@@ -221,7 +222,7 @@ class ProfessorSlotsIT extends ApiIntegrationSupport {
                 new CreateRuleRequest(3, LocalTime.of(8, 0), LocalTime.of(11, 0)), RuleResponse.class);
         UUID ana = users.findByEmailIgnoreCase("ana@orion.test").orElseThrow().getId();
 
-        Booking booking = bookings.save(new Booking(ana, maria.getId(),
+        Booking booking = bookings.save(TestBookings.confirmed(ana, maria.getId(),
                 wednesdayAt(9), wednesdayAt(10),
                 BookingModality.VIRTUAL, null, ana));
         // Cancelarla libera el cupo. La operación de cancelar llega en el Paso 4; aquí basta

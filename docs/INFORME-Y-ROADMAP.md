@@ -114,12 +114,14 @@ etc.). Orden ejecutado: 1 → 2 → 3 → 7 → 6(reseñas). **Todo lo de abajo 
   ORION, y `/ensena-con-orion`.
 - **Bloque 6 (parcial) — Reseñas:** reseñar una clase pasada (una vez), promedio solo con ≥3
   reseñas ("Nuevo en Orión" si no), reporte del profesor + ocultado del admin. Migración V14.
+- **Bloque 4 — Pagos, comisión, créditos y liquidación (02/09/2026):** recaudo real con Wompi
+  (Web Checkout: PSE, tarjeta y Nequi), libro contable por reserva con la comisión congelada al
+  reservar, créditos del estudiante con consumo FIFO, y liquidación manual a profesores con
+  exportación a CSV. Migración V16. Detalle en la sección 0.3.
 
 ### ⏸️ Bloqueado / pendiente (NO implementado a propósito)
-- **Bloque 4 — Pagos, comisión, créditos, liquidación (Q4):** requiere tu conversación con el
-  **contador** (retener plata de terceros en Colombia: facturación, retenciones, contrato de
-  mandato) y credenciales reales de **Wompi**. Es dinero real: no se toca sin tu visto bueno.
-- **Bloque 5 — No-show y disputas:** depende de los pagos/créditos del Bloque 4.
+- **Bloque 5 — No-show y disputas:** es el siguiente. El Bloque 4 dejó puestos sus cimientos
+  (estados de pago, créditos, evento de clase dictada).
 - **Bloque 6 (resto) — métricas, ranking nocturno, sanciones:** dependen del ciclo de vida del
   Bloque 5 (no-show). El agregado de rating actual es incremental, sin job nocturno.
 
@@ -129,6 +131,43 @@ etc.). Orden ejecutado: 1 → 2 → 3 → 7 → 6(reseñas). **Todo lo de abajo 
 - Falta UI de "reportar reseña" (profesor) y "ocultar reseña" (admin); los endpoints ya existen.
 - Filtros `availableDay`/`availableTime` del buscador quedaron documentados como aproximación
   pendiente (filtro contra `availability_rules`).
+
+---
+
+## 0.3 Bloque 4 — Pagos (02/09/2026)
+
+El flujo cambió de raíz: **reservar ya no confirma**. Una reserva nace `PENDING_PAYMENT` con el
+cupo bloqueado, y solo pasa a `CONFIRMED` cuando el webhook firmado de Wompi dice que la plata
+entró (o cuando el saldo del estudiante cubrió la clase entera). El correo de confirmación, el
+`.ics` y la sala de Jitsi salen en ese momento, no antes: una clase sin pagar no se le anuncia a
+nadie.
+
+**Lo que garantiza la base, no el código:** `comisión + ganancia = precio` es un CHECK de
+`payments`; `crédito + cobrado = precio` es otro; una clase entra en una sola liquidación por el
+UNIQUE de `payout_items`; un webhook reenviado se procesa una vez por el UNIQUE
+`(provider, provider_event_id)`; y el cupo lo arbitra el índice único parcial, ampliado para cubrir
+también las reservas en pago.
+
+**Qué NO hace, a propósito** (§4.1 del brief): no dispersa plata automáticamente. El sistema calcula
+y una persona transfiere contra un reporte que cuadra al peso. Tampoco reembolsa por API —Wompi no
+expone ese endpoint—: una devolución se hace desde su panel y en Orión queda como saldo a favor.
+
+**Decisión que queda abierta para Pardo:** si un estudiante cancela una clase que ya pagó, el
+sistema **no decide solo**. El pago se queda en `PAID`, nunca se libera al profesor (una clase
+cancelada no llega a `COMPLETED`, así que no puede entrar en una liquidación) y aparece marcado en
+la conciliación del admin, que puede abonarle el saldo con un botón o devolverle el dinero desde
+Wompi. Es política comercial, no técnica.
+
+**Desfases conscientes con el brief:** la migración es la **V16** (el brief decía V13, pero el
+esquema ya iba por V15); el `CHECK` de `bookings.status` conserva `NO_SHOW` y **no** añade
+`RESCHEDULE_REQUESTED`/`UNDER_REVIEW`/`NO_SHOW_PROFESSOR`/`NO_SHOW_STUDENT`, que son del Bloque 5 —
+un estado que ningún código escribe es andamiaje muerto. Se añadió una tabla que el brief no lista,
+`payment_credit_applications`: sin ella, `credit_applied_cop` dice cuánto crédito se gastó pero no
+de qué filas, y una reserva vencida no podría devolverlo con su vencimiento original.
+
+**Sin construir todavía:** la clase de prueba (Q7). La columna `is_trial` existe porque el brief la
+pide, pero el flujo no: "precio libre" necesita un `trial_rate_cop` en el perfil del profesor que
+hoy no existe, y eso es una decisión de producto.
 
 ---
 
@@ -266,6 +305,13 @@ hablar, adultos, curaduría de academia).
 ## 5. Notas de operación / despliegue
 
 Variables de entorno que deben estar en Railway (producción):
+- `WOMPI_PUBLIC_KEY` / `WOMPI_INTEGRITY_SECRET` / `WOMPI_EVENTS_SECRET` — pasarela de pagos. **Las
+  tres son obligatorias**: sin ellas reservar responde 422. La **llave privada NO se usa** y por eso
+  no está en la configuración: el Web Checkout se firma con el secreto de integridad, el webhook se
+  verifica con el de eventos y la consulta de transacciones va con la llave pública. Un secreto de
+  producción que no se usa es superficie de ataque gratis.
+- `WOMPI_API_BASE_URL` — `https://production.wompi.co/v1` en producción. **El default es el sandbox
+  a propósito**: apuntar a producción tiene que ser un acto deliberado.
 - `CLOUDINARY_URL` — ✅ secreto correcto ya verificado (sección 0); asegúrate de que esté puesta en Railway.
 - `MAIL_HOST` / `MAIL_PORT` / `MAIL_USERNAME` / `MAIL_PASSWORD` / `ORION_MAIL_FROM` — SMTP real para
   que salgan los correos (confirmación, recuperación).
@@ -278,5 +324,13 @@ Recordatorios:
 - **Producción no corre el `DevDataSeeder`** (perfil `local`): la base arranca solo con el admin.
   Para el piloto: admin crea profesor → profesor publica perfil + disponibilidad → estudiante se
   registra y reserva.
-- Flyway va por V7. Cada cambio de esquema es una migración nueva; nunca editar una aplicada.
+- Flyway va por **V16**. Cada cambio de esquema es una migración nueva; nunca editar una aplicada.
+- **Configurar el webhook en el panel de Wompi.** Sin eso ningún pago confirma una clase: la
+  redirección del navegador NO es la fuente de verdad, el webhook sí. La URL correcta es la del
+  **dominio público del frontend** —`https://<dominio>/api/v1/webhooks/payments/wompi`—, no la del
+  backend: en Railway el backend vive en la red interna y Wompi no lo alcanza. El `rewrite` de Next
+  reenvía `/api/*` al backend tal cual, así que el evento llega íntegro.
+- **Desarrollo local necesita claves de SANDBOX de Wompi** (prefijo `_test_`) o no se puede
+  reservar. La excepción es la estudiante sembrada `ana@orion.local`, que arranca con saldo a favor
+  (`BillingDevSeeder`) y por eso puede reservar sin pasarela.
 - La suite de humo asume semilla fresca por corrida completa.

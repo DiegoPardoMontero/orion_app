@@ -4,12 +4,14 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.UUID;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import co.orion.identity.domain.User;
 import co.orion.scheduling.domain.AttendanceRecord;
 import co.orion.scheduling.domain.Booking;
+import co.orion.scheduling.domain.BookingCompletedEvent;
 import co.orion.scheduling.persistence.AttendanceRecordRepository;
 import co.orion.scheduling.persistence.BookingRepository;
 import co.orion.shared.error.ConflictException;
@@ -21,13 +23,16 @@ public class AttendanceService {
 
     private final BookingRepository bookings;
     private final AttendanceRecordRepository attendance;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
 
     public AttendanceService(BookingRepository bookings,
                              AttendanceRecordRepository attendance,
+                             ApplicationEventPublisher events,
                              Clock clock) {
         this.bookings = bookings;
         this.attendance = attendance;
+        this.events = events;
         this.clock = clock;
     }
 
@@ -56,6 +61,9 @@ public class AttendanceService {
 
         AttendanceRecord record = attendance.save(
                 new AttendanceRecord(booking.getId(), present, notes, now));
+        // Registrar la asistencia es lo que convierte el dinero retenido en dinero ganado. Va por
+        // evento, como los correos: este servicio no sabe que existe una comisión.
+        events.publishEvent(new BookingCompletedEvent(closed.getId(), present));
         return new AttendanceResult(record, closed);
     }
 }

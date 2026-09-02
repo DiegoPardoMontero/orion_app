@@ -13,11 +13,13 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   STUDENT: [
     { href: "/profesores", label: "Profesores" },
     { href: "/mis-clases", label: "Mis clases" },
+    { href: "/saldo", label: "Pagos" },
     { href: "/mensajes", label: "Mensajes" },
     { href: "/cuenta", label: "Perfil" },
   ],
   PROFESSOR: [
     { href: "/mis-clases", label: "Mis clases" },
+    { href: "/ganancias", label: "Ganancias" },
     { href: "/mensajes", label: "Mensajes" },
     { href: "/disponibilidad", label: "Disponibilidad" },
     { href: "/perfil", label: "Perfil" },
@@ -26,6 +28,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/admin/usuarios", label: "Usuarios" },
     { href: "/admin/aplicaciones", label: "Solicitudes" },
     { href: "/admin/reservas", label: "Reservas" },
+    { href: "/admin/pagos", label: "Pagos" },
   ],
 };
 
@@ -33,6 +36,10 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
 const ACCESS: { prefix: string; roles: Role[] }[] = [
   { prefix: "/profesores", roles: ["STUDENT"] },
   { prefix: "/cuenta", roles: ["STUDENT"] },
+  // Dinero: el saldo y el historial son del estudiante; las ganancias, de quien da la clase.
+  { prefix: "/saldo", roles: ["STUDENT"] },
+  { prefix: "/pago", roles: ["STUDENT"] },
+  { prefix: "/ganancias", roles: ["PROFESSOR"] },
   { prefix: "/mis-clases", roles: ["STUDENT", "PROFESSOR"] },
   { prefix: "/mensajes", roles: ["STUDENT", "PROFESSOR"] },
   { prefix: "/disponibilidad", roles: ["PROFESSOR"] },

@@ -16,7 +16,15 @@ export type GoalResponse = Schemas["GoalResponse"];
 export type RateBreakdownResponse = Schemas["RateBreakdownResponse"];
 export type SlotsResponse = Schemas["SlotsResponse"];
 export type SlotView = Schemas["SlotView"];
-export type BookingResponse = Schemas["BookingResponse"];
+/**
+ * La respuesta de POST /bookings trae, además de la reserva, lo que hay que pagar por ella. El
+ * esquema generado todavía no lo refleja (se regenera contra un backend vivo), así que se añade
+ * aquí igual que la contraparte de más abajo.
+ */
+export type BookingResponse = Schemas["BookingResponse"] & {
+  expiresAt?: string | null;
+  payment?: PaymentTicket | null;
+};
 export type CreateBookingRequest = Schemas["CreateBookingRequest"];
 
 /**
@@ -62,3 +70,111 @@ export type ApplicationEventView = Schemas["ApplicationEventView"];
 export type ReviewDecisionRequest = Schemas["ReviewDecisionRequest"];
 
 export type Modality = "VIRTUAL" | "IN_PERSON";
+
+/* --------------------------------------------------------------------------------------------
+ * Pagos, créditos y liquidación (Bloque 4)
+ * --------------------------------------------------------------------------------------------
+ * Escritos a mano, como la contraparte de reservas de arriba: `schema.d.ts` se regenera con
+ * `npm run types:api` contra un backend levantado, y estos tipos tienen que existir antes.
+ * Cuando se regenere, se sustituyen por sus Schemas[...] correspondientes.
+ */
+
+/** Lo que hay que pagar por una reserva. Sin comisión: el estudiante no la ve nunca. */
+export type PaymentTicket = {
+  paymentId: string;
+  amountCop: number;
+  creditAppliedCop: number;
+  chargedCop: number;
+  /** Null cuando el crédito cubrió la clase entera: no hay a dónde ir a pagar. */
+  checkoutUrl: string | null;
+};
+
+export type PaymentStatusResponse = {
+  bookingId: string;
+  bookingStatus: string;
+  paymentStatus: "PENDING" | "PAID" | "RELEASED" | "REFUNDED" | "DISPUTED" | "CANCELLED";
+  amountCop: number;
+  creditAppliedCop: number;
+  chargedCop: number;
+  paidAt: string | null;
+  expiresAt: string | null;
+  /** Solo mientras el pago siga pendiente: la vuelta a la pasarela sin perder el cupo. */
+  checkoutUrl: string | null;
+};
+
+export type CreditResponse = {
+  id: string;
+  amountCop: number;
+  remainingCop: number;
+  reason: string;
+  bookingId: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+};
+
+export type CreditBalanceResponse = { balanceCop: number; credits: CreditResponse[] };
+
+export type MyPaymentResponse = {
+  paymentId: string;
+  bookingId: string;
+  classAt: string | null;
+  professorName: string | null;
+  amountCop: number;
+  creditAppliedCop: number;
+  chargedCop: number;
+  status: string;
+  paidAt: string | null;
+};
+
+export type EarningsResponse = {
+  heldCop: number;
+  payableCop: number;
+  transferredCop: number;
+  totalCop: number;
+  lines: {
+    bookingId: string;
+    classAt: string | null;
+    studentName: string | null;
+    amountCop: number;
+    commissionCop: number;
+    earningsCop: number;
+    status: string;
+  }[];
+};
+
+export type AdminPaymentResponse = {
+  paymentId: string;
+  bookingId: string;
+  classAt: string | null;
+  bookingStatus: string | null;
+  studentId: string;
+  studentName: string | null;
+  professorId: string;
+  professorName: string | null;
+  amountCop: number;
+  creditAppliedCop: number;
+  chargedCop: number;
+  commissionRateBps: number;
+  commissionCop: number;
+  professorEarningsCop: number;
+  status: string;
+  provider: string | null;
+  providerReference: string | null;
+  paidAt: string | null;
+  releasedAt: string | null;
+  /** Pagada pero sin clase: alguien tiene que decidir entre saldo o devolución por Wompi. */
+  needsReview: boolean;
+};
+
+export type PayoutResponse = {
+  id: string;
+  professorId: string;
+  professorName: string | null;
+  periodStart: string;
+  periodEnd: string;
+  amountCop: number;
+  status: "PENDING" | "PAID" | "CANCELLED";
+  reference: string | null;
+  paidAt: string | null;
+  createdAt: string;
+};

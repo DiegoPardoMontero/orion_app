@@ -3,6 +3,13 @@ import { expect, test, type Page } from "@playwright/test";
 /**
  * Humo del MVP: los caminos que no pueden romperse nunca. Asume backend + docker con la semilla.
  *
+ * Desde el Bloque 4 reservar cobra. Ana llega con saldo a favor sembrado (BillingDevSeeder), así
+ * que sus clases se cubren con ese saldo y se confirman sin pasarela: todo lo que ya se probaba
+ * aquí —sala virtual, cancelar, reprogramar— sigue igual. El camino con pasarela lo cubre la
+ * prueba del final, con una estudiante recién registrada (sin saldo), que llega hasta la puerta de
+ * Wompi y la intercepta. El otro lado —webhook, confirmación, expiración— lo cubren los tests de
+ * integración del backend, que sí pueden firmar eventos.
+ *
  * Lecciones ya aprendidas y aplicadas aquí:
  *  - esperar la hidratación (networkidle) antes de teclear, o el submit nativo pierde lo escrito;
  *  - getByRole con { exact: true } cuando un texto es subcadena de otro ("Asistió" ⊂ "No asistió").
@@ -167,6 +174,55 @@ test("un estudiante reprograma una clase a otro cupo", async ({ page }) => {
 
   // Éxito: el modal se cierra. Si hubiera fallado (cupo ocupado, etc.) seguiría abierto con aviso.
   await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
+/**
+ * Sin saldo, reservar lleva a la pasarela. Se corta la salida a Wompi y se comprueba lo que de
+ * verdad importa desde este lado: que el checkout se arma con importe, moneda y firma, y que el
+ * cupo queda apartado aunque el pago no haya entrado.
+ *
+ * Necesita claves de SANDBOX de Wompi en el backend (WOMPI_PUBLIC_KEY / WOMPI_INTEGRITY_SECRET con
+ * prefijo _test_); sin ellas el backend no puede preparar un cobro y reservar responde 422.
+ */
+test("una estudiante sin saldo sale hacia Wompi y su cupo queda apartado", async ({ page }) => {
+  await page.goto("/login");
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("link", { name: "Crea tu cuenta" }).click();
+
+  const email = `pagadora.${Date.now()}@orion.local`;
+  await page.locator("#nombre").fill("Paula Pagadora");
+  await page.locator("#email").fill(email);
+  await page.locator("#password").fill("orion123*");
+  await page.getByRole("button", { name: "Crear cuenta" }).click();
+  await expect(page).toHaveURL(/\/profesores/);
+
+  await page.getByRole("link", { name: /Ver agenda/ }).first().click();
+  await expect(page.getByText("Cupos disponibles")).toBeVisible();
+  const cupos = page.locator("main .grid-cols-3 button");
+  const hora = (await cupos.first().innerText()).trim();
+  await cupos.first().click();
+
+  await page.route("https://checkout.wompi.co/**", (route) => route.abort());
+  const [request] = await Promise.all([
+    page.waitForRequest("https://checkout.wompi.co/**"),
+    page.getByRole("button", { name: "Continuar al pago" }).click(),
+  ]);
+
+  const checkout = request.url();
+  // Sin firma de integridad Wompi rechaza el cobro; sin importe en centavos, cobra cualquier cosa.
+  expect(checkout).toContain("amount-in-cents=");
+  expect(checkout).toContain("signature:integrity=");
+  expect(checkout).toContain("currency=COP");
+
+  // El cupo se aparta desde ya: si no, dos estudiantes llegarían al checkout por el mismo horario
+  // y el segundo pagaría una clase que ya no existe.
+  await page.goto("/mis-clases");
+  await expect(page.getByText("Te guardamos el cupo mientras pagas").first()).toBeVisible();
+
+  await page.goto("/profesores");
+  await page.getByRole("link", { name: /Ver agenda/ }).first().click();
+  await expect(page.getByText("Cupos disponibles")).toBeVisible();
+  await expect(page.locator("main .grid-cols-3 button", { hasText: hora })).toHaveCount(0);
 });
 
 test("recuperar contraseña: pide enlace y rechaza un token inválido", async ({ page }) => {

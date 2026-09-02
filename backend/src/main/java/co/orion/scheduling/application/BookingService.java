@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -37,6 +38,7 @@ public class BookingService {
     private final UserRepository users;
     private final SlotQueryService slots;
     private final MeetingLinkProvider meetingLinks;
+    private final PaymentInitiator payments;
     private final ApplicationEventPublisher events;
     private final Clock clock;
 
@@ -44,23 +46,37 @@ public class BookingService {
                           UserRepository users,
                           SlotQueryService slots,
                           MeetingLinkProvider meetingLinks,
+                          PaymentInitiator payments,
                           ApplicationEventPublisher events,
                           Clock clock) {
         this.bookings = bookings;
         this.users = users;
         this.slots = slots;
         this.meetingLinks = meetingLinks;
+        this.payments = payments;
         this.events = events;
         this.clock = clock;
     }
 
+    /** Una reserva recién creada y lo que hay que pagar por ella. */
+    public record NewBooking(Booking booking, PaymentTicket ticket) {
+    }
+
+    /**
+     * Crea la reserva en PENDING_PAYMENT: el cupo queda bloqueado por el índice único mientras el
+     * estudiante paga, y vence solo si no paga a tiempo. Nada de correos de confirmación todavía
+     * — una reserva sin pagar no es una clase, y anunciarla sería mentirle a los dos lados.
+     *
+     * Si el crédito del estudiante cubre la clase entera no hay pasarela que esperar y la reserva
+     * se confirma aquí mismo.
+     */
     @Transactional
-    public Booking create(User actor,
-                          UUID professorId,
-                          Instant startsAt,
-                          String modalityName,
-                          String locationNote,
-                          UUID requestedStudentId) {
+    public NewBooking create(User actor,
+                             UUID professorId,
+                             Instant startsAt,
+                             String modalityName,
+                             String locationNote,
+                             UUID requestedStudentId) {
         UUID studentId = resolveStudent(actor, requestedStudentId);
         BookingModality modality = parseModality(modalityName);
         Instant endsAt = startsAt.plus(CLASS_LENGTH);
@@ -69,21 +85,70 @@ public class BookingService {
         requireSlotIsAvailable(professorId, startsAt);
 
         if (bookings.studentHasOverlappingBooking(studentId, startsAt, endsAt)) {
-            throw new UnprocessableException("El estudiante ya tiene una clase confirmada a esa hora");
+            throw new UnprocessableException("El estudiante ya tiene una clase reservada a esa hora");
         }
 
-        Booking booking = new Booking(
-                studentId, professorId, startsAt, endsAt, modality, locationNote, actor.getId());
+        Booking booking = new Booking(studentId, professorId, startsAt, endsAt, modality,
+                locationNote, actor.getId(), payments.holdExpiry(clock.instant()));
 
         Booking saved = saveOrLoseTheRace(booking);
+        PaymentTicket ticket = payments.initiate(saved);
+
+        if (ticket.fullyCoveredByCredit()) {
+            saved = confirm(saved);
+        }
+        return new NewBooking(saved, ticket);
+    }
+
+    /**
+     * El pago entró: la reserva pasa a CONFIRMED y recién ahí salen la confirmación, el .ics y el
+     * enlace de la sala. Lo llama billing cuando la pasarela aprueba (o cuando el crédito cubrió
+     * todo). Idempotente frente a un webhook reenviado: si ya está confirmada, no hace nada.
+     */
+    @Transactional
+    public Booking confirmPaid(UUID bookingId) {
+        Booking booking = bookings.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada"));
+        if (booking.isConfirmed()) {
+            return booking;
+        }
+        if (!booking.isAwaitingPayment()) {
+            throw new ConflictException("La reserva ya no admite confirmación de pago");
+        }
+        return confirm(booking);
+    }
+
+    /**
+     * Se acabó el plazo para pagar (o la pasarela rechazó): el cupo vuelve al mercado. Igual que
+     * la confirmación, es idempotente — el job puede pasar dos veces por la misma reserva.
+     */
+    @Transactional
+    public void expirePendingPayment(UUID bookingId) {
+        bookings.findById(bookingId)
+                .filter(Booking::isAwaitingPayment)
+                .ifPresent(booking -> {
+                    booking.expire();
+                    bookings.save(booking);
+                });
+    }
+
+    /** Las reservas cuyo plazo de pago ya venció. La entrada del job de expiración. */
+    @Transactional(readOnly = true)
+    public List<Booking> findExpiredPendingPayments() {
+        return bookings.findByStatusAndExpiresAtLessThanEqual(
+                BookingStatus.PENDING_PAYMENT, clock.instant());
+    }
+
+    private Booking confirm(Booking booking) {
+        booking.confirmPayment();
         // La sala virtual se genera con el id ya asignado por la base y se guarda antes del evento,
         // para que la confirmación (correo + .ics) salga ya con el link.
-        if (modality == BookingModality.VIRTUAL) {
-            saved.assignMeetingLink(meetingLinks.linkFor(saved.getId()));
-            saved = bookings.save(saved);
+        if (booking.getModality() == BookingModality.VIRTUAL && booking.getMeetingLink() == null) {
+            booking.assignMeetingLink(meetingLinks.linkFor(booking.getId()));
         }
-        events.publishEvent(new BookingCreatedEvent(saved.getId()));
-        return saved;
+        Booking confirmed = bookings.save(booking);
+        events.publishEvent(new BookingCreatedEvent(confirmed.getId()));
+        return confirmed;
     }
 
     /**
@@ -97,13 +162,15 @@ public class BookingService {
                 .filter(candidate -> canSee(actor, candidate))
                 .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada"));
 
-        if (!booking.isConfirmed()) {
-            throw new ConflictException("La reserva ya no está confirmada");
+        if (booking.getStatus().isTerminal()) {
+            throw new ConflictException("La reserva ya no está activa");
         }
 
         Instant now = clock.instant();
         boolean isAdmin = actor.getRole() == UserRole.ADMIN;
-        if (!isAdmin && !booking.isCancellableAt(now)) {
+        // La ventana de anticipación protege una clase que ya existe. Una reserva sin pagar todavía
+        // no lo es: abandonar el checkout se puede hacer siempre, y billing devuelve el crédito.
+        if (booking.isConfirmed() && !isAdmin && !booking.isCancellableAt(now)) {
             throw new UnprocessableException(
                     "Con menos de 24 horas de anticipación la clase se considera impartida (política Orión)");
         }
@@ -148,7 +215,7 @@ public class BookingService {
         // El cupo nuevo no solapa el viejo (cupos alineados a la hora), así que la reserva actual
         // no cuenta; sí cuenta cualquier OTRA clase confirmada del estudiante a esa hora.
         if (bookings.studentHasOverlappingBooking(booking.getStudentId(), newStartsAt, newEndsAt)) {
-            throw new UnprocessableException("El estudiante ya tiene una clase confirmada a esa hora");
+            throw new UnprocessableException("El estudiante ya tiene una clase reservada a esa hora");
         }
 
         booking.reschedule(newStartsAt, newEndsAt);

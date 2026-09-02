@@ -81,6 +81,7 @@ class RescheduleBookingIT extends ApiIntegrationSupport {
         createUser("admin@orion.test", "Orion Admin", UserRole.ADMIN);
 
         ProfessorProfile published = new ProfessorProfile(maria);
+        published.changeRate(60_000L);
         published.publish();
         profiles.save(published);
         approveTeacher(maria.getId());
@@ -103,6 +104,9 @@ class RescheduleBookingIT extends ApiIntegrationSupport {
                 new CreateBookingRequest(maria.getId(), at(day, hour), "VIRTUAL", null, null),
                 BookingResponse.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        // Reprogramar es una operación sobre una clase que existe, y una clase existe cuando está
+        // pagada: la reserva se paga aquí para que el test hable del reagendamiento y no del cobro.
+        approvePayment(response.getBody().id());
         return response.getBody().id();
     }
 

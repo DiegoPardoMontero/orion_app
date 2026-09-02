@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +14,7 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 
+import co.orion.scheduling.TestBookings;
 import co.orion.TestcontainersConfiguration;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
@@ -50,8 +52,9 @@ class BookingRepositoryTest {
     void findsTheConfirmedBookingsOfAProfessorInARange() {
         bookings.save(booking(ana, maria, MONDAY_18, MONDAY_19));
 
-        assertThat(bookings.findByProfessorIdAndStatusAndStartsAtBetween(
-                maria, BookingStatus.CONFIRMED, MONDAY_18, MONDAY_20)).hasSize(1);
+        assertThat(bookings.findByProfessorIdAndStatusInAndStartsAtBetween(
+                maria, List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT),
+                MONDAY_18, MONDAY_20)).hasSize(1);
     }
 
     @Test
@@ -83,7 +86,7 @@ class BookingRepositoryTest {
     }
 
     private Booking booking(UUID studentId, UUID professorId, Instant startsAt, Instant endsAt) {
-        return new Booking(studentId, professorId, startsAt, endsAt,
+        return TestBookings.confirmed(studentId, professorId, startsAt, endsAt,
                 BookingModality.VIRTUAL, null, studentId);
     }
 }

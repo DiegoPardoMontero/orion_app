@@ -1,6 +1,7 @@
 package co.orion.scheduling.persistence;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,42 +22,51 @@ import co.orion.scheduling.domain.BookingStatus;
 public interface BookingRepository extends JpaRepository<Booking, UUID>,
         JpaSpecificationExecutor<Booking> {
 
-    /** Las reservas que ocupan cupos del profesor en un rango: la entrada del SlotCalculator. */
-    List<Booking> findByProfessorIdAndStatusAndStartsAtBetween(UUID professorId,
-                                                               BookingStatus status,
-                                                               Instant from,
-                                                               Instant to);
+    /**
+     * Las reservas que ocupan cupos del profesor en un rango: la entrada del SlotCalculator.
+     * Recibe una colección de estados porque desde el Bloque 4 ocupan cupo dos: CONFIRMED y
+     * PENDING_PAYMENT. Es el mismo par que filtra el índice único parcial de la tabla.
+     */
+    List<Booking> findByProfessorIdAndStatusInAndStartsAtBetween(UUID professorId,
+                                                                 Collection<BookingStatus> statuses,
+                                                                 Instant from,
+                                                                 Instant to);
 
     List<Booking> findByStudentIdAndStatusAndStartsAtBetween(UUID studentId,
                                                              BookingStatus status,
                                                              Instant from,
                                                              Instant to);
 
-    /** Próximas: confirmadas y que aún no empiezan, de la más cercana a la más lejana. */
-    List<Booking> findByStudentIdAndStatusAndStartsAtAfterOrderByStartsAtAsc(
-            UUID studentId, BookingStatus status, Instant now);
+    /** Próximas: activas y que aún no empiezan, de la más cercana a la más lejana. */
+    List<Booking> findByStudentIdAndStatusInAndStartsAtAfterOrderByStartsAtAsc(
+            UUID studentId, Collection<BookingStatus> statuses, Instant now);
 
-    List<Booking> findByProfessorIdAndStatusAndStartsAtAfterOrderByStartsAtAsc(
-            UUID professorId, BookingStatus status, Instant now);
+    List<Booking> findByProfessorIdAndStatusInAndStartsAtAfterOrderByStartsAtAsc(
+            UUID professorId, Collection<BookingStatus> statuses, Instant now);
+
+    /** Las reservas cuyo plazo para pagar ya se cumplió: la entrada del job de expiración. */
+    List<Booking> findByStatusAndExpiresAtLessThanEqual(BookingStatus status, Instant deadline);
 
     /** Pasadas: todo lo demás — ya ocurrieron o están en un estado terminal. */
     @Query("""
             select b from Booking b
             where b.studentId = :userId
-              and (b.status <> co.orion.scheduling.domain.BookingStatus.CONFIRMED
-                   or b.startsAt <= :now)
+              and (b.status not in :activeStatuses or b.startsAt <= :now)
             order by b.startsAt desc
             """)
-    List<Booking> findPastOfStudent(@Param("userId") UUID studentId, @Param("now") Instant now);
+    List<Booking> findPastOfStudent(@Param("userId") UUID studentId,
+                                    @Param("activeStatuses") Collection<BookingStatus> activeStatuses,
+                                    @Param("now") Instant now);
 
     @Query("""
             select b from Booking b
             where b.professorId = :userId
-              and (b.status <> co.orion.scheduling.domain.BookingStatus.CONFIRMED
-                   or b.startsAt <= :now)
+              and (b.status not in :activeStatuses or b.startsAt <= :now)
             order by b.startsAt desc
             """)
-    List<Booking> findPastOfProfessor(@Param("userId") UUID professorId, @Param("now") Instant now);
+    List<Booking> findPastOfProfessor(@Param("userId") UUID professorId,
+                                      @Param("activeStatuses") Collection<BookingStatus> activeStatuses,
+                                      @Param("now") Instant now);
 
     /** Reservas creadas en los últimos 7 días (por fecha de creación, no de la clase). */
     long countByCreatedAtGreaterThanEqual(Instant since);
@@ -75,14 +85,15 @@ public interface BookingRepository extends JpaRepository<Booking, UUID>,
     double selfServicePercentage();
 
     /**
-     * Un estudiante no puede tener dos clases confirmadas que se pisen, ni siquiera con
-     * profesores distintos. Misma semántica semiabierta [inicio, fin) que el resto del dominio:
+     * Un estudiante no puede tener dos clases que se pisen, ni siquiera con profesores distintos.
+     * Cuenta también la que está pagando: si no, abre dos checkouts a la misma hora y paga los dos. Misma semántica semiabierta [inicio, fin) que el resto del dominio:
      * existente.inicio < nueva.fin AND nueva.inicio < existente.fin.
      */
     @Query("""
             select count(b) > 0 from Booking b
             where b.studentId = :studentId
-              and b.status = co.orion.scheduling.domain.BookingStatus.CONFIRMED
+              and b.status in (co.orion.scheduling.domain.BookingStatus.CONFIRMED,
+                               co.orion.scheduling.domain.BookingStatus.PENDING_PAYMENT)
               and b.startsAt < :endsAt
               and :startsAt < b.endsAt
             """)

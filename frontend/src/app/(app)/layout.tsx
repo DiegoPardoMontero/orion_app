@@ -1,16 +1,19 @@
 "use client";
 
 import {
+  Banknote,
   CalendarClock,
   CalendarDays,
   CalendarRange,
   ClipboardList,
+  Coins,
   GraduationCap,
   KeyRound,
   LogOut,
   MessageCircle,
   User,
   Users,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -31,6 +34,9 @@ import { useMensajesNoLeidos } from "@/lib/mensajeria";
 /** Cada ruta lleva su ícono; el activo va relleno para no marcarse solo por color. */
 const ICONO: Record<string, LucideIcon> = {
   "/profesores": Users,
+  "/saldo": Wallet,
+  "/ganancias": Banknote,
+  "/admin/pagos": Coins,
   "/mis-clases": CalendarDays,
   "/mensajes": MessageCircle,
   "/cuenta": User,

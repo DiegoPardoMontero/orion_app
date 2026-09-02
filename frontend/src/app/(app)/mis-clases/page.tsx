@@ -14,7 +14,7 @@ import { Badge, Bloque, Boton, Chip, Segmento, Tarjeta } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type { MyBookingResponse, SlotsResponse, SlotView } from "@/lib/api/types";
 import { useMe } from "@/lib/auth/session";
-import { etiquetaEstado } from "@/lib/estados-clase";
+import { esperaPago, etiquetaEstado } from "@/lib/estados-clase";
 import { diaBogota, fechaCorta, fechaYRango, horaBogota } from "@/lib/format";
 import { linkWhatsapp } from "@/lib/whatsapp";
 
@@ -175,7 +175,7 @@ function TarjetaClase({
           <p className="ml-11 mt-1 text-[12px] text-text-muted">Lugar: {clase.locationNote}</p>
         )}
 
-        {scope === "past" && clase.status !== "CONFIRMED" && (
+        {scope === "past" && clase.status !== "CONFIRMED" && !esperaPago(clase.status) && (
           <div className="mt-3">
             <Badge
               tono={
@@ -193,6 +193,39 @@ function TarjetaClase({
               )}
               {etiquetaEstado(clase.status)}
             </Badge>
+          </div>
+        )}
+
+        {/*
+          Una reserva sin pagar aparece entre las próximas porque el cupo está apartado, pero
+          todavía no es una clase: no hay sala ni confirmación. Lo que necesita es una salida al
+          pago, no los botones de una clase que existe.
+        */}
+        {esperaPago(clase.status) && (
+          <div className="mt-3.5 rounded-base bg-warning-bg px-4 py-3">
+            <p className="flex items-center gap-1.5 text-[13px] font-bold text-warning">
+              <Clock size={15} strokeWidth={2.2} />
+              Te guardamos el cupo mientras pagas
+            </p>
+            <p className="mt-1 text-[12.5px] text-warning">
+              Si no completas el pago a tiempo, el horario vuelve a quedar libre.
+            </p>
+            {!esProfesor && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Link href={`/pago/${clase.id}`} className="min-w-[140px] flex-1">
+                  <Boton className="h-10 w-full">Completar el pago</Boton>
+                </Link>
+                {/* Arrepentirse antes de pagar se puede siempre: no hay clase que proteger, y
+                    esperar 20 minutos a que venza no es una respuesta. */}
+                <Boton
+                  variante="contorno"
+                  onClick={() => setCancelando(true)}
+                  className="h-10 min-w-[120px] flex-1"
+                >
+                  Soltar el cupo
+                </Boton>
+              </div>
+            )}
           </div>
         )}
 
@@ -407,11 +440,17 @@ function ModalCancelar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
 
   const error = cancelar.error instanceof ApiError ? cancelar.error.message : null;
 
+  // Soltar un cupo sin pagar no es lo mismo que cancelar una clase: nadie contaba con esa hora
+  // todavía, y el saldo que se hubiera aplicado vuelve intacto.
+  const sinPagar = esperaPago(clase.status);
+
   return (
-    <Modal titulo="¿Cancelar esta clase?" onCerrar={onCerrar}>
+    <Modal titulo={sinPagar ? "¿Soltar este cupo?" : "¿Cancelar esta clase?"} onCerrar={onCerrar}>
       <p className="text-[13px] text-text-secondary">
-        {fechaYRango(clase.startsAt!, clase.endsAt!)} con {clase.counterpart?.fullName}. Puedes
-        agendar otra cuando quieras.
+        {fechaYRango(clase.startsAt!, clase.endsAt!)} con {clase.counterpart?.fullName}.{" "}
+        {sinPagar
+          ? "No se te ha cobrado nada y el horario vuelve a quedar libre."
+          : "Puedes agendar otra cuando quieras."}
       </p>
 
       <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="motivo">
@@ -434,7 +473,7 @@ function ModalCancelar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
 
       <div className="mt-5 flex gap-2.5">
         <Boton variante="contorno" onClick={onCerrar} className="h-12 flex-1">
-          Mantener clase
+          {sinPagar ? "Conservar cupo" : "Mantener clase"}
         </Boton>
         <Boton
           variante="peligro"
@@ -442,7 +481,7 @@ function ModalCancelar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
           onClick={() => cancelar.mutate()}
           className="h-12 flex-1"
         >
-          {cancelar.isPending ? "Cancelando…" : "Sí, cancelar"}
+          {cancelar.isPending ? "Cancelando…" : sinPagar ? "Sí, soltarlo" : "Sí, cancelar"}
         </Boton>
       </div>
     </Modal>

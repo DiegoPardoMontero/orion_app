@@ -111,6 +111,7 @@ class BookingNotificationIT extends ApiIntegrationSupport {
         users.save(maria);
 
         ProfessorProfile published = new ProfessorProfile(maria);
+        published.changeRate(60_000L);
         published.publish();
         profiles.save(published);
         approveTeacher(maria.getId());
@@ -133,8 +134,15 @@ class BookingNotificationIT extends ApiIntegrationSupport {
                 "VIRTUAL", "Google Meet", null);
     }
 
+    /**
+     * Reserva Y paga. Desde el Bloque 4 la confirmación (correo + .ics) sale al aprobarse el pago,
+     * no al crear la reserva: una clase sin pagar no se le anuncia a nadie.
+     */
     private BookingResponse book() {
-        return post("/api/v1/bookings", anaSession, bookingRequest(), BookingResponse.class).getBody();
+        BookingResponse created = post(
+                "/api/v1/bookings", anaSession, bookingRequest(), BookingResponse.class).getBody();
+        approvePayment(created.id());
+        return created;
     }
 
     @Test
@@ -210,9 +218,10 @@ class BookingNotificationIT extends ApiIntegrationSupport {
 
         ResponseEntity<BookingResponse> response = post(
                 "/api/v1/bookings", anaSession, bookingRequest(), BookingResponse.class);
-
-        // El correo es un efecto secundario deseable, no una condición para reservar.
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        approvePayment(response.getBody().id());
+
+        // El correo es un efecto secundario deseable, no una condición para confirmar la clase.
         assertThat(bookings.findById(response.getBody().id()).orElseThrow().isConfirmed()).isTrue();
     }
 

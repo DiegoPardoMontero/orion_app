@@ -22,6 +22,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import co.orion.scheduling.TestBookings;
 import co.orion.TestcontainersConfiguration;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
@@ -83,8 +84,8 @@ class AttendanceIT extends ApiIntegrationSupport {
     }
 
     private Booking bookingOf(User professor, Instant startsAt) {
-        return bookings.save(new Booking(ana.getId(), professor.getId(), startsAt,
-                startsAt.plus(Duration.ofHours(1)), BookingModality.VIRTUAL, null, ana.getId()));
+        return bookings.save(TestBookings.confirmed(ana.getId(), professor.getId(), startsAt,
+                BookingModality.VIRTUAL, null, ana.getId()));
     }
 
     private String attendanceUrl(Booking booking) {

@@ -23,6 +23,10 @@ import co.orion.scheduling.persistence.BookingRepository;
 @Service
 public class BookingQueryService {
 
+    /** Una reserva sigue viva mientras esté confirmada o en pleno pago. */
+    private static final List<BookingStatus> ACTIVE_STATUSES =
+            List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT);
+
     public enum Scope {
         UPCOMING,
         PAST
@@ -50,13 +54,13 @@ public class BookingQueryService {
 
         List<Booking> found = switch (scope) {
             case UPCOMING -> asStudent
-                    ? bookings.findByStudentIdAndStatusAndStartsAtAfterOrderByStartsAtAsc(
-                            viewer.getId(), BookingStatus.CONFIRMED, now)
-                    : bookings.findByProfessorIdAndStatusAndStartsAtAfterOrderByStartsAtAsc(
-                            viewer.getId(), BookingStatus.CONFIRMED, now);
+                    ? bookings.findByStudentIdAndStatusInAndStartsAtAfterOrderByStartsAtAsc(
+                            viewer.getId(), ACTIVE_STATUSES, now)
+                    : bookings.findByProfessorIdAndStatusInAndStartsAtAfterOrderByStartsAtAsc(
+                            viewer.getId(), ACTIVE_STATUSES, now);
             case PAST -> asStudent
-                    ? bookings.findPastOfStudent(viewer.getId(), now)
-                    : bookings.findPastOfProfessor(viewer.getId(), now);
+                    ? bookings.findPastOfStudent(viewer.getId(), ACTIVE_STATUSES, now)
+                    : bookings.findPastOfProfessor(viewer.getId(), ACTIVE_STATUSES, now);
         };
 
         Map<UUID, User> counterparts = loadCounterparts(found, asStudent);

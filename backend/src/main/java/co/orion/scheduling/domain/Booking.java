@@ -67,6 +67,17 @@ public class Booking {
     @Column(name = "meeting_link", length = 300)
     private String meetingLink;
 
+    /** Clase de prueba (Q7). La columna existe desde la V16; el flujo que la enciende no. */
+    @Column(name = "is_trial", nullable = false)
+    private boolean trial;
+
+    /**
+     * Hasta cuándo se le guarda el cupo al estudiante mientras paga. Solo tiene sentido en
+     * PENDING_PAYMENT: al confirmar se borra, porque una clase pagada ya no vence.
+     */
+    @Column(name = "expires_at")
+    private Instant expiresAt;
+
     /** Quién ejecutó la acción. Si coincide con student_id, la reserva fue autoservicio. */
     @Column(name = "created_by", nullable = false, updatable = false)
     private UUID createdBy;
@@ -88,13 +99,19 @@ public class Booking {
         // exigido por JPA
     }
 
+    /**
+     * Una reserva nace SIN pagar y con fecha de caducidad. No hay forma de construir una reserva
+     * ya confirmada: la única puerta a CONFIRMED es {@link #confirmPayment()}, y así ninguna clase
+     * llega a existir sin que alguien haya mirado el dinero.
+     */
     public Booking(UUID studentId,
                    UUID professorId,
                    Instant startsAt,
                    Instant endsAt,
                    BookingModality modality,
                    String locationNote,
-                   UUID createdBy) {
+                   UUID createdBy,
+                   Instant expiresAt) {
         this.studentId = Objects.requireNonNull(studentId, "studentId");
         this.professorId = Objects.requireNonNull(professorId, "professorId");
         this.startsAt = Objects.requireNonNull(startsAt, "startsAt");
@@ -102,11 +119,38 @@ public class Booking {
         this.modality = Objects.requireNonNull(modality, "modality");
         this.locationNote = locationNote;
         this.createdBy = Objects.requireNonNull(createdBy, "createdBy");
-        this.status = BookingStatus.CONFIRMED;
+        this.expiresAt = Objects.requireNonNull(expiresAt, "expiresAt");
+        this.status = BookingStatus.PENDING_PAYMENT;
     }
 
     public boolean isConfirmed() {
         return status == BookingStatus.CONFIRMED;
+    }
+
+    public boolean isAwaitingPayment() {
+        return status == BookingStatus.PENDING_PAYMENT;
+    }
+
+    /** El pago entró (o el crédito cubrió la clase entera): la clase existe de verdad. */
+    public void confirmPayment() {
+        if (!isAwaitingPayment()) {
+            throw new IllegalStateException("Solo una reserva PENDING_PAYMENT se puede confirmar");
+        }
+        this.status = BookingStatus.CONFIRMED;
+        this.expiresAt = null;
+    }
+
+    /** Se acabó el plazo (o la pasarela rechazó): el cupo vuelve al mercado. */
+    public void expire() {
+        if (!isAwaitingPayment()) {
+            throw new IllegalStateException("Solo una reserva PENDING_PAYMENT vence");
+        }
+        this.status = BookingStatus.EXPIRED;
+    }
+
+    /** ¿Se le acabó el plazo para pagar? */
+    public boolean hasPaymentExpiredAt(Instant now) {
+        return isAwaitingPayment() && expiresAt != null && !expiresAt.isAfter(now);
     }
 
     /**
@@ -118,6 +162,11 @@ public class Booking {
      * sobre QUIÉN cancela, no sobre la reserva misma.
      */
     public boolean isCancellableAt(Instant now) {
+        // Una reserva sin pagar se suelta siempre: la ventana protege una clase que ya existe, y
+        // ésta todavía no lo es. Nadie contaba con esa hora.
+        if (isAwaitingPayment()) {
+            return true;
+        }
         return isConfirmed() && !startsAt.minus(CANCELLATION_WINDOW).isBefore(now);
     }
 
@@ -126,11 +175,6 @@ public class Booking {
         return createdBy.equals(studentId);
     }
 
-    /**
-     * Transición a un estado terminal de cancelación. Solo desde CONFIRMED: los demás estados
-     * son finales, y volver a cancelar algo ya cancelado es un conflicto, no una operación idempotente.
-     * Quién puede cancelar y cuándo lo decide el servicio; aquí solo se guarda el hecho.
-     */
     /** ¿Ya terminó la clase? Comparación entre instantes: la zona horaria no interviene. */
     public boolean hasEndedAt(Instant now) {
         return !endsAt.isAfter(now);
@@ -147,9 +191,16 @@ public class Booking {
         this.status = present ? BookingStatus.COMPLETED : BookingStatus.NO_SHOW;
     }
 
+    /**
+     * Transición a un estado terminal de cancelación, desde CONFIRMED o desde PENDING_PAYMENT.
+     * Los demás estados son finales: volver a cancelar algo ya cancelado es un conflicto, no una
+     * operación idempotente. Quién puede cancelar y cuándo lo decide el servicio; aquí solo se
+     * guarda el hecho.
+     */
     public void cancel(BookingStatus cancelledStatus, UUID cancelledBy, Instant cancelledAt, String reason) {
-        if (!isConfirmed()) {
-            throw new IllegalStateException("Solo una reserva CONFIRMED se puede cancelar");
+        // También desde PENDING_PAYMENT: arrepentirse antes de pagar es cancelar, no un error.
+        if (status.isTerminal()) {
+            throw new IllegalStateException("Una reserva en estado terminal no se puede cancelar");
         }
         this.status = Objects.requireNonNull(cancelledStatus, "cancelledStatus");
         this.cancelledBy = Objects.requireNonNull(cancelledBy, "cancelledBy");
@@ -205,6 +256,14 @@ public class Booking {
 
     public String getMeetingLink() {
         return meetingLink;
+    }
+
+    public boolean isTrial() {
+        return trial;
+    }
+
+    public Instant getExpiresAt() {
+        return expiresAt;
     }
 
     public String getLocationNote() {

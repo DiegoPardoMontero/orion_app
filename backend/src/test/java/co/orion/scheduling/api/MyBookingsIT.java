@@ -20,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import co.orion.scheduling.TestBookings;
 import co.orion.TestcontainersConfiguration;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
@@ -81,8 +82,7 @@ class MyBookingsIT extends ApiIntegrationSupport {
     }
 
     private Booking booking(Instant startsAt) {
-        return bookings.save(new Booking(ana.getId(), maria.getId(), startsAt,
-                startsAt.plus(java.time.Duration.ofHours(1)),
+        return bookings.save(TestBookings.confirmed(ana.getId(), maria.getId(), startsAt,
                 BookingModality.VIRTUAL, "Meet", ana.getId()));
     }
 

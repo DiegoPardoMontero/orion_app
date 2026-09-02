@@ -26,6 +26,9 @@ import co.orion.shared.error.BusinessRuleViolationException;
 @Service
 public class SlotQueryService {
 
+    private static final List<BookingStatus> OCCUPYING_STATUSES =
+            List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT);
+
     private static final int DEFAULT_RANGE_DAYS = 7;
     private static final int MAX_RANGE_DAYS = 31;
 
@@ -65,26 +68,27 @@ public class SlotQueryService {
         return calculator.calculate(
                 rules.findByProfessorIdAndActiveTrue(professorId),
                 exceptions.findByProfessorIdAndExceptionDateBetween(professorId, start, end),
-                confirmedBookingsAsOccupied(professorId, start, end),
+                occupiedByBookings(professorId, start, end),
                 start,
                 end,
                 now());
     }
 
     /**
-     * Solo las CONFIRMED ocupan cupo: una reserva cancelada libera su horario, y por eso el
-     * índice único de bookings es parcial. El SlotCalculator ya sabía restar estos intervalos
-     * desde la Tarea 2 (caso C6); aquí simplemente dejan de ser sintéticos.
+     * Ocupan cupo las CONFIRMED y las PENDING_PAYMENT: una reserva cancelada o vencida libera su
+     * horario, y por eso el índice único de bookings es parcial sobre ese mismo par de estados.
+     * Mostrar como libre un cupo que alguien está pagando llevaría a dos estudiantes al checkout
+     * por la misma hora, y el segundo pagaría una clase que ya no existe.
      */
-    private List<OccupiedInterval> confirmedBookingsAsOccupied(UUID professorId,
-                                                               LocalDate from,
-                                                               LocalDate to) {
+    private List<OccupiedInterval> occupiedByBookings(UUID professorId,
+                                                      LocalDate from,
+                                                      LocalDate to) {
         Instant rangeStart = from.atStartOfDay(BusinessZone.BOGOTA).toInstant();
         Instant rangeEnd = to.plusDays(1).atStartOfDay(BusinessZone.BOGOTA).toInstant();
 
         return bookings
-                .findByProfessorIdAndStatusAndStartsAtBetween(
-                        professorId, BookingStatus.CONFIRMED, rangeStart, rangeEnd)
+                .findByProfessorIdAndStatusInAndStartsAtBetween(
+                        professorId, OCCUPYING_STATUSES, rangeStart, rangeEnd)
                 .stream()
                 .map(booking -> new OccupiedInterval(
                         booking.getStartsAt().atZone(BusinessZone.BOGOTA),

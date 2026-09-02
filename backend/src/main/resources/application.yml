@@ -50,6 +50,26 @@ orion:
     base-url: ${ORION_APP_BASE_URL:http://localhost:3000}
   cors:
     allowed-origins: ${ORION_CORS_ALLOWED_ORIGINS:http://localhost:3000}
+  payments:
+    # Sandbox por defecto: una clave de producción tiene que ponerse a propósito, nunca por
+    # heredarla del fichero. Las tres claves van SIEMPRE por variable de entorno — el repositorio
+    # no ve un secreto ni en local.
+    #
+    # La llave PRIVADA de Wompi no aparece aquí porque este flujo no la necesita: el Web Checkout
+    # se firma con el secreto de integridad, el webhook se verifica con el de eventos y la consulta
+    # de una transacción va con la llave pública. La privada solo hace falta para crear
+    # transacciones desde el servidor o anularlas, y no hacemos ninguna de las dos. Un secreto de
+    # producción que no se usa es superficie de ataque gratis.
+    wompi:
+      api-base-url:     ${WOMPI_API_BASE_URL:https://sandbox.wompi.co/v1}
+      checkout-url:     ${WOMPI_CHECKOUT_URL:https://checkout.wompi.co/p/}
+      public-key:       ${WOMPI_PUBLIC_KEY:}
+      integrity-secret: ${WOMPI_INTEGRITY_SECRET:}
+      events-secret:    ${WOMPI_EVENTS_SECRET:}
+    expiry-job:
+      # Cada 5 minutos: el plazo para pagar son 20 (platform_settings.payment_hold_minutes), así que
+      # un cupo nunca queda bloqueado más de 25.
+      interval-ms: ${ORION_PAYMENT_EXPIRY_INTERVAL_MS:300000}
   mail:
     from: ${ORION_MAIL_FROM:no-reply@orion.local}
     # Transporte del correo: 'smtp' (Mailpit en local) o 'resend' (API HTTP en prod, porque Railway

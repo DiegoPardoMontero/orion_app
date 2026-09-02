@@ -40,6 +40,7 @@ import co.orion.scheduling.domain.BookingStatus;
 import co.orion.scheduling.domain.BusinessZone;
 import co.orion.scheduling.persistence.AvailabilityRuleRepository;
 import co.orion.scheduling.persistence.BookingRepository;
+import co.orion.billing.persistence.PaymentRepository;
 import co.orion.support.ApiIntegrationSupport;
 
 import java.time.DayOfWeek;
@@ -53,6 +54,8 @@ class CreateBookingIT extends ApiIntegrationSupport {
     private static final String BOOKINGS = "/api/v1/bookings";
     private static final Instant FROZEN_NOW = Instant.parse("2026-07-13T17:00:00Z");
     private static final LocalDate WEDNESDAY = LocalDate.of(2026, 7, 15);
+    /** Tarifa de María. Sin tarifa no hay precio que cobrar y la reserva no se puede crear. */
+    private static final long RATE_COP = 60_000;
 
     @TestConfiguration
     static class FrozenClockConfiguration {
@@ -72,6 +75,9 @@ class CreateBookingIT extends ApiIntegrationSupport {
     @Autowired
     private ProfessorProfileRepository profiles;
 
+    @Autowired
+    private PaymentRepository payments;
+
     private User ana;
     private User carlos;
     private User maria;
@@ -81,6 +87,7 @@ class CreateBookingIT extends ApiIntegrationSupport {
 
     @BeforeEach
     void seed() {
+        payments.deleteAll();
         bookings.deleteAll();
         rules.deleteAll();
         profiles.deleteAll();
@@ -93,9 +100,12 @@ class CreateBookingIT extends ApiIntegrationSupport {
         createUser("admin@orion.test", "Orion Admin", UserRole.ADMIN);
 
         ProfessorProfile published = new ProfessorProfile(maria);
+        published.changeRate(RATE_COP);
         published.publish();
         profiles.save(published);
-        profiles.save(new ProfessorProfile(juan)); // sin publicar
+        ProfessorProfile unpublished = new ProfessorProfile(juan); // sin publicar
+        unpublished.changeRate(RATE_COP);
+        profiles.save(unpublished);
         // Ambos aprobados: el gate no debe ocultarlos. Juan sigue sin publicar (404 al reservarlo).
         approveTeacher(maria.getId());
         approveTeacher(juan.getId());
@@ -124,7 +134,8 @@ class CreateBookingIT extends ApiIntegrationSupport {
                 BOOKINGS, anaSession, request(maria.getId(), 9, null), BookingResponse.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody().status()).isEqualTo("CONFIRMED");
+        // Desde el Bloque 4 una reserva nace sin pagar: es una clase apartada, no una clase.
+        assertThat(response.getBody().status()).isEqualTo("PENDING_PAYMENT");
         assertThat(response.getBody().studentId()).isEqualTo(ana.getId());
         assertThat(response.getBody().endsAt()).isEqualTo(response.getBody().startsAt().plusHours(1));
 
@@ -132,15 +143,41 @@ class CreateBookingIT extends ApiIntegrationSupport {
         // created_by == student_id: es una reserva de autoservicio, la métrica estrella del MVP.
         assertThat(saved.getCreatedBy()).isEqualTo(ana.getId());
         assertThat(saved.isSelfService()).isTrue();
+        assertThat(saved.getExpiresAt()).isNotNull();
     }
 
     @Test
-    void aVirtualBookingGetsAJitsiMeetingLink() {
+    void theBookingComesWithWhatToPayAndWhereToPayIt() {
         ResponseEntity<BookingResponse> response = post(
                 BOOKINGS, anaSession, request(maria.getId(), 9, null), BookingResponse.class);
 
-        var saved = bookings.findById(response.getBody().id()).orElseThrow();
-        assertThat(saved.getMeetingLink()).startsWith("https://meet.jit.si/OrionIdiomas-");
+        var payment = response.getBody().payment();
+        assertThat(payment.amountCop()).isEqualTo(RATE_COP);
+        assertThat(payment.creditAppliedCop()).isZero();
+        assertThat(payment.chargedCop()).isEqualTo(RATE_COP);
+        assertThat(payment.checkoutUrl())
+                .startsWith("https://checkout.wompi.co/p/")
+                .contains("amount-in-cents=" + RATE_COP * 100)
+                .contains("signature%3Aintegrity".replace("%3A", ":"));
+    }
+
+    /**
+     * La sala virtual se crea al CONFIRMAR, no al apartar el cupo: el enlace viaja en el correo de
+     * confirmación, y una reserva sin pagar no genera correo ni sala.
+     */
+    @Test
+    void aVirtualBookingGetsAJitsiMeetingLinkOnceItIsPaid() {
+        ResponseEntity<BookingResponse> response = post(
+                BOOKINGS, anaSession, request(maria.getId(), 9, null), BookingResponse.class);
+
+        var pending = bookings.findById(response.getBody().id()).orElseThrow();
+        assertThat(pending.getMeetingLink()).isNull();
+
+        approvePayment(response.getBody().id());
+
+        var paid = bookings.findById(response.getBody().id()).orElseThrow();
+        assertThat(paid.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
+        assertThat(paid.getMeetingLink()).startsWith("https://meet.jit.si/OrionIdiomas-");
     }
 
     @Test
@@ -305,7 +342,7 @@ class CreateBookingIT extends ApiIntegrationSupport {
         }
 
         assertThat(bookings.findAll().stream()
-                .filter(booking -> booking.getStatus() == BookingStatus.CONFIRMED)
+                .filter(booking -> booking.getStatus().occupiesSlot())
                 .toList()).hasSize(1);
     }
 

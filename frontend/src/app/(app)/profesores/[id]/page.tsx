@@ -10,10 +10,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  CreditCard,
   GraduationCap,
   Mail,
   MapPin,
   MessageCircle,
+  ShieldCheck,
   Sparkles,
   Video,
 } from "lucide-react";
@@ -21,6 +23,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { Avatar } from "@/components/Avatar";
+import { LineaImporte } from "@/components/dinero";
 import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { EstrellaRating, EstrellasFijas } from "@/components/Rating";
 import { Badge, Bloque, Boton, BotonPrincipal, Campo, Chip, Segmento, Spinner } from "@/components/ui";
@@ -28,6 +31,7 @@ import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type {
   BookingResponse,
   ConversationSummary,
+  CreditBalanceResponse,
   GoalResponse,
   Modality,
   PagedReviews,
@@ -85,6 +89,15 @@ export default function AgendaProfesorPage() {
     queryFn: () => apiFetch<SlotsResponse>(`/api/v1/professors/${id}/slots`),
   });
 
+  // El saldo a favor se descuenta antes de cobrar, así que el desglose se puede anticipar aquí
+  // mismo. Es una estimación honesta: la cifra que manda es la que devuelve el backend al reservar.
+  const saldo = useQuery({
+    queryKey: ["me", "credits"],
+    queryFn: () => apiFetch<CreditBalanceResponse>("/api/v1/me/credits"),
+    enabled: me?.role === "STUDENT",
+    staleTime: 60_000,
+  });
+
   const porDia = useMemo(() => agruparPorDia(cupos.data?.slots ?? []), [cupos.data]);
   const dias = Object.keys(porDia);
   const diaActivo = diaElegido && porDia[diaElegido] ? diaElegido : (dias[0] ?? null);
@@ -101,8 +114,17 @@ export default function AgendaProfesorPage() {
           locationNote: modalidad === "IN_PERSON" ? nota.trim() || undefined : undefined,
         },
       }),
-    onSuccess: () => {
+    onSuccess: (reserva) => {
       void queryClient.invalidateQueries({ queryKey: ["me", "bookings"] });
+      void queryClient.invalidateQueries({ queryKey: ["me", "credits"] });
+
+      // El cupo queda apartado, pero la clase no existe hasta que entre el pago. Si el saldo del
+      // estudiante la cubrió entera no hay pasarela a la que ir y la reserva ya está confirmada.
+      const checkoutUrl = reserva.payment?.checkoutUrl;
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+        return;
+      }
       router.push("/mis-clases?reservada=1");
     },
     onError: () => {
@@ -141,6 +163,10 @@ export default function AgendaProfesorPage() {
       ? `${fechaCorta(cupoElegido)} · ${horaBogota(cupoElegido)} · ${modalidad === "VIRTUAL" ? "Virtual" : "Presencial"}`
       : null;
 
+  const precio = detalle.hourlyRateCop ?? null;
+  const creditoAplicado = Math.min(saldo.data?.balanceCop ?? 0, precio ?? 0);
+  const aPagar = (precio ?? 0) - creditoAplicado;
+
   // Controles compartidos entre móvil y desktop: modalidad, nota, confirmación.
   const controles: ReactNode = (
     <>
@@ -174,6 +200,24 @@ export default function AgendaProfesorPage() {
       {errorReserva && <AvisoError mensaje={errorReserva} />}
       {resumen && <p className="text-center text-[13px] font-semibold text-text">{resumen}</p>}
 
+      {precio !== null && (
+        <div className="rounded-base border border-border bg-surface-sunken px-4 py-3 text-[13px]">
+          <LineaImporte etiqueta="Clase de 60 minutos" valor={precioCop(precio)} />
+          {creditoAplicado > 0 && (
+            <LineaImporte
+              etiqueta="Tu saldo a favor"
+              valor={`− ${precioCop(creditoAplicado)}`}
+              tono="credito"
+            />
+          )}
+          <LineaImporte
+            tono="total"
+            etiqueta={aPagar === 0 ? "Cubierto con tu saldo" : "Total a pagar"}
+            valor={precioCop(aPagar)}
+          />
+        </div>
+      )}
+
       <BotonPrincipal
         disabled={!cupoElegido || reservar.isPending}
         onClick={() => cupoElegido && reservar.mutate(cupoElegido)}
@@ -183,17 +227,31 @@ export default function AgendaProfesorPage() {
             <Spinner />
             Reservando…
           </>
-        ) : (
+        ) : aPagar === 0 ? (
           <>
             Confirmar reserva
             <Check size={18} strokeWidth={1.75} />
           </>
+        ) : (
+          <>
+            Continuar al pago
+            <CreditCard size={18} strokeWidth={1.75} />
+          </>
         )}
       </BotonPrincipal>
 
-      <p className="flex items-center justify-center gap-1.5 text-[11.5px] text-text-muted">
-        <Mail size={13} strokeWidth={1.75} />
-        Recibirás confirmación por correo con invitación al calendario
+      <p className="flex items-center justify-center gap-1.5 text-center text-[11.5px] text-text-muted">
+        {aPagar === 0 ? (
+          <>
+            <Mail size={13} strokeWidth={1.75} />
+            Recibirás confirmación por correo con invitación al calendario
+          </>
+        ) : (
+          <>
+            <ShieldCheck size={13} strokeWidth={1.75} className="shrink-0" />
+            Pagas en Wompi (PSE, tarjeta o Nequi). Te guardamos el cupo mientras completas el pago.
+          </>
+        )}
       </p>
     </>
   );

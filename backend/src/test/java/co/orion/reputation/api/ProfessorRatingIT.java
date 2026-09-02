@@ -21,6 +21,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import co.orion.scheduling.TestBookings;
 import co.orion.TestcontainersConfiguration;
 import co.orion.identity.api.PagedProfessors;
 import co.orion.identity.api.ProfessorDetail;
@@ -94,8 +95,8 @@ class ProfessorRatingIT extends ApiIntegrationSupport {
 
     private UUID review(User student, short rating) {
         Instant startsAt = PAST.minus(Duration.ofHours(slot++));
-        Booking booking = bookings.save(new Booking(student.getId(), maria.getId(), startsAt,
-                startsAt.plus(Duration.ofHours(1)), BookingModality.VIRTUAL, null, student.getId()));
+        Booking booking = bookings.save(TestBookings.confirmed(student.getId(), maria.getId(),
+                startsAt, BookingModality.VIRTUAL, null, student.getId()));
         ResponseEntity<ReviewResponse> response = post(
                 "/api/v1/bookings/" + booking.getId() + "/review", login(student.getEmail()),
                 new CreateReviewRequest(rating, "Comentario de " + student.getFullName()),

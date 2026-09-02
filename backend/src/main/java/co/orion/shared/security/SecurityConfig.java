@@ -40,10 +40,15 @@ public class SecurityConfig {
                 // Endpoints anónimos: no hay sesión ni token todavía que exigir.
                 .ignoringRequestMatchers("/api/v1/auth/login", "/api/v1/auth/register",
                         "/api/v1/auth/forgot-password", "/api/v1/auth/reset-password",
-                        "/api/v1/auth/accept-invite"))
+                        "/api/v1/auth/accept-invite",
+                        // El webhook lo llama Wompi, no un navegador: no hay cookie que proteger y
+                        // exigir CSRF solo garantizaría que ningún evento entre nunca. Lo que lo
+                        // protege es la firma del propio evento, verificada antes de tocar la base.
+                        "/api/v1/webhooks/payments/**"))
             .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/webhooks/payments/**").permitAll()
                 .requestMatchers("/api/v1/auth/login").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/register").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/forgot-password").permitAll()
@@ -88,6 +93,14 @@ public class SecurityConfig {
                 // Las notificaciones in-app son de cualquier usuario autenticado (cae en anyRequest,
                 // pero se deja explícito por claridad junto al resto del Bloque 3).
                 .requestMatchers("/api/v1/me/notifications", "/api/v1/me/notifications/**").authenticated()
+                // Dinero: el saldo y el historial son del estudiante; las ganancias, del profesor.
+                // El admin llega a lo mismo por /api/v1/admin/payments, que ya exige rol ADMIN.
+                .requestMatchers("/api/v1/me/credits", "/api/v1/me/payments").hasAnyRole("STUDENT", "ADMIN")
+                .requestMatchers("/api/v1/me/earnings").hasRole("PROFESSOR")
+                // El estado del pago de una clase lo consulta su estudiante (el servicio comprueba
+                // que la reserva sea suya y responde 404 si no lo es).
+                .requestMatchers(HttpMethod.GET, "/api/v1/bookings/*/payment")
+                        .hasAnyRole("STUDENT", "ADMIN")
                 .anyRequest().authenticated())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .exceptionHandling(e -> e

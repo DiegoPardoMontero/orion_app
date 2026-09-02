@@ -36,6 +36,15 @@ class RateBreakdownTest {
         assertThat(b.earningsCop()).isEqualTo(42500);
     }
 
+    /** Clase cubierta entera por crédito: no hay precio, no hay comisión y nadie gana nada. */
+    @Test
+    void aFreeClassSplitsIntoNothing() {
+        RateBreakdown b = RateBreakdown.of(0, 2000);
+        assertThat(b.commissionCop()).isZero();
+        assertThat(b.earningsCop()).isZero();
+        assertThat(b.commissionCop() + b.earningsCop()).isZero();
+    }
+
     @Test
     void alwaysSumsBackToTheGrossRate() {
         RateBreakdown b = RateBreakdown.of(77777, 2000);

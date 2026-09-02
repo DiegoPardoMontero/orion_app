@@ -21,6 +21,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import co.orion.scheduling.TestBookings;
 import co.orion.TestcontainersConfiguration;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
@@ -80,8 +81,8 @@ class ReviewLifecycleIT extends ApiIntegrationSupport {
     }
 
     private Booking bookingOf(User student, Instant startsAt) {
-        return bookings.save(new Booking(student.getId(), maria.getId(), startsAt,
-                startsAt.plus(Duration.ofHours(1)), BookingModality.VIRTUAL, null, student.getId()));
+        return bookings.save(TestBookings.confirmed(student.getId(), maria.getId(), startsAt,
+                BookingModality.VIRTUAL, null, student.getId()));
     }
 
     private String reviewUrl(Booking booking) {

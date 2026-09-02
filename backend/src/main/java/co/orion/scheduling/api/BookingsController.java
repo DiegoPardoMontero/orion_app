@@ -32,7 +32,7 @@ public class BookingsController {
     @ResponseStatus(HttpStatus.CREATED)
     public BookingResponse create(@AuthenticationPrincipal OrionUserDetails principal,
                                   @Valid @RequestBody CreateBookingRequest body) {
-        return BookingResponse.from(bookingService.create(
+        return BookingResponse.created(bookingService.create(
                 principal.user(),
                 body.professorId(),
                 body.startsAt().toInstant(),

@@ -14,6 +14,12 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import co.orion.billing.persistence.PaymentCreditApplicationRepository;
+import co.orion.billing.persistence.PaymentEventRepository;
+import co.orion.billing.persistence.PaymentRepository;
+import co.orion.billing.persistence.PayoutItemRepository;
+import co.orion.billing.persistence.PayoutRepository;
+import co.orion.billing.persistence.StudentCreditRepository;
 import co.orion.identity.domain.ApplicationStatus;
 import co.orion.identity.domain.TeacherApplication;
 import co.orion.identity.domain.User;
@@ -53,17 +59,76 @@ public abstract class ApiIntegrationSupport {
     @Autowired
     private AdminAuditLogRepository adminAuditLogs;
 
+    @Autowired
+    private PaymentEventRepository paymentEvents;
+
+    @Autowired
+    private PayoutItemRepository payoutItems;
+
+    @Autowired
+    private PayoutRepository payouts;
+
+    @Autowired
+    private PaymentCreditApplicationRepository creditApplications;
+
+    @Autowired
+    private PaymentRepository payments;
+
+    @Autowired
+    private StudentCreditRepository studentCredits;
+
     /**
-     * Limpia las tablas del Bloque 2 ANTES de que el @BeforeEach de cada test haga users.deleteAll():
-     * teacher_applications referencia a users SIN cascade, así que si quedaran filas el borrado de
+     * Limpia ANTES de que el @BeforeEach de cada test haga users.deleteAll(). Estas tablas
+     * referencian a users (y a bookings) SIN cascade, así que si quedaran filas el borrado de
      * usuarios fallaría por FK. El @BeforeEach de la superclase corre antes que el de la subclase.
+     *
+     * El orden es el de las dependencias, de la hoja a la raíz: lo que apunta a payments antes que
+     * payments, y payments antes que bookings (que borra cada test).
      */
     @BeforeEach
-    void cleanBlock2Tables() {
+    void cleanDependentTables() {
         adminAuditLogs.deleteAll();
         teacherDocuments.deleteAll();
         agreementAcceptances.deleteAll();
         teacherApplications.deleteAll(); // los eventos caen por ON DELETE CASCADE
+
+        payoutItems.deleteAll();
+        payouts.deleteAll();
+        paymentEvents.deleteAll();
+        creditApplications.deleteAll();
+        payments.deleteAll();
+        studentCredits.deleteAll();
+    }
+
+    /**
+     * Aprueba el pago de una reserva por el mismo camino que la realidad: un webhook FIRMADO de
+     * Wompi. No hay atajo por el repositorio a propósito — media docena de tests dependen de que
+     * una clase quede confirmada, y si llegaran ahí por la puerta de atrás nadie estaría probando
+     * la puerta de entrada.
+     */
+    protected void approvePayment(UUID bookingId) {
+        sendPaymentWebhook(bookingId, "APPROVED");
+    }
+
+    /** La otra cara: la pasarela rechaza y el cupo tiene que volver al mercado. */
+    protected void declinePayment(UUID bookingId) {
+        sendPaymentWebhook(bookingId, "DECLINED");
+    }
+
+    private void sendPaymentWebhook(UUID bookingId, String status) {
+        var payment = payments.findByBookingId(bookingId).orElseThrow(
+                () -> new IllegalStateException("La reserva " + bookingId + " no tiene pago"));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        String body = WompiWebhooks.signed("txn-" + bookingId, payment.getProviderReference(),
+                status, payment.getChargedCop() * 100, 1_756_000_000L);
+
+        ResponseEntity<String> response = rest.postForEntity(
+                "/api/v1/webhooks/payments/wompi", new HttpEntity<>(body, headers), String.class);
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new IllegalStateException("El webhook de prueba falló: " + response);
+        }
     }
 
     /** Sesión autenticada: cookie de sesión + token CSRF, que es lo que exige toda petición mutante. */

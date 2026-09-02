@@ -26,6 +26,17 @@ profesor, admin).
 - Frontend: `next build` + `tsc` + `lint` verdes; **e2e Playwright** verde (semilla fresca; la suite
   muta estado, `docker compose down -v` entre corridas completas).
 
+## Pagos (Bloque 4, 02/09/2026)
+Reservar ya no confirma: la reserva nace `PENDING_PAYMENT` con el cupo bloqueado y solo pasa a
+`CONFIRMED` cuando el webhook firmado de Wompi confirma el cobro (o cuando el saldo del estudiante
+cubre la clase entera). Correo, `.ics` y sala de Jitsi salen en ese momento. Incluye créditos con
+consumo FIFO, "Mis ganancias" del profesor, y conciliación + liquidación manual con CSV para el
+admin. Migración V16.
+
+**Requiere en Railway:** `WOMPI_PUBLIC_KEY`, `WOMPI_INTEGRITY_SECRET`, `WOMPI_EVENTS_SECRET` y
+`WOMPI_API_BASE_URL=https://production.wompi.co/v1`, más el webhook apuntando a
+`/api/v1/webhooks/payments/wompi` desde el panel de Wompi.
+
 ## Pendiente / bloqueos conocidos
 - **Brief `orion-brief-pulido-v1`** (pasos 0–6): fotos en Mis Clases, `PhoneInput` E.164, fotos
   para todos (**requiere `CLOUDINARY_URL`**), link Jitsi automático, reserva desktop semanal,
