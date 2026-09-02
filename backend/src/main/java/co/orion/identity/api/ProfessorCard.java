@@ -4,8 +4,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Tarjeta de profesor en el buscador. hourlyRateCop puede ser null (legado FIXED_FEE). NUNCA lleva
- * rating ni número de estudiantes: eso llega en el Bloque 6; inventarlo sería fraude al estudiante.
+ * Tarjeta de profesor en el buscador. hourlyRateCop puede ser null (legado FIXED_FEE). ratingAvg es
+ * null cuando hay menos de 3 reseñas visibles (gate de exhibición): un promedio sobre una o dos
+ * opiniones es ruido, no señal. ratingCount siempre es el conteo real de reseñas visibles.
  */
 public record ProfessorCard(
         UUID id,
@@ -16,6 +17,8 @@ public record ProfessorCard(
         String countryCode,
         boolean certified,
         Long hourlyRateCop,
+        Double ratingAvg,
+        int ratingCount,
         List<LanguageBadge> languages,
         List<String> levels,
         List<String> goals) {

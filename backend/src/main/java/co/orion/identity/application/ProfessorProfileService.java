@@ -28,6 +28,8 @@ import co.orion.identity.persistence.ProfessorLanguageLevelRepository;
 import co.orion.identity.persistence.ProfessorLanguageRepository;
 import co.orion.identity.persistence.ProfessorProfileRepository;
 import co.orion.identity.persistence.UserRepository;
+import co.orion.reputation.application.ProfessorRatingService;
+import co.orion.reputation.application.RatingSummary;
 import co.orion.shared.error.ResourceNotFoundException;
 import co.orion.shared.error.UnprocessableException;
 
@@ -44,6 +46,7 @@ public class ProfessorProfileService {
     private final LanguageRepository languageCatalog;
     private final PlatformSettingsService settings;
     private final ProfessorAccessService access;
+    private final ProfessorRatingService ratings;
 
     public ProfessorProfileService(ProfessorProfileRepository profiles,
                                    UserRepository users,
@@ -52,7 +55,8 @@ public class ProfessorProfileService {
                                    ProfessorGoalRepository goalsOf,
                                    LanguageRepository languageCatalog,
                                    PlatformSettingsService settings,
-                                   ProfessorAccessService access) {
+                                   ProfessorAccessService access,
+                                   ProfessorRatingService ratings) {
         this.profiles = profiles;
         this.users = users;
         this.languagesOf = languagesOf;
@@ -61,6 +65,7 @@ public class ProfessorProfileService {
         this.languageCatalog = languageCatalog;
         this.settings = settings;
         this.access = access;
+        this.ratings = ratings;
     }
 
     @Transactional(readOnly = true)
@@ -138,6 +143,7 @@ public class ProfessorProfileService {
         if (!access.isApproved(professorId)) {
             throw new ResourceNotFoundException("Profesor no encontrado");
         }
+        RatingSummary rating = ratings.summaryFor(professorId);
         return new ProfessorDetail(
                 profile.getUserId(),
                 profile.getUser().getFullName(),
@@ -151,6 +157,8 @@ public class ProfessorProfileService {
                 profile.isCertified(),
                 profile.acceptsTrial(),
                 profile.getHourlyRateCop(),
+                rating.ratingAvg(),
+                rating.ratingCount(),
                 loadLanguages(professorId),
                 loadGoals(professorId));
     }

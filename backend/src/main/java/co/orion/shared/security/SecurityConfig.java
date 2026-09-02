@@ -57,6 +57,9 @@ public class SecurityConfig {
                 // Lista y detalle públicos; los cupos (/professors/{id}/slots) siguen tras sesión.
                 .requestMatchers(HttpMethod.GET, "/api/v1/professors").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/professors/*").permitAll()
+                // Las reseñas de un profesor son parte de su perfil público (dos segmentos: /*/reviews
+                // no lo cubre /professors/*, que solo casa un segmento).
+                .requestMatchers(HttpMethod.GET, "/api/v1/professors/*/reviews").permitAll()
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 // Postulación a profesor: cualquier usuario autenticado puede aspirar y llevar su wizard.
                 .requestMatchers("/api/v1/teacher-applications").authenticated()
@@ -74,6 +77,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/me/bookings").hasAnyRole("STUDENT", "PROFESSOR")
                 // La asistencia la registra quien dio la clase.
                 .requestMatchers(HttpMethod.POST, "/api/v1/bookings/*/attendance").hasRole("PROFESSOR")
+                // Reseñar una clase es del estudiante; reportar una reseña, del profesor reseñado.
+                .requestMatchers(HttpMethod.POST, "/api/v1/bookings/*/review").hasRole("STUDENT")
+                .requestMatchers(HttpMethod.POST, "/api/v1/reviews/*/report").hasRole("PROFESSOR")
                 // Mensajería: abrir un hilo es cosa del estudiante; leer y responder, de cualquiera de
                 // los dos participantes (el servicio verifica que el hilo sea suyo, 403 a terceros).
                 .requestMatchers(HttpMethod.POST, "/api/v1/conversations").hasRole("STUDENT")

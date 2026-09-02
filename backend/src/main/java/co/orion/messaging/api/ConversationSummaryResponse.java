@@ -7,6 +7,7 @@ import co.orion.identity.domain.User;
 import co.orion.messaging.application.ConversationService.ConversationView;
 import co.orion.messaging.domain.Conversation;
 import co.orion.messaging.domain.Message;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /** Una conversación en la bandeja: con quién, el último mensaje y cuántos van sin leer. */
 public record ConversationSummaryResponse(
@@ -16,6 +17,9 @@ public record ConversationSummaryResponse(
         Instant lastMessageAt,
         int unreadCount) {
 
+    // @Schema(name=...): sin esto el OpenAPI colapsa este Counterpart con el de MyBookingResponse
+    // (mismo nombre simple) y la generación de tipos del frontend pierde campos.
+    @Schema(name = "ConversationCounterpart")
     public record Counterpart(UUID id, String fullName, String photoUrl, String role) {
         static Counterpart of(User user) {
             if (user == null) {

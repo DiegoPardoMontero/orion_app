@@ -1,5 +1,6 @@
 package co.orion.identity.application;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -25,6 +26,8 @@ import co.orion.identity.persistence.ProfessorGoalRepository;
 import co.orion.identity.persistence.ProfessorLanguageLevelRepository;
 import co.orion.identity.persistence.ProfessorLanguageRepository;
 import co.orion.identity.persistence.ProfessorProfileRepository;
+import co.orion.reputation.application.ProfessorRatingService;
+import co.orion.reputation.application.RatingSummary;
 
 /** Buscador del marketplace: filtra, pagina y ensambla las tarjetas resolviendo idiomas por lotes. */
 @Service
@@ -35,17 +38,20 @@ public class ProfessorSearchService {
     private final ProfessorLanguageLevelRepository levelsOf;
     private final ProfessorGoalRepository goalsOf;
     private final LanguageRepository languageCatalog;
+    private final ProfessorRatingService ratings;
 
     public ProfessorSearchService(ProfessorProfileRepository profiles,
                                   ProfessorLanguageRepository languagesOf,
                                   ProfessorLanguageLevelRepository levelsOf,
                                   ProfessorGoalRepository goalsOf,
-                                  LanguageRepository languageCatalog) {
+                                  LanguageRepository languageCatalog,
+                                  ProfessorRatingService ratings) {
         this.profiles = profiles;
         this.languagesOf = languagesOf;
         this.levelsOf = levelsOf;
         this.goalsOf = goalsOf;
         this.languageCatalog = languageCatalog;
+        this.ratings = ratings;
     }
 
     @Transactional(readOnly = true)
@@ -62,10 +68,22 @@ public class ProfessorSearchService {
                 : goalsOf.findByProfessorIdIn(ids).stream().collect(Collectors.groupingBy(ProfessorGoal::getProfessorId));
         Map<String, Language> catalog = languageCatalog.findAll().stream()
                 .collect(Collectors.toMap(Language::getCode, l -> l));
+        // Métricas de la página en una sola consulta; los ausentes rinden RatingSummary.EMPTY.
+        Map<UUID, RatingSummary> ratingsByProfessor = ratings.summariesFor(ids);
 
         List<ProfessorCard> cards = found.getContent().stream()
-                .map(p -> toCard(p, langs, levels, goals, catalog))
+                .map(p -> toCard(p, langs, levels, goals, catalog, ratingsByProfessor))
                 .toList();
+
+        // sort=RATING: la consulta trae el orden estable de RELEVANCE; reordenamos la página en
+        // memoria por promedio DESC (nulls al final). A nuestro volumen, ordenar la página basta.
+        if (sort == ProfessorSortOption.RATING) {
+            cards = cards.stream()
+                    .sorted(Comparator.comparing(ProfessorCard::ratingAvg,
+                                    Comparator.nullsLast(Comparator.reverseOrder()))
+                            .thenComparing(ProfessorCard::ratingCount, Comparator.reverseOrder()))
+                    .toList();
+        }
 
         return new PagedProfessors(cards, found.getNumber(), found.getSize(),
                 found.getTotalElements(), found.getTotalPages());
@@ -75,7 +93,8 @@ public class ProfessorSearchService {
                                  Map<UUID, List<ProfessorLanguage>> langs,
                                  Map<UUID, List<ProfessorLanguageLevel>> levels,
                                  Map<UUID, List<ProfessorGoal>> goals,
-                                 Map<String, Language> catalog) {
+                                 Map<String, Language> catalog,
+                                 Map<UUID, RatingSummary> ratingsByProfessor) {
         List<LanguageBadge> badges = langs.getOrDefault(p.getUserId(), List.of()).stream()
                 .map(pl -> {
                     Language l = catalog.get(pl.getLanguageCode());
@@ -91,6 +110,7 @@ public class ProfessorSearchService {
         List<String> goalCodes = goals.getOrDefault(p.getUserId(), List.of()).stream()
                 .map(ProfessorGoal::getGoalCode).sorted().toList();
 
+        RatingSummary rating = ratingsByProfessor.getOrDefault(p.getUserId(), RatingSummary.EMPTY);
         return new ProfessorCard(
                 p.getUserId(),
                 p.getUser().getFullName(),
@@ -100,6 +120,8 @@ public class ProfessorSearchService {
                 p.getCountryCode(),
                 p.isCertified(),
                 p.getHourlyRateCop(),
+                rating.ratingAvg(),
+                rating.ratingCount(),
                 badges,
                 levelCodes,
                 goalCodes);
@@ -109,7 +131,8 @@ public class ProfessorSearchService {
         return switch (sort) {
             case PRICE_ASC -> Sort.by(Sort.Order.asc("hourlyRateCop"));
             case PRICE_DESC -> Sort.by(Sort.Order.desc("hourlyRateCop"));
-            // RATING aún no existe (Bloque 6): cae al orden estable de RELEVANCE.
+            // RATING trae el orden estable de RELEVANCE desde la BD y luego se reordena la página en
+            // memoria por promedio (el agregado vive en otra tabla del módulo reputation).
             case RELEVANCE, RATING -> Sort.by(Sort.Order.desc("certified"), Sort.Order.asc("userId"));
         };
     }
