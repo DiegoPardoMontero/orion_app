@@ -100,6 +100,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reviews/{id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["report"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/teacher-application/submit": {
         parameters: {
             query?: never;
@@ -164,6 +180,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/notifications/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["markRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["markAllRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/availability/rules": {
         parameters: {
             query?: never;
@@ -206,6 +254,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["acceptAgreement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_2"];
+        put?: never;
+        post: operations["open"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/conversations/{id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["messages"];
+        put?: never;
+        post: operations["send"];
         delete?: never;
         options?: never;
         head?: never;
@@ -270,6 +350,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["recordAttendance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bookings/{bookingId}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["create_3"];
         delete?: never;
         options?: never;
         head?: never;
@@ -363,9 +459,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_2"];
+        get: operations["list_3"];
         put?: never;
-        post: operations["create_3"];
+        post: operations["create_4"];
         delete?: never;
         options?: never;
         head?: never;
@@ -436,6 +532,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/reviews/{id}/hide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["hide"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/professors/invite": {
         parameters: {
             query?: never;
@@ -475,7 +587,23 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_3"];
+        get: operations["list_4"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/professors/{professorId}/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["byProfessor"];
         put?: never;
         post?: never;
         delete?: never;
@@ -524,6 +652,38 @@ export interface paths {
             cookie?: never;
         };
         get: operations["ratePreview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_5"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/notifications/unread-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["unreadCount"];
         put?: never;
         post?: never;
         delete?: never;
@@ -635,7 +795,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_4"];
+        get: operations["list_6"];
         put?: never;
         post?: never;
         delete?: never;
@@ -667,7 +827,23 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_5"];
+        get: operations["list_7"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/reviews/reported": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["reported"];
         put?: never;
         post?: never;
         delete?: never;
@@ -700,6 +876,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["metrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/messages/flagged": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["flagged"];
         put?: never;
         post?: never;
         delete?: never;
@@ -884,6 +1076,9 @@ export interface components {
             /** Format: date-time */
             updatedAt?: string;
         };
+        ReportReviewRequest: {
+            reason: string;
+        };
         ChangePasswordRequest: {
             currentPassword: string;
             newPassword: string;
@@ -918,6 +1113,51 @@ export interface components {
             startTime?: string;
             endTime?: string;
             reason?: string;
+        };
+        CreateConversationRequest: {
+            /** Format: uuid */
+            professorId: string;
+        };
+        ConversationCounterpart: {
+            /** Format: uuid */
+            id?: string;
+            fullName?: string;
+            photoUrl?: string;
+            role?: string;
+        };
+        ConversationSummaryResponse: {
+            /** Format: uuid */
+            id?: string;
+            counterpart?: components["schemas"]["ConversationCounterpart"];
+            lastMessage?: components["schemas"]["LastMessage"];
+            /** Format: date-time */
+            lastMessageAt?: string;
+            /** Format: int32 */
+            unreadCount?: number;
+        };
+        LastMessage: {
+            body?: string;
+            system?: boolean;
+            mine?: boolean;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        SendMessageRequest: {
+            body: string;
+        };
+        MessageResponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            senderId?: string;
+            system?: boolean;
+            mine?: boolean;
+            body?: string;
+            flaggedReason?: string;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            readAt?: string;
         };
         CreateBookingRequest: {
             /** Format: uuid */
@@ -965,6 +1205,22 @@ export interface components {
             /** Format: date-time */
             recordedAt?: string;
             bookingStatus?: string;
+        };
+        CreateReviewRequest: {
+            /** Format: int32 */
+            rating?: number;
+            comment?: string;
+        };
+        ReviewResponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            bookingId?: string;
+            /** Format: int32 */
+            rating?: number;
+            comment?: string;
+            /** Format: date-time */
+            createdAt?: string;
         };
         ResetPasswordRequest: {
             token: string;
@@ -1022,6 +1278,9 @@ export interface components {
         ReviewDecisionRequest: {
             note?: string;
         };
+        HideReviewRequest: {
+            reason: string;
+        };
         InviteProfessorRequest: {
             /** Format: email */
             email: string;
@@ -1060,9 +1319,34 @@ export interface components {
             certified?: boolean;
             /** Format: int64 */
             hourlyRateCop?: number;
+            /** Format: double */
+            ratingAvg?: number;
+            /** Format: int32 */
+            ratingCount?: number;
             languages?: components["schemas"]["LanguageBadge"][];
             levels?: string[];
             goals?: string[];
+        };
+        PagedReviews: {
+            content?: components["schemas"]["PublicReviewResponse"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+        };
+        PublicReviewResponse: {
+            /** Format: uuid */
+            id?: string;
+            studentName?: string;
+            /** Format: int32 */
+            rating?: number;
+            comment?: string;
+            /** Format: date-time */
+            createdAt?: string;
         };
         ProfessorDetail: {
             /** Format: uuid */
@@ -1080,6 +1364,10 @@ export interface components {
             acceptsTrial?: boolean;
             /** Format: int64 */
             hourlyRateCop?: number;
+            /** Format: double */
+            ratingAvg?: number;
+            /** Format: int32 */
+            ratingCount?: number;
             languages?: components["schemas"]["ProfileLanguage"][];
             goals?: string[];
         };
@@ -1094,6 +1382,23 @@ export interface components {
             professorId?: string;
             timezone?: string;
             slots?: components["schemas"]["SlotView"][];
+        };
+        NotificationResponse: {
+            /** Format: uuid */
+            id?: string;
+            type?: string;
+            title?: string;
+            body?: string;
+            linkPath?: string;
+            read?: boolean;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            readAt?: string;
+        };
+        UnreadCountResponse: {
+            /** Format: int64 */
+            count?: number;
         };
         Counterpart: {
             /** Format: uuid */
@@ -1166,11 +1471,42 @@ export interface components {
             /** Format: date-time */
             createdAt?: string;
         };
+        ReportedReviewResponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            professorId?: string;
+            professorName?: string;
+            /** Format: uuid */
+            studentId?: string;
+            studentName?: string;
+            /** Format: int32 */
+            rating?: number;
+            comment?: string;
+            /** Format: date-time */
+            reportedAt?: string;
+            reportedReason?: string;
+            /** Format: date-time */
+            createdAt?: string;
+        };
         MetricsResponse: {
             /** Format: int64 */
             bookingsLast7Days?: number;
             /** Format: double */
             selfServicePctAllTime?: number;
+        };
+        FlaggedMessageResponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            conversationId?: string;
+            /** Format: uuid */
+            senderId?: string;
+            flaggedReason?: string;
+            body?: string;
+            bodyOriginal?: string;
+            /** Format: date-time */
+            createdAt?: string;
         };
         AdminBookingResponse: {
             /** Format: uuid */
@@ -1396,6 +1732,30 @@ export interface operations {
             };
         };
     };
+    report: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     submit: {
         parameters: {
             query?: never;
@@ -1486,6 +1846,44 @@ export interface operations {
                 "application/json": components["schemas"]["ChangePasswordRequest"];
             };
         };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    markRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    markAllRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description No Content */
             204: {
@@ -1604,6 +2002,98 @@ export interface operations {
             };
         };
     };
+    list_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ConversationSummaryResponse"][];
+                };
+            };
+        };
+    };
+    open: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateConversationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ConversationSummaryResponse"];
+                };
+            };
+        };
+    };
+    messages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MessageResponse"][];
+                };
+            };
+        };
+    };
+    send: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendMessageRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
     create_2: {
         parameters: {
             query?: never;
@@ -1702,6 +2192,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["AttendanceResponse"];
+                };
+            };
+        };
+    };
+    create_3: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ReviewResponse"];
                 };
             };
         };
@@ -1822,7 +2338,7 @@ export interface operations {
             };
         };
     };
-    list_2: {
+    list_3: {
         parameters: {
             query?: {
                 role?: string;
@@ -1845,7 +2361,7 @@ export interface operations {
             };
         };
     };
-    create_3: {
+    create_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -1957,6 +2473,30 @@ export interface operations {
             };
         };
     };
+    hide: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HideReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     invite: {
         parameters: {
             query?: never;
@@ -2005,7 +2545,7 @@ export interface operations {
             };
         };
     };
-    list_3: {
+    list_4: {
         parameters: {
             query?: {
                 language?: string;
@@ -2032,6 +2572,31 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PagedProfessors"];
+                };
+            };
+        };
+    };
+    byProfessor: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path: {
+                professorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PagedReviews"];
                 };
             };
         };
@@ -2101,6 +2666,46 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["RateBreakdownResponse"];
+                };
+            };
+        };
+    };
+    list_5: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["NotificationResponse"][];
+                };
+            };
+        };
+    };
+    unreadCount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UnreadCountResponse"];
                 };
             };
         };
@@ -2236,7 +2841,7 @@ export interface operations {
             };
         };
     };
-    list_4: {
+    list_6: {
         parameters: {
             query?: {
                 status?: string;
@@ -2282,7 +2887,7 @@ export interface operations {
             };
         };
     };
-    list_5: {
+    list_7: {
         parameters: {
             query?: never;
             header?: never;
@@ -2298,6 +2903,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["SettingResponse"][];
+                };
+            };
+        };
+    };
+    reported: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ReportedReviewResponse"][];
                 };
             };
         };
@@ -2340,6 +2965,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["MetricsResponse"];
+                };
+            };
+        };
+    };
+    flagged: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FlaggedMessageResponse"][];
                 };
             };
         };

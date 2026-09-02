@@ -8,6 +8,7 @@ import {
   GraduationCap,
   KeyRound,
   LogOut,
+  MessageCircle,
   User,
   Users,
   type LucideIcon,
@@ -17,6 +18,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { Avatar } from "@/components/Avatar";
 import { CambiarClave } from "@/components/CambiarClave";
+import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import { Vacio } from "@/components/estados";
 import { Wordmark } from "@/components/marca";
 import { Boton } from "@/components/ui";
@@ -24,11 +26,13 @@ import { useMiAplicacion } from "@/lib/aplicacion";
 import { canAccess, HOME_BY_ROLE, NAV_BY_ROLE, type NavItem } from "@/lib/auth/roles";
 import type { Role } from "@/lib/auth/session";
 import { useLogout, useMe } from "@/lib/auth/session";
+import { useMensajesNoLeidos } from "@/lib/mensajeria";
 
 /** Cada ruta lleva su ícono; el activo va relleno para no marcarse solo por color. */
 const ICONO: Record<string, LucideIcon> = {
   "/profesores": Users,
   "/mis-clases": CalendarDays,
+  "/mensajes": MessageCircle,
   "/cuenta": User,
   "/disponibilidad": CalendarClock,
   "/perfil": User,
@@ -64,6 +68,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const esAplicante = me?.role === "STUDENT" || me?.role === "PROFESSOR";
   const aplic = useMiAplicacion(esAplicante);
 
+  // Los mensajes internos son de estudiante y profesor: el badge suma los no leídos de la bandeja.
+  const noLeidosMensajes = useMensajesNoLeidos(esAplicante);
+
   useEffect(() => {
     if (isError) {
       router.replace("/login");
@@ -96,14 +103,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="lg:flex lg:min-h-dvh">
-      <Sidebar me={me} nav={nav} pathname={pathname} />
+      <Sidebar me={me} nav={nav} pathname={pathname} noLeidosMensajes={noLeidosMensajes} />
 
       <div className="flex min-h-dvh flex-1 flex-col">
         <MobileHeader me={me} />
         <div className="flex-1 pb-24 lg:pb-0">
           {rutaProtegida ? <GateProfesor aplic={aplic}>{children}</GateProfesor> : children}
         </div>
-        <TabBar nav={nav} pathname={pathname} />
+        <TabBar nav={nav} pathname={pathname} noLeidosMensajes={noLeidosMensajes} />
       </div>
     </div>
   );
@@ -202,13 +209,24 @@ function MobileHeader({ me }: { me: { fullName: string; email: string; role: Rol
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-surface-sunken bg-surface px-5 lg:hidden">
       <Wordmark className="text-[16px] text-primary" />
-      <MenuUsuario me={me} posicion="abajo" />
+      <div className="flex items-center gap-1">
+        <CampanaNotificaciones />
+        <MenuUsuario me={me} posicion="abajo" />
+      </div>
     </header>
   );
 }
 
 /** Tab bar inferior (móvil): 68 px + safe-area, una entrada por sección del rol. */
-function TabBar({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
+function TabBar({
+  nav,
+  pathname,
+  noLeidosMensajes,
+}: {
+  nav: NavItem[];
+  pathname: string;
+  noLeidosMensajes: number;
+}) {
   return (
     <nav
       className="fixed inset-x-0 bottom-0 z-30 flex items-stretch justify-around border-t border-surface-sunken bg-surface-raised lg:hidden"
@@ -217,6 +235,7 @@ function TabBar({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
       {nav.map((item) => {
         const activo = pathname.startsWith(item.href);
         const Icono = ICONO[item.href] ?? Users;
+        const badge = item.href === "/mensajes" ? noLeidosMensajes : 0;
         return (
           <Link
             key={item.href}
@@ -225,11 +244,16 @@ function TabBar({ nav, pathname }: { nav: NavItem[]; pathname: string }) {
             className="flex flex-1 flex-col items-center justify-center gap-1 pt-2"
           >
             <span
-              className={`flex items-center rounded-pill px-3.5 py-[5px] transition-colors ${
+              className={`relative flex items-center rounded-pill px-3.5 py-[5px] transition-colors ${
                 activo ? "bg-primary-soft text-primary" : "text-text-muted"
               }`}
             >
               <Icono size={21} strokeWidth={1.75} fill={activo ? "currentColor" : "none"} />
+              {badge > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 grid h-[15px] min-w-[15px] place-items-center rounded-pill bg-primary px-1 text-[9px] font-bold text-on-primary">
+                  {badge > 9 ? "9+" : badge}
+                </span>
+              )}
             </span>
             <span
               className={`text-[11px] ${activo ? "font-bold text-primary" : "font-semibold text-text-muted"}`}
@@ -248,15 +272,18 @@ function Sidebar({
   me,
   nav,
   pathname,
+  noLeidosMensajes,
 }: {
   me: { fullName: string; email: string; role: Role; photoUrl?: string | null };
   nav: NavItem[];
   pathname: string;
+  noLeidosMensajes: number;
 }) {
   return (
     <aside className="sticky top-0 hidden h-dvh w-[248px] shrink-0 flex-col border-r border-surface-sunken bg-surface px-4 py-6 lg:flex">
-      <div className="px-3">
+      <div className="flex items-center justify-between pl-3">
         <Wordmark className="text-[18px] text-primary" />
+        <CampanaNotificaciones />
       </div>
 
       <p className="mt-8 px-3 text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted">
@@ -267,6 +294,7 @@ function Sidebar({
         {nav.map((item) => {
           const activo = pathname.startsWith(item.href);
           const Icono = ICONO[item.href] ?? Users;
+          const badge = item.href === "/mensajes" ? noLeidosMensajes : 0;
           return (
             <Link
               key={item.href}
@@ -280,6 +308,11 @@ function Sidebar({
             >
               <Icono size={20} strokeWidth={1.75} fill={activo ? "currentColor" : "none"} />
               {item.label}
+              {badge > 0 && (
+                <span className="ml-auto grid h-[18px] min-w-[18px] place-items-center rounded-pill bg-primary px-1.5 text-[11px] font-bold text-on-primary">
+                  {badge > 9 ? "9+" : badge}
+                </span>
+              )}
             </Link>
           );
         })}

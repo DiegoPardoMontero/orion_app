@@ -13,6 +13,7 @@ import {
   GraduationCap,
   Mail,
   MapPin,
+  MessageCircle,
   Sparkles,
   Video,
 } from "lucide-react";
@@ -21,16 +22,18 @@ import { useParams, useRouter } from "next/navigation";
 import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { Avatar } from "@/components/Avatar";
 import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
-import { Badge, Bloque, BotonPrincipal, Campo, Chip, Segmento, Spinner } from "@/components/ui";
+import { Badge, Bloque, Boton, BotonPrincipal, Campo, Chip, Segmento, Spinner } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type {
   BookingResponse,
+  ConversationSummary,
   GoalResponse,
   Modality,
   ProfessorDetail,
   SlotView,
   SlotsResponse,
 } from "@/lib/api/types";
+import { useMe } from "@/lib/auth/session";
 import { diaBogota, fechaCorta, horaBogota, precioCop } from "@/lib/format";
 import { etiquetaNivel, etiquetaObjetivo } from "@/lib/i18n";
 import { useMediaQuery } from "@/lib/useMediaQuery";
@@ -42,6 +45,20 @@ export default function AgendaProfesorPage() {
   const queryClient = useQueryClient();
 
   const esDesktop = useMediaQuery("(min-width: 1024px)");
+  const { data: me } = useMe();
+
+  // Abrir (o reencontrar) la conversación con este profesor y saltar a su hilo. Un usuario anónimo
+  // —que en teoría no llega hasta aquí, porque la ruta es del estudiante— iría a iniciar sesión.
+  const abrirConversacion = useMutation({
+    mutationFn: () =>
+      apiFetch<ConversationSummary>("/api/v1/conversations", {
+        method: "POST",
+        body: { professorId: id },
+      }),
+    onSuccess: (conv) => {
+      if (conv.id) router.push(`/mensajes/${conv.id}`);
+    },
+  });
 
   const [diaElegido, setDiaElegido] = useState<string | null>(null);
   const [cupoElegido, setCupoElegido] = useState<string | null>(null);
@@ -231,6 +248,36 @@ export default function AgendaProfesorPage() {
               </Badge>
             )}
           </div>
+
+          {/* Enviar mensaje: solo el estudiante lo ve; el profesor no se escribe a sí mismo. */}
+          {me?.role !== "PROFESSOR" && (
+            <div className="mt-4">
+              <Boton
+                variante="secundario"
+                disabled={abrirConversacion.isPending}
+                onClick={() => {
+                  if (!me) {
+                    router.push("/login");
+                    return;
+                  }
+                  abrirConversacion.mutate();
+                }}
+                className="h-11 w-full lg:w-auto"
+              >
+                {abrirConversacion.isPending ? (
+                  <Spinner />
+                ) : (
+                  <MessageCircle size={17} strokeWidth={1.75} />
+                )}
+                Enviar mensaje
+              </Boton>
+              {abrirConversacion.error instanceof ApiError && (
+                <div className="mt-2">
+                  <AvisoError mensaje={abrirConversacion.error.message} />
+                </div>
+              )}
+            </div>
+          )}
 
           {detalle.bio && (
             <div className="mt-4 rounded-base bg-surface-raised p-4 shadow-sm lg:mt-5 lg:bg-transparent lg:p-0 lg:shadow-none">
