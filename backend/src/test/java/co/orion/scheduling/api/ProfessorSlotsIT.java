@@ -99,6 +99,7 @@ class ProfessorSlotsIT extends ApiIntegrationSupport {
         ProfessorProfile mariaProfile = new ProfessorProfile(maria);
         mariaProfile.publish();
         profiles.save(mariaProfile);
+        approveTeacher(maria.getId());
         profiles.save(new ProfessorProfile(juan)); // sin publicar
 
         mariaSession = login("maria@orion.test");

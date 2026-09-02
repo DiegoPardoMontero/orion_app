@@ -6,11 +6,13 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.domain.Specification;
 
+import co.orion.identity.domain.ApplicationStatus;
 import co.orion.identity.domain.CompensationModel;
 import co.orion.identity.domain.ProfessorGoal;
 import co.orion.identity.domain.ProfessorLanguage;
 import co.orion.identity.domain.ProfessorLanguageLevel;
 import co.orion.identity.domain.ProfessorProfile;
+import co.orion.identity.domain.TeacherApplication;
 import co.orion.identity.domain.UserStatus;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -35,6 +37,8 @@ final class ProfessorSpecifications {
             predicates.add(cb.or(
                     cb.equal(root.get("compensationModel"), CompensationModel.FIXED_FEE),
                     cb.isNotNull(root.get("hourlyRateCop"))));
+            // El gate de visibilidad: sin una postulación APPROVED, un profesor NUNCA aparece.
+            predicates.add(isApproved(root, query, cb));
 
             if (c.language() != null && !c.language().isBlank()) {
                 predicates.add(hasLanguage(root, query, cb, c.language(), Boolean.TRUE.equals(c.nativeOnly())));
@@ -62,6 +66,15 @@ final class ProfessorSpecifications {
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
+    }
+
+    private static Predicate isApproved(Root<ProfessorProfile> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+        Subquery<UUID> sub = query.subquery(UUID.class);
+        Root<TeacherApplication> app = sub.from(TeacherApplication.class);
+        sub.select(app.get("userId")).where(
+                cb.equal(app.get("userId"), root.get("userId")),
+                cb.equal(app.get("status"), ApplicationStatus.APPROVED));
+        return cb.exists(sub);
     }
 
     private static Predicate hasLanguage(Root<ProfessorProfile> root, CriteriaQuery<?> query, CriteriaBuilder cb,

@@ -58,6 +58,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/professors").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/professors/*").permitAll()
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                // Postulación a profesor: cualquier usuario autenticado puede aspirar y llevar su wizard.
+                .requestMatchers("/api/v1/teacher-applications").authenticated()
+                .requestMatchers("/api/v1/me/teacher-application", "/api/v1/me/teacher-application/**").authenticated()
+                .requestMatchers("/api/v1/me/agreements/**").authenticated()
                 .requestMatchers("/api/v1/me/availability/**").hasRole("PROFESSOR")
                 // /** para cubrir también /me/profile/rate y /me/profile/rate/preview (solo profesor).
                 .requestMatchers("/api/v1/me/profile/**").hasRole("PROFESSOR")

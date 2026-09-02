@@ -11,6 +11,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import co.orion.identity.application.ProfessorAccessService;
 import co.orion.identity.application.ProfessorProfileService;
 import co.orion.scheduling.domain.BookingStatus;
 import co.orion.scheduling.domain.BusinessZone;
@@ -32,6 +33,7 @@ public class SlotQueryService {
     private final AvailabilityExceptionRepository exceptions;
     private final BookingRepository bookings;
     private final ProfessorProfileService profiles;
+    private final ProfessorAccessService access;
     private final SlotCalculator calculator = new SlotCalculator();
     private final Clock clock;
 
@@ -39,11 +41,13 @@ public class SlotQueryService {
                             AvailabilityExceptionRepository exceptions,
                             BookingRepository bookings,
                             ProfessorProfileService profiles,
+                            ProfessorAccessService access,
                             Clock clock) {
         this.rules = rules;
         this.exceptions = exceptions;
         this.bookings = bookings;
         this.profiles = profiles;
+        this.access = access;
         this.clock = clock;
     }
 
@@ -51,6 +55,8 @@ public class SlotQueryService {
     public List<Slot> availableSlots(UUID professorId, LocalDate from, LocalDate to) {
         // Un profesor no visible en el marketplace no expone cupos aunque tenga reglas: lanza 404.
         profiles.ensurePublished(professorId);
+        // Y un profesor no aprobado tampoco expone cupos (403): mismo gate que reservar.
+        access.assertCanTeach(professorId);
 
         LocalDate start = from != null ? from : today();
         LocalDate end = to != null ? to : start.plusDays(DEFAULT_RANGE_DAYS - 1);

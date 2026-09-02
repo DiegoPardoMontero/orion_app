@@ -51,7 +51,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessRuleViolationException.class)
     public ResponseEntity<Map<String, Object>> handleBusinessRule(BusinessRuleViolationException ex) {
-        return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        if (ex.getDetails().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        }
+        return ResponseEntity.badRequest()
+                .body(Map.of("error", ex.getMessage(), "missing", ex.getDetails()));
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
@@ -74,11 +78,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
     }
 
-    /** Una foto por encima del límite: 422, no el 500 genérico. */
+    /** Un archivo por encima del límite: 422, no el 500 genérico. */
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<Map<String, Object>> handleTooLarge(MaxUploadSizeExceededException ex) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
-                .body(Map.of("error", "La imagen no puede superar 5 MB"));
+                .body(Map.of("error", "El archivo supera el tamaño máximo permitido"));
     }
 
     /** Un JSON malformado o un enum inválido es culpa del cliente: 400, no 500. */

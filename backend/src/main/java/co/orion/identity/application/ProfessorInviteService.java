@@ -15,12 +15,18 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import co.orion.identity.domain.ApplicationEventType;
+import co.orion.identity.domain.ApplicationStatus;
 import co.orion.identity.domain.ProfessorInvite;
 import co.orion.identity.domain.ProfessorProfile;
+import co.orion.identity.domain.TeacherApplication;
+import co.orion.identity.domain.TeacherApplicationEvent;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.identity.persistence.ProfessorInviteRepository;
 import co.orion.identity.persistence.ProfessorProfileRepository;
+import co.orion.identity.persistence.TeacherApplicationEventRepository;
+import co.orion.identity.persistence.TeacherApplicationRepository;
 import co.orion.identity.persistence.UserRepository;
 import co.orion.shared.PhoneNumbers;
 import co.orion.shared.error.BusinessRuleViolationException;
@@ -42,6 +48,8 @@ public class ProfessorInviteService {
     private final UserRepository users;
     private final ProfessorProfileRepository profiles;
     private final ProfessorInviteRepository invites;
+    private final TeacherApplicationRepository applications;
+    private final TeacherApplicationEventRepository applicationEvents;
     private final PasswordEncoder passwordEncoder;
     private final ProfessorInviteMailer mailer;
     private final Clock clock;
@@ -51,6 +59,8 @@ public class ProfessorInviteService {
     public ProfessorInviteService(UserRepository users,
                                   ProfessorProfileRepository profiles,
                                   ProfessorInviteRepository invites,
+                                  TeacherApplicationRepository applications,
+                                  TeacherApplicationEventRepository applicationEvents,
                                   PasswordEncoder passwordEncoder,
                                   ProfessorInviteMailer mailer,
                                   Clock clock,
@@ -58,6 +68,8 @@ public class ProfessorInviteService {
         this.users = users;
         this.profiles = profiles;
         this.invites = invites;
+        this.applications = applications;
+        this.applicationEvents = applicationEvents;
         this.passwordEncoder = passwordEncoder;
         this.mailer = mailer;
         this.clock = clock;
@@ -110,6 +122,16 @@ public class ProfessorInviteService {
                 .orElseGet(() -> new ProfessorProfile(professor));
         profile.describe(headline, bio); // sin publicar: publicarse es un paso aparte, como siempre
         profiles.save(profile);
+
+        // El invitado del admin nace APPROVED: hay UNA sola regla de visibilidad (una postulación
+        // APPROVED). Sin admin invitador a mano, reviewed_by queda null pero el estado sí es APPROVED.
+        if (!applications.existsByUserIdAndStatus(professor.getId(), ApplicationStatus.APPROVED)) {
+            TeacherApplication application = applications.saveAndFlush(new TeacherApplication(
+                    professor.getId(), ApplicationStatus.APPROVED, null, clock.instant()));
+            applicationEvents.save(new TeacherApplicationEvent(
+                    application.getId(), ApplicationEventType.APPROVED, null,
+                    "Alta por invitación del administrador"));
+        }
 
         invite.markUsed(clock.instant()); // de un solo uso
         invites.save(invite);

@@ -1,7 +1,10 @@
 package co.orion.support;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.http.HttpEntity;
@@ -11,8 +14,14 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import co.orion.identity.domain.ApplicationStatus;
+import co.orion.identity.domain.TeacherApplication;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
+import co.orion.identity.persistence.AdminAuditLogRepository;
+import co.orion.identity.persistence.AgreementAcceptanceRepository;
+import co.orion.identity.persistence.TeacherApplicationRepository;
+import co.orion.identity.persistence.TeacherDocumentRepository;
 import co.orion.identity.persistence.UserRepository;
 
 /**
@@ -32,12 +41,43 @@ public abstract class ApiIntegrationSupport {
     @Autowired
     protected PasswordEncoder passwordEncoder;
 
+    @Autowired
+    protected TeacherApplicationRepository teacherApplications;
+
+    @Autowired
+    private TeacherDocumentRepository teacherDocuments;
+
+    @Autowired
+    private AgreementAcceptanceRepository agreementAcceptances;
+
+    @Autowired
+    private AdminAuditLogRepository adminAuditLogs;
+
+    /**
+     * Limpia las tablas del Bloque 2 ANTES de que el @BeforeEach de cada test haga users.deleteAll():
+     * teacher_applications referencia a users SIN cascade, así que si quedaran filas el borrado de
+     * usuarios fallaría por FK. El @BeforeEach de la superclase corre antes que el de la subclase.
+     */
+    @BeforeEach
+    void cleanBlock2Tables() {
+        adminAuditLogs.deleteAll();
+        teacherDocuments.deleteAll();
+        agreementAcceptances.deleteAll();
+        teacherApplications.deleteAll(); // los eventos caen por ON DELETE CASCADE
+    }
+
     /** Sesión autenticada: cookie de sesión + token CSRF, que es lo que exige toda petición mutante. */
     protected record Session(String cookie, String csrfToken) {
     }
 
     protected User createUser(String email, String fullName, UserRole role) {
         return users.save(new User(email, passwordEncoder.encode(PASSWORD), fullName, role));
+    }
+
+    /** Da al profesor una postulación APPROVED: sin ella el gate de visibilidad lo ocultaría. */
+    protected void approveTeacher(UUID userId) {
+        teacherApplications.saveAndFlush(
+                new TeacherApplication(userId, ApplicationStatus.APPROVED, null, Instant.now()));
     }
 
     protected Session login(String email) {

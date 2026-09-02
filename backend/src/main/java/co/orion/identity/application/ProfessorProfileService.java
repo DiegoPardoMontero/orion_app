@@ -43,6 +43,7 @@ public class ProfessorProfileService {
     private final ProfessorGoalRepository goalsOf;
     private final LanguageRepository languageCatalog;
     private final PlatformSettingsService settings;
+    private final ProfessorAccessService access;
 
     public ProfessorProfileService(ProfessorProfileRepository profiles,
                                    UserRepository users,
@@ -50,7 +51,8 @@ public class ProfessorProfileService {
                                    ProfessorLanguageLevelRepository levelsOf,
                                    ProfessorGoalRepository goalsOf,
                                    LanguageRepository languageCatalog,
-                                   PlatformSettingsService settings) {
+                                   PlatformSettingsService settings,
+                                   ProfessorAccessService access) {
         this.profiles = profiles;
         this.users = users;
         this.languagesOf = languagesOf;
@@ -58,6 +60,7 @@ public class ProfessorProfileService {
         this.goalsOf = goalsOf;
         this.languageCatalog = languageCatalog;
         this.settings = settings;
+        this.access = access;
     }
 
     @Transactional(readOnly = true)
@@ -77,6 +80,8 @@ public class ProfessorProfileService {
                 req.yearsExperience(), req.education(), req.certified(), req.acceptsTrial());
 
         if (req.isPublished()) {
+            // El gate: un profesor sin postulación APPROVED no puede publicarse (403), antes de la tarifa.
+            access.assertCanTeach(professorId);
             if (!profile.canPublish()) {
                 throw new UnprocessableException(
                         "Fija tu tarifa por hora antes de publicar tu perfil.");
@@ -86,6 +91,25 @@ public class ProfessorProfileService {
             profile.unpublish();
         }
         // saveAndFlush: la fila del perfil es el padre de las FK de idiomas; debe existir antes.
+        profiles.saveAndFlush(profile);
+
+        replaceSelections(professorId, req);
+        return toOwnResponse(profile);
+    }
+
+    /**
+     * Guarda el avance del perfil desde el wizard de postulación: mismos datos que el perfil normal
+     * (titular, bio, idiomas, objetivos, país...), pero NUNCA publica — publicar es un paso aparte
+     * que exige estar aprobado. Reutiliza el modelo del profesor: la postulación solo lleva estado.
+     */
+    @Transactional
+    public ProfileResponse saveApplicationProfile(UUID professorId, UpdateProfileRequest req) {
+        ProfessorProfile profile = profiles.findByIdWithUser(professorId)
+                .orElseGet(() -> createEmptyProfileFor(professorId));
+
+        profile.describe(req.headline(), req.bio());
+        profile.enrich(req.countryCode(), req.city(), req.nativeLanguage(),
+                req.yearsExperience(), req.education(), req.certified(), req.acceptsTrial());
         profiles.saveAndFlush(profile);
 
         replaceSelections(professorId, req);
@@ -110,6 +134,10 @@ public class ProfessorProfileService {
     public ProfessorDetail publicDetail(UUID professorId) {
         ProfessorProfile profile = profiles.findPublishedById(professorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Profesor no encontrado"));
+        // No aprobado: 404, no revelamos que el perfil existe.
+        if (!access.isApproved(professorId)) {
+            throw new ResourceNotFoundException("Profesor no encontrado");
+        }
         return new ProfessorDetail(
                 profile.getUserId(),
                 profile.getUser().getFullName(),

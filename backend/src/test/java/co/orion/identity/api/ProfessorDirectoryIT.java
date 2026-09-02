@@ -57,6 +57,11 @@ class ProfessorDirectoryIT extends ApiIntegrationSupport {
         // Juan tiene perfil, pero sin publicar.
         profiles.save(new ProfessorProfile(juan));
 
+        // Ambos aprobados: el gate de visibilidad los deja pasar. Que aparezcan o no en el directorio
+        // depende ya solo de publicar/tarifa (María sí; Juan no).
+        approveTeacher(maria.getId());
+        approveTeacher(juan.getId());
+
         anaSession = login("ana@orion.test");
         mariaSession = login("maria@orion.test");
     }

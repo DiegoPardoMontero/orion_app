@@ -156,6 +156,8 @@ class ProfessorSearchIT extends ApiIntegrationSupport {
             p.publish();
         }
         profiles.save(p);
+        // El gate exige postulación APPROVED; se la damos a todos para aislar los filtros del buscador.
+        approveTeacher(u.getId());
         return u.getId();
     }
 

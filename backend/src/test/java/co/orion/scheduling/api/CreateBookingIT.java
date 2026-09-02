@@ -96,6 +96,9 @@ class CreateBookingIT extends ApiIntegrationSupport {
         published.publish();
         profiles.save(published);
         profiles.save(new ProfessorProfile(juan)); // sin publicar
+        // Ambos aprobados: el gate no debe ocultarlos. Juan sigue sin publicar (404 al reservarlo).
+        approveTeacher(maria.getId());
+        approveTeacher(juan.getId());
 
         // María: miércoles 08:00–11:00 → cupos a las 8, 9 y 10.
         rules.save(new AvailabilityRule(maria.getId(), DayOfWeek.WEDNESDAY,

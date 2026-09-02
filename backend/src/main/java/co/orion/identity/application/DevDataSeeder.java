@@ -16,16 +16,22 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import co.orion.identity.domain.ApplicationEventType;
+import co.orion.identity.domain.ApplicationStatus;
 import co.orion.identity.domain.ProfessorGoal;
 import co.orion.identity.domain.ProfessorLanguage;
 import co.orion.identity.domain.ProfessorLanguageLevel;
 import co.orion.identity.domain.ProfessorProfile;
+import co.orion.identity.domain.TeacherApplication;
+import co.orion.identity.domain.TeacherApplicationEvent;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.identity.persistence.ProfessorGoalRepository;
 import co.orion.identity.persistence.ProfessorLanguageLevelRepository;
 import co.orion.identity.persistence.ProfessorLanguageRepository;
 import co.orion.identity.persistence.ProfessorProfileRepository;
+import co.orion.identity.persistence.TeacherApplicationEventRepository;
+import co.orion.identity.persistence.TeacherApplicationRepository;
 import co.orion.identity.persistence.UserRepository;
 import co.orion.scheduling.domain.AvailabilityRule;
 import co.orion.scheduling.persistence.AvailabilityRuleRepository;
@@ -48,6 +54,8 @@ public class DevDataSeeder implements ApplicationRunner {
     private final ProfessorLanguageLevelRepository levels;
     private final ProfessorGoalRepository goals;
     private final AvailabilityRuleRepository rules;
+    private final TeacherApplicationRepository applications;
+    private final TeacherApplicationEventRepository applicationEvents;
     private final PasswordEncoder passwordEncoder;
     private final String adminEmail;
     private final String adminPassword;
@@ -58,6 +66,8 @@ public class DevDataSeeder implements ApplicationRunner {
                          ProfessorLanguageLevelRepository levels,
                          ProfessorGoalRepository goals,
                          AvailabilityRuleRepository rules,
+                         TeacherApplicationRepository applications,
+                         TeacherApplicationEventRepository applicationEvents,
                          PasswordEncoder passwordEncoder,
                          @Value("${orion.admin.email}") String adminEmail,
                          @Value("${orion.admin.password}") String adminPassword) {
@@ -67,6 +77,8 @@ public class DevDataSeeder implements ApplicationRunner {
         this.levels = levels;
         this.goals = goals;
         this.rules = rules;
+        this.applications = applications;
+        this.applicationEvents = applicationEvents;
         this.passwordEncoder = passwordEncoder;
         this.adminEmail = adminEmail;
         this.adminPassword = adminPassword;
@@ -121,6 +133,7 @@ public class DevDataSeeder implements ApplicationRunner {
                     profile.changeRate(45000L);
                     profile.publish();
                     profiles.save(profile);
+                    approveTeacher(professor.getId());
                     seedTaxonomy(professor.getId(), "EN", false,
                             List.of("BEGINNER", "INTERMEDIATE", "ADVANCED"),
                             List.of("CONVERSATION", "BUSINESS"));
@@ -138,10 +151,22 @@ public class DevDataSeeder implements ApplicationRunner {
                     profile.changeRate(55000L);
                     profile.publish();
                     profiles.save(profile);
+                    approveTeacher(professor.getId());
                     seedTaxonomy(professor.getId(), "FR", false,
                             List.of("BEGINNER", "INTERMEDIATE"),
                             List.of("TRAVEL", "CONVERSATION"));
                 });
+    }
+
+    /** Sin postulación APPROVED el gate ocultaría a los profesores sembrados del marketplace. */
+    private void approveTeacher(UUID professorId) {
+        if (applications.existsByUserIdAndStatus(professorId, ApplicationStatus.APPROVED)) {
+            return;
+        }
+        TeacherApplication application = applications.saveAndFlush(new TeacherApplication(
+                professorId, ApplicationStatus.APPROVED, null, java.time.Instant.now()));
+        applicationEvents.save(new TeacherApplicationEvent(
+                application.getId(), ApplicationEventType.APPROVED, null, "Semilla de desarrollo"));
     }
 
     private void seedTaxonomy(UUID professorId, String languageCode, boolean isNative,

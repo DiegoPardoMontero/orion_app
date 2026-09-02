@@ -113,6 +113,7 @@ class BookingNotificationIT extends ApiIntegrationSupport {
         ProfessorProfile published = new ProfessorProfile(maria);
         published.publish();
         profiles.save(published);
+        approveTeacher(maria.getId());
         rules.save(new AvailabilityRule(maria.getId(), DayOfWeek.WEDNESDAY,
                 LocalTime.of(8, 0), LocalTime.of(11, 0)));
 
