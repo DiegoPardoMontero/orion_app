@@ -247,7 +247,7 @@ function TabBar({
             key={item.href}
             href={item.href}
             aria-current={activo ? "page" : undefined}
-            className="flex flex-1 flex-col items-center justify-center gap-1 pt-2"
+            className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 pt-2"
           >
             <span
               className={`relative flex items-center rounded-pill px-3.5 py-[5px] transition-colors ${
@@ -261,8 +261,13 @@ function TabBar({
                 </span>
               )}
             </span>
+            {/* min-w-0 + truncate: con cinco pestañas (el dinero entró a la barra) una etiqueta
+                larga como "Disponibilidad" ya no cabe en su quinto de pantalla. Se recorta con
+                puntos suspensivos en vez de empujar a las vecinas. */}
             <span
-              className={`text-[11px] ${activo ? "font-bold text-primary" : "font-semibold text-text-muted"}`}
+              className={`w-full truncate px-1 text-center text-[11px] ${
+                activo ? "font-bold text-primary" : "font-semibold text-text-muted"
+              }`}
             >
               {item.label}
             </span>

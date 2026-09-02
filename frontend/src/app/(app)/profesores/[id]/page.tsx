@@ -42,6 +42,7 @@ import type {
 import { useMe } from "@/lib/auth/session";
 import { diaBogota, fechaCorta, fechaRelativa, horaBogota, precioCop } from "@/lib/format";
 import { etiquetaNivel, etiquetaObjetivo } from "@/lib/i18n";
+import { aplicarSaldo } from "@/lib/saldo";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 
 export default function AgendaProfesorPage() {
@@ -164,8 +165,12 @@ export default function AgendaProfesorPage() {
       : null;
 
   const precio = detalle.hourlyRateCop ?? null;
-  const creditoAplicado = Math.min(saldo.data?.balanceCop ?? 0, precio ?? 0);
-  const aPagar = (precio ?? 0) - creditoAplicado;
+  // La misma regla que aplica el backend, mínimo de la pasarela incluido: si el desglose de aquí y
+  // el del checkout no coinciden al peso, el estudiante ve cambiar el precio entre dos pantallas.
+  const { creditoAplicadoCop: creditoAplicado, aPagarCop: aPagar } = aplicarSaldo(
+    precio ?? 0,
+    saldo.data?.balanceCop ?? 0,
+  );
 
   // Controles compartidos entre móvil y desktop: modalidad, nota, confirmación.
   const controles: ReactNode = (

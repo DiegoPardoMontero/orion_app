@@ -67,34 +67,14 @@ function EstadoDelPago() {
   }
 
   const estado = pago.data;
-  const confirmada = estado.bookingStatus === "CONFIRMED";
   const pendiente = estado.paymentStatus === "PENDING";
+  const cabecera = describir(estado);
+  const confirmada = estado.paymentStatus === "PAID" || estado.paymentStatus === "RELEASED";
 
   return (
     <main className="mx-auto w-full max-w-md px-7 py-8">
       <Tarjeta className="text-center">
-        {confirmada ? (
-          <Encabezado
-            tono="menta"
-            icono={<CalendarCheck size={26} strokeWidth={1.75} />}
-            titulo="¡Tu clase quedó confirmada!"
-            texto="Te enviamos el correo con la invitación al calendario y, si es virtual, el enlace de la sala."
-          />
-        ) : pendiente ? (
-          <Encabezado
-            tono="melocoton"
-            icono={<Clock size={26} strokeWidth={1.75} />}
-            titulo="Estamos esperando tu pago"
-            texto="Si pagaste por PSE, tu banco puede tardar unos minutos en confirmarlo. Esta página se actualiza sola."
-          />
-        ) : (
-          <Encabezado
-            tono="coral"
-            icono={<ShieldAlert size={26} strokeWidth={1.75} />}
-            titulo="El pago no se completó"
-            texto="No se te cobró nada y el cupo volvió a quedar libre. Puedes elegir otro horario cuando quieras."
-          />
-        )}
+        <Encabezado {...cabecera} />
 
         <div className="mt-5 rounded-base border border-border bg-surface-sunken px-4 py-3 text-left text-[13px]">
           <LineaImporte etiqueta="Valor de la clase" valor={precioCop(estado.amountCop)} />
@@ -140,6 +120,71 @@ function EstadoDelPago() {
       </Tarjeta>
     </main>
   );
+}
+
+/**
+ * Qué se le dice al estudiante, a partir del ESTADO DEL PAGO y no del de la reserva.
+ *
+ * Antes esto miraba `bookingStatus === "CONFIRMED"` y todo lo demás caía en "el pago no se
+ * completó, no se te cobró nada". Eso le mentía a cualquiera que abriera desde el historial una
+ * clase ya dictada (COMPLETED) o una devuelta (REFUNDED): sí se le cobró. El dinero lo cuenta el
+ * pago, no la agenda.
+ */
+function describir(estado: PaymentStatusResponse): {
+  tono: "menta" | "melocoton" | "coral";
+  icono: React.ReactNode;
+  titulo: string;
+  texto: string;
+} {
+  switch (estado.paymentStatus) {
+    case "PENDING":
+      return {
+        tono: "melocoton",
+        icono: <Clock size={26} strokeWidth={1.75} />,
+        titulo: "Estamos esperando tu pago",
+        texto:
+          "Si pagaste por PSE, tu banco puede tardar unos minutos en confirmarlo. Esta página se actualiza sola.",
+      };
+    case "PAID":
+      return {
+        tono: "menta",
+        icono: <CalendarCheck size={26} strokeWidth={1.75} />,
+        titulo: "¡Tu clase quedó confirmada!",
+        texto:
+          "Te enviamos el correo con la invitación al calendario y, si es virtual, el enlace de la sala.",
+      };
+    case "RELEASED":
+      return {
+        tono: "menta",
+        icono: <CalendarCheck size={26} strokeWidth={1.75} />,
+        titulo: "Clase dictada",
+        texto: "Este pago ya está cerrado. Gracias por estudiar con Orión.",
+      };
+    case "REFUNDED":
+      return {
+        tono: "menta",
+        icono: <Wallet size={26} strokeWidth={1.75} />,
+        titulo: "Te devolvimos el valor de la clase",
+        texto:
+          "Quedó como saldo a favor y se descuenta solo la próxima vez que reserves. Lo ves en Pagos y saldo.",
+      };
+    case "DISPUTED":
+      return {
+        tono: "melocoton",
+        icono: <ShieldAlert size={26} strokeWidth={1.75} />,
+        titulo: "Estamos revisando este pago",
+        texto:
+          "Algo no cuadró entre tu pago y esta clase. Ya lo estamos mirando y te escribimos apenas se resuelva.",
+      };
+    default:
+      return {
+        tono: "coral",
+        icono: <ShieldAlert size={26} strokeWidth={1.75} />,
+        titulo: "El pago no se completó",
+        texto:
+          "No se te cobró nada y el cupo volvió a quedar libre. Puedes elegir otro horario cuando quieras.",
+      };
+  }
 }
 
 function Encabezado({

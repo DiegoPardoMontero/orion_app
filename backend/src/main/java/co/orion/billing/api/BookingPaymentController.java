@@ -40,6 +40,10 @@ public class BookingPaymentController {
      * le pregunta a la pasarela por esa transacción y se aplica lo que diga: es la red de seguridad
      * para el webhook que se pierde. El servicio comprueba que la transacción sea de este pago, así
      * que un id inventado no confirma nada.
+     *
+     * Se pregunta también cuando el pago ya se dio por perdido: si el cupo venció mientras el banco
+     * se decidía, el cobro pudo haberse hecho igual y queda marcado para revisión en vez de
+     * perderse.
      */
     @GetMapping("/{id}/payment")
     public PaymentStatusResponse paymentOf(@AuthenticationPrincipal OrionUserDetails principal,
@@ -47,7 +51,8 @@ public class BookingPaymentController {
                                            @RequestParam(required = false) String transactionId) {
         PaymentView view = paymentQueries.statusOf(principal.user(), id);
 
-        if (transactionId != null && !transactionId.isBlank() && view.payment().isPending()) {
+        if (transactionId != null && !transactionId.isBlank()
+                && view.payment().canStillLearnFromProvider()) {
             payments.syncFromProvider(view.payment(), transactionId.trim());
             view = paymentQueries.statusOf(principal.user(), id);
         }

@@ -171,6 +171,55 @@ hoy no existe, y eso es una decisión de producto.
 
 ---
 
+## 0.4 Registro de profesores y revisión de bugs (02/09/2026)
+
+**Un profesor ya puede entrar solo.** Antes tenía que registrarse como estudiante y descubrir por su
+cuenta dónde estaba la postulación. Ahora `/registro` acepta `?rol=profesor` con un selector visible
+("Quiero aprender" / "Quiero enseñar") que cambia el copy y, sobre todo, el destino: quien viene a
+enseñar aterriza en `/aplicacion`, no en el buscador de profesores. Las tres entradas —la portada,
+`/login` y "Enseña en Orión"— llevan ahí.
+
+No se inventó un rol nuevo, y es deliberado: la cuenta que crea el backend es la misma en los dos
+casos. En Orión se es profesor cuando la postulación se aprueba, no cuando uno se registra, y la
+pantalla lo dice con esas palabras.
+
+Los correos de decisión de postulación ahora llevan enlace: decirle a alguien "ya puedes publicar tu
+perfil" y dejarlo buscando dónde era la mitad de un mensaje.
+
+### Bugs encontrados y corregidos
+
+- **Un webhook cuyo procesamiento fallaba se perdía para siempre.** El hecho crudo se guarda en su
+  propia transacción (para no perderlo), pero si el efecto reventaba y hacía rollback, el reintento
+  de Wompi lo veía "ya registrado" y lo descartaba como duplicado: cobro hecho, clase sin confirmar
+  y nadie enterado. Ahora un fallo marca el pago para revisión en una transacción que sobrevive al
+  rollback.
+- **Una aprobación que llegaba tarde se tragaba en silencio.** Si el cupo vencía mientras el banco
+  se decidía —PSE tarda—, la aprobación posterior no hacía nada. Ahora el pago pasa a `DISPUTED` y
+  aparece marcado en la conciliación. Lo mismo si el importe cobrado no cuadra con el pedido.
+- **La compensación al estudiante podía duplicarse y sobrepasarse.** El botón abonaba siempre el
+  precio de la clase, pero si el pago había pasado por vencido su saldo YA le había vuelto: se le
+  regalaba esa parte. Y el abono no cerraba nada, así que se podía repetir. Ahora el backend sugiere
+  la cifra correcta (lo que puso de su bolsillo), el admin la puede ajustar, y abonar cierra el pago
+  — el candado es la transición a REFUNDED, no un `if` de pantalla.
+- **La pantalla de pago le mentía al estudiante sobre clases pasadas.** Miraba el estado de la
+  reserva, así que una clase ya dictada o una devuelta caían en "el pago no se completó, no se te
+  cobró nada". Ahora el mensaje sale del estado del PAGO, que es quien sabe del dinero.
+- **El desglose antes de reservar prometía un total que el checkout no respetaba.** No replicaba el
+  mínimo de cobro de la pasarela. La regla vive ahora en `lib/saldo.ts`, con tests, espejo de la del
+  backend.
+- **Al profesor le hablábamos como si fuera el estudiante** en las reservas sin pagar, y la barra
+  inferior de móvil se quedó corta al pasar a cinco pestañas.
+
+### Anotado, no tocado (decisión de producto)
+
+`MyBookingResponse` sigue entregando el WhatsApp de la contraparte y "Mis clases" pinta el botón. El
+Bloque 3 retiró WhatsApp de los correos, pero dentro de la app sigue: quien reserve una clase se
+lleva el teléfono del profesor y puede seguir por fuera —y ahora eso es el 20% de comisión que
+Orión no cobra—. Retirarlo del todo o dejarlo como está es tu decisión, no un bug que deba arreglar
+por mi cuenta.
+
+---
+
 ## 1. Qué tenemos hoy (desplegado y verificado)
 
 Cada pieza pasa `./mvnw verify` (backend, Testcontainers) + `next build`/`tsc`/`lint` (frontend) +

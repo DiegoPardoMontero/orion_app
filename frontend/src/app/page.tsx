@@ -16,6 +16,7 @@ import {
 import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
 import { BuscadorHero } from "@/components/BuscadorHero";
+import { EnsenaCta } from "@/components/EnsenaCta";
 import { HeroCta } from "@/components/HeroCta";
 import { Constelacion, Wordmark } from "@/components/marca";
 import { NavPublica } from "@/components/NavPublica";
@@ -335,13 +336,19 @@ export default async function PortadaPage() {
               Publica tu perfil, define tus horarios y recibe estudiantes reales. Tú pones la tarifa;
               nosotros ponemos la plataforma. Sin cuotas por adelantado.
             </p>
-            <Link
-              href="/ensena-con-orion"
-              className="mt-7 inline-flex h-[52px] items-center gap-2 rounded-pill bg-primary px-7 text-[15px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus"
-            >
-              Enseña en Orión
-              <ArrowRight size={18} strokeWidth={1.9} />
-            </Link>
+            {/* La acción principal es postularse; quien prefiera leer antes tiene la página
+                completa al lado. Antes solo estaba el enlace, y un profesor decidido tenía que
+                dar dos saltos para llegar al formulario. */}
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <EnsenaCta />
+              <Link
+                href="/ensena-con-orion"
+                className="inline-flex h-[52px] items-center justify-center gap-2 rounded-pill border-[1.5px] border-on-primary/35 px-7 text-[15px] font-bold text-on-primary transition-colors hover:bg-on-primary/10 focus-visible:shadow-focus"
+              >
+                Cómo funciona
+                <ArrowRight size={18} strokeWidth={1.9} />
+              </Link>
+            </div>
           </div>
           <div className="flex justify-center">
             <Rigel pose="animo" decorativo className="h-[170px] w-auto lg:h-[210px]" />

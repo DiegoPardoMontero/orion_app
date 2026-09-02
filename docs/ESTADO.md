@@ -37,6 +37,11 @@ admin. Migración V16.
 `WOMPI_API_BASE_URL=https://production.wompi.co/v1`, más el webhook apuntando a
 `/api/v1/webhooks/payments/wompi` desde el panel de Wompi.
 
+## Registro de profesores (02/09/2026)
+`/registro?rol=profesor` con selector visible: quien viene a enseñar aterriza en `/aplicacion` en vez
+del buscador. Entradas desde la portada, `/login` y "Enseña en Orión". No hay rol nuevo: la cuenta es
+la misma y en Orión se es profesor cuando la postulación se aprueba.
+
 ## Pendiente / bloqueos conocidos
 - **Brief `orion-brief-pulido-v1`** (pasos 0–6): fotos en Mis Clases, `PhoneInput` E.164, fotos
   para todos (**requiere `CLOUDINARY_URL`**), link Jitsi automático, reserva desktop semanal,

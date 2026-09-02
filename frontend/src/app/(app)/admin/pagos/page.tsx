@@ -19,6 +19,7 @@ const ESTADOS = [
   { valor: "PAID", etiqueta: "Retenidos" },
   { valor: "RELEASED", etiqueta: "Liberados" },
   { valor: "REFUNDED", etiqueta: "Devueltos" },
+  { valor: "DISPUTED", etiqueta: "En revisión" },
 ] as const;
 
 export default function AdminPagosPage() {
@@ -89,9 +90,11 @@ function Conciliacion() {
         <p className="mt-4 flex items-start gap-2 rounded-base bg-warning-bg px-4 py-3 text-[13px] text-warning">
           <AlertTriangle size={16} strokeWidth={1.75} className="mt-0.5 shrink-0" />
           <span>
-            {enRevision.length} pago{enRevision.length > 1 ? "s" : ""} entró y la clase no se dio.
-            No se le paga al profesor ni vuelve solo: decide entre abonarle saldo al estudiante o
-            devolverle la plata desde el panel de Wompi.
+            {enRevision.length} pago{enRevision.length > 1 ? "s necesitan" : " necesita"} tu
+            decisión: la pasarela cobró y la clase no existe —porque se canceló, porque el cupo
+            venció mientras el banco respondía, o porque el importe no cuadró—. Esa plata no se le
+            paga al profesor ni vuelve sola: abónale saldo al estudiante o devuélvesela desde el
+            panel de Wompi.
           </span>
         </p>
       )}
@@ -172,8 +175,17 @@ function Conciliacion() {
  * como saldo. La otra salida —devolver la plata— se hace en el panel de Wompi, porque su API no
  * expone reembolsos; decirlo aquí evita que alguien busque un botón que no puede existir.
  */
+/**
+ * Resolver el incidente abonándole saldo al estudiante. La cifra viene sugerida por el backend y es
+ * EDITABLE a propósito: cuánto capturó de verdad la pasarela solo se ve en el panel de Wompi, y la
+ * sugerencia no siempre es el precio de la clase — si el pago pasó por vencido, el crédito del
+ * estudiante ya volvió a su saldo y abonarle el precio entero se lo regalaría dos veces.
+ *
+ * Al abonar, el backend cierra el pago, así que el aviso desaparece y no se puede compensar dos veces.
+ */
 function AbonarSaldo({ pago }: { pago: AdminPaymentResponse }) {
   const queryClient = useQueryClient();
+  const [monto, setMonto] = useState(String(pago.suggestedCreditCop));
 
   const abonar = useMutation({
     mutationFn: () =>
@@ -181,7 +193,7 @@ function AbonarSaldo({ pago }: { pago: AdminPaymentResponse }) {
         method: "POST",
         body: {
           studentId: pago.studentId,
-          amountCop: pago.amountCop,
+          amountCop: Number(monto),
           reason: "ADMIN_ADJUSTMENT",
           bookingId: pago.bookingId,
         },
@@ -190,28 +202,41 @@ function AbonarSaldo({ pago }: { pago: AdminPaymentResponse }) {
   });
 
   const error = abonar.error instanceof ApiError ? abonar.error.message : null;
+  const valido = Number(monto) > 0;
 
   return (
     <div className="mt-3 border-t border-border pt-3">
-      {error && <AvisoError mensaje={error} />}
-      {abonar.isSuccess ? (
-        <p className="text-[13px] font-semibold text-success">
-          Saldo abonado por {precioCop(pago.amountCop)}.
-        </p>
-      ) : (
+      {error && (
+        <div className="mb-2">
+          <AvisoError mensaje={error} />
+        </div>
+      )}
+      <p className="text-[12.5px] font-semibold text-text-secondary">
+        Abonar saldo al estudiante
+      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <Campo
+          type="number"
+          min={1}
+          value={monto}
+          onChange={(event) => setMonto(event.target.value)}
+          aria-label="Monto a abonar en pesos"
+          className="w-[150px]"
+        />
         <Boton
           variante="secundario"
-          className="h-9 px-4 text-[13px]"
-          disabled={abonar.isPending}
+          className="h-11 px-4 text-[13px]"
+          disabled={!valido || abonar.isPending}
           onClick={() => abonar.mutate()}
         >
           {abonar.isPending ? <Spinner /> : <Wallet size={15} strokeWidth={1.75} />}
-          Abonar {precioCop(pago.amountCop)} de saldo al estudiante
+          Abonar {valido ? precioCop(Number(monto)) : ""}
         </Boton>
-      )}
+      </div>
       <p className="mt-2 text-[12px] text-text-muted">
-        Para devolver el dinero al medio de pago, hazlo desde el panel de Wompi: su API no expone
-        reembolsos.
+        Sugerido: {precioCop(pago.suggestedCreditCop)} — lo que el estudiante puso de su bolsillo en
+        este pago. Para devolverle el dinero al medio de pago en vez de abonarle saldo, hazlo desde
+        el panel de Wompi: su API no expone reembolsos.
       </p>
     </div>
   );
@@ -389,6 +414,8 @@ function tonoPago(status: string): "menta" | "melocoton" | "lavanda" | "neutral"
       return "menta";
     case "REFUNDED":
       return "lavanda";
+    case "DISPUTED":
+      return "melocoton";
     case "CANCELLED":
       return "error";
     default:

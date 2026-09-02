@@ -225,6 +225,30 @@ test("una estudiante sin saldo sale hacia Wompi y su cupo queda apartado", async
   await expect(page.locator("main .grid-cols-3 button", { hasText: hora })).toHaveCount(0);
 });
 
+/**
+ * El camino del profesor, que antes no existía: llegaba al login, se registraba como estudiante y
+ * tenía que descubrir por su cuenta dónde estaba la postulación. Ahora el login lo dice y el
+ * registro lo deja directamente en su wizard.
+ */
+test("un profesor se postula desde el login y aterriza en su postulación", async ({ page }) => {
+  await page.goto("/login");
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("link", { name: "Postúlate para dar clases" }).click();
+
+  await expect(page).toHaveURL(/\/registro\?rol=profesor/);
+  // La intención llega preseleccionada y el copy cambia con ella.
+  await expect(page.getByText("Tu perfil aparece en el marketplace cuando la aprobamos")).toBeVisible();
+
+  const email = `profe.${Date.now()}@orion.local`;
+  await page.locator("#nombre").fill("Profe Nuevo");
+  await page.locator("#email").fill(email);
+  await page.locator("#password").fill("orion123*");
+  await page.getByRole("button", { name: "Crear cuenta y postularme" }).click();
+
+  // No al buscador de profesores: a su propia postulación.
+  await expect(page).toHaveURL(/\/aplicacion/);
+});
+
 test("recuperar contraseña: pide enlace y rechaza un token inválido", async ({ page }) => {
   await page.goto("/login");
   await page.waitForLoadState("networkidle");

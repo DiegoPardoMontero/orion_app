@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, GraduationCap, Lock, Mail } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
@@ -139,6 +139,22 @@ export default function LoginPage() {
               Crea tu cuenta
             </Link>
           </p>
+
+          {/* El profesor que llega aquí por el boca a boca no tiene por qué saber que el camino
+              empieza en el mismo registro que el de los estudiantes. Se lo decimos. */}
+          <div className="mt-5 flex items-start gap-3 rounded-base border border-border bg-surface-sunken px-4 py-3.5">
+            <GraduationCap size={18} strokeWidth={1.75} className="mt-0.5 shrink-0 text-primary" />
+            <p className="text-[13px] leading-relaxed text-text-secondary">
+              ¿Enseñas idiomas?{" "}
+              <Link
+                href="/registro?rol=profesor"
+                className="font-bold text-primary-strong hover:underline"
+              >
+                Postúlate para dar clases
+              </Link>{" "}
+              en Orión.
+            </p>
+          </div>
 
           <p className="mt-8 text-center text-[12px] italic text-text-muted">
             Learn with confidence. Transform your opportunities.

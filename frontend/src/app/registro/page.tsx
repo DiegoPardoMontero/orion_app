@@ -1,22 +1,69 @@
 "use client";
 
-import { ArrowRight, Eye, EyeOff, Lock, Mail, User } from "lucide-react";
+import { ArrowRight, BookOpen, Eye, EyeOff, GraduationCap, Lock, Mail, User } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState, type FormEvent } from "react";
 import { AvisoError } from "@/components/estados";
 import { Constelacion, Wordmark } from "@/components/marca";
 import { PhoneInput } from "@/components/PhoneInput";
 import { Rigel } from "@/components/Rigel";
-import { BotonPrincipal, Campo, Spinner } from "@/components/ui";
+import { BotonPrincipal, Campo, Segmento, Spinner } from "@/components/ui";
 import { ApiError } from "@/lib/api/fetch";
 import { HOME_BY_ROLE } from "@/lib/auth/roles";
 import { useRegister } from "@/lib/auth/session";
 import { fuerzaClave } from "@/lib/password";
 
+/**
+ * Con qué intención llega la persona. NO es un rol: la cuenta que crea el backend es la misma en
+ * los dos casos —un profesor de Orión lo es cuando su postulación se aprueba, no cuando se
+ * registra—. Lo que cambia es el copy y a dónde aterriza después.
+ */
+type Intencion = "aprender" | "ensenar";
+
+const COPY: Record<Intencion, {
+  heroTitulo: string;
+  heroTexto: string;
+  subtitulo: string;
+  whatsapp: string;
+  boton: string;
+}> = {
+  aprender: {
+    heroTitulo: "Da el primer paso hoy.",
+    heroTexto: "Soy Rigel. Te acompaño desde tu primera clase hasta que hables sin pensarlo.",
+    subtitulo: "Crea tu cuenta y reserva tu primera clase.",
+    whatsapp: "Lo usamos para avisarte de tus clases. Con tu profesor hablas dentro de Orión.",
+    boton: "Crear cuenta",
+  },
+  ensenar: {
+    heroTitulo: "Enseña donde te escuchan.",
+    heroTexto: "Soy Rigel. Te acompaño desde tu postulación hasta tu primera clase dictada.",
+    subtitulo: "Primero tu cuenta; enseguida sigues con tu postulación.",
+    whatsapp: "Para que el equipo de Orión te ubique mientras revisa tu postulación.",
+    boton: "Crear cuenta y postularme",
+  },
+};
+
 export default function RegistroPage() {
+  // useSearchParams exige una frontera de Suspense.
+  return (
+    <Suspense fallback={null}>
+      <Registro />
+    </Suspense>
+  );
+}
+
+function Registro() {
   const router = useRouter();
   const registro = useRegister();
+
+  // ?rol=profesor llega desde la portada, el login y "Enseña en Orión". Es solo el valor inicial:
+  // quien caiga aquí por error cambia de pestaña sin tener que volver atrás.
+  const rolInicial = useSearchParams().get("rol");
+  const [intencion, setIntencion] = useState<Intencion>(
+    rolInicial === "profesor" ? "ensenar" : "aprender",
+  );
+  const copy = COPY[intencion];
 
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
@@ -37,7 +84,13 @@ export default function RegistroPage() {
         password,
         whatsappPhone: whatsapp.trim() || undefined,
       },
-      { onSuccess: (me) => router.replace(HOME_BY_ROLE[me.role]) },
+      {
+        // Quien viene a enseñar entra directo a su postulación; quien viene a aprender, al
+        // buscador. Sin esto un profesor recién registrado aterrizaría en el marketplace de
+        // estudiantes a buscarse a sí mismo.
+        onSuccess: (me) =>
+          router.replace(intencion === "ensenar" ? "/aplicacion" : HOME_BY_ROLE[me.role]),
+      },
     );
   }
 
@@ -57,10 +110,10 @@ export default function RegistroPage() {
         />
         <div className="relative">
           <h1 className="max-w-[14ch] font-display text-[28px] font-bold leading-[1.15] text-on-primary lg:text-[40px]">
-            Da el primer paso hoy.
+            {copy.heroTitulo}
           </h1>
           <p className="mt-2 max-w-[34ch] text-[13px] leading-relaxed text-on-primary/85 lg:text-[15px]">
-            Soy Rigel. Te acompaño desde tu primera clase hasta que hables sin pensarlo.
+            {copy.heroTexto}
           </p>
         </div>
       </div>
@@ -69,9 +122,31 @@ export default function RegistroPage() {
       <div className="flex flex-1 items-start justify-center px-7 py-8 lg:order-1 lg:items-center lg:px-10">
         <form onSubmit={onSubmit} className="w-full max-w-md lg:max-w-[400px]">
           <h2 className="font-display text-[26px] font-bold lg:text-[34px]">Crea tu cuenta</h2>
-          <p className="mt-1 text-[14px] text-text-secondary">
-            Regístrate como estudiante y reserva tu primera clase.
-          </p>
+          <p className="mt-1 text-[14px] text-text-secondary">{copy.subtitulo}</p>
+
+          <div className="mt-5">
+            <Segmento<Intencion>
+              valor={intencion}
+              onCambio={setIntencion}
+              opciones={[
+                {
+                  valor: "aprender",
+                  etiqueta: (<><BookOpen size={15} strokeWidth={1.75} /> Quiero aprender</>),
+                },
+                {
+                  valor: "ensenar",
+                  etiqueta: (<><GraduationCap size={15} strokeWidth={1.75} /> Quiero enseñar</>),
+                },
+              ]}
+            />
+          </div>
+
+          {intencion === "ensenar" && (
+            <p className="mt-3 rounded-base bg-accent-lavender-soft px-4 py-3 text-[12.5px] leading-relaxed text-[#5e4a8a]">
+              Creamos tu cuenta y sigues con tu postulación: idiomas que enseñas, experiencia,
+              tarifa y documentos. Tu perfil aparece en el marketplace cuando la aprobamos.
+            </p>
+          )}
 
           <label
             className="mt-6 block text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary"
@@ -170,9 +245,7 @@ export default function RegistroPage() {
             WhatsApp <span className="font-semibold normal-case text-text-muted">(opcional)</span>
           </label>
           <PhoneInput id="whatsapp" value={whatsapp} onChange={setWhatsapp} className="mt-1.5" />
-          <p className="mt-1.5 text-[12px] text-text-muted">
-            Por aquí coordinas la clase con tu profesor.
-          </p>
+          <p className="mt-1.5 text-[12px] text-text-muted">{copy.whatsapp}</p>
 
           {error && (
             <div className="mt-4">
@@ -188,7 +261,7 @@ export default function RegistroPage() {
               </>
             ) : (
               <>
-                Crear cuenta
+                {copy.boton}
                 <ArrowRight size={18} strokeWidth={1.75} />
               </>
             )}

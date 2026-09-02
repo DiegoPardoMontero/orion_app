@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import co.orion.billing.application.CreditService;
 import co.orion.billing.application.PaymentQueryService;
+import co.orion.billing.application.PaymentLifecycleService;
 import co.orion.billing.application.PaymentView;
 import co.orion.billing.application.PayoutService;
 import co.orion.billing.domain.CreditReason;
@@ -47,15 +48,18 @@ public class AdminBillingController {
     private final PaymentQueryService paymentQueries;
     private final PayoutService payouts;
     private final CreditService credits;
+    private final PaymentLifecycleService lifecycle;
     private final UserRepository users;
 
     public AdminBillingController(PaymentQueryService paymentQueries,
                                   PayoutService payouts,
                                   CreditService credits,
+                                  PaymentLifecycleService lifecycle,
                                   UserRepository users) {
         this.paymentQueries = paymentQueries;
         this.payouts = payouts;
         this.credits = credits;
+        this.lifecycle = lifecycle;
         this.users = users;
     }
 
@@ -117,8 +121,11 @@ public class AdminBillingController {
 
     /**
      * Compensa a un estudiante a mano. Existe porque la conciliación marca casos que el sistema no
-     * decide solo —una clase cancelada por el estudiante cuyo pago ya había entrado— y una pantalla
-     * que señala un problema sin ofrecer la forma de resolverlo no sirve de nada.
+     * decide solo —un cobro que entró y una clase que no existe— y una pantalla que señala un
+     * problema sin ofrecer cómo resolverlo no sirve de nada.
+     *
+     * Con {@code bookingId} el abono además CIERRA el pago: sin eso el incidente seguiría marcado y
+     * se compensaría dos veces. Sin {@code bookingId} es un ajuste suelto, sin pago detrás.
      */
     @PostMapping("/credits")
     public CreditResponse grantCredit(@AuthenticationPrincipal OrionUserDetails principal,
@@ -129,9 +136,13 @@ public class AdminBillingController {
         } catch (IllegalArgumentException ex) {
             throw new BusinessRuleViolationException("Motivo de crédito desconocido: " + body.reason());
         }
+
+        if (body.bookingId() != null) {
+            return CreditResponse.from(lifecycle.compensate(
+                    body.bookingId(), body.amountCop(), reason, principal.user().getId()));
+        }
         return CreditResponse.from(credits.grant(
-                body.studentId(), body.amountCop(), reason, body.bookingId(), null,
-                principal.user().getId()));
+                body.studentId(), body.amountCop(), reason, null, null, principal.user().getId()));
     }
 
     private List<PayoutResponse> decorate(List<Payout> found) {

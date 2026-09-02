@@ -146,13 +146,72 @@ public class Payment {
         this.releasedAt = Objects.requireNonNull(releasedAt, "releasedAt");
     }
 
-    /** La clase no ocurrió por causa del profesor o de Orión: el estudiante recupera su valor. */
+    /**
+     * La clase no ocurrió por causa del profesor o de Orión: el estudiante recupera su valor.
+     * También cierra un incidente marcado (DISPUTED) cuando el admin decide compensarlo — y esa
+     * transición ES el candado contra compensar dos veces: un REFUNDED ya no admite otra.
+     */
     public void refund(Instant refundedAt) {
-        if (status != PaymentStatus.PAID) {
-            throw new IllegalStateException("Solo un pago PAID se puede devolver");
+        if (status != PaymentStatus.PAID && status != PaymentStatus.DISPUTED) {
+            throw new IllegalStateException("Un pago en " + status + " no se puede devolver");
         }
         this.status = PaymentStatus.REFUNDED;
         this.refundedAt = Objects.requireNonNull(refundedAt, "refundedAt");
+    }
+
+    /**
+     * Cuánto abonarle al estudiante para dejarlo indemne. No siempre es el precio de la clase:
+     *
+     * <ul>
+     *   <li><b>PAID</b> — consumió crédito y dinero y ninguno ha vuelto: el precio entero.</li>
+     *   <li><b>DISPUTED</b> — pudo llegar aquí desde CANCELLED, y en ese camino el crédito YA se
+     *       devolvió a sus filas. Abonarle el precio entero le regalaría ese crédito por segunda
+     *       vez, así que lo que cuenta es lo que arriesgó de su bolsillo: lo cobrado.</li>
+     * </ul>
+     *
+     * Es una sugerencia, no un veredicto: cuánto capturó de verdad la pasarela solo se ve en su
+     * panel, y por eso el admin puede ajustar la cifra.
+     */
+    public long suggestedCompensationCop() {
+        return switch (status) {
+            case PAID -> amountCop;
+            case DISPUTED -> chargedCop;
+            default -> 0;
+        };
+    }
+
+    /**
+     * La pasarela cobró algo que el libro no esperaba: un importe distinto del pedido, o una
+     * reserva que ya había vencido cuando llegó la aprobación (PSE tarda, y el barrido de
+     * vencidas no espera). Esto NO se resuelve solo —el dinero existe y la clase no— así que se
+     * marca para que una persona lo mire en la conciliación.
+     *
+     * Solo desde PENDING o CANCELLED. Un pago vivo (PAID/RELEASED) o ya compensado (REFUNDED) no se
+     * marca: sin ese límite, un evento tardío sobre una clase que el profesor canceló —y cuyo
+     * estudiante YA recibió su saldo— reaparecería como "requiere decisión" y se le compensaría dos
+     * veces.
+     */
+    public void flagForReview() {
+        if (status == PaymentStatus.DISPUTED) {
+            return;   // ya marcado; volver a marcarlo no añade nada
+        }
+        if (!canStillLearnFromProvider()) {
+            throw new IllegalStateException("Un pago en " + status + " no se marca como disputado");
+        }
+        this.status = PaymentStatus.DISPUTED;
+    }
+
+    public boolean needsHumanReview() {
+        return status == PaymentStatus.DISPUTED;
+    }
+
+    /**
+     * ¿Todavía tiene sentido preguntarle a la pasarela por este pago? Sí mientras esperemos su
+     * respuesta (PENDING) y también si lo dimos por perdido (CANCELLED): un cobro puede haberse
+     * aprobado justo después de que el cupo venciera, y eso hay que enterarse.
+     */
+    public boolean canStillLearnFromProvider() {
+        return status == PaymentStatus.PENDING || status == PaymentStatus.CANCELLED;
     }
 
     /** La pasarela rechazó, o la reserva venció antes de pagarse. Nunca hubo plata. */

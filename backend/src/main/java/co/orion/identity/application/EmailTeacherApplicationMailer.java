@@ -2,6 +2,7 @@ package co.orion.identity.application;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import co.orion.shared.mail.MailTransport;
@@ -17,30 +18,48 @@ public class EmailTeacherApplicationMailer implements TeacherApplicationMailer {
     private static final Logger log = LoggerFactory.getLogger(EmailTeacherApplicationMailer.class);
 
     private final MailTransport transport;
+    private final String baseUrl;
 
-    public EmailTeacherApplicationMailer(MailTransport transport) {
+    public EmailTeacherApplicationMailer(MailTransport transport,
+                                         @Value("${orion.app.base-url}") String baseUrl) {
         this.transport = transport;
+        this.baseUrl = baseUrl;
     }
 
+    /**
+     * El correo que abre la puerta. Lleva enlace: decirle a alguien "ya puedes publicar tu perfil"
+     * y dejarlo buscando dónde es la mitad de un mensaje.
+     */
     @Override
     public void sendApproved(String toEmail) {
+        String perfil = baseUrl + "/perfil";
+        String horarios = baseUrl + "/disponibilidad";
+
         String text = "¡Felicitaciones! Tu postulación fue aprobada.\n\n"
-                + "Ya puedes publicar tu perfil y empezar a recibir estudiantes en Orión.\n\n"
+                + "Te faltan dos pasos para recibir estudiantes:\n"
+                + "1. Completa y publica tu perfil: " + perfil + "\n"
+                + "2. Marca los horarios en los que puedes dar clase: " + horarios + "\n\n"
                 + "Nos vemos adentro.\n— El equipo de Orión";
         String html = "<p>¡Felicitaciones! Tu postulación fue <strong>aprobada</strong>.</p>"
-                + "<p>Ya puedes publicar tu perfil y empezar a recibir estudiantes en Orión.</p>"
+                + "<p>Te faltan dos pasos para recibir estudiantes:</p>"
+                + "<ol><li><a href=\"" + perfil + "\">Completa y publica tu perfil</a></li>"
+                + "<li><a href=\"" + horarios + "\">Marca los horarios</a> en los que puedes dar clase</li></ol>"
                 + "<p>Nos vemos adentro.<br>— El equipo de Orión</p>";
         send(toEmail, "Tu postulación en Orión fue aprobada", text, html);
     }
 
     @Override
     public void sendChangesRequested(String toEmail, String note) {
+        String aplicacion = baseUrl + "/aplicacion";
+
         String text = "Revisamos tu postulación y necesitamos algunos ajustes antes de aprobarla:\n\n"
                 + note + "\n\n"
-                + "Actualiza tu postulación y vuélvela a enviar cuando estés listo.\n— El equipo de Orión";
+                + "Actualízala y vuélvela a enviar cuando estés listo: " + aplicacion
+                + "\n— El equipo de Orión";
         String html = "<p>Revisamos tu postulación y necesitamos algunos ajustes antes de aprobarla:</p>"
                 + "<blockquote>" + escape(note) + "</blockquote>"
-                + "<p>Actualiza tu postulación y vuélvela a enviar cuando estés listo.</p>"
+                + "<p><a href=\"" + aplicacion + "\">Actualiza tu postulación</a> y vuélvela a enviar "
+                + "cuando estés listo.</p>"
                 + "<p>— El equipo de Orión</p>";
         send(toEmail, "Tu postulación en Orión necesita cambios", text, html);
     }

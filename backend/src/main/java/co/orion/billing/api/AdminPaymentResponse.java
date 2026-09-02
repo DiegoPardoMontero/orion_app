@@ -33,15 +33,20 @@ public record AdminPaymentResponse(UUID paymentId,
                                    String providerReference,
                                    Instant paidAt,
                                    Instant releasedAt,
-                                   boolean needsReview) {
+                                   boolean needsReview,
+                                   long suggestedCreditCop) {
 
     public static AdminPaymentResponse of(Payment payment,
                                           Booking booking,
                                           String studentName,
                                           String professorName) {
+        // Dos cosas que una persona tiene que mirar: una clase cancelada cuyo pago ya había
+        // entrado, y un pago que la pasarela marcó pero el libro no pudo aceptar (importe distinto,
+        // o cupo ya vencido cuando llegó la aprobación).
         boolean cancelledButPaid = payment.isPaid()
                 && booking != null
                 && booking.getStatus().isTerminal();
+        boolean needsReview = cancelledButPaid || payment.needsHumanReview();
 
         return new AdminPaymentResponse(
                 payment.getId(),
@@ -63,6 +68,7 @@ public record AdminPaymentResponse(UUID paymentId,
                 payment.getProviderReference(),
                 payment.getPaidAt(),
                 payment.getReleasedAt(),
-                cancelledButPaid);
+                needsReview,
+                payment.suggestedCompensationCop());
     }
 }

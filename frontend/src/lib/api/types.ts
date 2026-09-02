@@ -164,6 +164,8 @@ export type AdminPaymentResponse = {
   releasedAt: string | null;
   /** Pagada pero sin clase: alguien tiene que decidir entre saldo o devolución por Wompi. */
   needsReview: boolean;
+  /** Cuánto abonarle al estudiante para dejarlo indemne. Sugerencia del backend, editable. */
+  suggestedCreditCop: number;
 };
 
 export type PayoutResponse = {

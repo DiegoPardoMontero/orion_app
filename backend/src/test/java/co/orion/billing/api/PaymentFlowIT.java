@@ -31,9 +31,12 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import co.orion.TestcontainersConfiguration;
 import co.orion.billing.application.PaymentExpiryJob;
+import co.orion.billing.domain.CreditReason;
 import co.orion.billing.domain.PaymentStatus;
+import co.orion.billing.domain.StudentCredit;
 import co.orion.billing.persistence.PaymentEventRepository;
 import co.orion.billing.persistence.PaymentRepository;
+import co.orion.billing.persistence.StudentCreditRepository;
 import co.orion.identity.domain.ProfessorProfile;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
@@ -93,6 +96,9 @@ class PaymentFlowIT extends ApiIntegrationSupport {
     private PaymentExpiryJob expiryJob;
 
     @Autowired
+    private StudentCreditRepository credits;
+
+    @Autowired
     private JdbcTemplate jdbc;
 
     private User ana;
@@ -100,6 +106,7 @@ class PaymentFlowIT extends ApiIntegrationSupport {
     private User maria;
     private Session anaSession;
     private Session carlosSession;
+    private Session adminSession;
 
     @BeforeEach
     void seed() {
@@ -111,6 +118,7 @@ class PaymentFlowIT extends ApiIntegrationSupport {
         ana = createUser("ana@orion.test", "Ana Ramírez", UserRole.STUDENT);
         carlos = createUser("carlos@orion.test", "Carlos Peña", UserRole.STUDENT);
         maria = createUser("maria@orion.test", "María Gómez", UserRole.PROFESSOR);
+        createUser("admin@orion.test", "Orion Admin", UserRole.ADMIN);
 
         ProfessorProfile profile = new ProfessorProfile(maria);
         profile.changeRate(RATE_COP);
@@ -123,6 +131,7 @@ class PaymentFlowIT extends ApiIntegrationSupport {
 
         anaSession = login("ana@orion.test");
         carlosSession = login("carlos@orion.test");
+        adminSession = login("admin@orion.test");
     }
 
     @Test
@@ -194,19 +203,98 @@ class PaymentFlowIT extends ApiIntegrationSupport {
         assertThat(paymentEvents.findAll().get(0).getPaymentId()).isNull();
     }
 
-    /** Un pago por menos de lo debido es un incidente, no una clase. */
+    /**
+     * El caso feo de verdad: PSE tarda, el barrido vence el cupo, y DESPUÉS Wompi dice que aprobó.
+     * El dinero se cobró y la clase ya no existe. Callarse aquí sería quedarse con plata ajena sin
+     * que nadie se entere, así que el pago queda marcado para que una persona lo resuelva.
+     */
     @Test
-    void anApprovedWebhookWithTheWrongAmountDoesNotConfirmTheClass() {
+    void anApprovalThatArrivesAfterTheSlotExpiredIsFlaggedInsteadOfSwallowed() {
         UUID bookingId = book(anaSession, 9);
         var payment = payments.findByBookingId(bookingId).orElseThrow();
 
-        postWebhook(WompiWebhooks.signed("txn-2", payment.getProviderReference(),
+        jdbc.update("update bookings set expires_at = ? where id = ?",
+                java.sql.Timestamp.from(FROZEN_NOW.minusSeconds(60)), bookingId);
+        expiryJob.expireOverduePayments();
+        assertThat(payments.findByBookingId(bookingId).orElseThrow().getStatus())
+                .isEqualTo(PaymentStatus.CANCELLED);
+
+        postWebhook(WompiWebhooks.signed("txn-tardia", payment.getProviderReference(),
+                "APPROVED", payment.getChargedCop() * 100, TIMESTAMP));
+
+        assertThat(payments.findByBookingId(bookingId).orElseThrow().getStatus())
+                .isEqualTo(PaymentStatus.DISPUTED);
+        // La clase sigue vencida: el cupo ya se liberó y puede estar reservado por otro.
+        assertThat(bookings.findById(bookingId).orElseThrow().getStatus())
+                .isEqualTo(BookingStatus.EXPIRED);
+        // Y sale en la conciliación del admin marcado para revisión.
+        assertThat(adminSees(bookingId).needsReview()).isTrue();
+    }
+
+    /**
+     * Resolver el incidente: se le abona al estudiante SOLO lo que puso de su bolsillo, porque su
+     * saldo ya volvió solo al vencer la reserva. Abonarle el precio entero se lo regalaría dos
+     * veces. Y una vez resuelto, no se puede volver a compensar.
+     */
+    @Test
+    void compensatingALateApprovalCreditsOnlyTheCashAndClosesTheIncident() {
+        credits.saveAndFlush(new StudentCredit(
+                ana.getId(), 20_000, CreditReason.ADMIN_ADJUSTMENT, null, null, null));
+
+        UUID bookingId = book(anaSession, 9);           // 60.000 = 20.000 de saldo + 40.000 cobrados
+        var payment = payments.findByBookingId(bookingId).orElseThrow();
+        assertThat(payment.getChargedCop()).isEqualTo(40_000);
+
+        jdbc.update("update bookings set expires_at = ? where id = ?",
+                java.sql.Timestamp.from(FROZEN_NOW.minusSeconds(60)), bookingId);
+        expiryJob.expireOverduePayments();
+        // Al vencer, su saldo volvió intacto.
+        assertThat(credits.findUsable(ana.getId(), FROZEN_NOW).get(0).getRemainingCop())
+                .isEqualTo(20_000);
+
+        postWebhook(WompiWebhooks.signed("txn-tarde", payment.getProviderReference(),
+                "APPROVED", 40_000 * 100L, TIMESTAMP));
+
+        // Lo que se le sugiere al admin son los 40.000 del bolsillo, NO los 60.000 de la clase.
+        AdminPaymentResponse visto = adminSees(bookingId);
+        assertThat(visto.needsReview()).isTrue();
+        assertThat(visto.suggestedCreditCop()).isEqualTo(40_000);
+
+        ResponseEntity<CreditResponse> abono = post("/api/v1/admin/credits", adminSession,
+                new GrantCreditRequest(ana.getId(), 40_000L, "ADMIN_ADJUSTMENT", bookingId),
+                CreditResponse.class);
+        assertThat(abono.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        // El pago queda cerrado y deja de pedir decisión...
+        assertThat(payments.findByBookingId(bookingId).orElseThrow().getStatus())
+                .isEqualTo(PaymentStatus.REFUNDED);
+        assertThat(adminSees(bookingId).needsReview()).isFalse();
+
+        // ...y un segundo abono se rechaza: el candado es la transición, no la pantalla.
+        ResponseEntity<Map> repetido = post("/api/v1/admin/credits", adminSession,
+                new GrantCreditRequest(ana.getId(), 40_000L, "ADMIN_ADJUSTMENT", bookingId),
+                Map.class);
+        assertThat(repetido.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+
+        // El estudiante queda indemne: 20.000 que le volvieron + 40.000 abonados.
+        assertThat(credits.findUsable(ana.getId(), FROZEN_NOW).stream()
+                .mapToLong(StudentCredit::getRemainingCop).sum()).isEqualTo(60_000);
+    }
+
+    /** Un cobro por un importe distinto del pedido tampoco se traga en silencio. */
+    @Test
+    void anApprovalForTheWrongAmountIsFlaggedForReview() {
+        UUID bookingId = book(anaSession, 9);
+        var payment = payments.findByBookingId(bookingId).orElseThrow();
+
+        postWebhook(WompiWebhooks.signed("txn-corta", payment.getProviderReference(),
                 "APPROVED", 100, TIMESTAMP));
 
+        assertThat(payments.findByBookingId(bookingId).orElseThrow().getStatus())
+                .isEqualTo(PaymentStatus.DISPUTED);
         assertThat(bookings.findById(bookingId).orElseThrow().getStatus())
                 .isEqualTo(BookingStatus.PENDING_PAYMENT);
-        assertThat(payments.findByBookingId(bookingId).orElseThrow().getStatus())
-                .isEqualTo(PaymentStatus.PENDING);
+        assertThat(adminSees(bookingId).needsReview()).isTrue();
     }
 
     @Test
@@ -273,6 +361,16 @@ class PaymentFlowIT extends ApiIntegrationSupport {
 
         assertThat(response.getStatusCode().value()).isEqualTo(422);
         assertThat(response.getBody().get("error").toString()).contains("tarifa");
+    }
+
+    /** Lo que la conciliación del admin muestra de esta reserva. */
+    private AdminPaymentResponse adminSees(UUID bookingId) {
+        AdminPaymentResponse[] todos = get("/api/v1/admin/payments", adminSession,
+                AdminPaymentResponse[].class).getBody();
+        return java.util.Arrays.stream(todos)
+                .filter(pago -> pago.bookingId().equals(bookingId))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("el pago no aparece en la conciliación"));
     }
 
     private UUID book(Session session, int hour) {

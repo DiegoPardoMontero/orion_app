@@ -10,8 +10,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import co.orion.billing.domain.CreditReason;
 import co.orion.billing.domain.Payment;
+import co.orion.billing.domain.StudentCredit;
 import co.orion.billing.persistence.PaymentRepository;
 import co.orion.scheduling.application.BookingService;
+import co.orion.shared.error.ConflictException;
 import co.orion.shared.error.ResourceNotFoundException;
 
 import java.util.UUID;
@@ -109,6 +111,26 @@ public class PaymentLifecycleService {
         payment.refund(clock.instant());
         payments.save(payment);
         credits.grant(payment.getStudentId(), payment.getAmountCop(), reason, bookingId, null, actorId);
+    }
+
+    /**
+     * Resuelve un incidente compensando al estudiante: le abona el saldo Y cierra el pago.
+     *
+     * Las dos cosas van juntas a propósito. Si solo se abonara el saldo, el pago seguiría marcado
+     * como "requiere decisión" y el siguiente admin —o el mismo tras recargar— volvería a abonarlo.
+     * El candado no es un {@code if}: es la transición a REFUNDED, que un pago ya devuelto rechaza.
+     */
+    @Transactional
+    public StudentCredit compensate(UUID bookingId, long amountCop, CreditReason reason, UUID actorId) {
+        Payment payment = payments.findByBookingId(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("La reserva no tiene pago asociado"));
+        try {
+            payment.refund(clock.instant());
+        } catch (IllegalStateException ex) {
+            throw new ConflictException("Este pago ya se resolvió: " + ex.getMessage());
+        }
+        payments.save(payment);
+        return credits.grant(payment.getStudentId(), amountCop, reason, bookingId, null, actorId);
     }
 
     @Transactional(readOnly = true)

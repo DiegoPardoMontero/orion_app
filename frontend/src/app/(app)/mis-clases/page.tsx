@@ -205,10 +205,12 @@ function TarjetaClase({
           <div className="mt-3.5 rounded-base bg-warning-bg px-4 py-3">
             <p className="flex items-center gap-1.5 text-[13px] font-bold text-warning">
               <Clock size={15} strokeWidth={2.2} />
-              Te guardamos el cupo mientras pagas
+              {esProfesor ? "Reservada, a la espera del pago" : "Te guardamos el cupo mientras pagas"}
             </p>
             <p className="mt-1 text-[12.5px] text-warning">
-              Si no completas el pago a tiempo, el horario vuelve a quedar libre.
+              {esProfesor
+                ? "Tu horario está apartado. Te confirmamos la clase en cuanto entre el pago; si no entra, el cupo se libera solo."
+                : "Si no completas el pago a tiempo, el horario vuelve a quedar libre."}
             </p>
             {!esProfesor && (
               <div className="mt-3 flex flex-wrap gap-2">
@@ -242,7 +244,8 @@ function TarjetaClase({
         )}
 
         <div className="mt-3.5 flex flex-wrap gap-2">
-          {whatsapp && (
+          {/* Nada de contactar a la contraparte por una reserva que aún no es una clase. */}
+          {whatsapp && !esperaPago(clase.status) && (
             <a
               href={whatsapp}
               target="_blank"
