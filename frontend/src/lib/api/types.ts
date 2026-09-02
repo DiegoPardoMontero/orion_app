@@ -27,4 +27,12 @@ export type AdminUserResponse = Schemas["AdminUserResponse"];
 export type AdminBookingResponse = Schemas["AdminBookingResponse"];
 export type MetricsResponse = Schemas["MetricsResponse"];
 
+export type TeacherApplicationView = Schemas["TeacherApplicationView"];
+export type DocumentView = Schemas["DocumentView"];
+export type AdminApplicationSummary = Schemas["AdminApplicationSummary"];
+export type PagedApplications = Schemas["PagedApplications"];
+export type AdminApplicationDetail = Schemas["AdminApplicationDetail"];
+export type ApplicationEventView = Schemas["ApplicationEventView"];
+export type ReviewDecisionRequest = Schemas["ReviewDecisionRequest"];
+
 export type Modality = "VIRTUAL" | "IN_PERSON";

@@ -4,6 +4,8 @@ import {
   CalendarClock,
   CalendarDays,
   CalendarRange,
+  ClipboardList,
+  GraduationCap,
   KeyRound,
   LogOut,
   User,
@@ -15,7 +17,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { Avatar } from "@/components/Avatar";
 import { CambiarClave } from "@/components/CambiarClave";
+import { Vacio } from "@/components/estados";
 import { Wordmark } from "@/components/marca";
+import { Boton } from "@/components/ui";
+import { useMiAplicacion } from "@/lib/aplicacion";
 import { canAccess, HOME_BY_ROLE, NAV_BY_ROLE, type NavItem } from "@/lib/auth/roles";
 import type { Role } from "@/lib/auth/session";
 import { useLogout, useMe } from "@/lib/auth/session";
@@ -27,9 +32,15 @@ const ICONO: Record<string, LucideIcon> = {
   "/cuenta": User,
   "/disponibilidad": CalendarClock,
   "/perfil": User,
+  "/aplicacion/estado": GraduationCap,
+  "/aplicacion": GraduationCap,
   "/admin/usuarios": Users,
+  "/admin/aplicaciones": ClipboardList,
   "/admin/reservas": CalendarRange,
 };
+
+/** Rutas del profesor que exigen postulación APPROVED; si no, se muestra un aviso en vez de la UI. */
+const RUTAS_PROFESOR_APROBADO = ["/disponibilidad", "/perfil"];
 
 const ETIQUETA_ROL: Record<Role, string> = {
   STUDENT: "Estudiante",
@@ -49,6 +60,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   const allowed = me ? canAccess(me.role, pathname) : false;
 
+  // La postulación solo interesa a quien puede postular (estudiante o profesor); el admin nunca.
+  const esAplicante = me?.role === "STUDENT" || me?.role === "PROFESSOR";
+  const aplic = useMiAplicacion(esAplicante);
+
   useEffect(() => {
     if (isError) {
       router.replace("/login");
@@ -67,7 +82,17 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  const nav = NAV_BY_ROLE[me.role];
+  const nav = construirNav(me.role, {
+    resuelto: !esAplicante || aplic.isFetched,
+    noAplico: aplic.noAplico,
+    aprobado: aplic.aprobado,
+    status: aplic.status,
+  });
+
+  // Portal del profesor no aprobado: en /disponibilidad y /perfil, si no está aprobado, se le
+  // muestra un aviso amable en vez de la pantalla (que dependería de permisos que aún no tiene).
+  const rutaProtegida =
+    me.role === "PROFESSOR" && RUTAS_PROFESOR_APROBADO.some((r) => pathname.startsWith(r));
 
   return (
     <div className="lg:flex lg:min-h-dvh">
@@ -75,10 +100,100 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
       <div className="flex min-h-dvh flex-1 flex-col">
         <MobileHeader me={me} />
-        <div className="flex-1 pb-24 lg:pb-0">{children}</div>
+        <div className="flex-1 pb-24 lg:pb-0">
+          {rutaProtegida ? <GateProfesor aplic={aplic}>{children}</GateProfesor> : children}
+        </div>
         <TabBar nav={nav} pathname={pathname} />
       </div>
     </div>
+  );
+}
+
+/**
+ * Construye la navegación del rol, añadiendo "Mi solicitud" cuando aplica: al profesor no aprobado
+ * (o sin postular) y al estudiante que ya empezó una postulación. Un profesor aprobado ve su menú
+ * normal, sin ruido.
+ */
+function construirNav(
+  role: Role,
+  app: { resuelto: boolean; noAplico: boolean; aprobado: boolean; status?: string },
+): NavItem[] {
+  const base = NAV_BY_ROLE[role];
+  if (!app.resuelto) return base;
+
+  const item: NavItem = { href: "/aplicacion/estado", label: "Mi solicitud" };
+
+  if (role === "PROFESSOR" && !app.aprobado) {
+    return [...base, item];
+  }
+  if (role === "STUDENT" && !app.noAplico && app.status) {
+    return [...base, item];
+  }
+  return base;
+}
+
+/**
+ * Aviso del portal del profesor no aprobado. Nunca bloquea a un aprobado (deja pasar), ni siquiera
+ * ante un error transitorio distinto de 404 (falla en abierto: el backend sigue siendo el árbitro).
+ */
+function GateProfesor({
+  aplic,
+  children,
+}: {
+  aplic: ReturnType<typeof useMiAplicacion>;
+  children: ReactNode;
+}) {
+  if (aplic.isPending) {
+    return (
+      <div className="grid flex-1 place-items-center py-16">
+        <p className="text-sm text-text-muted">Cargando…</p>
+      </div>
+    );
+  }
+
+  // Aprobado, o error transitorio no-404: dejamos pasar.
+  if (aplic.aprobado || (aplic.isError && !aplic.noAplico)) {
+    return <>{children}</>;
+  }
+
+  const status = aplic.status;
+  const enRevision = status === "PENDING_REVIEW" || status === "UNDER_REVIEW";
+  const necesitaCambios = status === "CHANGES_REQUESTED";
+  const rechazada = status === "REJECTED";
+
+  const titulo = enRevision
+    ? "Tu perfil está en revisión"
+    : necesitaCambios
+      ? "Tu postulación necesita ajustes"
+      : rechazada
+        ? "Tu postulación no fue aprobada"
+        : "Completa tu postulación";
+
+  const texto = enRevision
+    ? "Estamos revisando tu postulación. Cuando la aprobemos, podrás publicar tu perfil y abrir tu disponibilidad."
+    : necesitaCambios
+      ? "La revisión pidió algunos ajustes. Edítalos y vuelve a enviar tu postulación."
+      : rechazada
+        ? "Consulta el detalle en tu solicitud. Podrás postularte de nuevo más adelante."
+        : "Antes de publicar tu perfil y tu disponibilidad, completa y envía tu postulación de profesor.";
+
+  const irAEstado = enRevision || rechazada;
+
+  return (
+    <main className="mx-auto w-full max-w-lg px-5 py-10">
+      <Vacio
+        mascota
+        titulo={titulo}
+        texto={texto}
+        accion={
+          <Link href={irAEstado ? "/aplicacion/estado" : "/aplicacion"}>
+            <Boton variante="primario" className="h-12">
+              {irAEstado ? "Ver mi solicitud" : "Ir a mi postulación"}
+            </Boton>
+          </Link>
+        }
+      />
+    </main>
   );
 }
 

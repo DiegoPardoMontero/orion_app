@@ -1,7 +1,8 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, KeyRound, Mail, User } from "lucide-react";
+import { ArrowRight, Check, GraduationCap, KeyRound, Mail, User } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { CambiarClave } from "@/components/CambiarClave";
 import { CambiarFoto } from "@/components/CambiarFoto";
@@ -9,6 +10,7 @@ import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
 import { PhoneInput } from "@/components/PhoneInput";
 import { BotonPrincipal, Campo } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
+import { useMiAplicacion } from "@/lib/aplicacion";
 import { meQueryKey } from "@/lib/auth/session";
 
 type Cuenta = {
@@ -135,7 +137,39 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
         {guardar.isPending ? "Guardando…" : "Guardar cambios"}
       </BotonPrincipal>
 
+      <EnseñarCta />
+
       {cambiandoClave && <CambiarClave onCerrar={() => setCambiandoClave(false)} />}
     </main>
+  );
+}
+
+/**
+ * Puente hacia la postulación de profesor desde el perfil del estudiante. Si ya empezó una, lleva a
+ * su estado; si no, lo invita a postular. Sin postulación viva, no muestra nada llamativo de más.
+ */
+function EnseñarCta() {
+  const aplic = useMiAplicacion();
+  const tieneApp = !aplic.noAplico && !!aplic.status;
+  const destino = tieneApp ? "/aplicacion/estado" : "/aplicacion";
+
+  return (
+    <Link
+      href={destino}
+      className="mt-6 flex items-center gap-3 rounded-card bg-accent-lavender-soft p-4 transition-colors hover:bg-[#e2d7f4] focus-visible:shadow-focus"
+    >
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#5e4a8a]">
+        <GraduationCap size={20} strokeWidth={1.9} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[13.5px] font-bold text-[#5e4a8a]">
+          {tieneApp ? "Ver mi solicitud" : "Enseña en Orión"}
+        </span>
+        <span className="block text-[12px] text-[#5e4a8a]/85">
+          {tieneApp ? "Revisa el estado de tu postulación." : "¿Quieres dar clases? Postúlate como profesor."}
+        </span>
+      </span>
+      <ArrowRight size={18} strokeWidth={2} className="shrink-0 text-[#5e4a8a]" />
+    </Link>
   );
 }

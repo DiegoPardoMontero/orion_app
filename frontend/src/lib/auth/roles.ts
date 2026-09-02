@@ -22,6 +22,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   ],
   ADMIN: [
     { href: "/admin/usuarios", label: "Usuarios" },
+    { href: "/admin/aplicaciones", label: "Solicitudes" },
     { href: "/admin/reservas", label: "Reservas" },
   ],
 };
@@ -33,6 +34,9 @@ const ACCESS: { prefix: string; roles: Role[] }[] = [
   { prefix: "/mis-clases", roles: ["STUDENT", "PROFESSOR"] },
   { prefix: "/disponibilidad", roles: ["PROFESSOR"] },
   { prefix: "/perfil", roles: ["PROFESSOR"] },
+  // La postulación a profesor: la abre un estudiante que quiere enseñar o un profesor recién
+  // creado por el admin que aún no completa su perfil. El admin revisa desde /admin/aplicaciones.
+  { prefix: "/aplicacion", roles: ["STUDENT", "PROFESSOR"] },
   { prefix: "/admin", roles: ["ADMIN"] },
 ];
 

@@ -114,6 +114,41 @@ export async function uploadFoto(file: File): Promise<{ photoUrl: string }> {
 }
 
 /**
+ * Subida genérica multipart (documentos de la postulación). Igual que `uploadFoto` pero con
+ * campos extra en el formulario: el cuerpo es FormData, así que dejamos que el navegador ponga el
+ * Content-Type con su boundary. El header CSRF va, como en cualquier mutación.
+ */
+export async function uploadFile<T>(
+  path: string,
+  file: File,
+  fields: Record<string, string> = {},
+): Promise<T> {
+  const form = new FormData();
+  form.append("file", file);
+  for (const [key, value] of Object.entries(fields)) {
+    form.append(key, value);
+  }
+
+  const headers: Record<string, string> = {};
+  const token = csrfToken();
+  if (token) {
+    headers["X-XSRF-TOKEN"] = token;
+  }
+
+  const response = await fetch(path, {
+    method: "POST",
+    headers,
+    body: form,
+    credentials: "same-origin",
+  });
+
+  if (!response.ok) {
+    throw await toApiError(response);
+  }
+  return (await response.json()) as T;
+}
+
+/**
  * Los errores del backend ya vienen redactados y con la voz institucional
  * ({"error": "Con menos de 24 horas..."}), así que se propagan tal cual: el frontend no
  * reescribe mensajes de negocio.
