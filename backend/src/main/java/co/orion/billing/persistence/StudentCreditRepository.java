@@ -44,4 +44,11 @@ public interface StudentCreditRepository extends JpaRepository<StudentCredit, UU
             order by case when c.expiresAt is null then 1 else 0 end, c.expiresAt asc, c.createdAt asc
             """)
     List<StudentCredit> findUsable(@Param("studentId") UUID studentId, @Param("now") Instant now);
+
+    /** El saldo total que Orión le debe a sus estudiantes: un pasivo, no un ingreso. */
+    @Query("""
+            select coalesce(sum(c.remainingCop), 0) from StudentCredit c
+            where c.remainingCop > 0 and (c.expiresAt is null or c.expiresAt > :now)
+            """)
+    long sumOutstanding(@Param("now") Instant now);
 }

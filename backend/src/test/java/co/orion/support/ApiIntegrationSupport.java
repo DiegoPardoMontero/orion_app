@@ -20,6 +20,10 @@ import co.orion.billing.persistence.PaymentRepository;
 import co.orion.billing.persistence.PayoutItemRepository;
 import co.orion.billing.persistence.PayoutRepository;
 import co.orion.billing.persistence.StudentCreditRepository;
+import co.orion.lifecycle.persistence.DisputeRepository;
+import co.orion.reputation.persistence.ProfessorSanctionRepository;
+import co.orion.scheduling.persistence.ProfessorAbsenceRepository;
+import co.orion.scheduling.persistence.RescheduleRequestRepository;
 import co.orion.identity.domain.ApplicationStatus;
 import co.orion.identity.domain.TeacherApplication;
 import co.orion.identity.domain.User;
@@ -77,6 +81,18 @@ public abstract class ApiIntegrationSupport {
     @Autowired
     private StudentCreditRepository studentCredits;
 
+    @Autowired
+    private RescheduleRequestRepository rescheduleRequests;
+
+    @Autowired
+    private DisputeRepository disputes;
+
+    @Autowired
+    private ProfessorAbsenceRepository professorAbsences;
+
+    @Autowired
+    private ProfessorSanctionRepository professorSanctions;
+
     /**
      * Limpia ANTES de que el @BeforeEach de cada test haga users.deleteAll(). Estas tablas
      * referencian a users (y a bookings) SIN cascade, así que si quedaran filas el borrado de
@@ -98,6 +114,13 @@ public abstract class ApiIntegrationSupport {
         creditApplications.deleteAll();
         payments.deleteAll();
         studentCredits.deleteAll();
+
+        // Bloques 5 y 6: todas cuelgan de bookings o de users. professor_absences apunta además a
+        // disputes, así que va antes que ellas.
+        professorAbsences.deleteAll();
+        professorSanctions.deleteAll();
+        disputes.deleteAll();
+        rescheduleRequests.deleteAll();
     }
 
     /**

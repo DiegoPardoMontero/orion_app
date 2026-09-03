@@ -42,6 +42,19 @@ admin. Migración V16.
 del buscador. Entradas desde la portada, `/login` y "Enseña en Orión". No hay rol nuevo: la cuenta es
 la misma y en Orión se es profesor cuando la postulación se aprueba.
 
+## Ciclo de vida y reputación (Bloques 5 y 6, 03/09/2026)
+Reprogramación por propuesta + aceptación (el endpoint directo desapareció), reclamos por no-show
+que congelan el dinero hasta que el admin resuelve, y el job horario que cierra las clases y libera
+los pagos. Métricas de desempeño con ventana de 90 días, ranking nocturno con arranque en frío para
+que un profesor nuevo no quede último para siempre, y sanciones progresivas en **modo observación**
+(se proponen, las confirma una persona). Cancelación: **12 h para ambos**. Migraciones V17 y V18.
+
+Panel de admin con las cifras reales del sistema y **purga definitiva** de clases y usuarios, con
+vista previa de qué se destruye y confirmación escrita. Filtros del marketplace en horizontal.
+
+**Manual de operación:** todos los flujos por rol, reglas con sus valores y cómo probarlos —
+publicado como página web.
+
 ## Pendiente / bloqueos conocidos
 - **Brief `orion-brief-pulido-v1`** (pasos 0–6): fotos en Mis Clases, `PhoneInput` E.164, fotos
   para todos (**requiere `CLOUDINARY_URL`**), link Jitsi automático, reserva desktop semanal,

@@ -7,7 +7,9 @@ const ETIQUETAS: Record<string, string> = {
   CANCELLED_BY_PROFESSOR: "Cancelada por el profesor",
   CANCELLED_BY_ADMIN: "Cancelada por Orión",
   COMPLETED: "Completada",
-  NO_SHOW: "No asistió",
+  UNDER_REVIEW: "En revisión",
+  NO_SHOW_STUDENT: "No asististe",
+  NO_SHOW_PROFESSOR: "El profesor no llegó",
 };
 
 export function etiquetaEstado(estado?: string): string {

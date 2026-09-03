@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
+import co.orion.catalog.application.PlatformSettingsService;
 import co.orion.identity.persistence.UserRepository;
 import co.orion.scheduling.domain.Booking;
 import co.orion.scheduling.domain.BookingCancelledEvent;
@@ -33,12 +34,15 @@ import co.orion.shared.error.UnprocessableException;
 public class BookingService {
 
     private static final Duration CLASS_LENGTH = Duration.ofHours(1);
+    private static final String STUDENT_WINDOW = "student_cancel_hours";
+    private static final String PROFESSOR_WINDOW = "professor_cancel_hours";
 
     private final BookingRepository bookings;
     private final UserRepository users;
     private final SlotQueryService slots;
     private final MeetingLinkProvider meetingLinks;
     private final PaymentInitiator payments;
+    private final PlatformSettingsService settings;
     private final ApplicationEventPublisher events;
     private final Clock clock;
 
@@ -47,6 +51,7 @@ public class BookingService {
                           SlotQueryService slots,
                           MeetingLinkProvider meetingLinks,
                           PaymentInitiator payments,
+                          PlatformSettingsService settings,
                           ApplicationEventPublisher events,
                           Clock clock) {
         this.bookings = bookings;
@@ -54,8 +59,22 @@ public class BookingService {
         this.slots = slots;
         this.meetingLinks = meetingLinks;
         this.payments = payments;
+        this.settings = settings;
         this.events = events;
         this.clock = clock;
+    }
+
+    /**
+     * Cuánta anticipación necesita cada actor para cancelar. Se lee de {@code platform_settings} en
+     * CADA evaluación, nunca se cachea: cambiar la política tiene que ser un UPDATE, no un despliegue.
+     * El admin no tiene ventana — es la válvula de fuerza mayor.
+     */
+    public Duration cancellationWindowFor(UserRole role) {
+        return switch (role) {
+            case STUDENT -> Duration.ofHours(settings.getInt(STUDENT_WINDOW));
+            case PROFESSOR -> Duration.ofHours(settings.getInt(PROFESSOR_WINDOW));
+            case ADMIN -> Duration.ZERO;
+        };
     }
 
     /** Una reserva recién creada y lo que hay que pagar por ella. */
@@ -168,11 +187,12 @@ public class BookingService {
 
         Instant now = clock.instant();
         boolean isAdmin = actor.getRole() == UserRole.ADMIN;
+        Duration window = cancellationWindowFor(actor.getRole());
+
         // La ventana de anticipación protege una clase que ya existe. Una reserva sin pagar todavía
         // no lo es: abandonar el checkout se puede hacer siempre, y billing devuelve el crédito.
-        if (booking.isConfirmed() && !isAdmin && !booking.isCancellableAt(now)) {
-            throw new UnprocessableException(
-                    "Con menos de 24 horas de anticipación la clase se considera impartida (política Orión)");
+        if (booking.isConfirmed() && !isAdmin && !booking.isCancellableAt(now, window)) {
+            throw new UnprocessableException(lateCancellationMessage(actor.getRole(), window));
         }
 
         booking.cancel(cancellationStatusFor(actor), actor.getId(), now, reason);
@@ -182,29 +202,20 @@ public class BookingService {
     }
 
     /**
-     * Reprograma una reserva a otro cupo del MISMO profesor. Mismas reglas de quién y cuándo que la
-     * cancelación (el dueño con 24 h de margen; el admin sin límite): reprogramar dentro de la
-     * ventana equivaldría a cancelar dentro de ella. El nuevo cupo se valida como en una reserva
-     * nueva y la constraint sigue siendo el árbitro de la carrera. Emite `BookingCreatedEvent` para
-     * que salga una confirmación con el nuevo horario y su invitación de calendario.
+     * Mueve una reserva CONFIRMED a otro cupo del mismo profesor. Ya no es una acción directa de
+     * nadie: la dispara {@code RescheduleRequestService} cuando la contraparte ACEPTA una propuesta.
+     *
+     * Antes el estudiante movía la clase solo, sin que el profesor se enterara hasta ver su agenda
+     * cambiada. Una clase es un acuerdo entre dos: moverla la tiene que aceptar el otro.
      */
     @Transactional
-    public Booking reschedule(User actor, UUID bookingId, Instant newStartsAt) {
+    public Booking moveTo(UUID bookingId, Instant newStartsAt) {
         Booking booking = bookings.findById(bookingId)
-                .filter(candidate -> canSee(actor, candidate))
                 .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada"));
 
         if (!booking.isConfirmed()) {
             throw new ConflictException("La reserva ya no está confirmada");
         }
-
-        Instant now = clock.instant();
-        boolean isAdmin = actor.getRole() == UserRole.ADMIN;
-        if (!isAdmin && !booking.isCancellableAt(now)) {
-            throw new UnprocessableException(
-                    "Con menos de 24 horas de anticipación la clase se considera impartida (política Orión)");
-        }
-
         if (newStartsAt.equals(booking.getStartsAt())) {
             throw new BusinessRuleViolationException("Elige un horario distinto al actual");
         }
@@ -213,7 +224,7 @@ public class BookingService {
         requireSlotIsAvailable(booking.getProfessorId(), newStartsAt);
 
         // El cupo nuevo no solapa el viejo (cupos alineados a la hora), así que la reserva actual
-        // no cuenta; sí cuenta cualquier OTRA clase confirmada del estudiante a esa hora.
+        // no cuenta; sí cuenta cualquier OTRA clase del estudiante a esa hora.
         if (bookings.studentHasOverlappingBooking(booking.getStudentId(), newStartsAt, newEndsAt)) {
             throw new UnprocessableException("El estudiante ya tiene una clase reservada a esa hora");
         }
@@ -222,6 +233,27 @@ public class BookingService {
         Booking saved = saveOrLoseTheRace(booking);
         events.publishEvent(new BookingCreatedEvent(saved.getId()));
         return saved;
+    }
+
+    /** Lectura simple para los servicios del ciclo de vida, que necesitan la reserva sin sus reglas. */
+    @Transactional(readOnly = true)
+    public Booking require(UUID bookingId) {
+        return bookings.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada"));
+    }
+
+    /**
+     * Dentro de la ventana ya no se cancela, pero al profesor no se le deja sin salida: puede pedir
+     * reprogramación. Decirle "no puedes" sin decirle "puedes esto otro" es abandonar a alguien con
+     * un problema real a dos horas de una clase.
+     */
+    private String lateCancellationMessage(UserRole role, Duration window) {
+        long hours = window.toHours();
+        if (role == UserRole.PROFESSOR) {
+            return "Faltan menos de " + hours + " horas: ya no puedes cancelar, pero sí proponerle "
+                    + "al estudiante otro horario tuyo.";
+        }
+        return "Faltan menos de " + hours + " horas — la clase se considera impartida (política Orión)";
     }
 
     /** Una reserva ajena responde 404, no 403: no confirmamos que exista. El admin lo ve todo. */

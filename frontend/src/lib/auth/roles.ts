@@ -6,7 +6,8 @@ export type NavItem = { href: string; label: string };
 export const HOME_BY_ROLE: Record<Role, string> = {
   STUDENT: "/profesores",
   PROFESSOR: "/mis-clases",
-  ADMIN: "/admin/usuarios",
+  // El admin entra al panel: lo primero que necesita ver es si algo espera su decisión.
+  ADMIN: "/admin/panel",
 };
 
 export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
@@ -20,15 +21,19 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   PROFESSOR: [
     { href: "/mis-clases", label: "Mis clases" },
     { href: "/ganancias", label: "Ganancias" },
+    { href: "/desempeno", label: "Desempeño" },
     { href: "/mensajes", label: "Mensajes" },
     { href: "/disponibilidad", label: "Disponibilidad" },
     { href: "/perfil", label: "Perfil" },
   ],
   ADMIN: [
+    { href: "/admin/panel", label: "Panel" },
     { href: "/admin/usuarios", label: "Usuarios" },
     { href: "/admin/aplicaciones", label: "Solicitudes" },
     { href: "/admin/reservas", label: "Reservas" },
     { href: "/admin/pagos", label: "Pagos" },
+    { href: "/admin/reclamos", label: "Reclamos" },
+    { href: "/admin/resenas", label: "Reseñas" },
   ],
 };
 
@@ -40,6 +45,7 @@ const ACCESS: { prefix: string; roles: Role[] }[] = [
   { prefix: "/saldo", roles: ["STUDENT"] },
   { prefix: "/pago", roles: ["STUDENT"] },
   { prefix: "/ganancias", roles: ["PROFESSOR"] },
+  { prefix: "/desempeno", roles: ["PROFESSOR"] },
   { prefix: "/mis-clases", roles: ["STUDENT", "PROFESSOR"] },
   { prefix: "/mensajes", roles: ["STUDENT", "PROFESSOR"] },
   { prefix: "/disponibilidad", roles: ["PROFESSOR"] },

@@ -112,7 +112,7 @@ class AttendanceIT extends ApiIntegrationSupport {
     }
 
     @Test
-    void anAbsentStudentLeavesTheClassAsNoShow() {
+    void anAbsentStudentLeavesTheClassAsNoShowStudent() {
         Booking booking = bookingOf(maria, ALREADY_ENDED);
 
         ResponseEntity<AttendanceResponse> response = post(
@@ -121,9 +121,9 @@ class AttendanceIT extends ApiIntegrationSupport {
                 AttendanceResponse.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody().bookingStatus()).isEqualTo("NO_SHOW");
+        assertThat(response.getBody().bookingStatus()).isEqualTo("NO_SHOW_STUDENT");
         assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus())
-                .isEqualTo(BookingStatus.NO_SHOW);
+                .isEqualTo(BookingStatus.NO_SHOW_STUDENT);
     }
 
     @Test

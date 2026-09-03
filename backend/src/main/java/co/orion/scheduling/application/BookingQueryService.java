@@ -1,6 +1,7 @@
 package co.orion.scheduling.application;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -35,15 +36,18 @@ public class BookingQueryService {
     private final BookingRepository bookings;
     private final UserRepository users;
     private final ProfessorProfileRepository profiles;
+    private final BookingService bookingService;
     private final Clock clock;
 
     public BookingQueryService(BookingRepository bookings,
                                UserRepository users,
                                ProfessorProfileRepository profiles,
+                               BookingService bookingService,
                                Clock clock) {
         this.bookings = bookings;
         this.users = users;
         this.profiles = profiles;
+        this.bookingService = bookingService;
         this.clock = clock;
     }
 
@@ -51,6 +55,8 @@ public class BookingQueryService {
     public List<MyBookingsView> myBookings(User viewer, Scope scope) {
         Instant now = clock.instant();
         boolean asStudent = viewer.getRole() == UserRole.STUDENT;
+        // La política de cancelación se pregunta una vez por petición, no por reserva.
+        Duration window = bookingService.cancellationWindowFor(viewer.getRole());
 
         List<Booking> found = switch (scope) {
             case UPCOMING -> asStudent
@@ -83,7 +89,8 @@ public class BookingQueryService {
                             // el titular sigue viniendo del perfil público del profesor.
                             counterpart != null ? counterpart.getPhotoUrl() : null,
                             profile != null ? profile.getHeadline() : null,
-                            now);
+                            now,
+                            window);
                 })
                 .toList();
     }

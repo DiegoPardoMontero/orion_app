@@ -40,7 +40,7 @@ public class AttendanceService {
     public record AttendanceResult(AttendanceRecord record, Booking booking) {
     }
 
-    /** Registra asistencia y cierra la reserva: COMPLETED si asistió, NO_SHOW si no. */
+    /** Registra asistencia y cierra la reserva: COMPLETED si asistió, NO_SHOW_STUDENT si no. */
     @Transactional
     public AttendanceResult record(User professor, UUID bookingId, boolean present, String notes) {
         Booking booking = bookings.findById(bookingId)
@@ -51,12 +51,12 @@ public class AttendanceService {
         if (!booking.hasEndedAt(now)) {
             throw new UnprocessableException("La clase aún no termina");
         }
-        // Una clase cancelada, o ya registrada (quedó en COMPLETED/NO_SHOW), no admite registro.
+        // Una clase cancelada, ya registrada o en revisión no admite registro de asistencia.
         if (!booking.isConfirmed()) {
             throw new ConflictException("La reserva no está confirmada: no admite registro de asistencia");
         }
 
-        booking.closeWithAttendance(present);
+        booking.closeWithAttendance(present, now);
         Booking closed = bookings.save(booking);
 
         AttendanceRecord record = attendance.save(

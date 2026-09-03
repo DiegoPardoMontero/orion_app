@@ -22,4 +22,7 @@ public interface TeacherApplicationRepository extends JpaRepository<TeacherAppli
     Optional<TeacherApplication> findFirstByUserIdOrderByCreatedAtDesc(UUID userId);
 
     Page<TeacherApplication> findByStatus(ApplicationStatus status, Pageable pageable);
+
+    /** Postulaciones esperando revisión. */
+    long countByStatus(co.orion.identity.domain.ApplicationStatus status);
 }

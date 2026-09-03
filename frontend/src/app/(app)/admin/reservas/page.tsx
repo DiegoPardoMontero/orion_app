@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CalendarRange, Sparkles } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Cargando, ErrorCarga, Vacio } from "@/components/estados";
+import { BotonPurga } from "@/components/Purga";
 import { Badge, Campo } from "@/components/ui";
 import { apiFetch } from "@/lib/api/fetch";
 import type { AdminBookingResponse, AdminUserResponse, MetricsResponse } from "@/lib/api/types";
@@ -146,6 +147,7 @@ export default function AdminReservasPage() {
                   <th className="px-4 py-3">Modalidad</th>
                   <th className="px-4 py-3">Estado</th>
                   <th className="px-4 py-3">Autoservicio</th>
+                  <th className="px-4 py-3 text-right">Limpieza</th>
                 </tr>
               </thead>
               <tbody>
@@ -168,6 +170,11 @@ export default function AdminReservasPage() {
                     </td>
                     <td className="px-4 py-3 text-text-secondary">
                       {reserva.selfService ? "Sí" : "No"}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {/* Borrado DEFINITIVO, en cualquier estado. Para limpiar datos de prueba
+                          antes de abrir al público; el modal enseña qué se lleva por delante. */}
+                      <BotonPurga tipo="booking" id={reserva.id!} etiqueta="Borrar" />
                     </td>
                   </tr>
                 ))}

@@ -39,6 +39,12 @@ final class ProfessorSpecifications {
                     cb.isNotNull(root.get("hourlyRateCop"))));
             // El gate de visibilidad: sin una postulación APPROVED, un profesor NUNCA aparece.
             predicates.add(isApproved(root, query, cb));
+            // Y una sanción activa que lo oculte lo saca del buscador mientras dure. Los ids llegan
+            // ya resueltos: meter la consulta de sanciones dentro de esta Specification ataría el
+            // buscador al esquema de reputation.
+            if (!c.hiddenProfessorIds().isEmpty()) {
+                predicates.add(cb.not(root.get("userId").in(c.hiddenProfessorIds())));
+            }
 
             if (c.language() != null && !c.language().isBlank()) {
                 predicates.add(hasLanguage(root, query, cb, c.language(), Boolean.TRUE.equals(c.nativeOnly())));

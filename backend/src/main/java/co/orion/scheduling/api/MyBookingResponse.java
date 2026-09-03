@@ -1,5 +1,6 @@
 package co.orion.scheduling.api;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.UUID;
@@ -9,8 +10,9 @@ import co.orion.scheduling.domain.Booking;
 import co.orion.scheduling.domain.BusinessZone;
 
 /**
- * canCancel lo decide el servidor: la regla de 24 horas vive una sola vez, en el dominio.
- * El frontend solo pinta el botón — jamás reimplementa la política.
+ * canCancel lo decide el servidor, con la ventana que corresponde a QUIEN mira (el estudiante y el
+ * profesor tienen la suya, configurables en platform_settings). El frontend solo pinta el botón —
+ * jamás reimplementa la política.
  */
 public record MyBookingResponse(UUID id,
                                 ZonedDateTime startsAt,
@@ -38,7 +40,7 @@ public record MyBookingResponse(UUID id,
 
     public static MyBookingResponse of(Booking booking, User counterpart,
                                        String counterpartPhotoUrl, String counterpartHeadline,
-                                       Instant now) {
+                                       Instant now, Duration cancellationWindow) {
         return new MyBookingResponse(
                 booking.getId(),
                 booking.getStartsAt().atZone(BusinessZone.BOGOTA),
@@ -47,7 +49,7 @@ public record MyBookingResponse(UUID id,
                 booking.getStatus().name(),
                 booking.getLocationNote(),
                 booking.getMeetingLink(),
-                booking.isCancellableAt(now),
+                booking.isCancellableAt(now, cancellationWindow),
                 Counterpart.of(counterpart, counterpartPhotoUrl, counterpartHeadline));
     }
 }

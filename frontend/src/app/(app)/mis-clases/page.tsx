@@ -115,6 +115,7 @@ function TarjetaClase({
 }) {
   const [cancelando, setCancelando] = useState(false);
   const [reprogramando, setReprogramando] = useState(false);
+  const [reportando, setReportando] = useState(false);
   const [registrando, setRegistrando] = useState(false);
   const [calificando, setCalificando] = useState(false);
   // Sin flag de "ya reseñada" en el DTO: se recuerda localmente al calificar (o al chocar con el 409
@@ -140,6 +141,11 @@ function TarjetaClase({
 
   // El estudiante califica una clase pasada que se dio (confirmada o completada). El backend arbitra
   // el plazo/estado real (422) y el duplicado (409); aquí basta con ofrecer el botón en ese rango.
+  // Reportar un problema: del estudiante, sobre una clase pasada que todavía no se cerró. El
+  // backend arbitra la ventana real (desde 15 min después de empezar y hasta 24 h después de
+  // terminar); aquí basta con ofrecer el botón en ese rango.
+  const puedeReportar = !esProfesor && scope === "past" && clase.status === "CONFIRMED";
+
   const puedeCalificar =
     !esProfesor &&
     scope === "past" &&
@@ -259,17 +265,16 @@ function TarjetaClase({
 
           {scope === "upcoming" && clase.status === "CONFIRMED" && (
             <>
-              {/* Reprogramar es del estudiante; el profesor cancela o escribe por WhatsApp. */}
-              {!esProfesor && (
-                <Boton
-                  variante="secundario"
-                  disabled={!clase.canCancel}
-                  onClick={() => setReprogramando(true)}
-                  className="h-10 min-w-[120px] flex-1"
-                >
-                  Reprogramar
-                </Boton>
-              )}
+              {/* Los dos lados pueden proponer, y a cualquier hora: es justamente la salida de
+                  quien ya no puede cancelar. Lo que protege al otro no es el plazo, es que tiene
+                  que aceptar. */}
+              <Boton
+                variante="secundario"
+                onClick={() => setReprogramando(true)}
+                className="h-10 min-w-[120px] flex-1"
+              >
+                Proponer otro horario
+              </Boton>
               <Boton
                 variante="contorno"
                 disabled={!clase.canCancel}
@@ -279,6 +284,17 @@ function TarjetaClase({
                 Cancelar
               </Boton>
             </>
+          )}
+
+          {puedeReportar && (
+            <Boton
+              variante="peligro"
+              onClick={() => setReportando(true)}
+              className="h-10 min-w-[140px] flex-1"
+            >
+              <AlertCircle size={15} strokeWidth={1.75} />
+              Reportar un problema
+            </Boton>
           )}
 
           {puedeRegistrar && (
@@ -317,6 +333,7 @@ function TarjetaClase({
 
       {cancelando && <ModalCancelar clase={clase} onCerrar={() => setCancelando(false)} />}
       {reprogramando && <ModalReprogramar clase={clase} onCerrar={() => setReprogramando(false)} />}
+      {reportando && <ModalReportar clase={clase} onCerrar={() => setReportando(false)} />}
       {registrando && <ModalAsistencia clase={clase} onCerrar={() => setRegistrando(false)} />}
       {calificando && (
         <ModalCalificar
@@ -491,6 +508,98 @@ function ModalCancelar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
   );
 }
 
+/** Motivos de reclamo, en el idioma del estudiante. Los códigos son los del backend. */
+const MOTIVOS_RECLAMO = [
+  { codigo: "PROFESSOR_NO_SHOW", etiqueta: "El profesor no se presentó" },
+  { codigo: "PROFESSOR_LATE", etiqueta: "Llegó demasiado tarde" },
+  { codigo: "TECHNICAL_PROBLEM", etiqueta: "Hubo un problema técnico" },
+  { codigo: "LESSON_NOT_HELD", etiqueta: "La clase no se dio" },
+  { codigo: "OTHER", etiqueta: "Otra cosa" },
+];
+
+/**
+ * El reclamo del estudiante. Es su única vía para que una clase que no ocurrió no se dé por dictada
+ * y su dinero no se libere solo: mientras el reclamo está abierto, esa plata no se mueve.
+ */
+function ModalReportar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar: () => void }) {
+  const queryClient = useQueryClient();
+  const [motivo, setMotivo] = useState(MOTIVOS_RECLAMO[0].codigo);
+  const [descripcion, setDescripcion] = useState("");
+
+  const reportar = useMutation({
+    mutationFn: () =>
+      apiFetch(`/api/v1/bookings/${clase.id}/report-problem`, {
+        method: "POST",
+        body: { reason: motivo, description: descripcion.trim() || undefined },
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["me", "bookings"] });
+      onCerrar();
+    },
+  });
+
+  const error = reportar.error instanceof ApiError ? reportar.error.message : null;
+
+  return (
+    <Modal titulo="Reportar un problema" onCerrar={onCerrar}>
+      <p className="text-[13px] text-text-secondary">
+        {fechaYRango(clase.startsAt!, clase.endsAt!)} con {clase.counterpart?.fullName}. Vamos a
+        revisarlo y mientras tanto tu pago queda retenido.
+      </p>
+
+      <fieldset className="mt-4">
+        <legend className="text-[12.5px] font-bold text-text-secondary">¿Qué pasó?</legend>
+        <div className="mt-2 space-y-1.5">
+          {MOTIVOS_RECLAMO.map((opcion) => (
+            <label key={opcion.codigo} className="flex items-center gap-2.5 text-[13.5px]">
+              <input
+                type="radio"
+                name="motivo-reclamo"
+                value={opcion.codigo}
+                checked={motivo === opcion.codigo}
+                onChange={() => setMotivo(opcion.codigo)}
+                className="h-4 w-4 accent-[var(--color-primary,#e8503a)]"
+              />
+              {opcion.etiqueta}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="descripcion-reclamo">
+        Cuéntanos qué pasó (opcional)
+      </label>
+      <textarea
+        id="descripcion-reclamo"
+        rows={3}
+        maxLength={1000}
+        value={descripcion}
+        onChange={(event) => setDescripcion(event.target.value)}
+        className="mt-1.5 w-full rounded-base border-[1.5px] border-border bg-surface-raised px-4 py-3 text-sm focus:border-primary focus:shadow-focus focus:outline-none"
+      />
+
+      {error && (
+        <div className="mt-3">
+          <AvisoError mensaje={error} />
+        </div>
+      )}
+
+      <div className="mt-5 flex gap-2.5">
+        <Boton variante="contorno" onClick={onCerrar} className="h-12 flex-1">
+          Cancelar
+        </Boton>
+        <Boton
+          disabled={reportar.isPending}
+          onClick={() => reportar.mutate()}
+          className="h-12 flex-1"
+        >
+          {reportar.isPending ? "Enviando…" : "Enviar reporte"}
+        </Boton>
+      </div>
+    </Modal>
+  );
+}
+
 function ModalReprogramar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar: () => void }) {
   const queryClient = useQueryClient();
   const profesorId = clase.counterpart?.id;
@@ -518,7 +627,10 @@ function ModalReprogramar({ clase, onCerrar }: { clase: MyBookingResponse; onCer
 
   const reprogramar = useMutation({
     mutationFn: (startsAt: string) =>
-      apiFetch(`/api/v1/bookings/${clase.id}/reschedule`, { method: "POST", body: { startsAt } }),
+      apiFetch(`/api/v1/bookings/${clase.id}/reschedule-requests`, {
+        method: "POST",
+        body: { startsAt },
+      }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["me", "bookings"] });
       void queryClient.invalidateQueries({ queryKey: ["slots"] });
@@ -534,9 +646,10 @@ function ModalReprogramar({ clase, onCerrar }: { clase: MyBookingResponse; onCer
   const error = reprogramar.error instanceof ApiError ? reprogramar.error.message : null;
 
   return (
-    <Modal titulo="Reprogramar clase" onCerrar={onCerrar}>
+    <Modal titulo="Proponer otro horario" onCerrar={onCerrar}>
       <p className="text-[13px] text-text-secondary">
-        Elige un nuevo horario con {clase.counterpart?.fullName}. Tu cupo actual se libera.
+        Elige un horario libre de {clase.counterpart?.fullName}. La clase se mueve cuando la otra
+        persona acepte; hasta entonces sigue en su hora original.
       </p>
 
       <div className="mt-4 space-y-3">

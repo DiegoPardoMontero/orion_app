@@ -1,5 +1,6 @@
 package co.orion.scheduling.application;
 
+import java.time.Duration;
 import java.time.Instant;
 
 import co.orion.identity.domain.User;
@@ -15,5 +16,7 @@ public record MyBookingsView(
         User counterpart,
         String counterpartPhotoUrl,
         String counterpartHeadline,
-        Instant now) {
+        Instant now,
+        /** La ventana de cancelación de QUIEN mira: el estudiante y el profesor tienen la suya. */
+        Duration cancellationWindow) {
 }

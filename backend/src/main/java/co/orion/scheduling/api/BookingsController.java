@@ -49,14 +49,6 @@ public class BookingsController {
         return BookingResponse.from(bookingService.cancel(principal.user(), id, reason));
     }
 
-    @PostMapping("/{id}/reschedule")
-    public BookingResponse reschedule(@AuthenticationPrincipal OrionUserDetails principal,
-                                      @PathVariable UUID id,
-                                      @Valid @RequestBody RescheduleBookingRequest body) {
-        return BookingResponse.from(
-                bookingService.reschedule(principal.user(), id, body.startsAt().toInstant()));
-    }
-
     @PostMapping("/{id}/attendance")
     @ResponseStatus(HttpStatus.CREATED)
     public AttendanceResponse recordAttendance(@AuthenticationPrincipal OrionUserDetails principal,

@@ -27,6 +27,7 @@ import co.orion.identity.persistence.ProfessorLanguageLevelRepository;
 import co.orion.identity.persistence.ProfessorLanguageRepository;
 import co.orion.identity.persistence.ProfessorProfileRepository;
 import co.orion.reputation.application.ProfessorRatingService;
+import co.orion.reputation.application.SanctionService;
 import co.orion.reputation.application.RatingSummary;
 
 /** Buscador del marketplace: filtra, pagina y ensambla las tarjetas resolviendo idiomas por lotes. */
@@ -39,25 +40,30 @@ public class ProfessorSearchService {
     private final ProfessorGoalRepository goalsOf;
     private final LanguageRepository languageCatalog;
     private final ProfessorRatingService ratings;
+    private final SanctionService sanctions;
 
     public ProfessorSearchService(ProfessorProfileRepository profiles,
                                   ProfessorLanguageRepository languagesOf,
                                   ProfessorLanguageLevelRepository levelsOf,
                                   ProfessorGoalRepository goalsOf,
                                   LanguageRepository languageCatalog,
-                                  ProfessorRatingService ratings) {
+                                  ProfessorRatingService ratings,
+                                  SanctionService sanctions) {
         this.profiles = profiles;
         this.languagesOf = languagesOf;
         this.levelsOf = levelsOf;
         this.goalsOf = goalsOf;
         this.languageCatalog = languageCatalog;
         this.ratings = ratings;
+        this.sanctions = sanctions;
     }
 
     @Transactional(readOnly = true)
     public PagedProfessors search(ProfessorSearchCriteria criteria, ProfessorSortOption sort, int page, int size) {
         Pageable pageable = PageRequest.of(Math.max(page, 0), clampSize(size), sortOf(sort));
-        Page<ProfessorProfile> found = profiles.findAll(ProfessorSpecifications.matching(criteria), pageable);
+        // Los sancionados con perfil oculto se resuelven aquí y entran ya como una lista de ids.
+        ProfessorSearchCriteria effective = criteria.hiding(sanctions.hiddenProfessorIds());
+        Page<ProfessorProfile> found = profiles.findAll(ProfessorSpecifications.matching(effective), pageable);
 
         List<UUID> ids = found.getContent().stream().map(ProfessorProfile::getUserId).toList();
         Map<UUID, List<ProfessorLanguage>> langs = ids.isEmpty() ? Map.of()

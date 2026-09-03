@@ -67,6 +67,7 @@ class RescheduleBookingIT extends ApiIntegrationSupport {
     private User maria;
     private Session anaSession;
     private Session adminSession;
+    private Session mariaSession;
 
     @BeforeEach
     void seed() {
@@ -92,6 +93,7 @@ class RescheduleBookingIT extends ApiIntegrationSupport {
 
         anaSession = login("ana@orion.test");
         adminSession = login("admin@orion.test");
+        mariaSession = login("maria@orion.test");
     }
 
     private OffsetDateTime at(LocalDate day, int hour) {
@@ -110,16 +112,28 @@ class RescheduleBookingIT extends ApiIntegrationSupport {
         return response.getBody().id();
     }
 
-    private <T> ResponseEntity<T> reschedule(Session session, UUID id, LocalDate day, int hour, Class<T> type) {
-        return post(BOOKINGS + "/" + id + "/reschedule", session,
-                new RescheduleBookingRequest(at(day, hour)), type);
+    /** Proponer un cambio de horario. Ya no mueve nada: espera a que la contraparte responda. */
+    private <T> ResponseEntity<T> propose(Session session, UUID id, LocalDate day, int hour, Class<T> type) {
+        return post(BOOKINGS + "/" + id + "/reschedule-requests", session,
+                new ProposeRescheduleRequest(at(day, hour), null), type);
+    }
+
+    /** Proponer y que la contraparte acepte: el equivalente completo del reagendamiento viejo. */
+    private ResponseEntity<BookingResponse> proposeAndAccept(Session proposer, Session responder,
+                                                             UUID id, LocalDate day, int hour) {
+        ResponseEntity<RescheduleRequestResponse> proposal =
+                propose(proposer, id, day, hour, RescheduleRequestResponse.class);
+        assertThat(proposal.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        return post("/api/v1/reschedule-requests/" + proposal.getBody().id() + "/accept",
+                responder, null, BookingResponse.class);
     }
 
     @Test
-    void aStudentReschedulesToAnotherFreeSlot() {
+    void aStudentProposesAndTheProfessorAcceptsTheNewSlot() {
         UUID id = book(anaSession, WEDNESDAY, 9);
 
-        ResponseEntity<BookingResponse> response = reschedule(anaSession, id, WEDNESDAY, 10, BookingResponse.class);
+        ResponseEntity<BookingResponse> response =
+                proposeAndAccept(anaSession, mariaSession, id, WEDNESDAY, 10);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody().id()).isEqualTo(id); // misma reserva, nuevo horario
@@ -134,62 +148,129 @@ class RescheduleBookingIT extends ApiIntegrationSupport {
     }
 
     @Test
-    void reschedulingToTheSameTimeIsRejected() {
+    void proposingTheSameTimeIsRejected() {
         UUID id = book(anaSession, WEDNESDAY, 9);
 
-        ResponseEntity<Map> response = reschedule(anaSession, id, WEDNESDAY, 9, Map.class);
+        ResponseEntity<Map> response = propose(anaSession, id, WEDNESDAY, 9, Map.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody().get("error").toString()).contains("distinto");
     }
 
+    /** Aceptar tu propia propuesta sería reprogramar de forma unilateral por la puerta de atrás. */
     @Test
-    void reschedulingToAnOccupiedSlotIsUnprocessable() {
+    void theProposerCannotAcceptTheirOwnProposal() {
+        UUID id = book(anaSession, WEDNESDAY, 9);
+        ResponseEntity<RescheduleRequestResponse> proposal =
+                propose(anaSession, id, WEDNESDAY, 10, RescheduleRequestResponse.class);
+
+        ResponseEntity<Map> response = post(
+                "/api/v1/reschedule-requests/" + proposal.getBody().id() + "/accept",
+                anaSession, null, Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    /** Una sola propuesta viva por clase: dos abiertas son una negociación que nadie sabe cerrar. */
+    @Test
+    void aSecondOpenProposalIsRejected() {
+        UUID id = book(anaSession, WEDNESDAY, 9);
+        propose(anaSession, id, WEDNESDAY, 10, RescheduleRequestResponse.class);
+
+        ResponseEntity<Map> response = propose(anaSession, id, WEDNESDAY, 8, Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    /** Rechazar deja la clase donde estaba, sin bloquear una propuesta futura. */
+    @Test
+    void decliningLeavesTheClassWhereItWas() {
+        UUID id = book(anaSession, WEDNESDAY, 9);
+        ResponseEntity<RescheduleRequestResponse> proposal =
+                propose(anaSession, id, WEDNESDAY, 10, RescheduleRequestResponse.class);
+
+        ResponseEntity<RescheduleRequestResponse> declined = post(
+                "/api/v1/reschedule-requests/" + proposal.getBody().id() + "/decline",
+                mariaSession, null, RescheduleRequestResponse.class);
+
+        assertThat(declined.getBody().status()).isEqualTo("DECLINED");
+        assertThat(bookings.findById(id).orElseThrow().getStartsAt())
+                .isEqualTo(at(WEDNESDAY, 9).toInstant());
+        // Y se puede volver a proponer: el índice único solo bloquea las PENDING.
+        assertThat(propose(anaSession, id, WEDNESDAY, 8, RescheduleRequestResponse.class)
+                .getStatusCode()).isEqualTo(HttpStatus.CREATED);
+    }
+
+    @Test
+    void proposingAnOccupiedSlotIsUnprocessable() {
         UUID anaBooking = book(anaSession, WEDNESDAY, 9);
         book(login("carlos@orion.test"), WEDNESDAY, 10);
 
-        ResponseEntity<Map> response = reschedule(anaSession, anaBooking, WEDNESDAY, 10, Map.class);
+        ResponseEntity<Map> response = propose(anaSession, anaBooking, WEDNESDAY, 10, Map.class);
 
         assertThat(response.getStatusCode().value()).isEqualTo(422);
     }
 
+    /** El cupo puede volar entre la propuesta y la aceptación: 409 con mensaje, nunca pisar. */
     @Test
-    void aStudentCannotRescheduleWithin24Hours() {
-        UUID id = book(anaSession, TUESDAY, 9); // martes: < 24 h del reloj congelado
+    void aSlotTakenBetweenProposalAndAcceptanceIsAConflict() {
+        UUID anaBooking = book(anaSession, WEDNESDAY, 9);
+        ResponseEntity<RescheduleRequestResponse> proposal =
+                propose(anaSession, anaBooking, WEDNESDAY, 10, RescheduleRequestResponse.class);
 
-        ResponseEntity<Map> response = reschedule(anaSession, id, TUESDAY, 10, Map.class);
+        // Carlos se lleva el cupo propuesto mientras María se lo piensa.
+        book(login("carlos@orion.test"), WEDNESDAY, 10);
 
-        assertThat(response.getStatusCode().value()).isEqualTo(422);
-        assertThat(response.getBody().get("error").toString()).contains("24 horas");
+        ResponseEntity<Map> response = post(
+                "/api/v1/reschedule-requests/" + proposal.getBody().id() + "/accept",
+                mariaSession, null, Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody().get("error").toString()).contains("ya no está libre");
+        // Y la clase de Ana sigue intacta a su hora original.
+        assertThat(bookings.findById(anaBooking).orElseThrow().getStartsAt())
+                .isEqualTo(at(WEDNESDAY, 9).toInstant());
+    }
+
+    /**
+     * Proponer NO está sujeto a la ventana de cancelación, y es deliberado: es justamente la salida
+     * que se le ofrece a quien ya no puede cancelar. Lo que protege a la contraparte no es el plazo,
+     * es que tiene que aceptar.
+     */
+    @Test
+    void proposingIsAllowedEvenInsideTheCancellationWindow() {
+        UUID id = book(anaSession, TUESDAY, 9); // martes: dentro de la ventana del reloj congelado
+
+        ResponseEntity<RescheduleRequestResponse> response =
+                propose(anaSession, id, WEDNESDAY, 10, RescheduleRequestResponse.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(response.getBody().status()).isEqualTo("PENDING");
     }
 
     @Test
-    void anAdminCanRescheduleEvenWithin24Hours() {
-        UUID id = book(anaSession, TUESDAY, 9);
-
-        ResponseEntity<BookingResponse> response = reschedule(adminSession, id, TUESDAY, 10, BookingResponse.class);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody().startsAt().toInstant()).isEqualTo(at(TUESDAY, 10).toInstant());
-    }
-
-    @Test
-    void reschedulingSomeoneElsesBookingIsNotFound() {
+    void proposingOnSomeoneElsesBookingIsNotFound() {
         UUID anaBooking = book(anaSession, WEDNESDAY, 9);
 
-        ResponseEntity<Map> response = reschedule(login("carlos@orion.test"), anaBooking, WEDNESDAY, 10, Map.class);
+        ResponseEntity<Map> response =
+                propose(login("carlos@orion.test"), anaBooking, WEDNESDAY, 10, Map.class);
 
         // Ajena → 404, no confirmamos que exista.
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
+    /**
+     * El profesor SÍ puede proponer ahora, y es el cambio de fondo del bloque: es su salida cuando
+     * le surge un imprevisto y ya no puede cancelar. Lo que no puede es mover la clase solo.
+     */
     @Test
-    void aProfessorCannotReschedule() {
+    void theProfessorCanProposeAndTheStudentAccepts() {
         UUID anaBooking = book(anaSession, WEDNESDAY, 9);
 
-        ResponseEntity<Map> response = reschedule(login("maria@orion.test"), anaBooking, WEDNESDAY, 10, Map.class);
+        ResponseEntity<BookingResponse> moved =
+                proposeAndAccept(mariaSession, anaSession, anaBooking, WEDNESDAY, 10);
 
-        // Bloqueado en la capa de seguridad: reprogramar no es acción del profesor.
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(moved.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(moved.getBody().startsAt().toInstant()).isEqualTo(at(WEDNESDAY, 10).toInstant());
     }
 }

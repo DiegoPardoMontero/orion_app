@@ -180,3 +180,99 @@ export type PayoutResponse = {
   paidAt: string | null;
   createdAt: string;
 };
+
+/* --------------------------------------------------------------------------------------------
+ * Ciclo de vida de la clase, desempeño y panel de admin (Bloques 5 y 6)
+ * ------------------------------------------------------------------------------------------ */
+
+export type RescheduleRequestResponse = {
+  id: string;
+  bookingId: string;
+  proposedStartsAt: string;
+  proposedEndsAt: string;
+  reason: string | null;
+  status: "PENDING" | "ACCEPTED" | "DECLINED" | "EXPIRED";
+  /** true si quien mira es quien la propuso: entonces espera respuesta, no la responde. */
+  mine: boolean;
+  createdAt: string | null;
+};
+
+export type DisputeResponse = {
+  id: string;
+  bookingId: string;
+  classAt: string | null;
+  studentName: string | null;
+  professorName: string | null;
+  reasonCode: string;
+  description: string | null;
+  status: string;
+  resolutionNote: string | null;
+  resolvedAt: string | null;
+  createdAt: string | null;
+  amountCop: number;
+};
+
+export type SanctionView = {
+  id: string;
+  type: string;
+  reason: string;
+  state: "PROPOSED" | "ACTIVE" | "REVOKED";
+  startsAt: string;
+  endsAt: string | null;
+};
+
+export type PerformanceResponse = {
+  ratingAvg: number | null;
+  ratingCount: number;
+  lessonsCompleted: number;
+  attendanceRate: number | null;
+  cancellationRate: number | null;
+  rescheduleRate: number | null;
+  activeStudents: number;
+  profileCompleteness: number | null;
+  rankingScore: number | null;
+  windowDays: number;
+  computedAt: string | null;
+  sanctions: SanctionView[];
+};
+
+export type JobHealth = { job: string; lastRunAt: string; ok: boolean; detail: string };
+
+export type DashboardResponse = {
+  people: {
+    students: number;
+    professors: number;
+    admins: number;
+    professorsPublished: number;
+    applicationsPending: number;
+  };
+  lessons: {
+    byStatus: Record<string, number>;
+    bookedLast7Days: number;
+    selfServicePercentage: number;
+  };
+  money: {
+    heldCop: number;
+    payableCop: number;
+    transferredCop: number;
+    commissionEarnedCop: number;
+    outstandingCreditCop: number;
+  };
+  attention: {
+    openDisputes: number;
+    paymentsNeedingReview: number;
+    proposedSanctions: number;
+    pendingReschedules: number;
+    reportedReviews: number;
+  };
+  jobs: JobHealth[];
+};
+
+/** Lo que un borrado definitivo va a destruir, antes de destruirlo. */
+export type PurgePreview = {
+  target: "booking" | "user";
+  label: string;
+  rows: { what: string; count: number }[];
+  money: { paymentsCop: number; settledCop: number; creditsCop: number };
+  warnings: string[];
+};

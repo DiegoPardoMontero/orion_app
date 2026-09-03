@@ -6,6 +6,7 @@ import { useState } from "react";
 import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Modal } from "@/components/Modal";
 import { PhoneInput } from "@/components/PhoneInput";
+import { BotonPurga } from "@/components/Purga";
 import { Badge, Boton, Campo } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type { AdminUserResponse } from "@/lib/api/types";
@@ -240,14 +241,18 @@ function FilaUsuario({ usuario }: { usuario: AdminUserResponse }) {
         <Badge tono={activo ? "menta" : "melocoton"}>{activo ? "Activo" : "Inactivo"}</Badge>
       </td>
       <td className="px-4 py-3 text-right">
-        <Boton
-          variante="contorno"
-          disabled={cambiarEstado.isPending || usuario.role === "ADMIN"}
-          onClick={() => cambiarEstado.mutate()}
-          className="h-9"
-        >
-          {activo ? "Inactivar" : "Activar"}
-        </Boton>
+        <div className="flex items-center justify-end gap-2">
+          <Boton
+            variante="contorno"
+            disabled={cambiarEstado.isPending || usuario.role === "ADMIN"}
+            onClick={() => cambiarEstado.mutate()}
+            className="h-9"
+          >
+            {activo ? "Inactivar" : "Activar"}
+          </Boton>
+          {/* Inactivar oculta; borrar destruye. Son cosas distintas y por eso conviven. */}
+          <BotonPurga tipo="user" id={usuario.id!} etiqueta="Borrar" />
+        </div>
       </td>
     </tr>
   );

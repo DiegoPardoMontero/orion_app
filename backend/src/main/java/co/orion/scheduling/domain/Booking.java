@@ -31,9 +31,6 @@ import jakarta.persistence.Table;
 @EntityListeners(AuditingEntityListener.class)
 public class Booking {
 
-    /** Con menos de esto por delante, la clase se considera impartida (política Orión). */
-    public static final Duration CANCELLATION_WINDOW = Duration.ofHours(24);
-
     @Id
     @Generated(event = EventType.INSERT)
     @ColumnDefault("gen_random_uuid()")
@@ -90,6 +87,13 @@ public class Booking {
 
     @Column(name = "cancellation_reason", length = 300)
     private String cancellationReason;
+
+    /**
+     * Cuándo se cerró la clase. Es lo que hace idempotente al job de autocompletado: una reserva
+     * con esta marca ya se cerró, aunque el job vuelva a pasar por ella.
+     */
+    @Column(name = "completed_at")
+    private Instant completedAt;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -154,20 +158,23 @@ public class Booking {
     }
 
     /**
-     * Regla institucional: se puede cancelar hasta 24 horas antes. La comparación es entre
-     * instantes, no entre horas de pared, así que la zona horaria no interviene — la distancia
-     * entre dos momentos del tiempo es la misma la mires desde Bogotá o desde Tokio.
+     * ¿Queda margen para cancelar? La ventana entra por parámetro y no vive aquí: el estudiante y
+     * el profesor tienen la suya, ambas configurables en {@code platform_settings}, y una constante
+     * en el dominio obligaría a desplegar para cambiar una política de negocio.
      *
-     * El ADMIN está exento de esta regla, pero esa excepción vive en el servicio: es una regla
-     * sobre QUIÉN cancela, no sobre la reserva misma.
+     * La comparación es entre instantes, no entre horas de pared, así que la zona horaria no
+     * interviene — la distancia entre dos momentos es la misma vista desde Bogotá o desde Tokio.
+     *
+     * El ADMIN está exento, pero esa excepción vive en el servicio: es una regla sobre QUIÉN
+     * cancela, no sobre la reserva misma.
      */
-    public boolean isCancellableAt(Instant now) {
+    public boolean isCancellableAt(Instant now, Duration window) {
         // Una reserva sin pagar se suelta siempre: la ventana protege una clase que ya existe, y
         // ésta todavía no lo es. Nadie contaba con esa hora.
         if (isAwaitingPayment()) {
             return true;
         }
-        return isConfirmed() && !startsAt.minus(CANCELLATION_WINDOW).isBefore(now);
+        return isConfirmed() && !startsAt.minus(window).isBefore(now);
     }
 
     /** Autoservicio: la reservó el propio estudiante, no un admin en su nombre. */
@@ -181,14 +188,51 @@ public class Booking {
     }
 
     /**
-     * Cierra la clase con el resultado de la asistencia. Es la otra salida de CONFIRMED, junto a
-     * la cancelación: la reserva no se queda confirmada para siempre después de ocurrir.
+     * Cierra la clase con el resultado de la asistencia DEL ESTUDIANTE. Es la otra salida de
+     * CONFIRMED, junto a la cancelación: la reserva no se queda confirmada para siempre después de
+     * ocurrir. En los dos desenlaces el profesor cobra — apartó su hora y estuvo ahí.
      */
-    public void closeWithAttendance(boolean present) {
+    public void closeWithAttendance(boolean present, Instant now) {
         if (!isConfirmed()) {
             throw new IllegalStateException("Solo una reserva CONFIRMED admite registro de asistencia");
         }
-        this.status = present ? BookingStatus.COMPLETED : BookingStatus.NO_SHOW;
+        this.status = present ? BookingStatus.COMPLETED : BookingStatus.NO_SHOW_STUDENT;
+        this.completedAt = Objects.requireNonNull(now, "now");
+    }
+
+    /**
+     * El cierre automático: pasaron las horas de gracia, nadie reclamó y la clase se da por dictada.
+     * Devuelve false si ya estaba cerrada, que es como el job puede correr dos veces sin liberar
+     * el mismo pago dos veces.
+     */
+    public boolean autoComplete(Instant now) {
+        if (completedAt != null || !isConfirmed()) {
+            return false;
+        }
+        this.status = BookingStatus.COMPLETED;
+        this.completedAt = now;
+        return true;
+    }
+
+    /** El estudiante abrió un reclamo: la clase no se cierra sola hasta que alguien lo resuelva. */
+    public void putUnderReview() {
+        if (!isConfirmed()) {
+            throw new IllegalStateException("Solo una reserva CONFIRMED admite un reclamo");
+        }
+        this.status = BookingStatus.UNDER_REVIEW;
+    }
+
+    /** El reclamo se resolvió: la clase contó (a favor del profesor) o no (ausencia suya). */
+    public void resolveReview(boolean lessonHeld, Instant now) {
+        if (status != BookingStatus.UNDER_REVIEW) {
+            throw new IllegalStateException("Esta reserva no está en revisión");
+        }
+        this.status = lessonHeld ? BookingStatus.COMPLETED : BookingStatus.NO_SHOW_PROFESSOR;
+        this.completedAt = now;
+    }
+
+    public Instant getCompletedAt() {
+        return completedAt;
     }
 
     /**

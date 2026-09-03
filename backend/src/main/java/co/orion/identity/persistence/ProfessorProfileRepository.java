@@ -44,4 +44,7 @@ public interface ProfessorProfileRepository
             where u.id = :professorId
             """)
     Optional<ProfessorProfile> findByIdWithUser(@Param("professorId") UUID professorId);
+
+    /** Cuántos profesores están publicados en el marketplace. */
+    long countByPublishedTrue();
 }

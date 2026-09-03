@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import co.orion.billing.domain.CreditReason;
 import co.orion.billing.domain.Payment;
 import co.orion.billing.domain.StudentCredit;
+import co.orion.billing.domain.PaymentStatus;
 import co.orion.billing.persistence.PaymentRepository;
 import co.orion.scheduling.application.BookingService;
 import co.orion.shared.error.ConflictException;
@@ -131,6 +132,47 @@ public class PaymentLifecycleService {
         }
         payments.save(payment);
         return credits.grant(payment.getStudentId(), amountCop, reason, bookingId, null, actorId);
+    }
+
+    /**
+     * Un reclamo abierto congela el dinero de esa clase. Sin esto, el job de autocompletado o una
+     * resolución posterior podrían liberárselo al profesor mientras el estudiante espera respuesta.
+     */
+    @Transactional
+    public void markDisputed(UUID bookingId) {
+        payments.findByBookingId(bookingId)
+                .filter(Payment::isPaid)
+                .ifPresent(payment -> {
+                    payment.markDisputed();
+                    payments.save(payment);
+                });
+    }
+
+    /** El reclamo se resolvió a favor del profesor: la clase contó y su dinero se libera. */
+    @Transactional
+    public void releaseDisputed(UUID bookingId) {
+        payments.findByBookingId(bookingId)
+                .filter(payment -> payment.getStatus() == PaymentStatus.DISPUTED)
+                .ifPresent(payment -> {
+                    payment.release(clock.instant());
+                    payments.save(payment);
+                });
+    }
+
+    /**
+     * El reclamo se resolvió a favor del estudiante: recupera el valor COMPLETO de la clase como
+     * saldo — lo que puso de su bolsillo y lo que puso de crédito, porque eso es lo que consumió.
+     */
+    @Transactional
+    public void refundDisputed(UUID bookingId, CreditReason reason, UUID actorId) {
+        payments.findByBookingId(bookingId)
+                .filter(payment -> payment.getStatus() == PaymentStatus.DISPUTED)
+                .ifPresent(payment -> {
+                    payment.refund(clock.instant());
+                    payments.save(payment);
+                    credits.grant(payment.getStudentId(), payment.getAmountCop(),
+                            reason, bookingId, null, actorId);
+                });
     }
 
     @Transactional(readOnly = true)

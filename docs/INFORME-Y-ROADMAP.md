@@ -119,9 +119,14 @@ etc.). Orden ejecutado: 1 → 2 → 3 → 7 → 6(reseñas). **Todo lo de abajo 
   reservar, créditos del estudiante con consumo FIFO, y liquidación manual a profesores con
   exportación a CSV. Migración V16. Detalle en la sección 0.3.
 
+- **Bloque 5 — Ciclo de vida de la clase (03/09/2026):** reprogramación por propuesta y
+  aceptación, reclamos por no-show con resolución del admin, y el job de autocompletado que cierra
+  las clases y libera los pagos. Migración V17.
+- **Bloque 6 — Reputación (03/09/2026):** métricas de desempeño con ventana móvil de 90 días,
+  ranking nocturno con arranque en frío, y sanciones progresivas en **modo observación**.
+  Migración V18.
+
 ### ⏸️ Bloqueado / pendiente (NO implementado a propósito)
-- **Bloque 5 — No-show y disputas:** es el siguiente. El Bloque 4 dejó puestos sus cimientos
-  (estados de pago, créditos, evento de clase dictada).
 - **Bloque 6 (resto) — métricas, ranking nocturno, sanciones:** dependen del ciclo de vida del
   Bloque 5 (no-show). El agregado de rating actual es incremental, sin job nocturno.
 
@@ -217,6 +222,58 @@ Bloque 3 retiró WhatsApp de los correos, pero dentro de la app sigue: quien res
 lleva el teléfono del profesor y puede seguir por fuera —y ahora eso es el 20% de comisión que
 Orión no cobra—. Retirarlo del todo o dejarlo como está es tu decisión, no un bug que deba arreglar
 por mi cuenta.
+
+---
+
+## 0.5 Bloques 5 y 6 — ciclo de vida y reputación (03/09/2026)
+
+**Reprogramar dejó de ser unilateral.** Antes el estudiante movía la clase solo y el profesor se
+enteraba al mirar su agenda. Ahora se PROPONE un cupo real del profesor y la contraparte acepta o
+propone otro; la clase no se mueve hasta que alguien acepte, y si el cupo voló en el intermedio la
+aceptación responde 409 sin pisar nada. El endpoint `POST /bookings/{id}/reschedule` desapareció.
+
+**Los dos lados pueden proponer, y a cualquier hora.** Es deliberado: es la salida que se le ofrece
+al profesor que ya no puede cancelar. Lo que protege a la contraparte no es el plazo, es que tiene
+que aceptar.
+
+**El reclamo del estudiante congela el dinero.** Reportar un no-show pasa la clase a `UNDER_REVIEW`
+y el pago a `DISPUTED`: ni se libera ni se devuelve hasta que una persona decida, con nota
+obligatoria. A favor del estudiante devuelve el valor completo como saldo y registra una ausencia;
+a favor del profesor cierra la clase y libera el pago.
+
+**El job de autocompletado es el corazón económico.** Cada hora cierra las clases terminadas hace
+más de 24 h sin reclamo y libera su pago. Si se detiene, NADIE COBRA — sin error y sin alarma. Por
+eso deja su última corrida registrada y visible en el panel de admin.
+
+**Decisiones tomadas con Pardo (02/09/2026, antes de arrancar):**
+- **Cancelación: 12 h para ambos** (Q3), resolviendo el conflicto con la tabla 5.2 del brief, que
+  decía 24/12. Los umbrales se leen de `platform_settings` en cada evaluación.
+- **Sanciones en modo observación** (`sanctions_mode=OBSERVE`): el sistema calcula la que
+  corresponde y la deja PROPUESTA; una persona confirma. Con pocos profesores, un automatismo que
+  oculta perfiles puede sacar a alguien del marketplace de madrugada sin que nadie lo mire.
+  Encenderlo del todo es un UPDATE, no un despliegue.
+
+**Desfases conscientes con el brief:**
+- Migraciones **V17 y V18** (el brief decía V14 y V15).
+- **`NO_SHOW` se partió en `NO_SHOW_STUDENT` y `NO_SHOW_PROFESSOR`.** El genérico no distinguía
+  quién faltó, y esa es justamente la diferencia que decide si el profesor cobra.
+- **NO se añadió `RESCHEDULE_REQUESTED` como estado de reserva.** Una propuesta pendiente vive en su
+  propia tabla con su índice único; mientras nadie la acepta la clase sigue siendo a su hora
+  original —lo dice el propio brief— y sacarla de CONFIRMED solo conseguiría que dejara de contar
+  como clase confirmada en media docena de sitios que sí tienen que verla.
+- **El índice de sanciones no lleva `now()` en su predicado.** Postgres exige que las funciones de
+  un índice parcial sean IMMUTABLE; el SQL del brief no era válido ahí.
+- Módulo nuevo `lifecycle` para los reclamos y el autocompletado: es el único punto que necesita ver
+  reserva, pago e historial a la vez, y `identity` ya dependía de `reputation`, así que ningún
+  módulo existente podía hacerlo sin cerrar un ciclo.
+
+**Panel de admin (petición de Pardo):** tablero con las cifras reales del sistema —personas, clases
+por estado, dinero en sus tres estados, lo que espera decisión y el pulso de los jobs— y **purga
+definitiva** de clases y usuarios con vista previa de qué se destruye (incluido cuánto dinero y qué
+parte ya se transfirió), confirmación escrita y registro en auditoría.
+
+**Marketplace:** los filtros pasaron de columna lateral a barra horizontal sobre los resultados en
+escritorio. La columna le robaba a la retícula el ancho que necesita.
 
 ---
 

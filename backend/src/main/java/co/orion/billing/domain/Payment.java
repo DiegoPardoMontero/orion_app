@@ -137,10 +137,13 @@ public class Payment {
         this.paidAt = Objects.requireNonNull(paidAt, "paidAt");
     }
 
-    /** La clase se dictó: el profesor se ganó la plata y el pago ya puede entrar en una liquidación. */
+    /**
+     * La clase se dictó: el profesor se ganó la plata y el pago ya puede entrar en una liquidación.
+     * También desde DISPUTED, cuando un reclamo se resuelve a favor del profesor: la clase contó.
+     */
     public void release(Instant releasedAt) {
-        if (status != PaymentStatus.PAID) {
-            throw new IllegalStateException("Solo un pago PAID se puede liberar");
+        if (status != PaymentStatus.PAID && status != PaymentStatus.DISPUTED) {
+            throw new IllegalStateException("Un pago en " + status + " no se puede liberar");
         }
         this.status = PaymentStatus.RELEASED;
         this.releasedAt = Objects.requireNonNull(releasedAt, "releasedAt");
@@ -197,6 +200,17 @@ public class Payment {
         }
         if (!canStillLearnFromProvider()) {
             throw new IllegalStateException("Un pago en " + status + " no se marca como disputado");
+        }
+        this.status = PaymentStatus.DISPUTED;
+    }
+
+    /**
+     * Un reclamo congeló este dinero. Ni se libera ni se devuelve hasta que una persona decida: es
+     * exactamente lo que distingue un reclamo de una cancelación.
+     */
+    public void markDisputed() {
+        if (status != PaymentStatus.PAID) {
+            throw new IllegalStateException("Un pago en " + status + " no admite reclamo");
         }
         this.status = PaymentStatus.DISPUTED;
     }

@@ -160,8 +160,9 @@ class CancelBookingIT extends ApiIntegrationSupport {
         assertThat(after.getBody().slots()).hasSize(3);
     }
 
+    /** La ventana son 12 h para los dos (decisión Q3), y se lee de platform_settings. */
     @Test
-    void aStudentCannotCancelWithLessThanTwentyFourHoursLeft() {
+    void aStudentCannotCancelInsideTheCancellationWindow() {
         Booking booking = bookingAt(SOON);
 
         ResponseEntity<Map> response = post(
@@ -169,18 +170,23 @@ class CancelBookingIT extends ApiIntegrationSupport {
 
         assertThat(response.getStatusCode().value()).isEqualTo(422);
         assertThat(response.getBody().get("error").toString())
-                .isEqualTo("Con menos de 24 horas de anticipación la clase se considera impartida (política Orión)");
+                .isEqualTo("Faltan menos de 12 horas — la clase se considera impartida (política Orión)");
         assertThat(bookings.findById(booking.getId()).orElseThrow().isConfirmed()).isTrue();
     }
 
+    /**
+     * El profesor tampoco cancela dentro de la ventana, pero a él no se le deja sin salida: el
+     * mensaje le ofrece proponer otro horario, que es la vía que sí tiene abierta.
+     */
     @Test
-    void aProfessorAlsoObeysTheTwentyFourHourRule() {
+    void aProfessorInsideTheWindowIsOfferedRescheduling() {
         Booking booking = bookingAt(SOON);
 
         ResponseEntity<Map> response = post(
                 cancelUrl(booking), mariaSession, new CancelBookingRequest(null), Map.class);
 
         assertThat(response.getStatusCode().value()).isEqualTo(422);
+        assertThat(response.getBody().get("error").toString()).contains("proponerle");
     }
 
     @Test

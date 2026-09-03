@@ -140,6 +140,16 @@ export default function ProfesoresPage() {
     />
   );
 
+  const barraFiltros = (
+    <PanelFiltros
+      horizontal
+      filtros={filtros}
+      onCambio={setFiltros}
+      languages={languages.data ?? []}
+      goals={goals.data ?? []}
+    />
+  );
+
   return (
     <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-6xl lg:px-12 lg:py-8">
       <h1 className="font-display text-h1 font-bold">Profesores</h1>
@@ -147,14 +157,29 @@ export default function ProfesoresPage() {
         Elige con quién quieres practicar y reserva tu clase.
       </p>
 
-      <div className="mt-5 lg:grid lg:grid-cols-[248px_minmax(0,1fr)] lg:gap-10">
-        {/* Barra lateral fija en desktop */}
-        {esDesktop && (
-          <aside className="hidden lg:block">
-            <div className="sticky top-8 rounded-card bg-surface-raised p-5 shadow-sm">{panel}</div>
-          </aside>
-        )}
+      {/* Barra de filtros horizontal, sobre los resultados (solo desktop). */}
+      {esDesktop && (
+        <div className="mt-5 hidden rounded-card bg-surface-raised p-5 shadow-sm lg:block">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <p className="flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-[0.04em] text-text-muted">
+              <SlidersHorizontal size={14} strokeWidth={2} />
+              {t.filtros.titulo}
+            </p>
+            {activos > 0 && (
+              <button
+                type="button"
+                onClick={() => setFiltros(FILTROS_INICIALES)}
+                className="rounded-pill px-3 py-1 text-[13px] font-bold text-primary-strong transition-colors hover:bg-primary-soft focus-visible:shadow-focus"
+              >
+                Limpiar {activos}
+              </button>
+            )}
+          </div>
+          {barraFiltros}
+        </div>
+      )}
 
+      <div className="mt-5">
         <section>
           {/* Controles superiores: orden + botón Filtros (móvil) */}
           <div className="mb-4 flex items-center justify-between gap-3">
@@ -286,24 +311,45 @@ function ChipFiltro({
   );
 }
 
+/**
+ * Los mismos filtros en dos maquetaciones. En móvil van apilados dentro de una hoja; en desktop,
+ * en una barra horizontal sobre los resultados.
+ *
+ * Horizontal y no en columna lateral porque la columna le robaba a la retícula de profesores el
+ * ancho que necesita para respirar: con 248 px al lado, las tarjetas quedaban estrechas y el ojo
+ * tenía que cruzar toda la pantalla para pasar del filtro a su efecto. Arriba, los filtros son un
+ * encabezado que se lee de una pasada y los resultados ocupan el ancho completo.
+ */
 function PanelFiltros({
   filtros,
   onCambio,
   languages,
   goals,
+  horizontal = false,
 }: {
   filtros: Filtros;
   onCambio: (f: Filtros) => void;
   languages: LanguageResponse[];
   goals: GoalResponse[];
+  horizontal?: boolean;
 }) {
   const toggleEn = (lista: string[], code: string) =>
     lista.includes(code) ? lista.filter((c) => c !== code) : [...lista, code];
 
+  // En horizontal cada grupo es una celda de una retícula que se reacomoda sola; en vertical, una
+  // fila más de la pila.
+  const grupo = horizontal ? "min-w-0" : "";
+
   return (
-    <div className="space-y-5">
+    <div
+      className={
+        horizontal
+          ? "grid grid-cols-2 gap-x-6 gap-y-4 xl:grid-cols-[auto_1fr_auto] xl:items-start"
+          : "space-y-5"
+      }
+    >
       {/* Orden */}
-      <div>
+      <div className={grupo}>
         <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.04em] text-text-muted">
           {t.filtros.orden}
         </p>
@@ -320,7 +366,7 @@ function PanelFiltros({
 
       {/* Idioma (uno) */}
       {languages.length > 0 && (
-        <div>
+        <div className={grupo}>
           <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.04em] text-text-muted">
             {t.filtros.idioma}
           </p>
@@ -346,7 +392,7 @@ function PanelFiltros({
 
       {/* Objetivos (varios) */}
       {goals.length > 0 && (
-        <div>
+        <div className={horizontal ? "col-span-2 xl:col-span-1" : ""}>
           <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.04em] text-text-muted">
             {t.filtros.objetivos}
           </p>
@@ -367,7 +413,7 @@ function PanelFiltros({
       )}
 
       {/* Nivel (varios) */}
-      <div>
+      <div className={grupo}>
         <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.04em] text-text-muted">
           {t.filtros.nivel}
         </p>
@@ -385,7 +431,7 @@ function PanelFiltros({
       </div>
 
       {/* Precio */}
-      <div>
+      <div className={grupo}>
         <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.04em] text-text-muted">
           {t.filtros.precio}
         </p>
@@ -417,8 +463,8 @@ function PanelFiltros({
       </div>
 
       {/* Toggles */}
-      <div className="space-y-3">
-        <label className="flex items-center justify-between gap-3">
+      <div className={horizontal ? "flex flex-wrap items-center gap-x-6 gap-y-3" : "space-y-3"}>
+        <label className={`flex items-center gap-3 ${horizontal ? "" : "justify-between"}`}>
           <span className="text-[13.5px] font-semibold text-text">{t.filtros.nativo}</span>
           <Toggle
             activo={filtros.native}
@@ -426,7 +472,7 @@ function PanelFiltros({
             etiqueta={t.filtros.nativo}
           />
         </label>
-        <label className="flex items-center justify-between gap-3">
+        <label className={`flex items-center gap-3 ${horizontal ? "" : "justify-between"}`}>
           <span className="text-[13.5px] font-semibold text-text">{t.filtros.certificado}</span>
           <Toggle
             activo={filtros.certified}

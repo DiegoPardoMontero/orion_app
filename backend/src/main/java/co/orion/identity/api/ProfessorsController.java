@@ -44,7 +44,7 @@ public class ProfessorsController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "12") int size) {
         ProfessorSearchCriteria criteria = new ProfessorSearchCriteria(
-                language, level, goal, minPrice, maxPrice, certified, nativeOnly);
+                language, level, goal, minPrice, maxPrice, certified, nativeOnly, java.util.List.of());
         return search.search(criteria, sort, page, size);
     }
 

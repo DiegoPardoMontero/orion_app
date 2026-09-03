@@ -38,4 +38,10 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
 
         long getTotal();
     }
+
+    /** Reseñas que un profesor reportó y el admin todavía no ha revisado. */
+    @org.springframework.data.jpa.repository.Query("""
+            select count(r) from Review r where r.reportedAt is not null and r.visible = true
+            """)
+    long countReported();
 }

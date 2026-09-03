@@ -47,6 +47,13 @@ public interface BookingRepository extends JpaRepository<Booking, UUID>,
     /** Las reservas cuyo plazo para pagar ya se cumplió: la entrada del job de expiración. */
     List<Booking> findByStatusAndExpiresAtLessThanEqual(BookingStatus status, Instant deadline);
 
+    /**
+     * Clases terminadas hace rato y todavía sin cerrar: la entrada del autocompletado. El filtro
+     * por completed_at nulo es lo que lo hace idempotente incluso antes de mirar cada reserva.
+     */
+    List<Booking> findByStatusAndEndsAtLessThanAndCompletedAtIsNull(
+            BookingStatus status, Instant deadline);
+
     /** Pasadas: todo lo demás — ya ocurrieron o están en un estado terminal. */
     @Query("""
             select b from Booking b
@@ -67,6 +74,26 @@ public interface BookingRepository extends JpaRepository<Booking, UUID>,
     List<Booking> findPastOfProfessor(@Param("userId") UUID professorId,
                                       @Param("activeStatuses") Collection<BookingStatus> activeStatuses,
                                       @Param("now") Instant now);
+
+    /* --- Insumos de las métricas de desempeño (ventana móvil, por fecha de la CLASE) --- */
+
+    long countByProfessorIdAndStatusInAndStartsAtAfter(
+            UUID professorId, Collection<BookingStatus> statuses, Instant since);
+
+    long countByProfessorIdAndStartsAtAfter(UUID professorId, Instant since);
+
+    /** Estudiantes DISTINTOS con clase cerrada en la ventana: la retención real, no el volumen. */
+    @Query("""
+            select count(distinct b.studentId) from Booking b
+            where b.professorId = :professorId
+              and b.startsAt > :since
+              and b.status in (co.orion.scheduling.domain.BookingStatus.COMPLETED,
+                               co.orion.scheduling.domain.BookingStatus.NO_SHOW_STUDENT)
+            """)
+    long countDistinctStudentsOfProfessorSince(@Param("professorId") UUID professorId,
+                                               @Param("since") Instant since);
+
+    long countByStatus(BookingStatus status);
 
     /** Reservas creadas en los últimos 7 días (por fecha de creación, no de la clase). */
     long countByCreatedAtGreaterThanEqual(Instant since);

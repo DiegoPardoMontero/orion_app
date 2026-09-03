@@ -28,7 +28,8 @@ public class MyBookingsController {
                                               @RequestParam(defaultValue = "upcoming") String scope) {
         return bookingQueryService.myBookings(principal.user(), parseScope(scope)).stream()
                 .map(view -> MyBookingResponse.of(view.booking(), view.counterpart(),
-                        view.counterpartPhotoUrl(), view.counterpartHeadline(), view.now()))
+                        view.counterpartPhotoUrl(), view.counterpartHeadline(), view.now(),
+                        view.cancellationWindow()))
                 .toList();
     }
 

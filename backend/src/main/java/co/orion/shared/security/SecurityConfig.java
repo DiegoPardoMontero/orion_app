@@ -76,8 +76,13 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/me/profile").hasRole("PROFESSOR")
                 // Reservar es cosa de estudiantes (y de un admin en nombre de uno): un profesor no.
                 .requestMatchers(HttpMethod.POST, "/api/v1/bookings").hasAnyRole("STUDENT", "ADMIN")
-                // Reprogramar es acción del estudiante (o del admin), nunca del profesor.
-                .requestMatchers(HttpMethod.POST, "/api/v1/bookings/*/reschedule").hasAnyRole("STUDENT", "ADMIN")
+                // Reprogramar dejó de ser una acción unilateral: se PROPONE y la contraparte
+                // responde, así que los dos lados pueden hacer ambas cosas.
+                .requestMatchers("/api/v1/bookings/*/reschedule-requests").hasAnyRole("STUDENT", "PROFESSOR", "ADMIN")
+                .requestMatchers("/api/v1/reschedule-requests/**").hasAnyRole("STUDENT", "PROFESSOR", "ADMIN")
+                .requestMatchers("/api/v1/me/reschedule-requests").hasAnyRole("STUDENT", "PROFESSOR")
+                // Reclamar una clase es del estudiante: es su dinero el que está en juego.
+                .requestMatchers(HttpMethod.POST, "/api/v1/bookings/*/report-problem").hasRole("STUDENT")
                 // "Mis clases" solo tiene sentido para quien asiste o imparte.
                 .requestMatchers("/api/v1/me/bookings").hasAnyRole("STUDENT", "PROFESSOR")
                 // La asistencia la registra quien dio la clase.
