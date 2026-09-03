@@ -3,7 +3,7 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { BadgeCheck, ChevronRight, MapPin, SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Avatar } from "@/components/Avatar";
 import { Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Modal } from "@/components/Modal";
@@ -311,14 +311,26 @@ function ChipFiltro({
   );
 }
 
+/** El rótulo de cada grupo de filtros. Fuera del render: definirlo dentro remonta el subárbol. */
+function Titulo({ children }: { children: ReactNode }) {
+  return (
+    <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.04em] text-text-muted">
+      {children}
+    </p>
+  );
+}
+
 /**
- * Los mismos filtros en dos maquetaciones. En móvil van apilados dentro de una hoja; en desktop,
- * en una barra horizontal sobre los resultados.
+ * Los mismos filtros en dos maquetaciones.
  *
- * Horizontal y no en columna lateral porque la columna le robaba a la retícula de profesores el
- * ancho que necesita para respirar: con 248 px al lado, las tarjetas quedaban estrechas y el ojo
- * tenía que cruzar toda la pantalla para pasar del filtro a su efecto. Arriba, los filtros son un
- * encabezado que se lee de una pasada y los resultados ocupan el ancho completo.
+ * En móvil van apilados dentro de una hoja. En escritorio, en una barra sobre los resultados —
+ * horizontal y no en columna lateral, porque la columna le robaba a la retícula de profesores el
+ * ancho que necesita para respirar.
+ *
+ * La barra se organiza en dos bandas y no en una retícula "lista": arriba los controles compactos
+ * de ancho acotado (orden, precio, interruptores), abajo los grupos de chips, que crecen con el
+ * catálogo y necesitan la fila entera para envolver. Mezclarlos en una sola retícula fue justo lo
+ * que hizo que se pisaran: seis grupos de anchos muy distintos cayendo en celdas impredecibles.
  */
 function PanelFiltros({
   filtros,
@@ -336,155 +348,172 @@ function PanelFiltros({
   const toggleEn = (lista: string[], code: string) =>
     lista.includes(code) ? lista.filter((c) => c !== code) : [...lista, code];
 
-  // En horizontal cada grupo es una celda de una retícula que se reacomoda sola; en vertical, una
-  // fila más de la pila.
-  const grupo = horizontal ? "min-w-0" : "";
+  const orden = (
+    <div>
+      <Titulo>{t.filtros.orden}</Titulo>
+      <Segmento<Orden>
+        valor={filtros.sort}
+        onCambio={(sort) => onCambio({ ...filtros, sort })}
+        opciones={[
+          { valor: "RELEVANCE", etiqueta: t.orden.RELEVANCE },
+          { valor: "PRICE_ASC", etiqueta: t.orden.PRICE_ASC },
+          { valor: "PRICE_DESC", etiqueta: t.orden.PRICE_DESC },
+        ]}
+      />
+    </div>
+  );
 
-  return (
-    <div
-      className={
-        horizontal
-          ? "grid grid-cols-2 gap-x-6 gap-y-4 xl:grid-cols-[auto_1fr_auto] xl:items-start"
-          : "space-y-5"
-      }
-    >
-      {/* Orden */}
-      <div className={grupo}>
-        <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.04em] text-text-muted">
-          {t.filtros.orden}
-        </p>
-        <Segmento<Orden>
-          valor={filtros.sort}
-          onCambio={(sort) => onCambio({ ...filtros, sort })}
-          opciones={[
-            { valor: "RELEVANCE", etiqueta: t.orden.RELEVANCE },
-            { valor: "PRICE_ASC", etiqueta: t.orden.PRICE_ASC },
-            { valor: "PRICE_DESC", etiqueta: t.orden.PRICE_DESC },
-          ]}
+  const precio = (
+    <div>
+      <Titulo>{t.filtros.precio}</Titulo>
+      <div className="flex items-center gap-2">
+        <input
+          type="number"
+          inputMode="numeric"
+          min={0}
+          step={1000}
+          value={filtros.minPrice}
+          onChange={(e) => onCambio({ ...filtros, minPrice: e.target.value })}
+          placeholder={t.filtros.precioMin}
+          aria-label={t.filtros.precioMin}
+          className="h-11 w-full min-w-0 rounded-base border-[1.5px] border-border bg-surface-raised px-3 text-[14px] text-text placeholder:text-text-muted focus:border-primary focus:shadow-focus focus:outline-none"
+        />
+        <span className="text-text-muted">–</span>
+        <input
+          type="number"
+          inputMode="numeric"
+          min={0}
+          step={1000}
+          value={filtros.maxPrice}
+          onChange={(e) => onCambio({ ...filtros, maxPrice: e.target.value })}
+          placeholder={t.filtros.precioMax}
+          aria-label={t.filtros.precioMax}
+          className="h-11 w-full min-w-0 rounded-base border-[1.5px] border-border bg-surface-raised px-3 text-[14px] text-text placeholder:text-text-muted focus:border-primary focus:shadow-focus focus:outline-none"
         />
       </div>
+    </div>
+  );
 
-      {/* Idioma (uno) */}
-      {languages.length > 0 && (
-        <div className={grupo}>
-          <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.04em] text-text-muted">
-            {t.filtros.idioma}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {languages.map((idioma) => (
-              <ChipFiltro
-                key={idioma.code}
-                activo={filtros.language === idioma.code}
-                onClick={() =>
-                  onCambio({
-                    ...filtros,
-                    language: filtros.language === idioma.code ? null : (idioma.code ?? null),
-                  })
-                }
-              >
-                {idioma.flagEmoji && <span aria-hidden="true">{idioma.flagEmoji}</span>}
-                {idioma.nameEs}
-              </ChipFiltro>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Objetivos (varios) */}
-      {goals.length > 0 && (
-        <div className={horizontal ? "col-span-2 xl:col-span-1" : ""}>
-          <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.04em] text-text-muted">
-            {t.filtros.objetivos}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {goals.map((goal) => (
-              <ChipFiltro
-                key={goal.code}
-                activo={!!goal.code && filtros.goals.includes(goal.code)}
-                onClick={() =>
-                  goal.code && onCambio({ ...filtros, goals: toggleEn(filtros.goals, goal.code) })
-                }
-              >
-                {goal.nameEs}
-              </ChipFiltro>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Nivel (varios) */}
-      <div className={grupo}>
-        <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.04em] text-text-muted">
-          {t.filtros.nivel}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {NIVELES.map((nivel) => (
-            <ChipFiltro
-              key={nivel}
-              activo={filtros.levels.includes(nivel)}
-              onClick={() => onCambio({ ...filtros, levels: toggleEn(filtros.levels, nivel) })}
-            >
-              {etiquetaNivel(nivel)}
-            </ChipFiltro>
-          ))}
-        </div>
-      </div>
-
-      {/* Precio */}
-      <div className={grupo}>
-        <p className="mb-2 text-[12px] font-bold uppercase tracking-[0.04em] text-text-muted">
-          {t.filtros.precio}
-        </p>
-        <div className="flex items-center gap-2">
-          <input
-            type="number"
-            inputMode="numeric"
-            min={0}
-            step={1000}
-            value={filtros.minPrice}
-            onChange={(e) => onCambio({ ...filtros, minPrice: e.target.value })}
-            placeholder={t.filtros.precioMin}
-            aria-label={t.filtros.precioMin}
-            className="h-11 w-full rounded-base border-[1.5px] border-border bg-surface-raised px-3 text-[14px] text-text placeholder:text-text-muted focus:border-primary focus:shadow-focus focus:outline-none"
-          />
-          <span className="text-text-muted">–</span>
-          <input
-            type="number"
-            inputMode="numeric"
-            min={0}
-            step={1000}
-            value={filtros.maxPrice}
-            onChange={(e) => onCambio({ ...filtros, maxPrice: e.target.value })}
-            placeholder={t.filtros.precioMax}
-            aria-label={t.filtros.precioMax}
-            className="h-11 w-full rounded-base border-[1.5px] border-border bg-surface-raised px-3 text-[14px] text-text placeholder:text-text-muted focus:border-primary focus:shadow-focus focus:outline-none"
-          />
-        </div>
-      </div>
-
-      {/* Toggles */}
-      <div className={horizontal ? "flex flex-wrap items-center gap-x-6 gap-y-3" : "space-y-3"}>
-        <label className={`flex items-center gap-3 ${horizontal ? "" : "justify-between"}`}>
-          <span className="text-[13.5px] font-semibold text-text">{t.filtros.nativo}</span>
+  const interruptores = (
+    <div>
+      {/* En la barra no llevan rótulo: se explican solos, y ocupan su propia fila porque los dos
+          juntos nunca caben junto al orden y el precio. Un rótulo invisible solo dejaría un hueco. */}
+      {!horizontal && <Titulo>Otros</Titulo>}
+      <div className={horizontal ? "flex flex-wrap items-center gap-x-8 gap-y-3" : "space-y-3"}>
+        <label className={`flex items-center gap-2.5 ${horizontal ? "" : "justify-between"}`}>
           <Toggle
             activo={filtros.native}
             onCambio={(native) => onCambio({ ...filtros, native })}
             etiqueta={t.filtros.nativo}
           />
+          <span className="whitespace-nowrap text-[13.5px] font-semibold text-text">
+            {t.filtros.nativo}
+          </span>
         </label>
-        <label className={`flex items-center gap-3 ${horizontal ? "" : "justify-between"}`}>
-          <span className="text-[13.5px] font-semibold text-text">{t.filtros.certificado}</span>
+        <label className={`flex items-center gap-2.5 ${horizontal ? "" : "justify-between"}`}>
           <Toggle
             activo={filtros.certified}
             onCambio={(certified) => onCambio({ ...filtros, certified })}
             etiqueta={t.filtros.certificado}
           />
+          <span className="whitespace-nowrap text-[13.5px] font-semibold text-text">
+            {t.filtros.certificado}
+          </span>
         </label>
       </div>
     </div>
   );
-}
 
+  const idioma = languages.length > 0 && (
+    <div>
+      <Titulo>{t.filtros.idioma}</Titulo>
+      <div className="flex flex-wrap gap-2">
+        {languages.map((lang) => (
+          <ChipFiltro
+            key={lang.code}
+            activo={filtros.language === lang.code}
+            onClick={() =>
+              onCambio({
+                ...filtros,
+                language: filtros.language === lang.code ? null : (lang.code ?? null),
+              })
+            }
+          >
+            {lang.flagEmoji && <span aria-hidden="true">{lang.flagEmoji}</span>}
+            {lang.nameEs}
+          </ChipFiltro>
+        ))}
+      </div>
+    </div>
+  );
+
+  const nivel = (
+    <div>
+      <Titulo>{t.filtros.nivel}</Titulo>
+      <div className="flex flex-wrap gap-2">
+        {NIVELES.map((n) => (
+          <ChipFiltro
+            key={n}
+            activo={filtros.levels.includes(n)}
+            onClick={() => onCambio({ ...filtros, levels: toggleEn(filtros.levels, n) })}
+          >
+            {etiquetaNivel(n)}
+          </ChipFiltro>
+        ))}
+      </div>
+    </div>
+  );
+
+  const objetivos = goals.length > 0 && (
+    <div>
+      <Titulo>{t.filtros.objetivos}</Titulo>
+      <div className="flex flex-wrap gap-2">
+        {goals.map((goal) => (
+          <ChipFiltro
+            key={goal.code}
+            activo={!!goal.code && filtros.goals.includes(goal.code)}
+            onClick={() =>
+              goal.code && onCambio({ ...filtros, goals: toggleEn(filtros.goals, goal.code) })
+            }
+          >
+            {goal.nameEs}
+          </ChipFiltro>
+        ))}
+      </div>
+    </div>
+  );
+
+  if (!horizontal) {
+    return (
+      <div className="space-y-5">
+        {orden}
+        {idioma}
+        {objetivos}
+        {nivel}
+        {precio}
+        {interruptores}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Banda 1 — orden y precio comparten fila; los interruptores tienen la suya. */}
+      <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
+        <div className="min-w-[280px] flex-1">{orden}</div>
+        <div className="min-w-[220px] max-w-[300px] flex-1">{precio}</div>
+      </div>
+      {interruptores}
+
+      {/* Banda 2 — los chips, cada grupo con la fila entera para envolver. */}
+      <div className="flex flex-col gap-4 border-t border-border pt-4">
+        {idioma}
+        {nivel}
+        {objetivos}
+      </div>
+    </div>
+  );
+}
 function TarjetaProfesor({ profesor }: { profesor: ProfessorCard }) {
   const ubicacion = [profesor.city, profesor.countryCode].filter(Boolean).join(", ");
 
