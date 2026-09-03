@@ -180,14 +180,14 @@ function ModalPurga({
           )}
 
           <div className="mt-5 flex gap-2.5">
-            <Boton variante="contorno" onClick={onCerrar} className="h-12 flex-1">
+            <Boton variante="contorno" onClick={onCerrar} className="h-11 flex-1">
               Cancelar
             </Boton>
             <Boton
               variante="peligro"
               disabled={!puedeBorrar || borrar.isPending}
               onClick={() => borrar.mutate()}
-              className="h-12 flex-1"
+              className="h-11 flex-1"
             >
               {borrar.isPending ? <Spinner /> : <Trash2 size={16} strokeWidth={1.75} />}
               Borrar

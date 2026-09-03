@@ -141,7 +141,7 @@ export default async function PortadaPage() {
           <div className="grid gap-10 lg:grid-cols-[1.35fr_1fr] lg:items-center">
             <div>
               <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-on-primary/80">
-                Learn with confidence
+                Find the right teacher, learn your way
               </p>
               <h1 className="mt-3 max-w-[20ch] font-display text-[34px] font-bold leading-[1.08] text-on-primary lg:text-[52px]">
                 Encuentra al profesor indicado. Aprende a tu manera.

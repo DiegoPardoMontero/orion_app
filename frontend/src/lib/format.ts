@@ -29,19 +29,66 @@ export function fechaLarga(iso: string): string {
   }).format(new Date(iso));
 }
 
-/** "10:00" */
+/**
+ * "10:00 AM". Formato de 12 horas porque es como se lee la hora en Colombia: nadie queda de verse
+ * "a las 18". Se compone a mano en vez de dejárselo a Intl porque es-CO devuelve "6:00 p. m.", con
+ * espacios y puntos que en un chip estrecho se parten en dos líneas.
+ */
 export function horaBogota(iso: string): string {
-  return new Intl.DateTimeFormat(LOCALE, {
+  const partes = new Intl.DateTimeFormat("en-US", {
     timeZone: ZONE,
-    hour: "2-digit",
+    hour: "numeric",
     minute: "2-digit",
-    hour12: false,
-  }).format(new Date(iso));
+    hour12: true,
+  }).formatToParts(new Date(iso));
+
+  const valor = (tipo: string) => partes.find((p) => p.type === tipo)?.value ?? "";
+  return `${valor("hour")}:${valor("minute")} ${valor("dayPeriod").toUpperCase()}`;
 }
 
-/** "10:00–11:00" */
+/**
+ * "10:00 – 11:00 AM", y "11:00 AM – 12:00 PM" cuando cruzan el mediodía. El meridiano se dice una
+ * sola vez si es el mismo en los dos extremos: repetirlo no añade información y alarga el renglón.
+ */
 export function rangoHoras(inicioIso: string, finIso: string): string {
-  return `${horaBogota(inicioIso)}–${horaBogota(finIso)}`;
+  const desde = horaBogota(inicioIso);
+  const hasta = horaBogota(finIso);
+  const meridianoDesde = desde.slice(-2);
+
+  return meridianoDesde === hasta.slice(-2)
+    ? `${desde.slice(0, -3)} – ${hasta}`
+    : `${desde} – ${hasta}`;
+}
+
+/**
+ * Una hora de pared ("18:00", como las guarda la disponibilidad) en formato de 12 horas: "6:00 PM".
+ * Sin fecha de por medio: aquí no hay instante ni zona, solo la hora que el profesor escribió.
+ */
+export function hora12(hhmm: string): string {
+  const [h, m = "00"] = hhmm.split(":");
+  const hora = Number(h);
+  const meridiano = hora < 12 ? "AM" : "PM";
+  const doce = hora % 12 === 0 ? 12 : hora % 12;
+  return `${doce}:${m} ${meridiano}`;
+}
+
+/** "6 PM" cuando está en punto, "6:30 PM" si no. Para retículas estrechas. */
+export function hora12Compacta(hhmm: string): string {
+  const completa = hora12(hhmm);
+  return completa.replace(":00 ", " ");
+}
+
+/**
+ * Un rango de horas de pared, compacto: "6–9 PM" cuando ambos extremos comparten meridiano y
+ * "11 AM–1 PM" cuando no. Repetir el AM/PM en los dos lados alarga la etiqueta justo donde menos
+ * espacio hay —las columnas de la grilla semanal— y no aporta nada: si el rango no cruza el
+ * mediodía, decirlo una vez basta.
+ */
+export function rangoCompacto(inicioHhmm: string, finHhmm: string): string {
+  const inicio = hora12Compacta(inicioHhmm);
+  const fin = hora12Compacta(finHhmm);
+  const meridiano = inicio.slice(-2);
+  return meridiano === fin.slice(-2) ? `${inicio.slice(0, -3)}–${fin}` : `${inicio}–${fin}`;
 }
 
 /** "Mié 15 jul · 10:00–11:00", el encabezado de una tarjeta de clase. */

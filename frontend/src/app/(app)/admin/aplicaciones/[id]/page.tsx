@@ -235,14 +235,14 @@ function ModalDecision({
       {error && <div className="mt-3"><AvisoError mensaje={error} /></div>}
 
       <div className="mt-5 flex gap-2.5">
-        <Boton variante="contorno" onClick={onCerrar} className="h-12 flex-1">
+        <Boton variante="contorno" onClick={onCerrar} className="h-11 flex-1">
           Cancelar
         </Boton>
         <Boton
           variante={tipo === "reject" ? "peligro" : "primario"}
           disabled={!valido || enviar.isPending}
           onClick={() => enviar.mutate()}
-          className="h-12 flex-1"
+          className="h-11 flex-1"
         >
           {enviar.isPending ? "Enviando…" : titulo}
         </Boton>

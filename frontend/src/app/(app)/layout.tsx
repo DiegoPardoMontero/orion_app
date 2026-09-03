@@ -30,7 +30,14 @@ import { Vacio } from "@/components/estados";
 import { Wordmark } from "@/components/marca";
 import { Boton } from "@/components/ui";
 import { useMiAplicacion } from "@/lib/aplicacion";
-import { canAccess, HOME_BY_ROLE, NAV_BY_ROLE, type NavItem } from "@/lib/auth/roles";
+import {
+  canAccess,
+  HOME_BY_ROLE,
+  NAV_BY_ROLE,
+  TABS_BY_ROLE,
+  type NavGroup,
+  type NavItem,
+} from "@/lib/auth/roles";
 import type { Role } from "@/lib/auth/session";
 import { useLogout, useMe } from "@/lib/auth/session";
 import { useMensajesNoLeidos } from "@/lib/mensajeria";
@@ -117,14 +124,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="lg:flex lg:min-h-dvh">
-      <Sidebar me={me} nav={nav} pathname={pathname} noLeidosMensajes={noLeidosMensajes} />
+      <Sidebar me={me} grupos={nav} pathname={pathname} noLeidosMensajes={noLeidosMensajes} />
 
       <div className="flex min-h-dvh flex-1 flex-col">
         <MobileHeader me={me} />
         <div className="flex-1 pb-24 lg:pb-0">
           {rutaProtegida ? <GateProfesor aplic={aplic}>{children}</GateProfesor> : children}
         </div>
-        <TabBar nav={nav} pathname={pathname} noLeidosMensajes={noLeidosMensajes} />
+        <TabBar nav={TABS_BY_ROLE[me.role]} pathname={pathname} noLeidosMensajes={noLeidosMensajes} />
       </div>
     </div>
   );
@@ -138,19 +145,20 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 function construirNav(
   role: Role,
   app: { resuelto: boolean; noAplico: boolean; aprobado: boolean; status?: string },
-): NavItem[] {
+): NavGroup[] {
   const base = NAV_BY_ROLE[role];
   if (!app.resuelto) return base;
 
-  const item: NavItem = { href: "/aplicacion/estado", label: "Mi solicitud" };
+  const grupo: NavGroup = {
+    titulo: "Postulación",
+    items: [{ href: "/aplicacion/estado", label: "Mi solicitud" }],
+  };
 
-  if (role === "PROFESSOR" && !app.aprobado) {
-    return [...base, item];
-  }
-  if (role === "STUDENT" && !app.noAplico && app.status) {
-    return [...base, item];
-  }
-  return base;
+  const enCurso =
+    (role === "PROFESSOR" && !app.aprobado) ||
+    (role === "STUDENT" && !app.noAplico && !!app.status);
+
+  return enCurso ? [...base, grupo] : base;
 }
 
 /**
@@ -289,12 +297,12 @@ function TabBar({
 /** Sidebar de desktop: 248 px fija, sin tabs. Logo, entradas pill y tarjeta de usuario al pie. */
 function Sidebar({
   me,
-  nav,
+  grupos,
   pathname,
   noLeidosMensajes,
 }: {
   me: { fullName: string; email: string; role: Role; photoUrl?: string | null };
-  nav: NavItem[];
+  grupos: NavGroup[];
   pathname: string;
   noLeidosMensajes: number;
 }) {
@@ -309,32 +317,41 @@ function Sidebar({
         {ETIQUETA_ROL[me.role]}
       </p>
 
-      <nav className="mt-3 flex flex-col gap-1.5">
-        {nav.map((item) => {
-          const activo = pathname.startsWith(item.href);
-          const Icono = ICONO[item.href] ?? Users;
-          const badge = item.href === "/mensajes" ? noLeidosMensajes : 0;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={activo ? "page" : undefined}
-              className={`flex h-12 items-center gap-3 rounded-pill px-4 text-[14px] transition-colors ${
-                activo
-                  ? "bg-primary-soft font-bold text-primary-strong"
-                  : "font-semibold text-text-secondary hover:bg-surface-sunken"
-              }`}
-            >
-              <Icono size={20} strokeWidth={1.75} fill={activo ? "currentColor" : "none"} />
-              {item.label}
-              {badge > 0 && (
-                <span className="ml-auto grid h-[18px] min-w-[18px] place-items-center rounded-pill bg-primary px-1.5 text-[11px] font-bold text-on-primary">
-                  {badge > 9 ? "9+" : badge}
-                </span>
-              )}
-            </Link>
-          );
-        })}
+      <nav className="mt-3 flex flex-col gap-4 overflow-y-auto">
+        {grupos.map((grupo, i) => (
+          <div key={grupo.titulo ?? `g${i}`} className="flex flex-col gap-1">
+            {grupo.titulo && (
+              <p className="px-4 pb-1 text-[10.5px] font-bold uppercase tracking-[0.11em] text-text-muted">
+                {grupo.titulo}
+              </p>
+            )}
+            {grupo.items.map((item) => {
+              const activo = pathname.startsWith(item.href);
+              const Icono = ICONO[item.href] ?? Users;
+              const badge = item.href === "/mensajes" ? noLeidosMensajes : 0;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={activo ? "page" : undefined}
+                  className={`flex h-10 items-center gap-3 rounded-pill px-4 text-[14px] transition-colors ${
+                    activo
+                      ? "bg-primary-soft font-bold text-primary-strong"
+                      : "font-semibold text-text-secondary hover:bg-surface-sunken"
+                  }`}
+                >
+                  <Icono size={18} strokeWidth={1.75} fill={activo ? "currentColor" : "none"} />
+                  {item.label}
+                  {badge > 0 && (
+                    <span className="ml-auto grid h-[18px] min-w-[18px] place-items-center rounded-pill bg-primary px-1.5 text-[11px] font-bold text-on-primary">
+                      {badge > 9 ? "9+" : badge}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       <div className="mt-auto">

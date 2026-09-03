@@ -2,6 +2,13 @@ import type { Role } from "./session";
 
 export type NavItem = { href: string; label: string };
 
+/**
+ * Las entradas del lateral, agrupadas por lo que la persona va a hacer con ellas. Un menú plano de
+ * siete líneas obliga a leerlas todas cada vez; agrupadas, el ojo salta al bloque y luego a la
+ * línea. Los grupos con un solo elemento van sin título: un rótulo para una sola entrada es ruido.
+ */
+export type NavGroup = { titulo?: string; items: NavItem[] };
+
 /** A dónde llega cada rol al entrar. */
 export const HOME_BY_ROLE: Record<Role, string> = {
   STUDENT: "/profesores",
@@ -10,30 +17,93 @@ export const HOME_BY_ROLE: Record<Role, string> = {
   ADMIN: "/admin/panel",
 };
 
-export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
+export const NAV_BY_ROLE: Record<Role, NavGroup[]> = {
   STUDENT: [
-    { href: "/profesores", label: "Profesores" },
-    { href: "/mis-clases", label: "Mis clases" },
-    { href: "/saldo", label: "Pagos" },
+    { items: [{ href: "/profesores", label: "Buscar profesor" }] },
+    {
+      titulo: "Mis clases",
+      items: [
+        { href: "/mis-clases", label: "Agenda" },
+        { href: "/mensajes", label: "Mensajes" },
+      ],
+    },
+    {
+      titulo: "Mi cuenta",
+      items: [
+        { href: "/saldo", label: "Pagos y saldo" },
+        { href: "/cuenta", label: "Perfil" },
+      ],
+    },
+  ],
+  PROFESSOR: [
+    {
+      titulo: "Enseñar",
+      items: [
+        { href: "/mis-clases", label: "Agenda" },
+        { href: "/disponibilidad", label: "Disponibilidad" },
+        { href: "/mensajes", label: "Mensajes" },
+      ],
+    },
+    {
+      titulo: "Mi trabajo",
+      items: [
+        { href: "/ganancias", label: "Ganancias" },
+        { href: "/desempeno", label: "Desempeño" },
+      ],
+    },
+    { titulo: "Mi cuenta", items: [{ href: "/perfil", label: "Perfil público" }] },
+  ],
+  ADMIN: [
+    { items: [{ href: "/admin/panel", label: "Panel" }] },
+    {
+      titulo: "Operación",
+      items: [
+        { href: "/admin/reservas", label: "Clases" },
+        { href: "/admin/pagos", label: "Pagos" },
+      ],
+    },
+    {
+      titulo: "Personas",
+      items: [
+        { href: "/admin/usuarios", label: "Usuarios" },
+        { href: "/admin/aplicaciones", label: "Postulaciones" },
+      ],
+    },
+    {
+      titulo: "Por resolver",
+      items: [
+        { href: "/admin/reclamos", label: "Reclamos" },
+        { href: "/admin/resenas", label: "Reseñas" },
+      ],
+    },
+  ],
+};
+
+/**
+ * Lo que cabe en la barra inferior de móvil. Cinco como máximo, y elegidas: no es el menú completo
+ * recortado, son los destinos a los que de verdad se salta a diario. El resto vive en el lateral de
+ * escritorio y en el menú de usuario.
+ */
+export const TABS_BY_ROLE: Record<Role, NavItem[]> = {
+  STUDENT: [
+    { href: "/profesores", label: "Buscar" },
+    { href: "/mis-clases", label: "Agenda" },
     { href: "/mensajes", label: "Mensajes" },
+    { href: "/saldo", label: "Pagos" },
     { href: "/cuenta", label: "Perfil" },
   ],
   PROFESSOR: [
-    { href: "/mis-clases", label: "Mis clases" },
-    { href: "/ganancias", label: "Ganancias" },
-    { href: "/desempeno", label: "Desempeño" },
+    { href: "/mis-clases", label: "Agenda" },
+    { href: "/disponibilidad", label: "Horarios" },
     { href: "/mensajes", label: "Mensajes" },
-    { href: "/disponibilidad", label: "Disponibilidad" },
+    { href: "/ganancias", label: "Ganancias" },
     { href: "/perfil", label: "Perfil" },
   ],
   ADMIN: [
     { href: "/admin/panel", label: "Panel" },
-    { href: "/admin/usuarios", label: "Usuarios" },
-    { href: "/admin/aplicaciones", label: "Solicitudes" },
-    { href: "/admin/reservas", label: "Reservas" },
-    { href: "/admin/pagos", label: "Pagos" },
     { href: "/admin/reclamos", label: "Reclamos" },
-    { href: "/admin/resenas", label: "Reseñas" },
+    { href: "/admin/pagos", label: "Pagos" },
+    { href: "/admin/usuarios", label: "Usuarios" },
   ],
 };
 

@@ -157,7 +157,7 @@ export default function LoginPage() {
           </div>
 
           <p className="mt-8 text-center text-[12px] italic text-text-muted">
-            Learn with confidence. Transform your opportunities.
+            Find the right teacher, learn your way.
           </p>
         </form>
       </div>

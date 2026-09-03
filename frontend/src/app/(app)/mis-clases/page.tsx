@@ -15,8 +15,7 @@ import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type { MyBookingResponse, SlotsResponse, SlotView } from "@/lib/api/types";
 import { useMe } from "@/lib/auth/session";
 import { esperaPago, etiquetaEstado } from "@/lib/estados-clase";
-import { diaBogota, fechaCorta, fechaYRango, horaBogota } from "@/lib/format";
-import { linkWhatsapp } from "@/lib/whatsapp";
+import { diaBogota, fechaCorta, fechaYRango, horaBogota, rangoHoras } from "@/lib/format";
 
 type Scope = "upcoming" | "past";
 
@@ -86,32 +85,122 @@ export default function MisClasesPage() {
             />
           ))}
 
-        <ul className="grid gap-3 lg:grid-cols-2">
-          {data?.map((clase) => (
-            <TarjetaClase
-              key={clase.id}
-              clase={clase}
-              scope={scope}
-              esProfesor={esProfesor}
-              miNombre={me?.fullName ?? ""}
-            />
-          ))}
-        </ul>
+        {/*
+          Una sola columna con las clases agrupadas por día y colgando de una línea de tiempo.
+          Antes era una retícula de dos columnas, y esa era la razón de que no se entendiera el
+          orden: en dos columnas la lectura zigzaguea y la segunda clase queda a la derecha de la
+          primera, no debajo. Aquí el orden se lee bajando, que es como se lee una agenda.
+        */}
+        <Agenda clases={data ?? []} scope={scope} esProfesor={esProfesor} />
       </div>
     </main>
   );
+}
+
+/**
+ * Las clases de una pestaña, agrupadas por día y colgadas de una línea vertical.
+ *
+ * El backend ya las devuelve ordenadas —las próximas de la más cercana a la más lejana, las pasadas
+ * de la más reciente a la más antigua—, así que aquí no se reordena nada: se hace visible el orden
+ * que ya traen. El encabezado de cada día dice de qué día se trata en palabras ("Hoy", "Mañana",
+ * "Hace 3 días") porque una fecha suelta obliga a hacer la cuenta mental.
+ */
+function Agenda({
+  clases,
+  scope,
+  esProfesor,
+}: {
+  clases: MyBookingResponse[];
+  scope: Scope;
+  esProfesor: boolean;
+}) {
+  const dias = useMemo(() => {
+    const grupos: { dia: string; clases: MyBookingResponse[] }[] = [];
+    for (const clase of clases) {
+      if (!clase.startsAt) continue;
+      const dia = diaBogota(clase.startsAt);
+      const ultimo = grupos.at(-1);
+      if (ultimo?.dia === dia) ultimo.clases.push(clase);
+      else grupos.push({ dia, clases: [clase] });
+    }
+    return grupos;
+  }, [clases]);
+
+  if (dias.length === 0) return null;
+
+  return (
+    <div className="flex flex-col gap-6">
+      {dias.map((grupo) => (
+        <section key={grupo.dia}>
+          <h2 className="mb-2.5 flex items-baseline gap-2 text-[13px] font-bold text-text">
+            {etiquetaDia(grupo.dia)}
+            <span className="text-[12px] font-semibold text-text-muted">
+              {grupo.clases.length === 1 ? "1 clase" : `${grupo.clases.length} clases`}
+            </span>
+          </h2>
+
+          {/* La línea de tiempo: un filete vertical del que cuelga cada clase por su hora. */}
+          <ul className="flex flex-col gap-2.5 border-l-2 border-border pl-4">
+            {grupo.clases.map((clase, i) => (
+              <li key={clase.id} className="relative">
+                <span
+                  aria-hidden="true"
+                  className={`absolute -left-[21px] top-5 h-2.5 w-2.5 rounded-full ring-4 ring-surface ${
+                    scope === "upcoming" && grupo === dias[0] && i === 0
+                      ? "bg-primary"
+                      : "bg-border-strong"
+                  }`}
+                />
+                <TarjetaClase
+                  clase={clase}
+                  scope={scope}
+                  esProfesor={esProfesor}
+                  esLaSiguiente={scope === "upcoming" && grupo === dias[0] && i === 0}
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+/** "Hoy", "Mañana", "Ayer", "Hace 3 días" o la fecha larga. Una fecha suelta obliga a calcular. */
+function etiquetaDia(dia: string): string {
+  const hoy = diaBogota(new Date().toISOString());
+  const dias = Math.round(
+    (Date.parse(`${dia}T12:00:00-05:00`) - Date.parse(`${hoy}T12:00:00-05:00`)) / 86_400_000,
+  );
+  const fecha = fechaLargaDia(dia);
+
+  if (dias === 0) return `Hoy · ${fecha}`;
+  if (dias === 1) return `Mañana · ${fecha}`;
+  if (dias === -1) return `Ayer · ${fecha}`;
+  if (dias < -1 && dias >= -7) return `Hace ${Math.abs(dias)} días · ${fecha}`;
+  return fecha.charAt(0).toUpperCase() + fecha.slice(1);
+}
+
+/** El día "2026-07-15" escrito en palabras, sin arrastrar la zona del navegador. */
+function fechaLargaDia(dia: string): string {
+  return new Intl.DateTimeFormat("es-CO", {
+    timeZone: "America/Bogota",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(new Date(`${dia}T12:00:00-05:00`));
 }
 
 function TarjetaClase({
   clase,
   scope,
   esProfesor,
-  miNombre,
+  esLaSiguiente = false,
 }: {
   clase: MyBookingResponse;
   scope: Scope;
   esProfesor: boolean;
-  miNombre: string;
+  esLaSiguiente?: boolean;
 }) {
   const [cancelando, setCancelando] = useState(false);
   const [reprogramando, setReprogramando] = useState(false);
@@ -125,13 +214,6 @@ function TarjetaClase({
   const contraparte = clase.counterpart;
   const nombreContraparte = contraparte?.fullName ?? "";
   const virtual = clase.modality === "VIRTUAL";
-
-  const whatsapp = linkWhatsapp({
-    telefono: contraparte?.whatsappPhone,
-    contraparte: nombreContraparte,
-    yo: miNombre,
-    inicioIso: clase.startsAt!,
-  });
 
   // Una clase futura y confirmada que NO se puede cancelar solo puede ser por la regla de 24 h.
   const dentroDeLas24 = scope === "upcoming" && clase.status === "CONFIRMED" && !clase.canCancel;
@@ -152,12 +234,17 @@ function TarjetaClase({
     (clase.status === "CONFIRMED" || clase.status === "COMPLETED");
 
   return (
-    <li>
+    <>
       <Tarjeta>
         <div className="flex items-center justify-between gap-2">
-          <span className="flex items-center gap-1.5 text-[13.5px] font-bold">
-            <Calendar size={15} strokeWidth={1.75} className="text-primary" />
-            {fechaYRango(clase.startsAt!, clase.endsAt!)}
+          <span className="flex items-center gap-2 text-[13.5px] font-bold">
+            <Clock size={15} strokeWidth={1.9} className="text-primary" />
+            {rangoHoras(clase.startsAt!, clase.endsAt!)}
+            {esLaSiguiente && (
+              <span className="rounded-pill bg-primary-soft px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.06em] text-primary-strong">
+                La siguiente
+              </span>
+            )}
           </span>
           <Badge tono={virtual ? "menta" : "melocoton"}>
             {virtual ? <Video size={12} strokeWidth={2.4} /> : <MapPin size={12} strokeWidth={2.4} />}
@@ -219,8 +306,8 @@ function TarjetaClase({
                 : "Si no completas el pago a tiempo, el horario vuelve a quedar libre."}
             </p>
             {!esProfesor && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Link href={`/pago/${clase.id}`} className="min-w-[140px] flex-1">
+              <div className="mt-3 flex flex-wrap gap-2 sm:justify-end">
+                <Link href={`/pago/${clase.id}`} className="min-w-[140px] flex-1 sm:flex-none">
                   <Boton className="h-10 w-full">Completar el pago</Boton>
                 </Link>
                 {/* Arrepentirse antes de pagar se puede siempre: no hay clase que proteger, y
@@ -228,7 +315,7 @@ function TarjetaClase({
                 <Boton
                   variante="contorno"
                   onClick={() => setCancelando(true)}
-                  className="h-10 min-w-[120px] flex-1"
+                  className="h-10 min-w-[120px] flex-1 sm:flex-none"
                 >
                   Soltar el cupo
                 </Boton>
@@ -237,32 +324,21 @@ function TarjetaClase({
           </div>
         )}
 
-        {scope === "upcoming" && clase.status === "CONFIRMED" && virtual && clase.meetingLink && (
-          <a
-            href={clase.meetingLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3.5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-pill bg-primary px-5 text-[14px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus"
-          >
-            <Video size={16} strokeWidth={1.75} />
-            Unirse a la clase
-          </a>
-        )}
-
-        <div className="mt-3.5 flex flex-wrap gap-2">
-          {/* Nada de contactar a la contraparte por una reserva que aún no es una clase. */}
-          {whatsapp && !esperaPago(clase.status) && (
+        {/* En móvil los controles ocupan el ancho (son el objetivo del pulgar); de `sm` en adelante
+            se encogen a su contenido y la fila se alinea a la derecha, para que la acción no se
+            convierta en una barra que atraviesa la tarjeta. */}
+        <div className="mt-3.5 flex flex-wrap gap-2 sm:justify-end">
+          {scope === "upcoming" && clase.status === "CONFIRMED" && virtual && clase.meetingLink && (
             <a
-              href={whatsapp}
+              href={clase.meetingLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex min-w-[120px] flex-1 items-center justify-center gap-1.5 rounded-pill border-[1.5px] border-success py-2.5 text-[13px] font-bold text-success transition-colors hover:bg-success-bg focus-visible:shadow-focus"
+              className="inline-flex h-10 min-h-11 w-full items-center justify-center gap-2 rounded-pill bg-primary px-4 text-[14px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus sm:order-last sm:min-h-0 sm:w-auto"
             >
-              <LogoWhatsapp />
-              WhatsApp
+              <Video size={16} strokeWidth={1.75} />
+              Unirse a la clase
             </a>
           )}
-
           {scope === "upcoming" && clase.status === "CONFIRMED" && (
             <>
               {/* Los dos lados pueden proponer, y a cualquier hora: es justamente la salida de
@@ -271,7 +347,7 @@ function TarjetaClase({
               <Boton
                 variante="secundario"
                 onClick={() => setReprogramando(true)}
-                className="h-10 min-w-[120px] flex-1"
+                className="h-10 flex-1 basis-[180px] sm:flex-none sm:basis-auto"
               >
                 Proponer otro horario
               </Boton>
@@ -279,7 +355,7 @@ function TarjetaClase({
                 variante="contorno"
                 disabled={!clase.canCancel}
                 onClick={() => setCancelando(true)}
-                className="h-10 min-w-[110px] flex-1"
+                className="h-10 min-w-[110px] flex-1 sm:flex-none"
               >
                 Cancelar
               </Boton>
@@ -290,7 +366,7 @@ function TarjetaClase({
             <Boton
               variante="peligro"
               onClick={() => setReportando(true)}
-              className="h-10 min-w-[140px] flex-1"
+              className="h-10 flex-1 basis-[190px] sm:flex-none sm:basis-auto"
             >
               <AlertCircle size={15} strokeWidth={1.75} />
               Reportar un problema
@@ -298,7 +374,7 @@ function TarjetaClase({
           )}
 
           {puedeRegistrar && (
-            <Boton variante="tinta" onClick={() => setRegistrando(true)} className="h-10 flex-1">
+            <Boton variante="tinta" onClick={() => setRegistrando(true)} className="h-10 flex-1 sm:flex-none">
               Registrar asistencia
             </Boton>
           )}
@@ -307,7 +383,7 @@ function TarjetaClase({
             <Boton
               variante="secundario"
               onClick={() => setCalificando(true)}
-              className="h-10 min-w-[110px] flex-1"
+              className="h-10 min-w-[110px] flex-1 sm:flex-none"
             >
               <Star size={15} strokeWidth={1.9} />
               Calificar
@@ -342,7 +418,7 @@ function TarjetaClase({
           onResenada={() => setResenaHecha(true)}
         />
       )}
-    </li>
+    </>
   );
 }
 
@@ -424,14 +500,14 @@ function ModalCalificar({
       )}
 
       <div className="mt-5 flex gap-2.5">
-        <Boton variante="contorno" onClick={onCerrar} className="h-12 flex-1">
+        <Boton variante="contorno" onClick={onCerrar} className="h-11 flex-1">
           Ahora no
         </Boton>
         <Boton
           variante="primario"
           disabled={rating === 0 || calificar.isPending}
           onClick={() => calificar.mutate()}
-          className="h-12 flex-1"
+          className="h-11 flex-1"
         >
           {calificar.isPending ? "Enviando…" : "Enviar reseña"}
         </Boton>
@@ -492,14 +568,14 @@ function ModalCancelar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
       )}
 
       <div className="mt-5 flex gap-2.5">
-        <Boton variante="contorno" onClick={onCerrar} className="h-12 flex-1">
+        <Boton variante="contorno" onClick={onCerrar} className="h-11 flex-1">
           {sinPagar ? "Conservar cupo" : "Mantener clase"}
         </Boton>
         <Boton
           variante="peligro"
           disabled={cancelar.isPending}
           onClick={() => cancelar.mutate()}
-          className="h-12 flex-1"
+          className="h-11 flex-1"
         >
           {cancelar.isPending ? "Cancelando…" : sinPagar ? "Sí, soltarlo" : "Sí, cancelar"}
         </Boton>
@@ -585,13 +661,13 @@ function ModalReportar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
       )}
 
       <div className="mt-5 flex gap-2.5">
-        <Boton variante="contorno" onClick={onCerrar} className="h-12 flex-1">
+        <Boton variante="contorno" onClick={onCerrar} className="h-11 flex-1">
           Cancelar
         </Boton>
         <Boton
           disabled={reportar.isPending}
           onClick={() => reportar.mutate()}
-          className="h-12 flex-1"
+          className="h-11 flex-1"
         >
           {reportar.isPending ? "Enviando…" : "Enviar reporte"}
         </Boton>
@@ -707,14 +783,14 @@ function ModalReprogramar({ clase, onCerrar }: { clase: MyBookingResponse; onCer
       )}
 
       <div className="mt-5 flex gap-2.5">
-        <Boton variante="contorno" onClick={onCerrar} className="h-12 flex-1">
+        <Boton variante="contorno" onClick={onCerrar} className="h-11 flex-1">
           Volver
         </Boton>
         <Boton
           variante="primario"
           disabled={!cupoElegido || reprogramar.isPending}
           onClick={() => cupoElegido && reprogramar.mutate(cupoElegido)}
-          className="h-12 flex-1"
+          className="h-11 flex-1"
         >
           {reprogramar.isPending ? "Guardando…" : "Confirmar cambio"}
         </Boton>
@@ -783,14 +859,14 @@ function ModalAsistencia({ clase, onCerrar }: { clase: MyBookingResponse; onCerr
       )}
 
       <div className="mt-5 flex gap-2.5">
-        <Boton variante="contorno" onClick={onCerrar} className="h-12 flex-1">
+        <Boton variante="contorno" onClick={onCerrar} className="h-11 flex-1">
           Ahora no
         </Boton>
         <Boton
           variante="primario"
           disabled={asistio === null || registrar.isPending}
           onClick={() => asistio !== null && registrar.mutate(asistio)}
-          className="h-12 flex-1"
+          className="h-11 flex-1"
         >
           {registrar.isPending ? "Guardando…" : "Guardar"}
         </Boton>
@@ -818,11 +894,3 @@ function BannerReserva() {
 }
 
 /** El logo de WhatsApp: SVG inline, como todo en este diseño. */
-function LogoWhatsapp() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true">
-      <path d="M17.5 14.4c-.3-.2-1.7-.9-2-1-.3-.1-.5-.2-.7.1s-.8 1-.9 1.2c-.2.2-.3.2-.6.1-.3-.2-1.2-.5-2.3-1.4-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.5.1-.6l.5-.5c.1-.2.2-.3.3-.5 0-.2 0-.4-.1-.5l-.9-2.2c-.2-.5-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5 4.4.7.3 1.2.5 1.7.6.7.2 1.3.2 1.8.1.6-.1 1.7-.7 1.9-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.5-.3z" />
-      <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2z" />
-    </svg>
-  );
-}

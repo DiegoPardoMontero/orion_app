@@ -188,14 +188,14 @@ function ModalInvitarProfesor({ onCerrar }: { onCerrar: () => void }) {
           )}
 
           <div className="mt-5 flex gap-2.5">
-            <Boton variante="contorno" onClick={onCerrar} className="h-12 flex-1">
+            <Boton variante="contorno" onClick={onCerrar} className="h-11 flex-1">
               Cancelar
             </Boton>
             <Boton
               variante="primario"
               disabled={!email.trim() || invitar.isPending}
               onClick={() => invitar.mutate()}
-              className="h-12 flex-1"
+              className="h-11 flex-1"
             >
               {invitar.isPending ? "Enviando…" : "Enviar invitación"}
             </Boton>
@@ -369,14 +369,14 @@ function ModalCrearUsuario({ onCerrar }: { onCerrar: () => void }) {
       )}
 
       <div className="mt-5 flex gap-2.5">
-        <Boton variante="contorno" onClick={onCerrar} className="h-12 flex-1">
+        <Boton variante="contorno" onClick={onCerrar} className="h-11 flex-1">
           Cancelar
         </Boton>
         <Boton
           variante="primario"
           disabled={!email.trim() || !nombre.trim() || crear.isPending}
           onClick={() => crear.mutate()}
-          className="h-12 flex-1"
+          className="h-11 flex-1"
         >
           {crear.isPending ? "Creando…" : "Crear"}
         </Boton>

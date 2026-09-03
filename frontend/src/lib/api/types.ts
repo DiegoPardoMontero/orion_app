@@ -29,7 +29,7 @@ export type CreateBookingRequest = Schemas["CreateBookingRequest"];
 
 /**
  * La contraparte de una reserva (profesor o estudiante). El backend expone dos DTOs anidados con
- * el mismo nombre simple `Counterpart` —el de reservas (con whatsappPhone/headline) y el de la
+ * el mismo nombre simple `Counterpart` —el de reservas (con headline) y el de la
  * mensajería (con role)—, así que el OpenAPI los colapsa en un solo esquema y la generación pierde
  * los campos de reservas. Hasta que el backend desambigüe ese nombre de esquema, restauramos aquí
  * la forma real de la contraparte de reservas; es la capa hecha a mano y el sitio correcto para el
@@ -38,7 +38,6 @@ export type CreateBookingRequest = Schemas["CreateBookingRequest"];
 export type BookingCounterpart = {
   id?: string;
   fullName?: string;
-  whatsappPhone?: string;
   photoUrl?: string;
   headline?: string;
 };

@@ -96,7 +96,6 @@ class MyBookingsIT extends ApiIntegrationSupport {
         assertThat(response.getBody()).hasSize(1);
         MyBookingResponse item = response.getBody()[0];
         assertThat(item.counterpart().fullName()).isEqualTo("María Gómez");
-        assertThat(item.counterpart().whatsappPhone()).isEqualTo("+573009998877");
         assertThat(item.canCancel()).isTrue();
         assertThat(item.locationNote()).isEqualTo("Meet");
     }
@@ -109,7 +108,21 @@ class MyBookingsIT extends ApiIntegrationSupport {
 
         assertThat(response.getBody()).hasSize(1);
         assertThat(response.getBody()[0].counterpart().fullName()).isEqualTo("Ana Ramírez");
-        assertThat(response.getBody()[0].counterpart().whatsappPhone()).isEqualTo("+573001112233");
+    }
+
+    /**
+     * El contacto ocurre dentro de Orión: la mensajería enmascara los números y la comisión vive de
+     * que la clase siguiente se acuerde aquí. Este listado llegó a entregar el teléfono de la
+     * contraparte a quien reservara una clase, así que la afirmación se hace sobre el JSON crudo y
+     * no sobre el record — para que volver a añadir el campo rompa el test en vez de pasar callado.
+     */
+    @Test
+    void theCounterpartNeverCarriesAPhoneNumber() {
+        booking(FAR_FUTURE);
+
+        ResponseEntity<String> response = get(MY_BOOKINGS, anaSession, String.class);
+
+        assertThat(response.getBody()).doesNotContain("+573009998877", "3009998877", "whatsapp");
     }
 
     @Test

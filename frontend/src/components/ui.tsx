@@ -31,21 +31,24 @@ export function Boton({
     <button
       type="button"
       {...props}
-      className={`inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-pill px-6 text-[15px] font-bold transition-[transform,background-color,box-shadow,border-color,color] duration-[140ms] ease-standard focus-visible:shadow-focus active:scale-[0.98] disabled:pointer-events-none disabled:opacity-[0.42] ${VARIANTES[variante]} ${className}`}
+      // min-h-11 (44 px) es el mínimo de área táctil accesible y no se baja de ahí; lo que se
+      // recorta es el relleno horizontal y el cuerpo de letra, que era lo que los hacía ver
+      // desproporcionados junto al texto de las tarjetas.
+      className={`inline-flex min-h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-pill px-4 text-[14px] font-bold transition-[transform,background-color,box-shadow,border-color,color] duration-[140ms] ease-standard focus-visible:shadow-focus active:scale-[0.98] disabled:pointer-events-none disabled:opacity-[0.42] ${VARIANTES[variante]} ${className}`}
     >
       {children}
     </button>
   );
 }
 
-/** CTA principal de pantalla: pill coral de 52 px, ancho completo. */
+/** CTA principal de pantalla: pill coral de 48 px, ancho completo. */
 export function BotonPrincipal({
   className = "",
   children,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <Boton variante="primario" {...props} className={`h-[52px] w-full ${className}`}>
+    <Boton variante="primario" {...props} className={`h-12 w-full ${className}`}>
       {children}
     </Boton>
   );

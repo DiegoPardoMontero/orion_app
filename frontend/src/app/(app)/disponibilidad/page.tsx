@@ -8,7 +8,7 @@ import { Modal } from "@/components/Modal";
 import { Bloque, Boton, Campo } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type { ExceptionResponse, RuleResponse } from "@/lib/api/types";
-import { fechaLarga } from "@/lib/format";
+import { fechaLarga, hora12, rangoCompacto } from "@/lib/format";
 
 /** ISO 1–7, igual que el backend: 1 = lunes … 7 = domingo. */
 const DIAS = [
@@ -22,6 +22,10 @@ const DIAS = [
 ];
 
 /** Las franjas empiezan y terminan en punto: la regla la impone el backend, aquí solo se refleja. */
+/**
+ * Las 24 horas en punto. El VALOR sigue siendo "18:00", que es lo que entiende el backend; lo que
+ * cambia es la etiqueta que lee el profesor, en formato de 12 horas.
+ */
 const HORAS = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, "0")}:00`);
 
 export default function DisponibilidadPage() {
@@ -156,12 +160,12 @@ function ChipFranja({ regla }: { regla: RuleResponse }) {
   });
 
   const franja = `${corta(regla.startTime)}–${corta(regla.endTime)}`;
-  // En la grilla estrecha de desktop las horas en punto se muestran compactas ("18–21").
-  const franjaCorta = `${horaCompacta(regla.startTime)}–${horaCompacta(regla.endTime)}`;
+  // En la grilla estrecha de desktop la franja va compacta y sin partirse: "6–9 PM".
+  const franjaCorta = rangoCompacto(corta(regla.startTime), corta(regla.endTime));
 
   return (
     <>
-      <span className="inline-flex items-center gap-1.5 rounded-pill bg-night py-1.5 pl-3 pr-1.5 text-[12px] font-bold text-on-primary">
+      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-pill bg-night py-1.5 pl-2.5 pr-1.5 text-[12px] font-bold text-on-primary">
         {franjaCorta}
         <button
           type="button"
@@ -179,14 +183,14 @@ function ChipFranja({ regla }: { regla: RuleResponse }) {
             {franja}. Los estudiantes dejarán de ver estos cupos.
           </p>
           <div className="mt-5 flex gap-2.5">
-            <Boton variante="contorno" onClick={() => setConfirmando(false)} className="h-12 flex-1">
+            <Boton variante="contorno" onClick={() => setConfirmando(false)} className="h-11 flex-1">
               Volver
             </Boton>
             <Boton
               variante="peligro"
               disabled={borrar.isPending}
               onClick={() => borrar.mutate()}
-              className="h-12 flex-1"
+              className="h-11 flex-1"
             >
               Eliminar
             </Boton>
@@ -267,7 +271,7 @@ function ModalNuevaFranja({ weekday, onCerrar }: { weekday: number; onCerrar: ()
           >
             {HORAS.map((hora) => (
               <option key={hora} value={hora}>
-                {hora}
+                {hora12(hora)}
               </option>
             ))}
           </select>
@@ -281,7 +285,7 @@ function ModalNuevaFranja({ weekday, onCerrar }: { weekday: number; onCerrar: ()
           >
             {HORAS.map((hora) => (
               <option key={hora} value={hora}>
-                {hora}
+                {hora12(hora)}
               </option>
             ))}
           </select>
@@ -295,14 +299,14 @@ function ModalNuevaFranja({ weekday, onCerrar }: { weekday: number; onCerrar: ()
       )}
 
       <div className="mt-5 flex gap-2.5">
-        <Boton variante="contorno" onClick={onCerrar} className="h-12 flex-1">
+        <Boton variante="contorno" onClick={onCerrar} className="h-11 flex-1">
           Cancelar
         </Boton>
         <Boton
           variante="primario"
           disabled={crear.isPending}
           onClick={() => crear.mutate()}
-          className="h-12 flex-1"
+          className="h-11 flex-1"
         >
           {crear.isPending ? "Guardando…" : "Añadir franja"}
         </Boton>
@@ -364,23 +368,36 @@ function ModalBloquearFecha({ onCerrar }: { onCerrar: () => void }) {
 
       {!todoElDia && (
         <div className="mt-3 flex items-center gap-2.5">
+          {/* Selects y no <input type="time">: ese control lo pinta el sistema operativo con SU
+              formato —que no controlamos— y además deja escribir 18:37, cuando aquí las clases
+              siempre empiezan en punto. */}
           <label className="flex-1 text-[12.5px] font-bold text-text-secondary">
             Desde
-            <Campo
-              type="time"
+            <select
               value={inicio}
               onChange={(event) => setInicio(event.target.value)}
-              className="mt-1.5"
-            />
+              className="mt-1.5 w-full rounded-base border-[1.5px] border-border bg-surface-raised px-3 py-3 text-sm font-semibold text-text"
+            >
+              {HORAS.map((hora) => (
+                <option key={hora} value={hora}>
+                  {hora12(hora)}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="flex-1 text-[12.5px] font-bold text-text-secondary">
             Hasta
-            <Campo
-              type="time"
+            <select
               value={fin}
               onChange={(event) => setFin(event.target.value)}
-              className="mt-1.5"
-            />
+              className="mt-1.5 w-full rounded-base border-[1.5px] border-border bg-surface-raised px-3 py-3 text-sm font-semibold text-text"
+            >
+              {HORAS.map((hora) => (
+                <option key={hora} value={hora}>
+                  {hora12(hora)}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
       )}
@@ -407,14 +424,14 @@ function ModalBloquearFecha({ onCerrar }: { onCerrar: () => void }) {
       )}
 
       <div className="mt-5 flex gap-2.5">
-        <Boton variante="contorno" onClick={onCerrar} className="h-12 flex-1">
+        <Boton variante="contorno" onClick={onCerrar} className="h-11 flex-1">
           Cancelar
         </Boton>
         <Boton
           variante="primario"
           disabled={!fecha || crear.isPending}
           onClick={() => crear.mutate()}
-          className="h-12 flex-1"
+          className="h-11 flex-1"
         >
           {crear.isPending ? "Guardando…" : "Bloquear"}
         </Boton>
@@ -428,8 +445,5 @@ function corta(hora?: string): string {
   return (hora ?? "").slice(0, 5);
 }
 
-/** "18:00" → "18"; "18:30" → "18:30". Para la grilla estrecha de días en desktop. */
-function horaCompacta(hora?: string): string {
-  const hhmm = corta(hora);
-  return hhmm.endsWith(":00") ? String(Number(hhmm.slice(0, 2))) : hhmm;
-}
+/** "18:00" → "6 PM"; "18:30" → "6:30 PM". Para la grilla estrecha de días en desktop. */
+

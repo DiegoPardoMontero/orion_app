@@ -70,14 +70,14 @@ export function CambiarClave({ onCerrar }: { onCerrar: () => void }) {
           )}
 
           <div className="mt-5 flex gap-2.5">
-            <Boton variante="contorno" onClick={onCerrar} className="h-12 flex-1">
+            <Boton variante="contorno" onClick={onCerrar} className="h-11 flex-1">
               Cancelar
             </Boton>
             <Boton
               variante="primario"
               disabled={!actual || nueva.length < 8 || corta || cambiar.isPending}
               onClick={() => cambiar.mutate()}
-              className="h-12 flex-1"
+              className="h-11 flex-1"
             >
               {cambiar.isPending ? "Guardando…" : "Cambiar"}
             </Boton>

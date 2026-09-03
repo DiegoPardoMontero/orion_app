@@ -28,13 +28,16 @@ public record MyBookingResponse(UUID id,
      * La otra parte: el profesor si mira un estudiante, el estudiante si mira un profesor. La foto
      * y el titular solo llegan cuando la contraparte es profesor (los estudiantes aún no tienen
      * perfil público); si no, van en null y la UI cae al avatar de iniciales.
+     *
+     * NO lleva el teléfono, y es el punto: el Bloque 3 llevó el contacto dentro de Orión y
+     * enmascara los números en los mensajes, pero este DTO se lo entregaba igual a quien reservara
+     * una clase. Con los pagos encendidos eso ya no era solo una fuga de contacto — era la comisión
+     * de todas las clases siguientes, que se acordaban por fuera.
      */
-    public record Counterpart(UUID id, String fullName, String whatsappPhone,
-                              String photoUrl, String headline) {
+    public record Counterpart(UUID id, String fullName, String photoUrl, String headline) {
 
         static Counterpart of(User user, String photoUrl, String headline) {
-            return new Counterpart(user.getId(), user.getFullName(), user.getWhatsappPhone(),
-                    photoUrl, headline);
+            return new Counterpart(user.getId(), user.getFullName(), photoUrl, headline);
         }
     }
 
