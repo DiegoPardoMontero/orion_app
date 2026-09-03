@@ -2,6 +2,7 @@ package co.orion.shared.mail;
 
 import java.nio.charset.StandardCharsets;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ByteArrayResource;
@@ -17,6 +18,7 @@ import jakarta.mail.internet.MimeMessage;
  * "Not in multipart mode" y no saldría.
  */
 @Component
+@Qualifier("entrega")
 @ConditionalOnProperty(name = "orion.mail.transport", havingValue = "smtp", matchIfMissing = true)
 public class SmtpMailTransport implements MailTransport {
 

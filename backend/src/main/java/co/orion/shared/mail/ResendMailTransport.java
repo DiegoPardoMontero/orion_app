@@ -5,6 +5,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatusCode;
@@ -19,6 +20,7 @@ import org.springframework.web.client.RestClient;
  * el 587 daba "Connect timed out". HTTPS nunca se bloquea. Sin SDK, igual que la subida a Cloudinary.
  */
 @Component
+@Qualifier("entrega")
 @ConditionalOnProperty(name = "orion.mail.transport", havingValue = "resend")
 public class ResendMailTransport implements MailTransport {
 
