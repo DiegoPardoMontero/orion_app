@@ -144,6 +144,7 @@ public class ProfessorProfileService {
 
     @Transactional
     public RateBreakdownResponse setRate(UUID professorId, long hourlyRateCop) {
+        requireValidRate(hourlyRateCop);
         ProfessorProfile profile = profiles.findByIdWithUser(professorId)
                 .orElseGet(() -> createEmptyProfileFor(professorId));
         profile.changeRate(hourlyRateCop);
@@ -277,6 +278,24 @@ public class ProfessorProfileService {
     private List<String> loadGoals(UUID professorId) {
         return goalsOf.findByProfessorId(professorId).stream()
                 .map(ProfessorGoal::getGoalCode).sorted().toList();
+    }
+
+    /**
+     * Las mismas dos franjas que el CHECK de la base: 0 (clase gratuita) o entre 20.000 y 500.000.
+     * El chequeo se repite aquí para dar un 422 con un mensaje legible en vez del 500 que saldría
+     * de una violación de constraint; la constraint sigue siendo el árbitro final.
+     *
+     * El hueco entre 1 y 19.999 no es una tarifa barata: queda por debajo del mínimo que acepta la
+     * pasarela, así que una clase así no se podría cobrar.
+     */
+    private void requireValidRate(long hourlyRateCop) {
+        if (hourlyRateCop == 0) {
+            return;
+        }
+        if (hourlyRateCop < 20_000 || hourlyRateCop > 500_000) {
+            throw new UnprocessableException(
+                    "La tarifa debe ser 0 (clase gratuita) o estar entre $20.000 y $500.000.");
+        }
     }
 
     private RateBreakdownResponse breakdown(long hourlyRateCop) {

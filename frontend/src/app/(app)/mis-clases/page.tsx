@@ -1,26 +1,45 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Calendar, Check, Clock, MapPin, Star, Video, X } from "lucide-react";
+import {
+  AlertCircle,
+  Calendar,
+  CalendarClock,
+  Check,
+  Clock,
+  MapPin,
+  MessageCircle,
+  Star,
+  Video,
+  X,
+} from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
 import { Avatar } from "@/components/Avatar";
+import { CalendarioClases } from "@/components/CalendarioClases";
 import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Modal } from "@/components/Modal";
 import { SelectorEstrellas } from "@/components/Rating";
 import { Rigel } from "@/components/Rigel";
 import { Badge, Bloque, Boton, Chip, Segmento, Tarjeta } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
-import type { MyBookingResponse, SlotsResponse, SlotView } from "@/lib/api/types";
+import type {
+  ConversationSummary,
+  MyBookingResponse,
+  SlotsResponse,
+  SlotView,
+} from "@/lib/api/types";
 import { useMe } from "@/lib/auth/session";
 import { esperaPago, etiquetaEstado } from "@/lib/estados-clase";
 import { diaBogota, fechaCorta, fechaYRango, horaBogota, rangoHoras } from "@/lib/format";
 
 type Scope = "upcoming" | "past";
+type Vista = "agenda" | "calendario";
 
 export default function MisClasesPage() {
   const [scope, setScope] = useState<Scope>("upcoming");
+  const [vista, setVista] = useState<Vista>("agenda");
   const { data: me } = useMe();
 
   const { data, isPending, isError, refetch } = useQuery({
@@ -38,15 +57,30 @@ export default function MisClasesPage() {
 
       <h1 className="font-display text-h1 font-bold">Mis clases</h1>
 
-      <div className="mt-4 lg:max-w-sm">
-        <Segmento<Scope>
-          valor={scope}
-          onCambio={setScope}
-          opciones={[
-            { valor: "upcoming", etiqueta: "Próximas" },
-            { valor: "past", etiqueta: "Pasadas" },
-          ]}
-        />
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="sm:max-w-sm sm:flex-1">
+          <Segmento<Scope>
+            valor={scope}
+            onCambio={setScope}
+            opciones={[
+              { valor: "upcoming", etiqueta: "Próximas" },
+              { valor: "past", etiqueta: "Pasadas" },
+            ]}
+          />
+        </div>
+
+        {/* Dos preguntas distintas sobre los mismos datos: la agenda contesta "qué tengo ahora" y
+            el calendario "cómo va mi mes". Por eso conviven en vez de sustituirse. */}
+        <div className="sm:w-[210px]">
+          <Segmento<Vista>
+            valor={vista}
+            onCambio={setVista}
+            opciones={[
+              { valor: "agenda", etiqueta: "Agenda" },
+              { valor: "calendario", etiqueta: "Calendario" },
+            ]}
+          />
+        </div>
       </div>
 
       <div className="mt-4">
@@ -91,9 +125,55 @@ export default function MisClasesPage() {
           orden: en dos columnas la lectura zigzaguea y la segunda clase queda a la derecha de la
           primera, no debajo. Aquí el orden se lee bajando, que es como se lee una agenda.
         */}
-        <Agenda clases={data ?? []} scope={scope} esProfesor={esProfesor} />
+        {vista === "agenda" ? (
+          <Agenda clases={data ?? []} scope={scope} esProfesor={esProfesor} />
+        ) : (
+          <VistaCalendario clases={data ?? []} scope={scope} esProfesor={esProfesor} />
+        )}
       </div>
     </main>
+  );
+}
+
+/**
+ * El mes con sus clases, y debajo las del día que se elija. Elegir un día no cambia de vista: el
+ * calendario se mira para ubicarse, y saltar a otra pantalla al pulsar rompería justo eso.
+ */
+function VistaCalendario({
+  clases,
+  scope,
+  esProfesor,
+}: {
+  clases: MyBookingResponse[];
+  scope: Scope;
+  esProfesor: boolean;
+}) {
+  const [diaElegido, setDiaElegido] = useState<string | null>(null);
+  const delDia = clases.filter((clase) => clase.startsAt && diaBogota(clase.startsAt) === diaElegido);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <CalendarioClases clases={clases} onElegirDia={setDiaElegido} />
+
+      {diaElegido && (
+        <section>
+          <h2 className="mb-2.5 text-[13px] font-bold text-text">{etiquetaDia(diaElegido)}</h2>
+          <ul className="flex flex-col gap-2.5">
+            {delDia.map((clase) => (
+              <li key={clase.id}>
+                <TarjetaClase clase={clase} scope={scope} esProfesor={esProfesor} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {!diaElegido && (
+        <p className="text-center text-[13px] text-text-muted">
+          Pulsa un día con clases para ver sus detalles.
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -215,6 +295,22 @@ function TarjetaClase({
   const nombreContraparte = contraparte?.fullName ?? "";
   const virtual = clase.modality === "VIRTUAL";
 
+  const router = useRouter();
+  // Abre el hilo con el profesor —o reencuentra el que ya existía— y salta a él. Es del lado del
+  // estudiante porque el backend solo permite iniciar la conversación en esa dirección: el profesor
+  // responde desde su bandeja.
+  const escribir = useMutation({
+    mutationFn: () =>
+      apiFetch<ConversationSummary>("/api/v1/conversations", {
+        method: "POST",
+        body: { professorId: clase.counterpart?.id },
+      }),
+    onSuccess: (conv) => {
+      if (conv.id) router.push(`/mensajes/${conv.id}`);
+    },
+  });
+  const puedeEscribir = !esProfesor && !!contraparte?.id;
+
   // Una clase futura y confirmada que NO se puede cancelar solo puede ser por la regla de 24 h.
   const dentroDeLas24 = scope === "upcoming" && clase.status === "CONFIRMED" && !clase.canCancel;
 
@@ -324,9 +420,15 @@ function TarjetaClase({
           </div>
         )}
 
-        {/* En móvil los controles ocupan el ancho (son el objetivo del pulgar); de `sm` en adelante
-            se encogen a su contenido y la fila se alinea a la derecha, para que la acción no se
-            convierta en una barra que atraviesa la tarjeta. */}
+        {/*
+          En móvil los controles ocupan el ancho (son el objetivo del pulgar); de `sm` en adelante
+          se encogen a su contenido y la fila se alinea a la derecha.
+
+          El peso visual ordena la tarjeta ahora que hay cuatro acciones: lo que se hace a la hora
+          de la clase va en coral relleno, lo irreversible lleva contorno, y escribir o proponer
+          otro horario —que no rompen nada y se deshacen solos— van sin borde. Con las cuatro del
+          mismo peso la tarjeta pedía leerlas todas para encontrar la única que importa.
+        */}
         <div className="mt-3.5 flex flex-wrap gap-2 sm:justify-end">
           {scope === "upcoming" && clase.status === "CONFIRMED" && virtual && clase.meetingLink && (
             <a
@@ -339,17 +441,31 @@ function TarjetaClase({
               Unirse a la clase
             </a>
           )}
+          {/* Escribirle nace aquí más que en la bandeja: la duda aparece mirando la clase. */}
+          {puedeEscribir && (
+            <Boton
+              variante="fantasma"
+              disabled={escribir.isPending}
+              onClick={() => escribir.mutate()}
+              className="h-10 flex-1 basis-[130px] sm:flex-none sm:basis-auto"
+            >
+              <MessageCircle size={15} strokeWidth={1.9} />
+              Mensaje
+            </Boton>
+          )}
+
           {scope === "upcoming" && clase.status === "CONFIRMED" && (
             <>
               {/* Los dos lados pueden proponer, y a cualquier hora: es justamente la salida de
                   quien ya no puede cancelar. Lo que protege al otro no es el plazo, es que tiene
                   que aceptar. */}
               <Boton
-                variante="secundario"
+                variante="fantasma"
                 onClick={() => setReprogramando(true)}
-                className="h-10 flex-1 basis-[180px] sm:flex-none sm:basis-auto"
+                className="h-10 flex-1 basis-[170px] sm:flex-none sm:basis-auto"
               >
-                Proponer otro horario
+                <CalendarClock size={15} strokeWidth={1.9} />
+                Otro horario
               </Boton>
               <Boton
                 variante="contorno"

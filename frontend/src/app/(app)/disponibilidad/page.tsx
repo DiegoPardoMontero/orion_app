@@ -5,6 +5,7 @@ import { CalendarOff, Clock, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
 import { Modal } from "@/components/Modal";
+import { CalendarioSemanal } from "@/components/CalendarioSemanal";
 import { Bloque, Boton, Campo } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type { ExceptionResponse, RuleResponse } from "@/lib/api/types";
@@ -39,7 +40,8 @@ export default function DisponibilidadPage() {
     queryFn: () => apiFetch<ExceptionResponse[]>("/api/v1/me/availability/exceptions"),
   });
 
-  const [diaNuevaFranja, setDiaNuevaFranja] = useState<number | null>(null);
+  const [nuevaFranja, setNuevaFranja] = useState<{ weekday: number; desde: string } | null>(null);
+  const [franjaAEliminar, setFranjaAEliminar] = useState<RuleResponse | null>(null);
   const [bloqueando, setBloqueando] = useState(false);
 
   if (reglas.isPending || excepciones.isPending) {
@@ -72,21 +74,28 @@ export default function DisponibilidadPage() {
       </div>
 
       <div className="mt-4 lg:grid lg:grid-cols-[1fr_260px] lg:items-start lg:gap-6">
-        {/* Días: tarjetas apiladas en móvil, grilla de 7 columnas en desktop (todo sin scroll). */}
-        <div className="grid gap-2.5 lg:grid-cols-7 lg:gap-2">
+        {/* En escritorio, el horario se dibuja como lo que es: una rejilla de horas por días, donde
+            la duración de una franja es su altura. En móvil no cabe una rejilla de siete columnas,
+            así que ahí siguen las tarjetas apiladas, un día debajo de otro. */}
+        <div className="hidden lg:block">
+          <CalendarioSemanal
+            reglas={reglas.data ?? []}
+            onAnadir={(weekday, desde) => setNuevaFranja({ weekday, desde })}
+            onEliminar={setFranjaAEliminar}
+          />
+        </div>
+
+        <div className="grid gap-2.5 lg:hidden">
           {DIAS.map((dia) => {
             const delDia = (reglas.data ?? []).filter((regla) => regla.weekday === dia.valor);
             return (
-              <div key={dia.valor} className="rounded-card bg-info-bg p-3 lg:p-2.5">
+              <div key={dia.valor} className="rounded-card bg-info-bg p-3">
                 <div className="flex items-center justify-between gap-1">
-                  <span className="text-[13.5px] font-bold text-info lg:text-[12.5px]">
-                    <span className="lg:hidden">{dia.nombre}</span>
-                    <span className="hidden lg:inline">{dia.corto}</span>
-                  </span>
+                  <span className="text-[13.5px] font-bold text-info">{dia.nombre}</span>
                   <button
                     type="button"
                     aria-label={`Añadir franja el ${dia.nombre.toLowerCase()}`}
-                    onClick={() => setDiaNuevaFranja(dia.valor)}
+                    onClick={() => setNuevaFranja({ weekday: dia.valor, desde: "08:00" })}
                     className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white text-info transition-colors hover:bg-primary hover:text-on-primary"
                   >
                     <Plus size={15} strokeWidth={2.4} />
@@ -96,9 +105,13 @@ export default function DisponibilidadPage() {
                 {delDia.length === 0 ? (
                   <p className="mt-2 text-[11.5px] text-info/70">Sin franjas</p>
                 ) : (
-                  <div className="mt-2 flex flex-wrap gap-1.5 lg:flex-col lg:items-start">
+                  <div className="mt-2 flex flex-wrap gap-1.5">
                     {delDia.map((regla) => (
-                      <ChipFranja key={regla.id} regla={regla} />
+                      <ChipFranja
+                        key={regla.id}
+                        regla={regla}
+                        onEliminar={() => setFranjaAEliminar(regla)}
+                      />
                     ))}
                   </div>
                 )}
@@ -137,17 +150,45 @@ export default function DisponibilidadPage() {
         </aside>
       </div>
 
-      {diaNuevaFranja !== null && (
-        <ModalNuevaFranja weekday={diaNuevaFranja} onCerrar={() => setDiaNuevaFranja(null)} />
+      {nuevaFranja && (
+        <ModalNuevaFranja
+          weekday={nuevaFranja.weekday}
+          desde={nuevaFranja.desde}
+          onCerrar={() => setNuevaFranja(null)}
+        />
+      )}
+
+      {franjaAEliminar && (
+        <ModalEliminarFranja
+          regla={franjaAEliminar}
+          onCerrar={() => setFranjaAEliminar(null)}
+        />
       )}
       {bloqueando && <ModalBloquearFecha onCerrar={() => setBloqueando(false)} />}
     </main>
   );
 }
 
-function ChipFranja({ regla }: { regla: RuleResponse }) {
+function ChipFranja({ regla, onEliminar }: { regla: RuleResponse; onEliminar: () => void }) {
+  const franja = rangoCompacto(corta(regla.startTime), corta(regla.endTime));
+
+  return (
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-pill bg-night py-1.5 pl-2.5 pr-1.5 text-[12px] font-bold text-on-primary">
+      {franja}
+      <button
+        type="button"
+        aria-label={`Eliminar la franja ${franja}`}
+        onClick={onEliminar}
+        className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white/20 transition-colors hover:bg-primary"
+      >
+        <X size={12} strokeWidth={2.6} />
+      </button>
+    </span>
+  );
+}
+
+function ModalEliminarFranja({ regla, onCerrar }: { regla: RuleResponse; onCerrar: () => void }) {
   const queryClient = useQueryClient();
-  const [confirmando, setConfirmando] = useState(false);
 
   const borrar = useMutation({
     mutationFn: () => apiFetch(`/api/v1/me/availability/rules/${regla.id}`, { method: "DELETE" }),
@@ -155,49 +196,31 @@ function ChipFranja({ regla }: { regla: RuleResponse }) {
       // Cambia lo que ven los estudiantes: hay que refrescar también los cupos.
       void queryClient.invalidateQueries({ queryKey: ["me", "rules"] });
       void queryClient.invalidateQueries({ queryKey: ["slots"] });
-      setConfirmando(false);
+      onCerrar();
     },
   });
 
   const franja = `${corta(regla.startTime)}–${corta(regla.endTime)}`;
-  // En la grilla estrecha de desktop la franja va compacta y sin partirse: "6–9 PM".
-  const franjaCorta = rangoCompacto(corta(regla.startTime), corta(regla.endTime));
 
   return (
-    <>
-      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-pill bg-night py-1.5 pl-2.5 pr-1.5 text-[12px] font-bold text-on-primary">
-        {franjaCorta}
-        <button
-          type="button"
-          aria-label={`Eliminar la franja ${franja}`}
-          onClick={() => setConfirmando(true)}
-          className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white/20 transition-colors hover:bg-primary"
+    <Modal titulo="¿Eliminar esta franja?" onCerrar={onCerrar}>
+      <p className="text-[13px] text-text-secondary">
+        {franja}. Los estudiantes dejarán de ver estos cupos.
+      </p>
+      <div className="mt-5 flex gap-2.5">
+        <Boton variante="contorno" onClick={onCerrar} className="h-11 flex-1">
+          Volver
+        </Boton>
+        <Boton
+          variante="peligro"
+          disabled={borrar.isPending}
+          onClick={() => borrar.mutate()}
+          className="h-11 flex-1"
         >
-          <X size={12} strokeWidth={2.6} />
-        </button>
-      </span>
-
-      {confirmando && (
-        <Modal titulo="¿Eliminar esta franja?" onCerrar={() => setConfirmando(false)}>
-          <p className="text-[13px] text-text-secondary">
-            {franja}. Los estudiantes dejarán de ver estos cupos.
-          </p>
-          <div className="mt-5 flex gap-2.5">
-            <Boton variante="contorno" onClick={() => setConfirmando(false)} className="h-11 flex-1">
-              Volver
-            </Boton>
-            <Boton
-              variante="peligro"
-              disabled={borrar.isPending}
-              onClick={() => borrar.mutate()}
-              className="h-11 flex-1"
-            >
-              Eliminar
-            </Boton>
-          </div>
-        </Modal>
-      )}
-    </>
+          Eliminar
+        </Boton>
+      </div>
+    </Modal>
   );
 }
 
@@ -237,10 +260,19 @@ function FilaExcepcion({ excepcion }: { excepcion: ExceptionResponse }) {
   );
 }
 
-function ModalNuevaFranja({ weekday, onCerrar }: { weekday: number; onCerrar: () => void }) {
+function ModalNuevaFranja({
+  weekday,
+  desde,
+  onCerrar,
+}: {
+  weekday: number;
+  desde: string;
+  onCerrar: () => void;
+}) {
   const queryClient = useQueryClient();
-  const [inicio, setInicio] = useState("08:00");
-  const [fin, setFin] = useState("11:00");
+  const [inicio, setInicio] = useState(desde);
+  // Una hora después de donde se pulsó: la clase mínima. Ampliarla es un clic en el select.
+  const [fin, setFin] = useState(siguienteHora(desde));
 
   const crear = useMutation({
     mutationFn: () =>
@@ -441,6 +473,12 @@ function ModalBloquearFecha({ onCerrar }: { onCerrar: () => void }) {
 }
 
 /** El backend manda "18:00:00"; en pantalla sobra el segundero. */
+/** "19:00" → "20:00". Tope en las 23:00, que es la última hora en la que puede empezar una clase. */
+function siguienteHora(hhmm: string): string {
+  const h = Math.min(23, Number(hhmm.slice(0, 2)) + 1);
+  return `${String(h).padStart(2, "0")}:00`;
+}
+
 function corta(hora?: string): string {
   return (hora ?? "").slice(0, 5);
 }

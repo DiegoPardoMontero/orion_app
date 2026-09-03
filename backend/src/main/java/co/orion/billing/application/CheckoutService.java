@@ -87,7 +87,7 @@ public class CheckoutService implements PaymentInitiator {
 
         credits.recordApplications(payment.getId(), applied);
 
-        if (payment.isFullyCoveredByCredit()) {
+        if (payment.nothingToCharge()) {
             // Sin pasarela de por medio: el crédito ya pagó la clase entera.
             payment.markPaid(null, null, clock.instant());
             payments.save(payment);
@@ -112,7 +112,7 @@ public class CheckoutService implements PaymentInitiator {
      */
     @Transactional(readOnly = true)
     public String resumeUrlFor(Payment payment) {
-        if (!payment.isPending() || payment.isFullyCoveredByCredit()) {
+        if (!payment.isPending() || payment.nothingToCharge()) {
             return null;
         }
         return provider.createIntent(payment, payment.getProviderReference(),

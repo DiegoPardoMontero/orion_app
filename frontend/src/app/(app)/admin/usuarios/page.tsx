@@ -7,7 +7,7 @@ import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Modal } from "@/components/Modal";
 import { PhoneInput } from "@/components/PhoneInput";
 import { BotonPurga } from "@/components/Purga";
-import { Badge, Boton, Campo } from "@/components/ui";
+import { Badge, Boton, Campo, Spinner } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type { AdminUserResponse } from "@/lib/api/types";
 import { generarClave } from "@/lib/password";
@@ -108,12 +108,12 @@ export default function AdminUsuariosPage() {
             <table className="w-full text-[13px]">
               <thead>
                 <tr className="bg-surface text-left text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted">
-                  <th className="px-4 py-3">Nombre</th>
-                  <th className="px-4 py-3">Correo</th>
-                  <th className="px-4 py-3">WhatsApp</th>
-                  <th className="px-4 py-3">Rol</th>
-                  <th className="px-4 py-3">Estado</th>
-                  <th className="px-4 py-3 text-right">Acción</th>
+                  <th className="px-3 py-3">Nombre</th>
+                  <th className="px-3 py-3">Correo</th>
+                  <th className="px-3 py-3">WhatsApp</th>
+                  <th className="px-3 py-3">Rol</th>
+                  <th className="px-3 py-3">Estado</th>
+                  <th className="px-3 py-3 text-right">Acción</th>
                 </tr>
               </thead>
               <tbody>
@@ -225,10 +225,14 @@ function FilaUsuario({ usuario }: { usuario: AdminUserResponse }) {
 
   return (
     <tr className="border-t border-surface-sunken hover:bg-surface">
-      <td className="px-4 py-3 font-semibold">{usuario.fullName}</td>
-      <td className="px-4 py-3 text-text-secondary">{usuario.email}</td>
-      <td className="px-4 py-3 text-text-secondary">{usuario.whatsappPhone ?? "—"}</td>
-      <td className="px-4 py-3">
+      <td className="px-3 py-3 font-semibold">{usuario.fullName}</td>
+      <td className="px-3 py-3 text-text-secondary">
+        <span className="block max-w-[190px] truncate" title={usuario.email ?? undefined}>
+          {usuario.email}
+        </span>
+      </td>
+      <td className="px-3 py-3 text-text-secondary">{usuario.whatsappPhone ?? "—"}</td>
+      <td className="px-3 py-3">
         <Badge
           tono={
             usuario.role === "PROFESSOR" ? "lavanda" : usuario.role === "ADMIN" ? "coral" : "menta"
@@ -237,24 +241,110 @@ function FilaUsuario({ usuario }: { usuario: AdminUserResponse }) {
           {ETIQUETA_ROL[usuario.role ?? ""] ?? usuario.role}
         </Badge>
       </td>
-      <td className="px-4 py-3">
+      <td className="px-3 py-3">
         <Badge tono={activo ? "menta" : "melocoton"}>{activo ? "Activo" : "Inactivo"}</Badge>
       </td>
-      <td className="px-4 py-3 text-right">
+      <td className="whitespace-nowrap px-3 py-3 text-right">
         <div className="flex items-center justify-end gap-2">
           <Boton
             variante="contorno"
             disabled={cambiarEstado.isPending || usuario.role === "ADMIN"}
             onClick={() => cambiarEstado.mutate()}
-            className="h-9"
+            className="h-9 px-3"
           >
             {activo ? "Inactivar" : "Activar"}
           </Boton>
+          {usuario.role === "PROFESSOR" && <BotonTarifa profesorId={usuario.id!} />}
           {/* Inactivar oculta; borrar destruye. Son cosas distintas y por eso conviven. */}
           <BotonPurga tipo="user" id={usuario.id!} etiqueta="Borrar" />
         </div>
       </td>
     </tr>
+  );
+}
+
+/**
+ * Fija la tarifa de un profesor desde administración. Existe por el 0: es el único sitio de la
+ * aplicación desde el que se puede poner una clase en gratuita, y sirve para probar el flujo de
+ * reserva entero —cupo, confirmación, correo, calendario— sin mover dinero por la pasarela. El
+ * propio profesor no puede ponerlo: su formulario conserva el piso de $20.000.
+ */
+function BotonTarifa({ profesorId }: { profesorId: string }) {
+  const [abierto, setAbierto] = useState(false);
+
+  return (
+    <>
+      <Boton variante="contorno" onClick={() => setAbierto(true)} className="h-9 px-3">
+        Tarifa
+      </Boton>
+      {abierto && <ModalTarifa profesorId={profesorId} onCerrar={() => setAbierto(false)} />}
+    </>
+  );
+}
+
+function ModalTarifa({ profesorId, onCerrar }: { profesorId: string; onCerrar: () => void }) {
+  const queryClient = useQueryClient();
+  const [valor, setValor] = useState("");
+
+  const guardar = useMutation({
+    mutationFn: (hourlyRateCop: number) =>
+      apiFetch(`/api/v1/admin/professors/${profesorId}/rate`, {
+        method: "PUT",
+        body: { hourlyRateCop },
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["professors"] });
+      onCerrar();
+    },
+  });
+
+  const numero = Number(valor.replace(/\D/g, ""));
+  const valido = valor.trim() !== "" && (numero === 0 || (numero >= 20000 && numero <= 500000));
+  const error = guardar.error instanceof ApiError ? guardar.error.message : null;
+
+  return (
+    <Modal titulo="Tarifa por hora" onCerrar={onCerrar}>
+      <p className="text-[13px] text-text-secondary">
+        Entre $20.000 y $500.000. Escribe <strong>0</strong> para dejar las clases de este profesor
+        en gratuitas: se reservan sin pasar por Wompi.
+      </p>
+      <Campo
+        type="text"
+        inputMode="numeric"
+        autoFocus
+        placeholder="0"
+        value={valor}
+        onChange={(event) => setValor(event.target.value)}
+        className="mt-3"
+      />
+      {valor.trim() !== "" && !valido && (
+        <p className="mt-1.5 text-[12px] font-semibold text-error">
+          Debe ser 0, o un valor entre 20.000 y 500.000.
+        </p>
+      )}
+      {numero === 0 && valor.trim() !== "" && (
+        <p className="mt-1.5 text-[12px] font-semibold text-warning">
+          Sus clases quedarán gratuitas y el profesor no recibirá nada por ellas.
+        </p>
+      )}
+      {error && (
+        <div className="mt-3">
+          <AvisoError mensaje={error} />
+        </div>
+      )}
+      <div className="mt-5 flex gap-2.5">
+        <Boton variante="contorno" onClick={onCerrar} className="h-10 flex-1">
+          Cancelar
+        </Boton>
+        <Boton
+          disabled={!valido || guardar.isPending}
+          onClick={() => guardar.mutate(numero)}
+          className="h-10 flex-1"
+        >
+          {guardar.isPending ? <Spinner /> : "Guardar"}
+        </Boton>
+      </div>
+    </Modal>
   );
 }
 

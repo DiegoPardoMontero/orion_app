@@ -30,7 +30,7 @@ import type {
   ProfessorCard,
 } from "@/lib/api/types";
 import { SITE_URL, whatsappSoporte } from "@/lib/config";
-import { precioCop } from "@/lib/format";
+import { esGratis, tarifaClase } from "@/lib/format";
 
 /**
  * Portada del marketplace. Server component (SEO + rendimiento): estática salvo las islas cliente
@@ -137,7 +137,7 @@ export default async function PortadaPage() {
       {/* — Hero — */}
       <header className="gradient-dawn relative overflow-hidden">
         <Constelacion className="pointer-events-none absolute -right-10 top-6 h-[220px] w-[220px] opacity-60 lg:h-[360px] lg:w-[360px]" />
-        <div className="relative mx-auto max-w-6xl px-5 py-14 lg:px-8 lg:py-20">
+        <div className="relative mx-auto max-w-6xl px-5 py-12 lg:px-8 lg:py-16">
           <div className="grid gap-10 lg:grid-cols-[1.35fr_1fr] lg:items-center">
             <div>
               <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-on-primary/80">
@@ -167,14 +167,14 @@ export default async function PortadaPage() {
       </header>
 
       {/* — Idiomas destacados — */}
-      <section id="idiomas" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-16 lg:px-8 lg:py-24">
+      <section id="idiomas" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-12 lg:px-8 lg:py-16">
         <div className="text-center">
           <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-primary-strong">
             Idiomas
           </p>
           <h2 className="mt-3 font-display text-h2 font-bold">Elige el idioma que quieres hablar.</h2>
         </div>
-        <div className="mt-10 grid gap-4 md:grid-cols-3">
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
           {IDIOMAS_DESTACADOS.map((idioma) => (
             <Link
               key={idioma.code}
@@ -203,7 +203,7 @@ export default async function PortadaPage() {
 
       {/* — Conoce a los profesores (real, se oculta con <4) — */}
       {mostrarProfesores && (
-        <section className="bg-surface-sunken/50 py-16 lg:py-24">
+        <section className="bg-surface-sunken/50 py-12 lg:py-16">
           <div className="mx-auto max-w-6xl px-5 lg:px-8">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -232,14 +232,14 @@ export default async function PortadaPage() {
       )}
 
       {/* — Cómo funciona — */}
-      <section id="como-funciona" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-16 lg:px-8 lg:py-24">
+      <section id="como-funciona" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-12 lg:px-8 lg:py-16">
         <div className="text-center">
           <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-primary-strong">
             Cómo funciona Orión
           </p>
           <h2 className="mt-3 font-display text-h2 font-bold">De encontrar a avanzar, en cuatro pasos.</h2>
         </div>
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {PASOS.map((paso, i) => {
             const Icono = paso.icono;
             return (
@@ -258,7 +258,7 @@ export default async function PortadaPage() {
       </section>
 
       {/* — El Método ORION — */}
-      <section id="nosotros" className="scroll-mt-20 bg-surface-sunken/60 py-16 lg:py-24">
+      <section id="nosotros" className="scroll-mt-20 bg-surface-sunken/60 py-12 lg:py-16">
         <div className="mx-auto max-w-6xl px-5 lg:px-8">
           <div className="text-center">
             <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-primary-strong">
@@ -271,7 +271,7 @@ export default async function PortadaPage() {
               Cinco movimientos que repites en cada clase hasta que hablar deja de dar miedo.
             </p>
           </div>
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {METODO.map((paso, i) => (
               <div
                 key={i}
@@ -290,14 +290,14 @@ export default async function PortadaPage() {
 
       {/* — Aprende para lo que te importa — */}
       {objetivos.length > 0 && (
-        <section className="mx-auto max-w-6xl px-5 py-16 lg:px-8 lg:py-24">
+        <section className="mx-auto max-w-6xl px-5 py-12 lg:px-8 lg:py-16">
           <div className="text-center">
             <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-primary-strong">
               Tu objetivo
             </p>
             <h2 className="mt-3 font-display text-h2 font-bold">Aprende para lo que te importa.</h2>
           </div>
-          <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {objetivos.map((objetivo) => {
               const Icono = ICONO_OBJETIVO[objetivo.code ?? ""] ?? Target;
               return (
@@ -323,7 +323,7 @@ export default async function PortadaPage() {
       )}
 
       {/* — Enseña en Orión — */}
-      <section className="mx-auto max-w-6xl px-5 pb-16 lg:px-8 lg:pb-24">
+      <section className="mx-auto max-w-6xl px-5 pb-12 lg:px-8 lg:pb-16">
         <div className="grid items-center gap-8 rounded-card bg-night px-7 py-12 text-text-on-night lg:grid-cols-[1.5fr_1fr] lg:px-14 lg:py-16">
           <div>
             <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-accent-peach">
@@ -358,7 +358,7 @@ export default async function PortadaPage() {
 
       {/* — CTA final — */}
       <section className="gradient-dawn">
-        <div className="mx-auto max-w-3xl px-5 py-16 text-center lg:py-20">
+        <div className="mx-auto max-w-3xl px-5 py-12 text-center lg:py-16">
           <h2 className="text-balance font-display text-h1 font-bold text-on-primary">
             Tu camino con los idiomas empieza con el profesor indicado.
           </h2>
@@ -444,10 +444,12 @@ function TarjetaProfesor({ profesor }: { profesor: ProfessorCard }) {
         </div>
       )}
       <div className="mt-4 flex items-end justify-between gap-2 border-t border-border pt-4">
-        {profesor.hourlyRateCop ? (
+        {tarifaClase(profesor.hourlyRateCop) ? (
           <p className="font-display text-[17px] font-bold text-text">
-            {precioCop(profesor.hourlyRateCop)}
-            <span className="ml-1 text-[11px] font-semibold text-text-muted">/ hora</span>
+            {tarifaClase(profesor.hourlyRateCop)}
+            {!esGratis(profesor.hourlyRateCop) && (
+              <span className="ml-1 text-[11px] font-semibold text-text-muted">/ hora</span>
+            )}
           </p>
         ) : (
           <span className="text-[12.5px] text-text-muted">Tarifa por confirmar</span>

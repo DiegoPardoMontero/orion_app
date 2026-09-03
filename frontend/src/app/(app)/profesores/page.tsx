@@ -1,7 +1,7 @@
 "use client";
 
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { BadgeCheck, ChevronRight, MapPin, SlidersHorizontal } from "lucide-react";
+import { BadgeCheck, ChevronDown, ChevronRight, MapPin, SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Avatar } from "@/components/Avatar";
@@ -16,7 +16,7 @@ import type {
   PagedProfessors,
   ProfessorCard,
 } from "@/lib/api/types";
-import { precioCop } from "@/lib/format";
+import { esGratis, tarifaClase } from "@/lib/format";
 import { etiquetaNivel, NIVELES, t } from "@/lib/i18n";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 
@@ -348,6 +348,17 @@ function PanelFiltros({
   const toggleEn = (lista: string[], code: string) =>
     lista.includes(code) ? lista.filter((c) => c !== code) : [...lista, code];
 
+  const avanzadosActivos =
+    (filtros.language ? 1 : 0) +
+    filtros.levels.length +
+    filtros.goals.length +
+    (filtros.native ? 1 : 0) +
+    (filtros.certified ? 1 : 0);
+
+  // Si se llega con filtros avanzados puestos (una URL compartida, o el cajón del móvil), la
+  // sección abre sola: si no, los resultados vendrían recortados por controles que no se ven.
+  const [avanzadosAbiertos, setAvanzadosAbiertos] = useState(avanzadosActivos > 0);
+
   const orden = (
     <div>
       <Titulo>{t.filtros.orden}</Titulo>
@@ -376,7 +387,7 @@ function PanelFiltros({
           onChange={(e) => onCambio({ ...filtros, minPrice: e.target.value })}
           placeholder={t.filtros.precioMin}
           aria-label={t.filtros.precioMin}
-          className="h-11 w-full min-w-0 rounded-base border-[1.5px] border-border bg-surface-raised px-3 text-[14px] text-text placeholder:text-text-muted focus:border-primary focus:shadow-focus focus:outline-none"
+          className="h-12 w-full min-w-0 rounded-base border-[1.5px] border-border bg-surface-raised px-3 text-[14px] text-text placeholder:text-text-muted focus:border-primary focus:shadow-focus focus:outline-none"
         />
         <span className="text-text-muted">–</span>
         <input
@@ -388,7 +399,7 @@ function PanelFiltros({
           onChange={(e) => onCambio({ ...filtros, maxPrice: e.target.value })}
           placeholder={t.filtros.precioMax}
           aria-label={t.filtros.precioMax}
-          className="h-11 w-full min-w-0 rounded-base border-[1.5px] border-border bg-surface-raised px-3 text-[14px] text-text placeholder:text-text-muted focus:border-primary focus:shadow-focus focus:outline-none"
+          className="h-12 w-full min-w-0 rounded-base border-[1.5px] border-border bg-surface-raised px-3 text-[14px] text-text placeholder:text-text-muted focus:border-primary focus:shadow-focus focus:outline-none"
         />
       </div>
     </div>
@@ -483,35 +494,81 @@ function PanelFiltros({
     </div>
   );
 
+  const avanzados = (
+    <>
+      {interruptores}
+      {idioma}
+      {nivel}
+      {objetivos}
+    </>
+  );
+
+  // En el panel móvil no hay nada que plegar: es un cajón con scroll y ocultar cosas ahí solo
+  // añade un toque de más. El orden sí cambia — primero lo que casi todo el mundo usa.
   if (!horizontal) {
     return (
       <div className="space-y-5">
         {orden}
-        {idioma}
-        {objetivos}
-        {nivel}
         {precio}
-        {interruptores}
+        {avanzados}
       </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Banda 1 — orden y precio comparten fila; los interruptores tienen la suya. */}
-      <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
+      {/* De entrada solo orden y precio: son los dos que usa casi todo el mundo y los únicos que
+          caben en una fila sin apretarse. El resto vive detrás de "Avanzado". */}
+      <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
         <div className="min-w-[280px] flex-1">{orden}</div>
         <div className="min-w-[220px] max-w-[300px] flex-1">{precio}</div>
+        <BotonAvanzado
+          abierto={avanzadosAbiertos}
+          activos={avanzadosActivos}
+          onClick={() => setAvanzadosAbiertos((abierto) => !abierto)}
+        />
       </div>
-      {interruptores}
 
-      {/* Banda 2 — los chips, cada grupo con la fila entera para envolver. */}
-      <div className="flex flex-col gap-4 border-t border-border pt-4">
-        {idioma}
-        {nivel}
-        {objetivos}
-      </div>
+      {avanzadosAbiertos && (
+        <div className="flex flex-col gap-4 border-t border-border pt-4">{avanzados}</div>
+      )}
     </div>
+  );
+}
+
+/**
+ * El contador no es adorno: un filtro que sigue aplicándose mientras su control está escondido es
+ * un resultado vacío sin explicación. Con el número a la vista, plegar la sección no oculta estado.
+ */
+function BotonAvanzado({
+  abierto,
+  activos,
+  onClick,
+}: {
+  abierto: boolean;
+  activos: number;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-expanded={abierto}
+      className="inline-flex h-12 shrink-0 items-center gap-2 rounded-pill border-[1.5px] border-border px-4 text-[13.5px] font-bold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
+    >
+      <SlidersHorizontal size={15} strokeWidth={2} />
+      Avanzado
+      {activos > 0 && (
+        <span className="grid h-5 min-w-5 place-items-center rounded-pill bg-primary px-1.5 text-[11px] font-bold text-on-primary">
+          {activos}
+        </span>
+      )}
+      <ChevronDown
+        size={15}
+        strokeWidth={2.2}
+        className={`transition-transform ${abierto ? "rotate-180" : ""}`}
+      />
+    </button>
   );
 }
 function TarjetaProfesor({ profesor }: { profesor: ProfessorCard }) {
@@ -581,12 +638,14 @@ function TarjetaProfesor({ profesor }: { profesor: ProfessorCard }) {
 
       <div className="mt-4 flex items-end justify-between gap-3 border-t border-border pt-4">
         <div>
-          {profesor.hourlyRateCop ? (
+          {tarifaClase(profesor.hourlyRateCop) ? (
             <>
               <p className="font-display text-[19px] font-bold text-text">
-                {precioCop(profesor.hourlyRateCop)}
+                {tarifaClase(profesor.hourlyRateCop)}
               </p>
-              <p className="text-[11.5px] text-text-muted">por hora</p>
+              {!esGratis(profesor.hourlyRateCop) && (
+                <p className="text-[11.5px] text-text-muted">por hora</p>
+              )}
             </>
           ) : (
             <p className="text-[12.5px] text-text-muted">Tarifa por confirmar</p>

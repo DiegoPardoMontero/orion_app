@@ -118,8 +118,12 @@ public class Payment {
         this.status = PaymentStatus.PENDING;
     }
 
-    /** Nada que cobrar: el crédito del estudiante cubrió la clase entera. */
-    public boolean isFullyCoveredByCredit() {
+    /**
+     * No hay nada que cobrar, así que no hay pasarela que esperar. Ocurre por dos caminos: el
+     * crédito del estudiante cubrió la clase entera, o la clase vale 0 (tarifa gratuita). Al
+     * pago le da igual cuál de los dos: lo que decide es que el importe a cobrar sea cero.
+     */
+    public boolean nothingToCharge() {
         return chargedCop == 0;
     }
 

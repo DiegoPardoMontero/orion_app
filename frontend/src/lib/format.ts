@@ -116,6 +116,20 @@ export function precioCop(n: number): string {
 }
 
 /**
+ * La tarifa como la lee un estudiante. Distingue tres estados que un `rate ? … : …` confunde en
+ * dos, porque 0 es falsy: sin fijar (null), gratuita (0) y con precio.
+ */
+export function tarifaClase(rate: number | null | undefined): string | null {
+  if (rate === null || rate === undefined) return null;
+  return rate === 0 ? "Gratis" : precioCop(rate);
+}
+
+/** true solo para la tarifa gratuita — no para la que aún no se ha fijado. */
+export function esGratis(rate: number | null | undefined): boolean {
+  return rate === 0;
+}
+
+/**
  * Fecha relativa breve para reseñas: "hoy", "hace 3 días", "hace 2 meses", "hace 1 año". Usa la hora
  * del dispositivo como "ahora" (una reseña siempre está en el pasado, así que no hay ambigüedad de
  * zona relevante). Sin librerías: Intl.RelativeTimeFormat basta.

@@ -8,7 +8,7 @@ import { Cargando } from "@/components/estados";
 import { Constelacion, Wordmark } from "@/components/marca";
 import { apiFetch } from "@/lib/api/fetch";
 import type { LanguageResponse, PagedProfessors, ProfessorCard } from "@/lib/api/types";
-import { precioCop } from "@/lib/format";
+import { esGratis, tarifaClase } from "@/lib/format";
 import { etiquetaNivel } from "@/lib/i18n";
 
 /**
@@ -121,10 +121,12 @@ function TarjetaPublica({ profesor }: { profesor: ProfessorCard }) {
             </span>
           ))}
         </div>
-        {profesor.hourlyRateCop ? (
+        {tarifaClase(profesor.hourlyRateCop) ? (
           <p className="mt-2 text-[13px] font-bold text-text">
-            {precioCop(profesor.hourlyRateCop)}
-            <span className="ml-1 text-[11px] font-semibold text-text-muted">/ hora</span>
+            {tarifaClase(profesor.hourlyRateCop)}
+            {!esGratis(profesor.hourlyRateCop) && (
+              <span className="ml-1 text-[11px] font-semibold text-text-muted">/ hora</span>
+            )}
           </p>
         ) : null}
       </div>

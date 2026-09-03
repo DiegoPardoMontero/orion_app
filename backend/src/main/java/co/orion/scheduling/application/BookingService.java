@@ -113,7 +113,7 @@ public class BookingService {
         Booking saved = saveOrLoseTheRace(booking);
         PaymentTicket ticket = payments.initiate(saved);
 
-        if (ticket.fullyCoveredByCredit()) {
+        if (ticket.nothingToCharge()) {
             saved = confirm(saved);
         }
         return new NewBooking(saved, ticket);

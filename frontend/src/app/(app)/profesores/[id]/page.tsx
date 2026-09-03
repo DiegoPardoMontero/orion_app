@@ -40,7 +40,7 @@ import type {
   SlotsResponse,
 } from "@/lib/api/types";
 import { useMe } from "@/lib/auth/session";
-import { diaBogota, fechaCorta, fechaRelativa, horaBogota, precioCop } from "@/lib/format";
+import { diaBogota, esGratis, fechaCorta, fechaRelativa, horaBogota, precioCop, tarifaClase } from "@/lib/format";
 import { etiquetaNivel, etiquetaObjetivo } from "@/lib/i18n";
 import { aplicarSaldo } from "@/lib/saldo";
 import { useMediaQuery } from "@/lib/useMediaQuery";
@@ -207,7 +207,10 @@ export default function AgendaProfesorPage() {
 
       {precio !== null && (
         <div className="rounded-base border border-border bg-surface-sunken px-4 py-3 text-[13px]">
-          <LineaImporte etiqueta="Clase de 60 minutos" valor={precioCop(precio)} />
+          <LineaImporte
+            etiqueta="Clase de 60 minutos"
+            valor={esGratis(precio) ? "Gratis" : precioCop(precio)}
+          />
           {creditoAplicado > 0 && (
             <LineaImporte
               etiqueta="Tu saldo a favor"
@@ -215,11 +218,13 @@ export default function AgendaProfesorPage() {
               tono="credito"
             />
           )}
-          <LineaImporte
-            tono="total"
-            etiqueta={aPagar === 0 ? "Cubierto con tu saldo" : "Total a pagar"}
-            valor={precioCop(aPagar)}
-          />
+          {!esGratis(precio) && (
+            <LineaImporte
+              tono="total"
+              etiqueta={aPagar === 0 ? "Cubierto con tu saldo" : "Total a pagar"}
+              valor={precioCop(aPagar)}
+            />
+          )}
         </div>
       )}
 
@@ -288,10 +293,12 @@ export default function AgendaProfesorPage() {
           </div>
 
           {/* Precio por hora: dato honesto, prominente. */}
-          {detalle.hourlyRateCop ? (
+          {tarifaClase(detalle.hourlyRateCop) ? (
             <p className="mt-3 font-display text-[22px] font-bold text-text">
-              {precioCop(detalle.hourlyRateCop)}
-              <span className="ml-1 text-[13px] font-semibold text-text-muted">/ hora</span>
+              {tarifaClase(detalle.hourlyRateCop)}
+              {!esGratis(detalle.hourlyRateCop) && (
+                <span className="ml-1 text-[13px] font-semibold text-text-muted">/ hora</span>
+              )}
             </p>
           ) : null}
 
