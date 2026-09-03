@@ -39,8 +39,8 @@ export default function LoginPage() {
         <Constelacion className="pointer-events-none absolute -bottom-4 -left-8 h-[130px] w-[130px] opacity-[0.55] lg:bottom-6 lg:left-6 lg:h-[220px] lg:w-[220px]" />
         <div className="relative">
           <Wordmark className="text-[15px] text-on-primary" />
-          <h1 className="mt-4 max-w-[12ch] font-display text-[30px] font-bold leading-[1.15] text-on-primary lg:mt-8 lg:text-[42px]">
-            Tu inglés está a punto de amanecer.
+          <h1 className="mt-4 max-w-[16ch] font-display text-[28px] font-bold leading-[1.12] text-on-primary lg:mt-8 lg:text-[40px]">
+            Find your right teacher, learn your way
           </h1>
         </div>
         <Rigel
@@ -156,9 +156,6 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <p className="mt-8 text-center text-[12px] italic text-text-muted">
-            Find your teacher, learn your way.
-          </p>
         </form>
       </div>
     </main>

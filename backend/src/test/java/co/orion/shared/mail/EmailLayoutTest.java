@@ -46,7 +46,7 @@ class EmailLayoutTest {
 
     @Test
     void elPieLlevaElEsloganVigente() {
-        assertThat(layout.wrap("<p>Hola.</p>")).contains("Find the right teacher, learn your way.");
+        assertThat(layout.wrap("<p>Hola.</p>")).contains("Find your right teacher, learn your way.");
     }
 
     @Test

@@ -5,11 +5,16 @@ Resumen vivo de qué hay construido y desplegado. Se actualiza al cerrar cada pa
 ## Desplegado en producción (`master`)
 
 **Backend** (Spring Boot 4.1, `co.orion`): identidad + sesión, disponibilidad + `SlotCalculator`,
-reservas con regla de 24 h, asistencia, notificaciones por correo (con `.ics` + link a Google
-Calendar), panel admin (usuarios, reservas, métricas). Migraciones Flyway V1–V5.
+reservas, asistencia, notificaciones por correo (con `.ics` + link a Google Calendar), panel admin
+(usuarios, reservas, métricas). **Migraciones Flyway V1–V19.**
+
+Módulos: `identity`, `scheduling`, `catalog`, `billing`, `messaging`, `notifications`, `reputation`,
+`lifecycle`, `admin`, `shared`. La dependencia que sorprende es `identity → reputation` (el perfil
+público muestra la calificación), y por eso existe `lifecycle`: es el único sitio que necesita
+reserva, pago e historial a la vez.
 
 **Frontend** (Next 16, React 19, Tailwind v4): sistema de diseño **v2 "Amanecer cálido premium"**,
-mascota **Rigel** (5 poses, 2 tonos), PWA instalable (service worker + íconos de marca), y las
+mascota **Rigel** (6 poses, 2 tonos), PWA instalable (service worker + íconos de marca), y las
 pantallas del MVP (login, registro, profesores, reserva, mis clases, disponibilidad, perfil de
 profesor, admin).
 
@@ -55,12 +60,106 @@ vista previa de qué se destruye y confirmación escrita. Filtros del marketplac
 **Manual de operación:** todos los flujos por rol, reglas con sus valores y cómo probarlos —
 publicado como página web.
 
+## Interfaz y horas (03/09/2026)
+Horas en **formato de 12 h con AM/PM** en toda la app (`horaBogota`, `rangoHoras`, `hora12`,
+`rangoCompacto`); un rango que no cruza el mediodía dice el meridiano una sola vez ("6–9 PM"). En
+disponibilidad los `input[type=time]` dieron paso a selects, porque el navegador los pinta según su
+locale y eso queda fuera de nuestro control.
+
+"Mis clases" se agrupa por día sobre una línea de tiempo, con "Hoy"/"Mañana"/"Hace 3 días" y la
+marca "La siguiente". Navegación lateral por secciones, barra móvil limitada a cinco, controles más
+pequeños que dejan de estirarse a lo ancho de la tarjeta en escritorio.
+
+**Se retiró el último resto de WhatsApp**: el botón de contacto directo y el teléfono de la
+contraparte en `MyBookingResponse`. Con la comisión encendida ese campo no era una fuga de contacto
+sino la clase siguiente acordada por fuera; el test lo afirma ahora sobre el JSON crudo.
+
+## Correos con marca (03/09/2026)
+Todo correo pasa por `EmailLayout`: cabecera con el logo, tarjeta de 600 px y pie con el eslogan. Se
+aplica en `BrandedMailTransport`, un decorador `@Primary`, y no en cada redactor — hay cinco sitios
+que envían correo y el sexto que se escriba saldría sin marca si dependiera de acordarse.
+
+El logo va por URL pública (`{orion.app.base-url}/email/orion-logo.png`) y no como adjunto `cid:`:
+la API HTTP de Resend no entrega los embebidos igual que el SMTP local. El PNG viene aplanado sobre
+el crema de marca, porque los clientes en modo oscuro invierten el HTML pero no las imágenes.
+
+## Clases gratuitas (03/09/2026)
+Una tarifa de **0 COP** hace que la reserva se confirme sin pasar por la pasarela: el importe a
+cobrar es 0 y `CheckoutService` ya confirmaba en el acto en ese caso (el mismo camino de un crédito
+que cubre la clase entera). Lo único que lo impedía era el CHECK de la tarifa. Migración **V19**.
+
+El 0 es un valor aparte, no una rebaja del piso: entre 1 y 19.999 sigue prohibido. Solo lo pone un
+administrador desde *Usuarios → Tarifa*; el formulario del profesor conserva su piso de 20.000. En
+la interfaz se dice "Gratis", no "$0". Sirve para probar el flujo completo en producción sin mover
+dinero.
+
+## Calendarios (03/09/2026)
+**Disponibilidad del profesor**: rejilla de horas por días en escritorio, donde la duración de una
+franja es su altura y pulsar una celda vacía propone una franja que empieza ahí. En móvil siguen las
+tarjetas apiladas.
+
+**Mis clases**: interruptor Agenda / Calendario. La lista contesta "qué tengo ahora" y el calendario
+mensual "cómo va mi mes"; elegir un día muestra sus clases debajo, sin cambiar de pantalla.
+
+**Filtros del marketplace**: de entrada solo *Ordenar por* y *Precio*; el resto detrás de un botón
+*Avanzado* que indica cuántos filtros avanzados hay activos.
+
+## Mensajería en los dos sentidos (03/09/2026)
+El profesor ya puede iniciar la conversación, no solo responder. Las dos direcciones tienen gates
+distintos y por eso la regla vive en `ConversationService` y no en `SecurityConfig`: el estudiante
+escribe a cualquier profesor aprobado, el profesor **solo a estudiantes que ya reservaron con él**
+(`existsByProfessorIdAndStudentId`, cualquier estado, canceladas incluidas). Sin esa asimetría, la
+bandeja de cualquier estudiante quedaría abierta a mensajes no pedidos de todo el directorio.
+
+`CreateConversationRequest` pasó de `professorId` a `counterpartId`: el endpoint es uno solo y lo que
+cambia es quién lo llama.
+
+## Ficha del profesor con mínimos (03/09/2026)
+Titular de **5 palabras**, descripción entre **20 y 100**, con contador en vivo en el perfil y en la
+postulación. La regla vive en `ProfessorProfile.describe()`, que es la puerta por la que pasan los
+cuatro caminos que escriben la ficha —perfil propio, postulación, invitación del admin y sembrador—;
+ponerla en un servicio dejaba fuera a los otros tres. Lanza `UnprocessableException` desde el
+dominio, como ya hacía `TeacherApplication`. Vacío sigue valiendo; lo que no vale es escribir poco.
+
+## Panel de progreso del estudiante (03/09/2026)
+`GET /api/v1/me/progress` y el panel en `/cuenta`: clases tomadas, horas de práctica, racha de
+semanas, mejor racha, próxima clase, mapa del último año y con quién ha practicado. **Todo sale de
+reservas que ya existen**: ninguna métrica inventada, ningún campo que rellenar a mano.
+
+Qué cuenta como clase tomada: `COMPLETED`, y `CONFIRMED` que ya terminó. Los dos no-show quedan
+fuera —si faltó el estudiante no la tomó, si faltó el profesor no la hubo—.
+
+La aritmética vive en `LearningProgress`, clase pura como `SlotCalculator`: sin Spring, sin
+repositorios y con el "ahora" por parámetro. La racha sigue viva si la última semana con clase es
+esta o la pasada, y todo se decide en Bogotá (una clase del domingo a las 23:00 en Bogotá cae en
+lunes UTC y partiría la racha en dos).
+
+## Landing (03/09/2026)
+Fuera el Método ORION; en su lugar **Nosotros**, con cuatro cosas que la plataforma hace de verdad
+hoy. "Cómo funciona" encadena los cuatro pasos con flechas que se encienden en bucle (CSS con
+retardos, sin JavaScript). Seis objetivos en portada, cada sección con su descripción, y menos aire
+entre el hero, idiomas y cómo funciona.
+
+Rigel estrena **pose de profesor** (birrete, gafas y tiza) para `/registro?rol=profesor`.
+
+**Eslogan vigente: «Find your right teacher, learn your way»**, en login, landing, metadatos,
+manifest y pie de los correos.
+
 ## Pendiente / bloqueos conocidos
-- **Brief `orion-brief-pulido-v1`** (pasos 0–6): fotos en Mis Clases, `PhoneInput` E.164, fotos
-  para todos (**requiere `CLOUDINARY_URL`**), link Jitsi automático, reserva desktop semanal,
-  disponibilidad sin scroll, invitación de profesores. En curso.
-- **Config de producción**: SMTP real (`MAIL_*`), `ORION_APP_BASE_URL`, `NEXT_PUBLIC_SUPPORT_WHATSAPP`
-  (= `573023063447`), `NEXT_PUBLIC_SITE_URL` — variables de entorno en Railway.
+- **Nivel autodeclarado y objetivos con progreso**: aprobados por producto, **sin construir**. El
+  contexto técnico y las ocho decisiones abiertas están en un documento aparte para arquitectura.
+  La primera decisión es estructural: hoy **un estudiante no tiene ficha** (existe como `users` con
+  rol `STUDENT` y nada más).
+- **`bookings` no guarda el idioma de la clase.** Se deduce del profesor, y un profesor que enseña
+  dos idiomas hace esa deducción imposible. Bloquea cualquier métrica por idioma.
+- **Rotar la llave privada de Wompi**: viajó por chat. Nunca estuvo en el código ni se usa en este
+  flujo, pero conviene rotarla.
+- **Política de cancelación de una clase ya pagada**: el pago se queda retenido y aparece marcado en
+  la conciliación. Decidir entre abonar saldo o devolver desde Wompi es política comercial.
+- **Banderas de idioma**: los emoji de bandera no se renderizan en Windows. Habría que cambiarlos por
+  códigos ("EN", "FR") o SVG.
+- **Config de producción**: `ORION_APP_BASE_URL`, `WOMPI_*`, `RESEND_API_KEY`,
+  `NEXT_PUBLIC_SUPPORT_WHATSAPP`, `NEXT_PUBLIC_SITE_URL` en Railway.
 - Testimonios de la landing: ocultos hasta tener citas reales de Sofía.
 
 ## Mascota
