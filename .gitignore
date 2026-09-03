@@ -45,6 +45,17 @@ logs.*.csv
 
 # Metadatos que Windows pega al descargar archivos
 *:Zone.Identifier
+*.lnk
+
+# Perfiles de navegador que Lighthouse deja tras una auditoría. Se llegaron a commitear 550
+# archivos porque la ruta de Windows entra como un único nombre de carpeta con barras invertidas
+# dentro, y ningún patrón de directorio la atrapaba.
+C:\*
+lighthouse.*/
+
+# Resultados de Playwright
+test-results/
+playwright-report/
 
 # Capturas con credenciales/secretos — nunca al repo
 *Credentials*.png
