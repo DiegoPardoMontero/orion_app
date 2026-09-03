@@ -25,7 +25,12 @@ RUN addgroup -S orion && adduser -S orion -G orion && chown orion:orion /app
 COPY --from=build --chown=orion:orion /app/.next/standalone ./
 COPY --from=build --chown=orion:orion /app/.next/static ./.next/static
 COPY --from=build --chown=orion:orion /app/public ./public
-COPY --chmod=755 docker-entrypoint.sh ./docker-entrypoint.sh
+# Se toma de la etapa `build` y NO del contexto, aunque el archivo esté ahí al lado. Motivo: el
+# builder distribuido de Railway reparte las etapas entre nodos, y el que ejecuta esta última puede
+# no tener el snapshot del contexto — falla con "lstat /docker-entrypoint.sh: no such file or
+# directory" con un Dockerfile que compila perfecto en local. La etapa `build` ya lo trajo con
+# `COPY . .`, así que copiarlo de allí quita la última dependencia del contexto en esta etapa.
+COPY --from=build --chmod=755 --chown=orion:orion /app/docker-entrypoint.sh ./docker-entrypoint.sh
 USER orion
 EXPOSE 3000
 # El entrypoint inyecta el API_URL real en el manifest y luego arranca `node server.js`.
