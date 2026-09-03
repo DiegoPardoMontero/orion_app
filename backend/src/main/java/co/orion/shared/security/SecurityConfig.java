@@ -90,9 +90,11 @@ public class SecurityConfig {
                 // Reseñar una clase es del estudiante; reportar una reseña, del profesor reseñado.
                 .requestMatchers(HttpMethod.POST, "/api/v1/bookings/*/review").hasRole("STUDENT")
                 .requestMatchers(HttpMethod.POST, "/api/v1/reviews/*/report").hasRole("PROFESSOR")
-                // Mensajería: abrir un hilo es cosa del estudiante; leer y responder, de cualquiera de
-                // los dos participantes (el servicio verifica que el hilo sea suyo, 403 a terceros).
-                .requestMatchers(HttpMethod.POST, "/api/v1/conversations").hasRole("STUDENT")
+                // Mensajería: los dos lados pueden abrir un hilo, leerlo y responder. Quién puede
+                // escribirle a quién no se decide aquí sino en el servicio, porque las dos reglas no
+                // son la misma: el estudiante escribe a cualquier profesor aprobado, el profesor solo
+                // a estudiantes que ya reservaron con él. El servicio también verifica que el hilo
+                // sea suyo (403 a terceros).
                 .requestMatchers("/api/v1/conversations", "/api/v1/conversations/**")
                         .hasAnyRole("STUDENT", "PROFESSOR")
                 // Las notificaciones in-app son de cualquier usuario autenticado (cae en anyRequest,

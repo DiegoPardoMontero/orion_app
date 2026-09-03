@@ -9,11 +9,15 @@ import {
   Heart,
   MessageCircle,
   Plane,
+  ShieldCheck,
+  Sparkles,
+  Star,
   Target,
   TrendingUp,
   UserRoundSearch,
 } from "lucide-react";
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { Avatar } from "@/components/Avatar";
 import { BuscadorHero } from "@/components/BuscadorHero";
 import { EnsenaCta } from "@/components/EnsenaCta";
@@ -59,19 +63,38 @@ const IDIOMAS_DESTACADOS = [
   { code: "ES", nombre: "Español", emoji: "🇪🇸", texto: "Perfecciona tu español o apréndelo desde cero." },
 ];
 
-const METODO = [
-  { letra: "O", nombre: "Observe", texto: "Escucha y absorbe el idioma real, no el de los libros." },
-  { letra: "R", nombre: "Relate", texto: "Conecta lo que aprendes con tu vida y tu trabajo." },
-  { letra: "I", nombre: "Interact", texto: "Habla desde el primer minuto, sin miedo a equivocarte." },
-  { letra: "O", nombre: "Optimize", texto: "Refina con la guía de tu profesor, clase a clase." },
-  { letra: "N", nombre: "Navigate", texto: "Avanza a tu ritmo hacia la confianza que buscas." },
+const PASOS = [
+  { icono: UserRoundSearch, titulo: "Encuentra", texto: "Filtra por idioma, objetivo u horario. Compara perfiles reales." },
+  { icono: CalendarCheck, titulo: "Reserva", texto: "Elige un cupo disponible y confírmalo en segundos." },
+  { icono: MessageCircle, titulo: "Aprende", texto: "Toma tu clase en vivo por videollamada. Todo se coordina dentro de Orión." },
+  { icono: TrendingUp, titulo: "Avanza", texto: "Vuelve con el mismo profesor y construye una rutina." },
 ];
 
-const PASOS = [
-  { icono: UserRoundSearch, titulo: "Encuentra", texto: "Filtra por idioma, objetivo y horario, y compara perfiles reales." },
-  { icono: CalendarCheck, titulo: "Reserva", texto: "Elige un cupo disponible y confírmalo en segundos." },
-  { icono: MessageCircle, titulo: "Aprende", texto: "Toma tu clase en vivo por videollamada; todo se coordina dentro de Orión." },
-  { icono: TrendingUp, titulo: "Avanza", texto: "Vuelve con el mismo profesor y construye una rutina." },
+/**
+ * Lo que sostiene la promesa, contado sin cifras que no podamos respaldar: cada punto describe algo
+ * que la plataforma hace de verdad hoy, no una aspiración.
+ */
+const NOSOTROS = [
+  {
+    icono: ShieldCheck,
+    titulo: "Revisamos a cada profesor",
+    texto: "Nadie aparece en el directorio sin pasar por una postulación que revisa nuestro equipo: hoja de vida, formación y experiencia.",
+  },
+  {
+    icono: Sparkles,
+    titulo: "Clases en vivo, nunca grabadas",
+    texto: "Sesenta minutos con una persona al otro lado que prepara la clase para ti. Sin videos enlatados ni ejercicios automáticos.",
+  },
+  {
+    icono: Star,
+    titulo: "Reseñas de quien sí tomó la clase",
+    texto: "Solo puede calificar quien asistió. La nota que ves viene de estudiantes reales, no de un formulario abierto a cualquiera.",
+  },
+  {
+    icono: MessageCircle,
+    titulo: "Todo ocurre en un solo sitio",
+    texto: "Reservas, pagos, mensajes y calendario viven dentro de Orión. No hay que perseguir a nadie por otro canal.",
+  },
 ];
 
 /** Íconos para las tarjetas de objetivo, por código conocido; genérico como respaldo. */
@@ -100,6 +123,9 @@ export default async function PortadaPage() {
   const mostrarProfesores = profesores.length >= 4;
   const idiomas = languages ?? [];
   const objetivos = goals ?? [];
+  // Seis en portada: la rejilla es de tres columnas y el séptimo dejaba una fila con una sola
+  // tarjeta suelta. Los demás siguen estando en los filtros del directorio.
+  const objetivosDestacados = objetivos.slice(0, 6);
   const whatsapp = whatsappSoporte("Hola, quiero saber más sobre las clases de Orión.");
 
   return (
@@ -167,19 +193,24 @@ export default async function PortadaPage() {
       </header>
 
       {/* — Idiomas destacados — */}
-      <section id="idiomas" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-12 lg:px-8 lg:py-16">
+      <section id="idiomas" className="mx-auto max-w-6xl scroll-mt-20 px-5 pb-10 pt-8 lg:px-8 lg:pb-12 lg:pt-10">
         <div className="text-center">
           <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-primary-strong">
             Idiomas
           </p>
-          <h2 className="mt-3 font-display text-h2 font-bold">Elige el idioma que quieres hablar.</h2>
+          <h2 className="mt-2 font-display text-h2 font-bold">Elige el idioma que quieres hablar.</h2>
+          <p className="mx-auto mt-2 max-w-[54ch] text-[15px] text-text-secondary">
+            Tres idiomas con profesores publicados hoy. Entra al que te interesa para ver quién
+            enseña qué.
+          </p>
         </div>
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
-          {IDIOMAS_DESTACADOS.map((idioma) => (
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          {IDIOMAS_DESTACADOS.map((idioma, i) => (
             <Link
               key={idioma.code}
               href={`/idiomas/${idioma.code}`}
-              className="group flex flex-col rounded-card bg-surface-raised p-7 shadow-md transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-lg"
+              style={{ "--i": i } as CSSProperties}
+              className="aparece group flex flex-col rounded-card bg-surface-raised p-7 shadow-md transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-lg"
             >
               <span aria-hidden="true" className="text-[40px] leading-none">
                 {idioma.emoji}
@@ -210,7 +241,10 @@ export default async function PortadaPage() {
                 <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-primary-strong">
                   La comunidad
                 </p>
-                <h2 className="mt-3 font-display text-h2 font-bold">Conoce a los profesores.</h2>
+                <h2 className="mt-2 font-display text-h2 font-bold">Conoce a los profesores.</h2>
+                <p className="mt-2 max-w-[48ch] text-[15px] text-text-secondary">
+                  Perfiles reales con su tarifa, sus idiomas y sus horarios a la vista.
+                </p>
               </div>
               <Link
                 href="/profesores"
@@ -221,8 +255,8 @@ export default async function PortadaPage() {
               </Link>
             </div>
             <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {profesores.map((profesor) => (
-                <li key={profesor.id}>
+              {profesores.map((profesor, i) => (
+                <li key={profesor.id} className="aparece" style={{ "--i": i } as CSSProperties}>
                   <TarjetaProfesor profesor={profesor} />
                 </li>
               ))}
@@ -232,79 +266,136 @@ export default async function PortadaPage() {
       )}
 
       {/* — Cómo funciona — */}
-      <section id="como-funciona" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-12 lg:px-8 lg:py-16">
+      <section id="como-funciona" className="mx-auto max-w-6xl scroll-mt-20 px-5 pb-12 pt-8 lg:px-8 lg:pb-16 lg:pt-10">
         <div className="text-center">
           <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-primary-strong">
             Cómo funciona Orión
           </p>
-          <h2 className="mt-3 font-display text-h2 font-bold">De encontrar a avanzar, en cuatro pasos.</h2>
+          <h2 className="mt-2 font-display text-h2 font-bold">De encontrar a avanzar, en cuatro pasos.</h2>
+          <p className="mx-auto mt-2 max-w-[54ch] text-[15px] text-text-secondary">
+            Del primer filtro a la primera clase hay minutos, no trámites. Esto es todo el camino.
+          </p>
         </div>
-        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+
+        {/*
+          Los cuatro pasos encadenados. La animación se enciende paso a paso en bucle porque lo que
+          cuesta explicar de un proceso no son las etapas sino que van en un orden: verlo recorrerse
+          solo dice eso sin una línea de texto. Es CSS con retardos escalonados —ver `.paso-icono` en
+          globals.css—, así que no hay temporizador que mantener ni estado que se desincronice.
+        */}
+        <ol className="mt-8 grid gap-x-2 gap-y-6 sm:grid-cols-2 lg:grid-cols-[repeat(4,1fr)]">
           {PASOS.map((paso, i) => {
             const Icono = paso.icono;
             return (
-              <div key={i} className="rounded-card bg-surface-raised p-6 shadow-sm">
-                <div className="flex h-12 w-12 items-center justify-center rounded-base bg-primary-soft text-primary-strong">
-                  <Icono size={22} strokeWidth={1.75} />
-                </div>
-                <p className="mt-4 font-display text-[19px] font-bold">
+              <li
+                key={i}
+                className="relative flex flex-col items-center px-2 text-center"
+                style={{ "--i": i } as CSSProperties}
+              >
+                {/*
+                  La flecha vive en el paso ANTERIOR y apunta al siguiente; el último no la lleva.
+                  Va del borde de un icono al del siguiente (los 34 px del radio más un respiro), no
+                  de centro a centro: si no, la línea nace dentro del círculo.
+                */}
+                {i < PASOS.length - 1 && (
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute top-7 hidden lg:flex lg:items-center"
+                    style={{ left: "calc(50% + 34px)", width: "calc(100% - 68px)" }}
+                  >
+                    <span className="h-[2px] w-full rounded-full bg-border" />
+                    {/*
+                      La punta es un triángulo CSS colgado del borde derecho de la propia barra, así
+                      que viaja con ella mientras crece. Como elemento aparte había que recortar el
+                      contenedor para ocultarla al principio, y ese mismo recorte se la comía al
+                      final.
+                    */}
+                    <span
+                      className="paso-flecha absolute left-0 top-1/2 h-[2px] -translate-y-1/2 rounded-full bg-primary after:absolute after:right-0 after:top-1/2 after:-translate-y-1/2 after:border-y-[4.5px] after:border-l-[7px] after:border-y-transparent after:border-l-primary after:content-['']"
+                      style={{ "--i": i } as CSSProperties}
+                    />
+                  </span>
+                )}
+
+                <span className="paso-icono relative z-10 grid h-14 w-14 place-items-center rounded-full bg-surface-sunken text-text-muted shadow-sm">
+                  <Icono size={24} strokeWidth={1.9} />
+                </span>
+
+                <p className="mt-4 font-display text-[18px] font-bold">
                   <span className="text-primary-strong">{i + 1}.</span> {paso.titulo}
                 </p>
-                <p className="mt-1.5 text-[14px] leading-relaxed text-text-secondary">{paso.texto}</p>
-              </div>
+                <p className="mt-1.5 max-w-[30ch] text-[14px] leading-relaxed text-text-secondary">
+                  {paso.texto}
+                </p>
+              </li>
             );
           })}
-        </div>
+        </ol>
       </section>
 
-      {/* — El Método ORION — */}
+      {/* — Nosotros — */}
       <section id="nosotros" className="scroll-mt-20 bg-surface-sunken/60 py-12 lg:py-16">
         <div className="mx-auto max-w-6xl px-5 lg:px-8">
           <div className="text-center">
             <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-primary-strong">
-              El diferenciador
+              Nosotros
             </p>
-            <h2 className="mt-3 font-display text-h2 font-bold">
-              El Método ORION<span className="align-super text-[0.6em]">®</span>
+            <h2 className="mt-2 font-display text-h2 font-bold">
+              Una academia, no un catálogo.
             </h2>
-            <p className="mx-auto mt-3 max-w-[52ch] text-[15px] text-text-secondary">
-              Cinco movimientos que repites en cada clase hasta que hablar deja de dar miedo.
+            <p className="mx-auto mt-2 max-w-[58ch] text-[15px] leading-relaxed text-text-secondary">
+              Orión existe para que aprender un idioma deje de depender de la suerte con la que
+              elegiste profesor. Nos ocupamos de que quien está al otro lado sepa enseñar, de que
+              reservar sea cuestión de minutos y de que todo lo demás no te robe tiempo.
             </p>
           </div>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {METODO.map((paso, i) => (
-              <div
-                key={i}
-                className="flex flex-col items-center rounded-card bg-surface-raised p-6 text-center shadow-sm"
-              >
-                <span className="gradient-avatar grid h-14 w-14 place-items-center rounded-full font-display text-[24px] font-extrabold text-on-primary">
-                  {paso.letra}
-                </span>
-                <p className="mt-3 font-display text-[17px] font-bold">{paso.nombre}</p>
-                <p className="mt-1.5 text-[13.5px] leading-relaxed text-text-secondary">{paso.texto}</p>
-              </div>
-            ))}
-          </div>
+
+          <ul className="mt-8 grid gap-4 sm:grid-cols-2">
+            {NOSOTROS.map((punto, i) => {
+              const Icono = punto.icono;
+              return (
+                <li
+                  key={i}
+                  className="aparece flex gap-4 rounded-card bg-surface-raised p-6 shadow-sm"
+                  style={{ "--i": i } as CSSProperties}
+                >
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-base bg-primary-soft text-primary-strong">
+                    <Icono size={20} strokeWidth={1.9} />
+                  </span>
+                  <div>
+                    <p className="font-display text-[17px] font-bold">{punto.titulo}</p>
+                    <p className="mt-1.5 text-[14px] leading-relaxed text-text-secondary">
+                      {punto.texto}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       </section>
 
       {/* — Aprende para lo que te importa — */}
-      {objetivos.length > 0 && (
+      {objetivosDestacados.length > 0 && (
         <section className="mx-auto max-w-6xl px-5 py-12 lg:px-8 lg:py-16">
           <div className="text-center">
             <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-primary-strong">
               Tu objetivo
             </p>
-            <h2 className="mt-3 font-display text-h2 font-bold">Aprende para lo que te importa.</h2>
+            <h2 className="mt-2 font-display text-h2 font-bold">Aprende para lo que te importa.</h2>
+            <p className="mx-auto mt-2 max-w-[54ch] text-[15px] text-text-secondary">
+              Cada objetivo filtra el directorio por quienes lo enseñan. Empieza por el tuyo.
+            </p>
           </div>
-          <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {objetivos.map((objetivo) => {
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {objetivosDestacados.map((objetivo, i) => {
               const Icono = ICONO_OBJETIVO[objetivo.code ?? ""] ?? Target;
               return (
                 <Link
                   key={objetivo.code}
                   href={`/profesores?goal=${objetivo.code}`}
-                  className="group flex items-center gap-4 rounded-card bg-surface-raised p-5 shadow-sm transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md"
+                  style={{ "--i": i } as CSSProperties}
+                  className="aparece group flex items-center gap-4 rounded-card bg-surface-raised p-5 shadow-sm transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md"
                 >
                   <span className="grid h-11 w-11 shrink-0 place-items-center rounded-base bg-accent-peach-soft text-[#8a5a33]">
                     <Icono size={20} strokeWidth={1.9} />

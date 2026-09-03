@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import co.orion.identity.domain.User;
+import co.orion.identity.domain.UserRole;
 import co.orion.messaging.application.ConversationService;
 import co.orion.shared.security.OrionUserDetails;
 import jakarta.validation.Valid;
@@ -28,11 +30,18 @@ public class ConversationController {
         this.conversations = conversations;
     }
 
-    /** El estudiante abre (o reencuentra) su conversación con un profesor aprobado. */
+    /**
+     * Abre (o reencuentra) la conversación con la contraparte. Los dos lados pueden iniciarla, con
+     * gates distintos: el estudiante escribe a cualquier profesor aprobado —elegir con quién hablar
+     * es parte de elegir profesor—; el profesor solo a estudiantes que ya reservaron con él.
+     */
     @PostMapping
     public ConversationSummaryResponse open(@AuthenticationPrincipal OrionUserDetails principal,
                                             @Valid @RequestBody CreateConversationRequest body) {
-        var conversation = conversations.openAsStudent(principal.user(), body.professorId());
+        User actor = principal.user();
+        var conversation = actor.getRole() == UserRole.PROFESSOR
+                ? conversations.openAsProfessor(actor, body.counterpartId())
+                : conversations.openAsStudent(actor, body.counterpartId());
         // Recién abierta o no, la devolvemos con la forma de la bandeja para que el frontend
         // navegue directo; los no leídos serán 0 si acaba de crearse.
         return conversations.inbox(principal.user()).stream()

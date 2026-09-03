@@ -151,7 +151,7 @@ function describir(estado: PaymentStatusResponse): {
         icono: <CalendarCheck size={26} strokeWidth={1.75} />,
         titulo: "¡Tu clase quedó confirmada!",
         texto:
-          "Te enviamos el correo con la invitación al calendario y, si es virtual, el enlace de la sala.",
+          "Te enviamos el correo con la invitación al calendario. Si la clase es virtual, incluye el enlace de la sala.",
       };
     case "RELEASED":
       return {

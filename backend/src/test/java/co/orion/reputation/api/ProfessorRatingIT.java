@@ -83,7 +83,7 @@ class ProfessorRatingIT extends ApiIntegrationSupport {
         createUser("admin@orion.test", "Admin", UserRole.ADMIN);
 
         ProfessorProfile profile = new ProfessorProfile(maria);
-        profile.describe("Inglés conversacional", "Diez años de experiencia.");
+        profile.describe("Profesora de inglés conversacional para adultos", "Enseño inglés conversacional a adultos que ya estudiaron el idioma alguna vez y aun así no se atreven a hablarlo. Practicamos desde la primera clase con temas que te importan de verdad.");
         profile.changeRate(50000L);
         profile.publish();
         profiles.save(profile);

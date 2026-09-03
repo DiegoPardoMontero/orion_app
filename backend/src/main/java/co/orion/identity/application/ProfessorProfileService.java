@@ -75,31 +75,11 @@ public class ProfessorProfileService {
         return toOwnResponse(profile);
     }
 
-    /** Tope de la descripción pública. Cien palabras es una presentación, no una hoja de vida. */
-    public static final int MAX_PALABRAS_BIO = 100;
-
-    /**
-     * Se cuenta en PALABRAS y no en caracteres a propósito: el límite es sobre lo que el estudiante
-     * tiene que leer antes de decidir, y eso se mide en palabras. Un tope en caracteres cortaría a
-     * mitad de frase a quien escriba palabras largas y premiaría al que abrevia.
-     */
-    private void requireBioWithinLimit(String bio) {
-        if (bio == null || bio.isBlank()) {
-            return;
-        }
-        int palabras = bio.trim().split("\\s+").length;
-        if (palabras > MAX_PALABRAS_BIO) {
-            throw new UnprocessableException("Tu descripción tiene " + palabras + " palabras: el máximo son "
-                    + MAX_PALABRAS_BIO + ". Resúmela un poco.");
-        }
-    }
-
     @Transactional
     public ProfileResponse updateOwnProfile(UUID professorId, UpdateProfileRequest req) {
         ProfessorProfile profile = profiles.findByIdWithUser(professorId)
                 .orElseGet(() -> createEmptyProfileFor(professorId));
 
-        requireBioWithinLimit(req.bio());
         profile.describe(req.headline(), req.bio());
         profile.enrich(req.countryCode(), req.city(), req.nativeLanguage(),
                 req.yearsExperience(), req.education(), req.certified(), req.acceptsTrial());
@@ -132,7 +112,6 @@ public class ProfessorProfileService {
         ProfessorProfile profile = profiles.findByIdWithUser(professorId)
                 .orElseGet(() -> createEmptyProfileFor(professorId));
 
-        requireBioWithinLimit(req.bio());
         profile.describe(req.headline(), req.bio());
         profile.enrich(req.countryCode(), req.city(), req.nativeLanguage(),
                 req.yearsExperience(), req.education(), req.certified(), req.acceptsTrial());

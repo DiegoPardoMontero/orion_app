@@ -69,7 +69,8 @@ class ProfessorInviteIT extends ApiIntegrationSupport {
     private ResponseEntity<UserResponse> accept(String token, String fullName, String password) {
         return rest.postForEntity(ACCEPT,
                 new AcceptInviteRequest(token, fullName, password, "+573001112233",
-                        "Conversación · A1-B1", "Me encanta enseñar."),
+                        // Titular y descripción cumplen los mínimos de palabras de la ficha pública.
+                        "Conversación en inglés para adultos", "Me encanta enseñar y llevo años acompañando a estudiantes que quieren soltarse al hablar. Cada clase se arma alrededor de lo que necesitas contar esa semana."),
                 UserResponse.class);
     }
 

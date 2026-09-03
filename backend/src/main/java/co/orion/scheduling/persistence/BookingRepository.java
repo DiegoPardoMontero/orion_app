@@ -37,6 +37,15 @@ public interface BookingRepository extends JpaRepository<Booking, UUID>,
                                                              Instant from,
                                                              Instant to);
 
+    /**
+     * ¿Han coincidido alguna vez en una clase? Es lo que habilita al profesor a iniciar una
+     * conversación: sin esa relación previa podría escribirle a cualquiera del directorio.
+     *
+     * Cuenta cualquier estado, incluidas las canceladas: si una clase se canceló, hablarlo es
+     * justamente lo que hay que poder hacer.
+     */
+    boolean existsByProfessorIdAndStudentId(UUID professorId, UUID studentId);
+
     /** Próximas: activas y que aún no empiezan, de la más cercana a la más lejana. */
     List<Booking> findByStudentIdAndStatusInAndStartsAtAfterOrderByStartsAtAsc(
             UUID studentId, Collection<BookingStatus> statuses, Instant now);

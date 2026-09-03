@@ -125,9 +125,12 @@ public class DevDataSeeder implements ApplicationRunner {
         createIfMissing("maria@orion.local", "María Gómez", UserRole.PROFESSOR, DEV_PASSWORD)
                 .ifPresent(professor -> {
                     ProfessorProfile profile = new ProfessorProfile(professor);
-                    profile.describe("Profesora de inglés conversacional",
-                            "Diez años enseñando inglés a profesionales colombianos. "
-                                    + "Clases enfocadas en fluidez y confianza al hablar.");
+                    profile.describe("Profesora de inglés conversacional para profesionales",
+                            "Llevo diez años enseñando inglés a profesionales colombianos que "
+                                    + "necesitan hablar en reuniones sin quedarse en blanco. Mis "
+                                    + "clases se apoyan en tu trabajo real: practicamos con tus "
+                                    + "correos, tus presentaciones y las conversaciones que de "
+                                    + "verdad te tocan cada semana.");
                     profile.enrich("CO", "Bogotá", "ES", (short) 10,
                             "Lic. en Lenguas Modernas, Universidad Nacional", true, true);
                     profile.changeRate(45000L);
@@ -144,8 +147,12 @@ public class DevDataSeeder implements ApplicationRunner {
         createIfMissing("juan@orion.local", "Juan Torres", UserRole.PROFESSOR, DEV_PASSWORD)
                 .ifPresent(professor -> {
                     ProfessorProfile profile = new ProfessorProfile(professor);
-                    profile.describe("Profesor de francés para viajeros",
-                            "Francés práctico para viajar y conversar sin miedo.");
+                    profile.describe("Profesor de francés práctico para viajeros",
+                            "Enseño el francés que se usa fuera del aula: pedir en un "
+                                    + "restaurante, resolver un problema en el aeropuerto o "
+                                    + "sostener una charla con alguien que acabas de conocer. "
+                                    + "Empezamos hablando desde la primera clase, aunque sea con "
+                                    + "frases sueltas.");
                     profile.enrich("CO", "Medellín", "ES", (short) 6,
                             "Certificación DELF C1", false, true);
                     profile.changeRate(55000L);

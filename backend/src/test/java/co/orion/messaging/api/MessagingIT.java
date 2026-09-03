@@ -33,6 +33,9 @@ import co.orion.messaging.domain.Message;
 import co.orion.messaging.persistence.ConversationRepository;
 import co.orion.messaging.persistence.MessageRepository;
 import co.orion.messaging.persistence.NotificationRepository;
+import co.orion.scheduling.TestBookings;
+import co.orion.scheduling.domain.BookingModality;
+import co.orion.scheduling.persistence.BookingRepository;
 import co.orion.support.ApiIntegrationSupport;
 import jakarta.mail.internet.MimeMessage;
 import static org.mockito.Mockito.when;
@@ -71,6 +74,9 @@ class MessagingIT extends ApiIntegrationSupport {
     @Autowired
     private NotificationRepository notifications;
 
+    @Autowired
+    private BookingRepository bookings;
+
     private User ana;      // estudiante
     private User maria;    // profesora aprobada y publicada
     private User pedro;    // profesor NO aprobado
@@ -82,6 +88,7 @@ class MessagingIT extends ApiIntegrationSupport {
     @BeforeEach
     void seed() {
         notifications.deleteAll();
+        bookings.deleteAll();
         messages.deleteAll();
         conversations.deleteAll();
         profiles.deleteAll();
@@ -125,6 +132,61 @@ class MessagingIT extends ApiIntegrationSupport {
         UUID second = openWithMaria().id();
 
         assertThat(first).isEqualTo(second);
+        assertThat(conversations.findAll()).hasSize(1);
+    }
+
+    /**
+     * El otro lado del hilo. El profesor no elige a quién enseñar del mismo modo que el estudiante
+     * elige profesor, así que su puerta es más estrecha: solo quien ya reservó con él.
+     */
+    @Test
+    void aProfessorOpensAConversationWithAStudentWhoBookedWithThem() {
+        bookings.save(TestBookings.confirmed(ana.getId(), maria.getId(),
+                java.time.Instant.parse("2026-07-15T14:00:00Z"), BookingModality.VIRTUAL, null, ana.getId()));
+
+        ResponseEntity<ConversationSummaryResponse> response = post("/api/v1/conversations", mariaSession,
+                new CreateConversationRequest(ana.getId()), ConversationSummaryResponse.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().counterpart().id()).isEqualTo(ana.getId());
+    }
+
+    /** Sin clase de por medio, la bandeja del estudiante quedaría abierta a mensajes no pedidos. */
+    @Test
+    void aProfessorCannotOpenWithAStudentWhoNeverBookedWithThem() {
+        ResponseEntity<String> response = post("/api/v1/conversations", mariaSession,
+                new CreateConversationRequest(sofia.getId()), String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(conversations.findAll()).isEmpty();
+    }
+
+    /** Una clase cancelada también cuenta: hablarlo es justo lo que hay que poder hacer. */
+    @Test
+    void aCancelledClassStillLetsTheProfessorWrite() {
+        var booking = TestBookings.confirmed(ana.getId(), maria.getId(),
+                java.time.Instant.parse("2026-07-15T14:00:00Z"), BookingModality.VIRTUAL, null, ana.getId());
+        booking.cancel(co.orion.scheduling.domain.BookingStatus.CANCELLED_BY_PROFESSOR, maria.getId(),
+                java.time.Instant.parse("2026-07-14T14:00:00Z"), "Imprevisto");
+        bookings.save(booking);
+
+        ResponseEntity<ConversationSummaryResponse> response = post("/api/v1/conversations", mariaSession,
+                new CreateConversationRequest(ana.getId()), ConversationSummaryResponse.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    /** Los dos lados llegan al MISMO hilo: no hay una conversación por dirección. */
+    @Test
+    void bothSidesLandOnTheSameThread() {
+        bookings.save(TestBookings.confirmed(ana.getId(), maria.getId(),
+                java.time.Instant.parse("2026-07-15T14:00:00Z"), BookingModality.VIRTUAL, null, ana.getId()));
+
+        UUID abiertaPorLaEstudiante = openWithMaria().id();
+        UUID abiertaPorLaProfesora = post("/api/v1/conversations", mariaSession,
+                new CreateConversationRequest(ana.getId()), ConversationSummaryResponse.class).getBody().id();
+
+        assertThat(abiertaPorLaProfesora).isEqualTo(abiertaPorLaEstudiante);
         assertThat(conversations.findAll()).hasSize(1);
     }
 

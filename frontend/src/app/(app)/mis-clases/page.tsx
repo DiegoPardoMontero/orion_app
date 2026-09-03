@@ -296,20 +296,20 @@ function TarjetaClase({
   const virtual = clase.modality === "VIRTUAL";
 
   const router = useRouter();
-  // Abre el hilo con el profesor —o reencuentra el que ya existía— y salta a él. Es del lado del
-  // estudiante porque el backend solo permite iniciar la conversación en esa dirección: el profesor
-  // responde desde su bandeja.
+  // Abre el hilo con la contraparte —o reencuentra el que ya existía— y salta a él. Vale para los
+  // dos lados: el mismo endpoint aplica una regla u otra según quién pida. Para el profesor la
+  // condición la cumple esta misma tarjeta, que es una clase que comparten.
   const escribir = useMutation({
     mutationFn: () =>
       apiFetch<ConversationSummary>("/api/v1/conversations", {
         method: "POST",
-        body: { professorId: clase.counterpart?.id },
+        body: { counterpartId: clase.counterpart?.id },
       }),
     onSuccess: (conv) => {
       if (conv.id) router.push(`/mensajes/${conv.id}`);
     },
   });
-  const puedeEscribir = !esProfesor && !!contraparte?.id;
+  const puedeEscribir = !!contraparte?.id;
 
   // Una clase futura y confirmada que NO se puede cancelar solo puede ser por la regla de 24 h.
   const dentroDeLas24 = scope === "upcoming" && clase.status === "CONFIRMED" && !clase.canCancel;
@@ -441,7 +441,9 @@ function TarjetaClase({
               Unirse a la clase
             </a>
           )}
-          {/* Escribirle nace aquí más que en la bandeja: la duda aparece mirando la clase. */}
+          {/* Escribirle nace aquí más que en la bandeja: la duda aparece mirando la clase. Y va en
+              los dos sentidos — el profesor que necesita avisar algo de una clase concreta tampoco
+              debería tener que buscar al estudiante en su bandeja. */}
           {puedeEscribir && (
             <Boton
               variante="fantasma"

@@ -289,6 +289,78 @@ body {
   transform-box: fill-box;
 }
 
+/*
+ * — Cadena de "Cómo funciona" —
+ *
+ * Los cuatro pasos se encienden en bucle, uno tras otro, como una carga que recorre el camino de
+ * principio a fin. Es CSS puro y no JavaScript: son cuatro elementos con retardos escalonados sobre
+ * el mismo ciclo, así que no hay estado que sincronizar ni temporizador que se desfase al volver a
+ * la pestaña. `--i` es el índice del paso, que fija su turno dentro del ciclo.
+ */
+@keyframes paso-encendido {
+  0%,
+  4% {
+    background-color: var(--color-surface-sunken);
+    color: var(--color-text-muted);
+    transform: scale(1);
+  }
+  10%,
+  22% {
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
+    transform: scale(1.12);
+  }
+  30%,
+  100% {
+    background-color: var(--color-primary-soft);
+    color: var(--color-primary-strong);
+    transform: scale(1);
+  }
+}
+
+/*
+ * La flecha avanza de izquierda a derecha justo después de encenderse su paso. Se anima el ANCHO y
+ * no `scaleX`: con una escala, la punta de la flecha se estiraría junto con la línea y dejaría de
+ * parecer una punta.
+ */
+@keyframes flecha-avance {
+  0%,
+  14% {
+    width: 0;
+  }
+  26%,
+  100% {
+    width: 100%;
+  }
+}
+
+.paso-icono {
+  animation: paso-encendido 5.2s cubic-bezier(0.34, 1.32, 0.64, 1) infinite;
+  animation-delay: calc(var(--i) * 1.1s);
+}
+
+.paso-flecha {
+  animation: flecha-avance 5.2s ease-out infinite;
+  animation-delay: calc(var(--i) * 1.1s);
+}
+
+/* Entrada por secciones al hacer scroll, sin observador: la landing es corta y el retardo basta. */
+@keyframes aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.aparece {
+  animation: aparecer 0.55s cubic-bezier(0.22, 0.9, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
 /* Quien pide menos movimiento, no lo recibe: se deja el estado final, sin transición. */
 @media (prefers-reduced-motion: reduce) {
   *,

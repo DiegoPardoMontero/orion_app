@@ -149,7 +149,11 @@ class ProfessorSearchIT extends ApiIntegrationSupport {
     private UUID professor(String email, String name, long rate, boolean certified, boolean published) {
         User u = createUser(email, name, UserRole.PROFESSOR);
         ProfessorProfile p = new ProfessorProfile(u);
-        p.describe(name, "Bio de " + name);
+        // Titular y descripción cumplen los mínimos de palabras que exige el dominio.
+        p.describe(name + " enseña idiomas en Orión",
+                "Perfil de prueba de " + name + ". Da clases en vivo, prepara cada sesión "
+                        + "con antelación y adapta el ritmo a lo que necesita cada estudiante "
+                        + "que reserva con ella.");
         p.enrich("CO", "Bogotá", null, (short) 3, null, certified, true);
         p.changeRate(rate);
         if (published) {

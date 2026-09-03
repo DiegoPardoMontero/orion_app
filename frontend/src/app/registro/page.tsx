@@ -7,7 +7,7 @@ import { Suspense, useState, type FormEvent } from "react";
 import { AvisoError } from "@/components/estados";
 import { Constelacion, Wordmark } from "@/components/marca";
 import { PhoneInput } from "@/components/PhoneInput";
-import { Rigel } from "@/components/Rigel";
+import { Rigel, type RigelPose } from "@/components/Rigel";
 import { BotonPrincipal, Campo, Segmento, Spinner } from "@/components/ui";
 import { ApiError } from "@/lib/api/fetch";
 import { HOME_BY_ROLE } from "@/lib/auth/roles";
@@ -24,6 +24,7 @@ type Intencion = "aprender" | "ensenar";
 const COPY: Record<Intencion, {
   heroTitulo: string;
   heroTexto: string;
+  pose: RigelPose;
   subtitulo: string;
   whatsapp: string;
   boton: string;
@@ -31,6 +32,7 @@ const COPY: Record<Intencion, {
   aprender: {
     heroTitulo: "Da el primer paso hoy.",
     heroTexto: "Soy Rigel. Te acompaño desde tu primera clase hasta que hables sin pensarlo.",
+    pose: "saludo",
     subtitulo: "Crea tu cuenta y reserva tu primera clase.",
     whatsapp: "Lo usamos para avisarte de tus clases. Con tu profesor hablas dentro de Orión.",
     boton: "Crear cuenta",
@@ -38,6 +40,9 @@ const COPY: Record<Intencion, {
   ensenar: {
     heroTitulo: "Enseña donde te escuchan.",
     heroTexto: "Soy Rigel. Te acompaño desde tu postulación hasta tu primera clase dictada.",
+    // Rigel se pone el birrete cuando quien llega viene a enseñar: la misma pantalla, pero
+    // recibiendo a otra persona.
+    pose: "profe",
     subtitulo: "Primero tu cuenta; enseguida sigues con tu postulación.",
     whatsapp: "Para que el equipo de Orión te ubique mientras revisa tu postulación.",
     boton: "Crear cuenta y postularme",
@@ -104,7 +109,7 @@ function Registro() {
         <Constelacion className="pointer-events-none absolute left-2 top-8 h-[120px] w-[120px] opacity-[0.45] lg:h-[200px] lg:w-[200px]" />
         <Wordmark className="absolute left-7 top-7 text-[15px] text-on-primary lg:left-10 lg:top-10" />
         <Rigel
-          pose="saludo"
+          pose={copy.pose}
           decorativo
           className="pointer-events-none absolute right-2 top-8 h-[150px] w-auto lg:right-8 lg:top-10 lg:h-[236px]"
         />

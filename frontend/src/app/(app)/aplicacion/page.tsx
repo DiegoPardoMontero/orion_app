@@ -20,6 +20,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CambiarFoto } from "@/components/CambiarFoto";
+import { bordeSegun, ContadorPalabras } from "@/components/ContadorPalabras";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
 import { Rigel } from "@/components/Rigel";
 import { Badge, Boton, Campo, Spinner, Toggle } from "@/components/ui";
@@ -34,6 +35,7 @@ import type {
 import { DOC_TIPOS, etiquetaFaltante, MI_APLICACION_KEY } from "@/lib/aplicacion";
 import { useMe } from "@/lib/auth/session";
 import { etiquetaNivel, NIVELES } from "@/lib/i18n";
+import { estadoBio, estadoTitular } from "@/lib/perfil-profesor";
 
 type LangEdit = { code: string; isNative: boolean; levels: string[] };
 
@@ -139,6 +141,8 @@ function Wizard({
 
   const [headline, setHeadline] = useState(seed?.headline ?? "");
   const [bio, setBio] = useState(seed?.bio ?? "");
+  const estadoDelTitular = estadoTitular(headline);
+  const estadoDeLaBio = estadoBio(bio);
   const [city, setCity] = useState(seed?.city ?? "");
   const [countryCode, setCountryCode] = useState(seed?.countryCode ?? "CO");
   const [yearsExperience, setYearsExperience] = useState(
@@ -272,10 +276,11 @@ function Wizard({
                 maxLength={120}
                 value={headline}
                 onChange={(e) => setHeadline(e.target.value)}
-                placeholder="Conversación y confianza · A1–B1"
-                className="mt-1.5"
+                placeholder="Conversación en inglés para adultos que ya estudiaron"
+                aria-describedby="headline-contador"
+                className={`mt-1.5 ${bordeSegun(estadoDelTitular)}`}
               />
-              <p className="mt-1.5 text-[12px] text-text-muted">Una frase corta que resuma tu estilo.</p>
+              <ContadorPalabras id="headline-contador" estado={estadoDelTitular} />
             </div>
           </section>
         )}
@@ -293,8 +298,10 @@ function Wizard({
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 placeholder="Cuéntales cómo son tus clases, tu experiencia y qué te hace especial."
-                className="mt-1.5 w-full rounded-base border-[1.5px] border-border bg-surface-raised px-4 py-3 text-sm placeholder:text-text-muted focus:border-primary focus:shadow-focus focus:outline-none"
+                aria-describedby="bio-contador"
+                className={`mt-1.5 w-full rounded-base border-[1.5px] bg-surface-raised px-4 py-3 text-sm placeholder:text-text-muted focus:shadow-focus focus:outline-none ${bordeSegun(estadoDeLaBio)}`}
               />
+              <ContadorPalabras id="bio-contador" estado={estadoDeLaBio} />
             </div>
 
             <div>
@@ -495,7 +502,7 @@ function PasoDocumentos({ documentos }: { documentos: DocumentView[] }) {
   return (
     <section className="space-y-4">
       <p className="text-[13.5px] leading-relaxed text-text-secondary">
-        Sube tu hoja de vida (obligatoria) y, si quieres, tus certificados. Aceptamos PDF e imágenes.
+        Sube tu hoja de vida. Los certificados son opcionales. Aceptamos PDF e imágenes.
       </p>
       {DOC_TIPOS.map((tipo) => (
         <SubidorDocumento

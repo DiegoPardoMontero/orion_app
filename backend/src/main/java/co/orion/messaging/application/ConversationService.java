@@ -17,6 +17,7 @@ import co.orion.messaging.domain.Conversation;
 import co.orion.messaging.domain.Message;
 import co.orion.messaging.persistence.ConversationRepository;
 import co.orion.messaging.persistence.MessageRepository;
+import co.orion.scheduling.persistence.BookingRepository;
 import co.orion.shared.error.ForbiddenException;
 import co.orion.shared.error.ResourceNotFoundException;
 
@@ -36,6 +37,7 @@ public class ConversationService {
     private final MessageRepository messages;
     private final UserRepository users;
     private final ProfessorAccessService professorAccess;
+    private final BookingRepository bookings;
     private final PlatformSettingsService settings;
     private final ApplicationEventPublisher events;
     private final Clock clock;
@@ -44,6 +46,7 @@ public class ConversationService {
                                MessageRepository messages,
                                UserRepository users,
                                ProfessorAccessService professorAccess,
+                               BookingRepository bookings,
                                PlatformSettingsService settings,
                                ApplicationEventPublisher events,
                                Clock clock) {
@@ -51,6 +54,7 @@ public class ConversationService {
         this.messages = messages;
         this.users = users;
         this.professorAccess = professorAccess;
+        this.bookings = bookings;
         this.settings = settings;
         this.events = events;
         this.clock = clock;
@@ -71,6 +75,23 @@ public class ConversationService {
         professorAccess.assertCanTeach(professorId);
         return conversations.findByStudentIdAndProfessorId(student.getId(), professorId)
                 .orElseGet(() -> conversations.save(new Conversation(student.getId(), professorId)));
+    }
+
+    /**
+     * El profesor abre (o reencuentra) su conversación con un estudiante. Mismo get-or-create, pero
+     * el gate es otro: el estudiante elige con quién habla —por eso puede escribir a cualquier
+     * profesor publicado—, mientras que el profesor solo puede escribir a quien ya reservó con él.
+     *
+     * Sin esa condición, el directorio de estudiantes quedaría abierto a mensajes no pedidos de
+     * cualquier profesor aprobado, que es exactamente lo que no queremos que sea la bandeja.
+     */
+    @Transactional
+    public Conversation openAsProfessor(User professor, UUID studentId) {
+        if (!bookings.existsByProfessorIdAndStudentId(professor.getId(), studentId)) {
+            throw new ForbiddenException("Solo puedes escribirle a estudiantes que han reservado contigo");
+        }
+        return conversations.findByStudentIdAndProfessorId(studentId, professor.getId())
+                .orElseGet(() -> conversations.save(new Conversation(studentId, professor.getId())));
     }
 
     /**

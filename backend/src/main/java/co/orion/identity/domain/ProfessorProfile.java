@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import co.orion.shared.error.UnprocessableException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -23,6 +24,15 @@ import jakarta.persistence.Table;
 @Table(name = "professor_profiles")
 @EntityListeners(AuditingEntityListener.class)
 public class ProfessorProfile {
+
+    /**
+     * Los mínimos de la ficha pública, en palabras. Un titular de dos palabras ("Profesor inglés")
+     * y una descripción de una línea no dejan elegir a nadie: el estudiante compara perfiles antes
+     * de gastar su dinero, y una ficha vacía traslada esa decisión a la foto.
+     */
+    public static final int MIN_PALABRAS_TITULAR = 5;
+    public static final int MIN_PALABRAS_BIO = 20;
+    public static final int MAX_PALABRAS_BIO = 100;
 
     /** No hay id propio: la PK es la del usuario (@MapsId la copia desde la relación). */
     @Id
@@ -94,9 +104,53 @@ public class ProfessorProfile {
         this.certified = false;
     }
 
+    /**
+     * Titular y descripción, con sus mínimos y su máximo. La regla vive aquí y no en los servicios
+     * porque hay cuatro caminos que escriben esto —el perfil propio, la postulación, la invitación
+     * del admin y el sembrador de desarrollo— y basta con que uno se olvide para que el directorio
+     * se llene de fichas de tres palabras con las que no se puede elegir a nadie.
+     *
+     * Lanza {@link UnprocessableException} y no una excepción de programación porque esto no es un
+     * fallo del código sino algo que el profesor puede corregir escribiendo un poco más; el mensaje
+     * es lo que va a leer. El mismo camino que sigue {@code TeacherApplication} con su conflicto.
+     *
+     * Todo se mide en PALABRAS y no en caracteres: el límite es sobre lo que el estudiante tiene
+     * que leer antes de decidir. Un tope en caracteres cortaría a mitad de frase a quien use
+     * palabras largas y premiaría al que abrevia.
+     *
+     * Vacío sigue valiendo: un perfil recién creado todavía no ha escrito nada, y obligarle a
+     * redactar antes de poder guardar cualquier otro campo dejaría el formulario sin salida. Lo que
+     * no vale es escribir poco.
+     */
     public void describe(String headline, String bio) {
+        int titular = contarPalabras(headline);
+        if (titular > 0 && titular < MIN_PALABRAS_TITULAR) {
+            throw new UnprocessableException("Tu titular tiene " + palabras(titular)
+                    + ": el mínimo son " + MIN_PALABRAS_TITULAR
+                    + ". Cuenta un poco más de lo que enseñas.");
+        }
+
+        int descripcion = contarPalabras(bio);
+        if (descripcion > 0 && descripcion < MIN_PALABRAS_BIO) {
+            throw new UnprocessableException("Tu descripción tiene " + palabras(descripcion)
+                    + ": el mínimo son " + MIN_PALABRAS_BIO + ". Cuéntales cómo son tus clases.");
+        }
+        if (descripcion > MAX_PALABRAS_BIO) {
+            throw new UnprocessableException("Tu descripción tiene " + palabras(descripcion)
+                    + ": el máximo son " + MAX_PALABRAS_BIO + ". Resúmela un poco.");
+        }
+
         this.headline = headline;
         this.bio = bio;
+    }
+
+    private static String palabras(int n) {
+        return n + (n == 1 ? " palabra" : " palabras");
+    }
+
+    /** Cuenta palabras, no caracteres: es la unidad en la que se mide "esto dice poco". */
+    public static int contarPalabras(String texto) {
+        return texto == null || texto.isBlank() ? 0 : texto.trim().split("\\s+").length;
     }
 
     public void changePhotoUrl(String photoUrl) {

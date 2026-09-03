@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BadgeCheck, Check, Eye, Plus, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { CambiarFoto } from "@/components/CambiarFoto";
+import { bordeSegun, ContadorPalabras } from "@/components/ContadorPalabras";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
 import { Boton, BotonPrincipal, Campo, Spinner, Toggle } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
@@ -15,9 +16,7 @@ import type {
 } from "@/lib/api/types";
 import { precioCop } from "@/lib/format";
 import { etiquetaNivel, NIVELES } from "@/lib/i18n";
-
-/** Espejo del tope del backend (ProfessorProfileService.MAX_PALABRAS_BIO). */
-const MAX_PALABRAS_BIO = 100;
+import { estadoBio, estadoTitular } from "@/lib/perfil-profesor";
 
 /** El idioma tal como lo edita el profesor: código + si es nativo + niveles que enseña. */
 type LangEdit = { code: string; isNative: boolean; levels: string[] };
@@ -68,8 +67,8 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
 
   const [headline, setHeadline] = useState(inicial.headline ?? "");
   const [bio, setBio] = useState(inicial.bio ?? "");
-  // La misma cuenta que hace el backend: palabras separadas por espacios.
-  const palabrasBio = bio.trim() ? bio.trim().split(/\s+/).length : 0;
+  const estadoDelTitular = estadoTitular(headline);
+  const estadoDeLaBio = estadoBio(bio);
   const [city, setCity] = useState(inicial.city ?? "");
   const [countryCode, setCountryCode] = useState(inicial.countryCode ?? "CO");
   const [yearsExperience, setYearsExperience] = useState(
@@ -177,9 +176,11 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
         maxLength={120}
         value={headline}
         onChange={(event) => setHeadline(event.target.value)}
-        placeholder="Conversación y confianza · A1–B1"
-        className="mt-1.5"
+        placeholder="Conversación en inglés para adultos que ya estudiaron"
+        aria-describedby="headline-contador"
+        className={`mt-1.5 ${bordeSegun(estadoDelTitular)}`}
       />
+      <ContadorPalabras id="headline-contador" estado={estadoDelTitular} />
 
       <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="bio">
         Sobre ti
@@ -191,22 +192,9 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
         onChange={(event) => setBio(event.target.value)}
         placeholder="Cuéntales cómo son tus clases."
         aria-describedby="bio-contador"
-        className={`mt-1.5 w-full rounded-base border-[1.5px] bg-surface-raised px-4 py-3 text-sm placeholder:text-text-muted focus:shadow-focus focus:outline-none ${
-          palabrasBio > MAX_PALABRAS_BIO ? "border-error" : "border-border focus:border-primary"
-        }`}
+        className={`mt-1.5 w-full rounded-base border-[1.5px] bg-surface-raised px-4 py-3 text-sm placeholder:text-text-muted focus:shadow-focus focus:outline-none ${bordeSegun(estadoDeLaBio)}`}
       />
-      {/* El contador se ve mientras se escribe. El backend rechaza igual, pero enterarse al guardar
-          —después de redactar tres párrafos— es la peor forma de conocer un límite. */}
-      <p
-        id="bio-contador"
-        className={`mt-1.5 text-[12px] ${
-          palabrasBio > MAX_PALABRAS_BIO ? "font-semibold text-error" : "text-text-muted"
-        }`}
-      >
-        {palabrasBio > MAX_PALABRAS_BIO
-          ? `Te pasaste por ${palabrasBio - MAX_PALABRAS_BIO} ${palabrasBio - MAX_PALABRAS_BIO === 1 ? "palabra" : "palabras"}. Máximo ${MAX_PALABRAS_BIO}.`
-          : `${palabrasBio} de ${MAX_PALABRAS_BIO} palabras`}
-      </p>
+      <ContadorPalabras id="bio-contador" estado={estadoDeLaBio} />
 
       {/* — Idiomas — */}
       <section className="mt-6">

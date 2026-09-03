@@ -125,7 +125,7 @@ class TeacherApplicationFlowIT extends ApiIntegrationSupport {
         users.save(u);
 
         UpdateProfileRequest req = new UpdateProfileRequest(
-                "Profe de inglés", "Bio suficientemente larga para el perfil.", "CO", "Bogotá", "ES",
+                "Conversación en inglés para adultos", "Enseño inglés conversacional a adultos que ya estudiaron el idioma alguna vez y aun así no se atreven a hablarlo. Practicamos desde la primera clase con temas que te importan.", "CO", "Bogotá", "ES",
                 (short) 5, "Lic. en Lenguas", false, true,
                 List.of(new UpdateProfileRequest.LanguageEntry("EN", false, List.of("BEGINNER"))),
                 List.of("CONVERSATION"), false);
@@ -178,7 +178,7 @@ class TeacherApplicationFlowIT extends ApiIntegrationSupport {
         u.changePhotoUrl("https://fotos/aspi.jpg");
         users.save(u);
         UpdateProfileRequest req = new UpdateProfileRequest(
-                "Profe", "Bio larga del perfil.", "CO", "Bogotá", "ES", (short) 5, "Educación", false, true,
+                "Conversación en inglés para adultos", "Enseño inglés conversacional a adultos que ya estudiaron el idioma alguna vez y aun así no se atreven a hablarlo. Practicamos desde la primera clase con temas que te importan.", "CO", "Bogotá", "ES", (short) 5, "Educación", false, true,
                 List.of(new UpdateProfileRequest.LanguageEntry("EN", false, List.of("BEGINNER"))),
                 List.of("CONVERSATION"), false);
         put(MINE, aspirantSession, req, Map.class);
@@ -264,7 +264,7 @@ class TeacherApplicationFlowIT extends ApiIntegrationSupport {
         assertThat(put("/api/v1/me/profile/rate", aspirantSession, new RateRequest(60000L), Map.class)
                 .getStatusCode().value()).isEqualTo(200);
         UpdateProfileRequest publish = new UpdateProfileRequest(
-                "Profe de inglés", "Bio suficientemente larga para el perfil.", "CO", "Bogotá", "ES",
+                "Conversación en inglés para adultos", "Enseño inglés conversacional a adultos que ya estudiaron el idioma alguna vez y aun así no se atreven a hablarlo. Practicamos desde la primera clase con temas que te importan.", "CO", "Bogotá", "ES",
                 (short) 5, "Lic. en Lenguas", false, true,
                 List.of(new UpdateProfileRequest.LanguageEntry("EN", false, List.of("BEGINNER"))),
                 List.of("CONVERSATION"), true);

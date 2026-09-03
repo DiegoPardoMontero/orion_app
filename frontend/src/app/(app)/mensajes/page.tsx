@@ -5,7 +5,7 @@ import { ListaConversaciones } from "./lista";
 
 /**
  * Bandeja de mensajes. En móvil es la lista a pantalla completa; al tocar una conversación se
- * navega a `/mensajes/[id]`. En desktop se muestra a dos columnas: la lista a la izquierda y, como
+ * navega a `/mensajes/[id]`. En desktop se muestra a dos columnas: la lista a la izquierda. Como
  * aún no hay hilo abierto, una invitación amable a la derecha.
  */
 export default function MensajesPage() {

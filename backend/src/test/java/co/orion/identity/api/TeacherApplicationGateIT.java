@@ -116,8 +116,11 @@ class TeacherApplicationGateIT extends ApiIntegrationSupport {
 
     @Test
     void aPendingProfessorCannotPublish() {
+        // La ficha es válida a propósito: lo que este test aísla es el gate de la postulación,
+        // y con textos demasiado cortos el 422 taparía el 403 que se quiere comprobar.
         UpdateProfileRequest req = new UpdateProfileRequest(
-                "Titular", "Bio.", "CO", "Bogotá", "ES", (short) 3, "Educación", false, true,
+                "Conversación en inglés para adultos", "Me encanta enseñar y llevo años acompañando a estudiantes que quieren soltarse al hablar. Cada clase se arma alrededor de lo que necesitas contar esa semana.",
+                "CO", "Bogotá", "ES", (short) 3, "Educación", false, true,
                 List.of(new UpdateProfileRequest.LanguageEntry("EN", false, List.of("BEGINNER"))),
                 List.of("CONVERSATION"), true);
         ResponseEntity<Map> res = put("/api/v1/me/profile", pendingSession, req, Map.class);

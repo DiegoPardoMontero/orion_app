@@ -27,6 +27,12 @@ import co.orion.support.ApiIntegrationSupport;
 @Import(TestcontainersConfiguration.class)
 class ProfessorDirectoryIT extends ApiIntegrationSupport {
 
+    /** La ficha cumple los mínimos de palabras del dominio; las afirmaciones la comparan por constante. */
+    private static final String TITULAR = "Profesora de inglés conversacional para adultos";
+    private static final String OTRO_TITULAR = "Inglés de negocios para equipos comerciales";
+    private static final String BIO =
+            "Enseño inglés conversacional a adultos que ya estudiaron el idioma alguna vez y aun así no se atreven a hablarlo. Practicamos desde la primera clase con temas que te importan de verdad.";
+
     private static final String PROFESSORS = "/api/v1/professors";
     private static final String MY_PROFILE = "/api/v1/me/profile";
 
@@ -48,7 +54,7 @@ class ProfessorDirectoryIT extends ApiIntegrationSupport {
         createUser("ana@orion.test", "Ana Ramírez", UserRole.STUDENT);
 
         ProfessorProfile mariaProfile = new ProfessorProfile(maria);
-        mariaProfile.describe("Inglés conversacional", "Diez años de experiencia.");
+        mariaProfile.describe(TITULAR, BIO);
         // Bajo COMMISSION (default), sin tarifa no aparecería: se la fijamos para que sea visible.
         mariaProfile.changeRate(50000L);
         mariaProfile.publish();
@@ -79,7 +85,7 @@ class ProfessorDirectoryIT extends ApiIntegrationSupport {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody().content()).hasSize(1);
         assertThat(response.getBody().content().get(0).fullName()).isEqualTo("María Gómez");
-        assertThat(response.getBody().content().get(0).headline()).isEqualTo("Inglés conversacional");
+        assertThat(response.getBody().content().get(0).headline()).isEqualTo(TITULAR);
         assertThat(response.getBody().content().get(0).hourlyRateCop()).isEqualTo(50000L);
     }
 
@@ -98,7 +104,7 @@ class ProfessorDirectoryIT extends ApiIntegrationSupport {
                 PROFESSORS + "/" + maria.getId(), anaSession, ProfessorDetail.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody().bio()).isEqualTo("Diez años de experiencia.");
+        assertThat(response.getBody().bio()).isEqualTo(BIO);
         assertThat(response.getBody().hourlyRateCop()).isEqualTo(50000L);
     }
 
@@ -120,7 +126,7 @@ class ProfessorDirectoryIT extends ApiIntegrationSupport {
     void unpublishingRemovesTheProfessorFromTheDirectoryAndFromTheDetail() {
         ResponseEntity<ProfileResponse> updated = put(
                 MY_PROFILE, mariaSession,
-                profileRequest("Inglés conversacional", "Diez años de experiencia.", false),
+                profileRequest(TITULAR, BIO, false),
                 ProfileResponse.class);
 
         assertThat(updated.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -138,22 +144,29 @@ class ProfessorDirectoryIT extends ApiIntegrationSupport {
         users.save(m);
 
         put(MY_PROFILE, mariaSession,
-                profileRequest("Inglés de negocios", "Nueva bio.", true),
+                profileRequest(OTRO_TITULAR, BIO, true),
                 ProfileResponse.class);
 
         ResponseEntity<PagedProfessors> response = get(PROFESSORS, anaSession, PagedProfessors.class);
 
         assertThat(response.getBody().content()).hasSize(1);
-        assertThat(response.getBody().content().get(0).headline()).isEqualTo("Inglés de negocios");
+        assertThat(response.getBody().content().get(0).headline()).isEqualTo(OTRO_TITULAR);
         assertThat(response.getBody().content().get(0).photoUrl()).isEqualTo("https://fotos/maria.jpg");
     }
 
     @Test
     void publishingWithoutARateIsRejected() {
         // Juan no tiene tarifa: publicar bajo COMMISSION debe fallar con 422 (chequeo amable).
+        // La ficha va completa a propósito: con textos demasiado cortos saldría el mismo 422 por
+        // otro motivo y el test pasaría sin comprobar nada.
         Session juanSession = login("juan@orion.test");
         ResponseEntity<Map> response = put(MY_PROFILE, juanSession,
-                profileRequest("Inglés", "Bio.", true), Map.class);
+                profileRequest("Conversación en inglés para adultos",
+                        "Enseño inglés conversacional a adultos que ya estudiaron el idioma alguna "
+                                + "vez y aun así no se atreven a hablarlo. Practicamos desde la "
+                                + "primera clase.",
+                        true),
+                Map.class);
 
         assertThat(response.getStatusCode().value()).isEqualTo(422);
         assertThat(get(PROFESSORS, anaSession, PagedProfessors.class).getBody().content()).hasSize(1);

@@ -60,7 +60,7 @@ export default function AgendaProfesorPage() {
     mutationFn: () =>
       apiFetch<ConversationSummary>("/api/v1/conversations", {
         method: "POST",
-        body: { professorId: id },
+        body: { counterpartId: id },
       }),
     onSuccess: (conv) => {
       if (conv.id) router.push(`/mensajes/${conv.id}`);

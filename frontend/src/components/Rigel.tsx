@@ -13,7 +13,7 @@ import type { CSSProperties, ReactNode } from "react";
  *    utilitarias (admin, disponibilidad, tablas).
  */
 
-export type RigelPose = "saludo" | "celebracion" | "guia" | "espera" | "animo";
+export type RigelPose = "saludo" | "celebracion" | "guia" | "espera" | "animo" | "profe";
 export type RigelTono = "dorado" | "durazno";
 
 const TONOS: Record<RigelTono, Record<string, string>> = {
@@ -43,6 +43,7 @@ const ETIQUETA: Record<RigelPose, string> = {
   guia: "Rigel, la mascota de Orión, señalando",
   espera: "Rigel, la mascota de Orión, esperando",
   animo: "Rigel, la mascota de Orión, animándote",
+  profe: "Rigel, la mascota de Orión, vestido de profesor",
 };
 
 export function Rigel({
@@ -131,7 +132,7 @@ function Ojos({ pose, crema }: { pose: RigelPose; crema: string }) {
       </g>
     );
   }
-  // Ojos abiertos. En "guía" las pupilas miran a la derecha (+3).
+  // Ojos abiertos. En "guía" las pupilas miran a la derecha (+3). En "profe" van tras las gafas.
   const dx = pose === "guia" ? 3 : 0;
   return (
     <g className="rigel-eyes">
@@ -174,7 +175,7 @@ function Boca({ pose }: { pose: RigelPose }) {
     // Línea suave.
     return <path d="M90,108 Q100,113 110,108" stroke="#5A2436" strokeWidth={4} strokeLinecap="round" fill="none" />;
   }
-  if (pose === "animo") {
+  if (pose === "animo" || pose === "profe") {
     // Sonrisa cerrada, sin boca abierta.
     return <path d="M85,104 Q100,119 115,104" stroke="#5A2436" strokeWidth={5} strokeLinecap="round" fill="none" />;
   }
@@ -282,6 +283,20 @@ function Brazos({ pose }: { pose: RigelPose }) {
     );
   }
 
+  if (pose === "profe") {
+    return (
+      <>
+        <BrazoIzquierdoReposo />
+        <path d="M140,100 L156,86" stroke="var(--rg-arm)" strokeWidth={7} strokeLinecap="round" fill="none" />
+        <Guante cx={160} cy={84} r={12} tx={152} ty={90} tr={5} />
+        {/* La tiza asoma del puño hacia arriba, no lo cruza: centrada sobre el guante parecía
+            una señal de prohibido tachando la mano. Va después para quedar por delante. */}
+        <line x1={162} y1={80} x2={173} y2={64} stroke="var(--rg-arm)" strokeWidth={11} strokeLinecap="round" />
+        <line x1={163} y1={79} x2={172} y2={65.5} stroke="var(--rg-crema)" strokeWidth={6.5} strokeLinecap="round" />
+      </>
+    );
+  }
+
   // saludo (base): el brazo que saluda va DETRÁS del cuerpo (ver BrazosDetras); aquí solo el
   // brazo izquierdo en reposo, que sí va por delante.
   return <BrazoIzquierdoReposo />;
@@ -318,6 +333,35 @@ function Extras({ pose }: { pose: RigelPose }) {
         <Destello cx={165} cy={40} r={6} delay="0.7s" />
         <Destello cx={150} cy={150} r={5} delay="1.3s" />
       </g>
+    );
+  }
+  if (pose === "profe") {
+    // Birrete y gafas van en los extras porque se pintan al final: el birrete se apoya sobre la
+    // punta superior sin que el stroke del cuerpo se lo coma, y las gafas quedan sobre los ojos.
+    return (
+      <>
+        {/* Gafas: aro sobre cada ojo, puente y patillas hacia las puntas laterales. */}
+        <g stroke="var(--rg-dark)" strokeWidth={3} fill="none" strokeLinecap="round">
+          <circle cx={85} cy={89} r={12.5} fill="var(--rg-crema)" fillOpacity={0.18} />
+          <circle cx={115} cy={89} r={12.5} fill="var(--rg-crema)" fillOpacity={0.18} />
+          <line x1={97.5} y1={88} x2={102.5} y2={88} />
+          <line x1={72.5} y1={86} x2={62} y2={83} />
+          <line x1={127.5} y1={86} x2={138} y2={83} />
+        </g>
+
+        {/* Birrete, ligeramente ladeado sobre la punta de arriba. */}
+        <g transform="rotate(-8 100 26)">
+          <path
+            d="M88,24 h24 a3,3 0 0 1 3,3 v9 a3,3 0 0 1 -3,3 h-24 a3,3 0 0 1 -3,-3 v-9 a3,3 0 0 1 3,-3 z"
+            fill="var(--rg-dark)"
+          />
+          <polygon points="100,10 136,24 100,38 64,24" fill="var(--rg-arm)" />
+          <circle cx={100} cy={24} r={3.2} fill="var(--color-accent-peach)" />
+          {/* Borla: cuelga del pico derecho del tablero. */}
+          <path d="M136,24 q4,10 2,19" stroke="var(--color-accent-peach)" strokeWidth={3} fill="none" strokeLinecap="round" />
+          <circle cx={137} cy={46} r={4.5} fill="var(--color-accent-peach)" />
+        </g>
+      </>
     );
   }
   if (pose === "espera") {
