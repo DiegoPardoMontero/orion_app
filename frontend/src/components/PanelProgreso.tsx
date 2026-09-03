@@ -5,6 +5,7 @@ import { ArrowRight, CalendarDays, Clock, Flame, Trophy, Video } from "lucide-re
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { Avatar } from "@/components/Avatar";
+import { Constelacion } from "@/components/marca";
 import { Rigel, type RigelPose } from "@/components/Rigel";
 import { apiFetch } from "@/lib/api/fetch";
 import { diaBogota, fechaCorta, horaBogota } from "@/lib/format";
@@ -58,40 +59,75 @@ function cuandoEs(iso: string, hoy: string): string {
   return fechaCorta(iso);
 }
 
+type Saludo = {
+  pose: RigelPose;
+  /** Lo que va encima de la cifra. Corto: es una entradilla, no una frase. */
+  encima: string;
+  /** El titular del banner. Se saca del texto corrido para poder darle tamaño de titular. */
+  cifra: string | null;
+  /** El remate, debajo. Es lo que da sentido a la cifra. */
+  debajo: string;
+};
+
 /**
  * Lo que dice Rigel. No felicita por nada: cada mensaje se apoya en un dato real del panel, y
  * cuando no hay ninguno, invita a empezar en vez de fingir un logro.
+ *
+ * Se devuelve en tres piezas y no como una frase porque la cifra es el titular: encajada dentro
+ * del párrafo se perdía, y lo que se quiere que se lea a un metro de distancia es cuántas clases
+ * lleva esta persona.
  */
-function saludoDe(progreso: Progreso): { pose: RigelPose; texto: string } {
+function saludoDe(progreso: Progreso): Saludo {
   const { lessonsTaken, currentStreakWeeks, nextLesson, today } = progreso;
+  const clases = `${lessonsTaken} ${lessonsTaken === 1 ? "clase" : "clases"}`;
 
   if (lessonsTaken === 0 && !nextLesson) {
     return {
       pose: "saludo",
-      texto: "Aquí vas a ver cómo avanzas. Reserva tu primera clase y empezamos a contar.",
+      encima: "Tu punto de partida",
+      cifra: null,
+      debajo:
+        "Aquí vas a ver cómo avanzas: las clases que llevas, las horas de práctica y las semanas seguidas. Reserva la primera y empezamos a contar.",
+    };
+  }
+  if (lessonsTaken === 0) {
+    return {
+      pose: "animo",
+      encima: "Ya está agendada",
+      cifra: null,
+      debajo:
+        "Tu primera clase está reservada. De ahí en adelante, todo lo que practiques se queda registrado aquí.",
     };
   }
   if (nextLesson && diasHasta(nextLesson.startsAt, today) <= 0) {
-    return { pose: "animo", texto: "Tienes clase hoy. Nos vemos en un rato." };
+    return {
+      pose: "animo",
+      encima: "Hoy tienes clase. Llevas",
+      cifra: clases,
+      debajo: "Nos vemos en un rato. Una más para la cuenta.",
+    };
   }
   if (currentStreakWeeks >= 4) {
     return {
       pose: "celebracion",
-      texto: `${currentStreakWeeks} semanas seguidas con clase. Esto ya es una rutina.`,
+      encima: "Ya vas por",
+      cifra: clases,
+      debajo: `Y ${currentStreakWeeks} semanas seguidas sin fallar una. Esto ya no es intentarlo: es tu rutina.`,
     };
   }
   if (currentStreakWeeks >= 2) {
     return {
       pose: "animo",
-      texto: `Llevas ${currentStreakWeeks} semanas seguidas. Una más y esto se vuelve costumbre.`,
+      encima: "Ya vas por",
+      cifra: clases,
+      debajo: `${currentStreakWeeks} semanas seguidas. Una más y esto se vuelve costumbre.`,
     };
-  }
-  if (lessonsTaken === 0) {
-    return { pose: "animo", texto: "Tu primera clase ya está agendada. Ahí empieza todo." };
   }
   return {
     pose: "guia",
-    texto: `Van ${lessonsTaken} ${lessonsTaken === 1 ? "clase" : "clases"}. Cada una cuenta.`,
+    encima: "Ya vas por",
+    cifra: clases,
+    debajo: "Cada una cuenta. Reserva la siguiente y sigue sumando.",
   };
 }
 
@@ -111,35 +147,79 @@ export function PanelProgreso() {
   // aquí no debe dejar a nadie sin poder cambiar su teléfono.
   if (isPending || isError || !data) return null;
 
-  const { pose, texto } = saludoDe(data);
+  const saludo = saludoDe(data);
   const horas = Math.round(data.minutesTotal / 60);
 
   return (
     <section className="mt-6">
       {/* Rigel y su frase: la única parte que interpreta los números en vez de mostrarlos. */}
-      <div className="gradient-dawn flex items-center gap-4 rounded-card px-5 py-5 lg:gap-6 lg:px-8 lg:py-6">
-        <Rigel
-          pose={pose}
-          decorativo
-          className="h-[96px] w-auto shrink-0 drop-shadow-lg lg:h-[130px]"
-        />
-        <p className="max-w-[38ch] font-display text-[16px] font-bold leading-snug text-on-primary lg:text-[22px]">
-          {texto}
-        </p>
+      <div className="gradient-dawn relative overflow-hidden rounded-card px-5 py-5 lg:px-8 lg:py-7">
+        <Constelacion className="pointer-events-none absolute -right-8 -top-10 h-[180px] w-[180px] opacity-30 lg:h-[240px] lg:w-[240px]" />
+
+        <div className="relative flex items-center gap-4 lg:gap-7">
+          <Rigel
+            pose={saludo.pose}
+            decorativo
+            className="h-[104px] w-auto shrink-0 drop-shadow-lg lg:h-[150px]"
+          />
+
+          <div className="min-w-0">
+            <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-on-primary/75">
+              {saludo.encima}
+            </p>
+
+            {saludo.cifra && (
+              <p className="mt-0.5 font-display text-[34px] font-extrabold leading-none text-on-primary lg:text-[52px]">
+                {saludo.cifra}
+              </p>
+            )}
+
+            <p className="mt-2 max-w-[46ch] text-[13.5px] leading-relaxed text-on-primary/90 lg:text-[15px]">
+              {saludo.debajo}
+            </p>
+
+            {/* El fuego solo aparece cuando hay racha: encendido sin nada detrás no significaría nada. */}
+            {data.currentStreakWeeks >= 1 && (
+              <span className="mt-3 inline-flex items-center gap-1.5 rounded-pill bg-night/35 py-1.5 pl-2 pr-3.5 text-[13px] font-bold text-on-primary backdrop-blur-sm">
+                <span className="llama grid h-6 w-6 shrink-0 place-items-center rounded-full bg-gradient-to-b from-[#ffc189] to-[#e8503a]">
+                  <Flame size={13} strokeWidth={2.4} className="text-[#5a2436]" />
+                </span>
+                {data.currentStreakWeeks}{" "}
+                {data.currentStreakWeeks === 1 ? "semana en racha" : "semanas en racha"}
+              </span>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Cifra icono={<CalendarDays size={16} strokeWidth={2} />} valor={data.lessonsTaken}
-               etiqueta={data.lessonsTaken === 1 ? "clase tomada" : "clases tomadas"} />
-        <Cifra icono={<Clock size={16} strokeWidth={2} />} valor={horas}
-               etiqueta={horas === 1 ? "hora de práctica" : "horas de práctica"} />
-        <Cifra icono={<Flame size={16} strokeWidth={2} />} valor={data.currentStreakWeeks}
-               etiqueta={data.currentStreakWeeks === 1 ? "semana seguida" : "semanas seguidas"}
-               destacada={data.currentStreakWeeks >= 2} />
+        <Cifra
+          icono={<CalendarDays size={19} strokeWidth={2.1} />}
+          tono="lavanda"
+          valor={data.lessonsTaken}
+          etiqueta={data.lessonsTaken === 1 ? "clase tomada" : "clases tomadas"}
+        />
+        <Cifra
+          icono={<Clock size={19} strokeWidth={2.1} />}
+          tono="menta"
+          valor={horas}
+          etiqueta={horas === 1 ? "hora de práctica" : "horas de práctica"}
+        />
+        <Cifra
+          icono={<Flame size={19} strokeWidth={2.1} />}
+          tono="fuego"
+          valor={data.currentStreakWeeks}
+          etiqueta={data.currentStreakWeeks === 1 ? "semana seguida" : "semanas seguidas"}
+          destacada={data.currentStreakWeeks >= 2}
+        />
         {/* La mejor racha se muestra siempre: es lo que queda cuando la actual se corta, y verla
             ahí evita que una semana floja borre de un plumazo lo que ya se consiguió. */}
-        <Cifra icono={<Trophy size={16} strokeWidth={2} />} valor={data.bestStreakWeeks}
-               etiqueta="tu mejor racha" />
+        <Cifra
+          icono={<Trophy size={19} strokeWidth={2.1} />}
+          tono="oro"
+          valor={data.bestStreakWeeks}
+          etiqueta="tu mejor racha"
+        />
       </div>
 
       {data.nextLesson && <ProximaClaseTarjeta clase={data.nextLesson} hoy={data.today} />}
@@ -151,25 +231,45 @@ export function PanelProgreso() {
   );
 }
 
+/**
+ * Cada métrica lleva su propia pastilla de color, con degradado y sombra, como el icono de una
+ * aplicación. Los cuatro iconos planos del mismo gris se leían como una tabla: el color es lo que
+ * hace que cada cifra se reconozca de un vistazo, sin tener que leer su etiqueta.
+ */
+const TONOS_CIFRA = {
+  lavanda: "from-[#c9b8f0] to-[#a68fdb] text-[#2e1e4e]",
+  menta: "from-[#a8e0c2] to-[#5cb98a] text-[#14432c]",
+  fuego: "from-[#ffc189] to-[#e8503a] text-[#5a2436]",
+  oro: "from-[#ffd97a] to-[#f0a72c] text-[#5a3a06]",
+} as const;
+
 function Cifra({
   icono,
+  tono,
   valor,
   etiqueta,
   destacada = false,
 }: {
   icono: React.ReactNode;
+  tono: keyof typeof TONOS_CIFRA;
   valor: number;
   etiqueta: string;
   destacada?: boolean;
 }) {
   return (
     <div
-      className={`rounded-card border p-4 ${
+      className={`rounded-card border p-4 transition-shadow hover:shadow-md ${
         destacada ? "border-primary/40 bg-primary-soft/50" : "border-border bg-surface-raised"
       }`}
     >
-      <span className={destacada ? "text-primary-strong" : "text-text-muted"}>{icono}</span>
-      <p className="mt-1.5 font-display text-[26px] font-bold leading-none tabular-nums">{valor}</p>
+      <span
+        className={`grid h-10 w-10 place-items-center rounded-[12px] bg-gradient-to-b shadow-sm ${TONOS_CIFRA[tono]}`}
+      >
+        {icono}
+      </span>
+      <p className="mt-2.5 font-display text-[28px] font-extrabold leading-none tabular-nums">
+        {valor}
+      </p>
       <p className="mt-1 text-[12px] leading-tight text-text-secondary">{etiqueta}</p>
     </div>
   );
