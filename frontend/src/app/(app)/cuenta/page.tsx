@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { CambiarClave } from "@/components/CambiarClave";
 import { CambiarFoto } from "@/components/CambiarFoto";
+import { PanelProgreso } from "@/components/PanelProgreso";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
 import { PhoneInput } from "@/components/PhoneInput";
 import { BotonPrincipal, Campo } from "@/components/ui";
@@ -72,13 +73,19 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
   const error = guardar.error instanceof ApiError ? guardar.error.message : null;
 
   return (
-    <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-lg lg:px-12 lg:py-8">
+    <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-3xl lg:px-12 lg:py-8">
       <h1 className="font-display text-h1 font-bold">Mi perfil</h1>
       <p className="mt-1 text-[14px] text-text-secondary">
-        Tus datos para coordinar las clases con tu profesor.
+        Cómo vas y los datos con los que coordinas tus clases.
       </p>
 
-      <div className="mt-5">
+      {/* El panel va primero: es lo que se viene a mirar. Editar el teléfono es algo que se hace
+          una vez al año, y tenerlo arriba convertía esta pantalla en un formulario y nada más. */}
+      <PanelProgreso />
+
+      <h2 className="mt-8 font-display text-[19px] font-bold">Tus datos</h2>
+
+      <div className="mt-4">
         <CambiarFoto nombre={inicial.fullName} fotoUrl={inicial.photoUrl} />
       </div>
 

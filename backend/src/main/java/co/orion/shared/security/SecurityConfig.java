@@ -85,6 +85,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/bookings/*/report-problem").hasRole("STUDENT")
                 // "Mis clases" solo tiene sentido para quien asiste o imparte.
                 .requestMatchers("/api/v1/me/bookings").hasAnyRole("STUDENT", "PROFESSOR")
+                // El panel de progreso es del estudiante: mide clases tomadas, no clases dictadas.
+                .requestMatchers("/api/v1/me/progress").hasRole("STUDENT")
                 // La asistencia la registra quien dio la clase.
                 .requestMatchers(HttpMethod.POST, "/api/v1/bookings/*/attendance").hasRole("PROFESSOR")
                 // Reseñar una clase es del estudiante; reportar una reseña, del profesor reseñado.
