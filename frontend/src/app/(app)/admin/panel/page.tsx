@@ -21,7 +21,7 @@ import { Tarjeta } from "@/components/ui";
 import { apiFetch } from "@/lib/api/fetch";
 import type { DashboardResponse } from "@/lib/api/types";
 import { etiquetaEstado } from "@/lib/estados-clase";
-import { precioCop } from "@/lib/format";
+import { fechaCorta, horaBogota, precioCop } from "@/lib/format";
 
 /**
  * El pulso de Orión. Se ordena por urgencia y no por tema: primero lo que espera una decisión tuya,
@@ -221,7 +221,10 @@ export default function AdminPanelPage() {
               <div className="min-w-0">
                 <p className="text-[13px] font-semibold text-text">{job.job}</p>
                 <p className="text-[12px] text-text-muted">
-                  {new Date(job.lastRunAt).toLocaleString("es-CO", { timeZone: "America/Bogota" })} ·{" "}
+                  {/* Con las mismas funciones que el resto: `toLocaleString` devolvía «6:30:35 a. m.»,
+                      con segundos y con el meridiano en minúsculas y partido, que no es como Orión
+                      escribe una hora en ninguna otra pantalla. */}
+                  {fechaCorta(job.lastRunAt)}, {horaBogota(job.lastRunAt)} ·{" "}
                   {job.detail}
                 </p>
               </div>

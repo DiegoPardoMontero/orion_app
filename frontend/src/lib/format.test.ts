@@ -5,6 +5,7 @@ import {
   hora12Compacta,
   horaBogota,
   iniciales,
+  minutoDelDiaBogota,
   rangoCompacto,
   rangoHoras,
 } from "@/lib/format";
@@ -78,5 +79,26 @@ describe("rangoCompacto (horas de pared, para la grilla semanal)", () => {
 
   it("conserva los minutos cuando no son en punto", () => {
     expect(rangoCompacto("18:30", "20:00")).toBe("6:30–8 PM");
+  });
+});
+
+describe("minutoDelDiaBogota", () => {
+  it("ordena las horas por el momento y no por su etiqueta", () => {
+    // El caso que rompía la grilla semanal: como texto, «10:00 AM» < «9:00 AM» y «7:00 PM» < «8:00 AM».
+    const nueve = "2026-09-09T09:00:00-05:00";
+    const diez = "2026-09-09T10:00:00-05:00";
+    const siete = "2026-09-07T19:00:00-05:00";
+
+    expect(minutoDelDiaBogota(nueve)).toBeLessThan(minutoDelDiaBogota(diez));
+    expect(minutoDelDiaBogota(diez)).toBeLessThan(minutoDelDiaBogota(siete));
+  });
+
+  it("lee el minuto en Bogotá aunque el instante venga en UTC", () => {
+    // 23:00 UTC son las 18:00 en Bogotá.
+    expect(minutoDelDiaBogota("2026-09-09T23:00:00Z")).toBe(18 * 60);
+  });
+
+  it("cuenta la medianoche como cero y no como 1440", () => {
+    expect(minutoDelDiaBogota("2026-09-09T00:00:00-05:00")).toBe(0);
   });
 });

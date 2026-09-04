@@ -1,12 +1,15 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Target } from "lucide-react";
+import { ArrowLeft, Target } from "lucide-react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Suspense } from "react";
 import { Cargando, Vacio } from "@/components/estados";
 import { AvatarOrion } from "@/components/gamificacion/AvatarOrion";
 import { apiFetch } from "@/lib/api/fetch";
+import type { GoalResponse } from "@/lib/api/types";
+import { etiquetaObjetivo } from "@/lib/i18n";
 import { NIVEL_ESTUDIANTE, type FichaEstudiante } from "@/lib/gamificacion";
 
 /**
@@ -33,6 +36,14 @@ function Contenido() {
     retry: false,
   });
 
+  // Los objetivos llegan como código (`CONVERSATION`); el catálogo es quien sabe cómo se llaman en
+  // español. Sin él, el profesor leía el nombre de una columna de base de datos.
+  const objetivos = useQuery({
+    queryKey: ["catalog", "goals"],
+    queryFn: () => apiFetch<GoalResponse[]>("/api/v1/catalog/goals"),
+    staleTime: Infinity,
+  });
+
   if (perfil.isPending) {
     return (
       <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-2xl lg:px-12">
@@ -56,7 +67,15 @@ function Contenido() {
 
   return (
     <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-2xl lg:px-12 lg:py-8">
-      <div className="flex flex-col items-center text-center">
+      <Link
+        href="/mis-clases"
+        className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-text-secondary transition-colors hover:text-text focus-visible:shadow-focus"
+      >
+        <ArrowLeft size={15} strokeWidth={2} />
+        Volver a mis clases
+      </Link>
+
+      <div className="mt-5 flex flex-col items-center text-center">
         <AvatarOrion
           nombre={ficha.fullName}
           fotoUrl={ficha.photoUrl}
@@ -93,11 +112,19 @@ function Contenido() {
                 key={code}
                 className="rounded-pill bg-surface-sunken px-3 py-1.5 text-[12.5px] font-semibold text-text-secondary"
               >
-                {code}
+                {etiquetaObjetivo(code, objetivos.data)}
               </span>
             ))}
           </div>
         </section>
+      )}
+
+      {/* Una ficha casi vacía no puede parecer una pantalla rota: se dice que está vacía y por qué
+          no pasa nada. */}
+      {!ficha.motivation && ficha.goalCodes.length === 0 && !ficha.selfDeclaredLevel && (
+        <p className="mt-6 rounded-card border border-border bg-surface-sunken p-5 text-center text-[14px] leading-relaxed text-text-secondary">
+          Todavía no ha contado nada de sí. Puedes preguntarle en la primera clase qué quiere lograr.
+        </p>
       )}
 
       {/* El perfil público NO lleva correo, teléfono, saldo ni con quién ha practicado. No es que

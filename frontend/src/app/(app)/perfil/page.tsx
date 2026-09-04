@@ -7,6 +7,7 @@ import { CambiarFoto } from "@/components/CambiarFoto";
 import { bordeSegun, ContadorPalabras } from "@/components/ContadorPalabras";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
 import { Boton, BotonPrincipal, Campo, Spinner, Toggle } from "@/components/ui";
+import { DiscoIdioma } from "@/components/DiscoIdioma";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type {
   GoalResponse,
@@ -263,7 +264,7 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
                 className="inline-flex min-h-9 items-center gap-1.5 rounded-pill border-[1.5px] border-dashed border-border-strong px-3.5 py-1.5 text-[13px] font-semibold text-text-secondary transition-colors hover:border-primary hover:text-primary-strong focus-visible:shadow-focus"
               >
                 <Plus size={14} strokeWidth={2} />
-                {idioma.flagEmoji && <span aria-hidden="true">{idioma.flagEmoji}</span>}
+                <DiscoIdioma code={idioma.code ?? ""} size={18} />
                 {idioma.nameEs}
               </button>
             ))}

@@ -9,6 +9,7 @@ import { Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Modal } from "@/components/Modal";
 import { EstrellaRating } from "@/components/Rating";
 import { Boton, Segmento, Toggle } from "@/components/ui";
+import { DiscoIdioma } from "@/components/DiscoIdioma";
 import { apiFetch } from "@/lib/api/fetch";
 import type {
   GoalResponse,
@@ -450,7 +451,7 @@ function PanelFiltros({
               })
             }
           >
-            {lang.flagEmoji && <span aria-hidden="true">{lang.flagEmoji}</span>}
+            <DiscoIdioma code={lang.code ?? ""} size={16} />
             {lang.nameEs}
           </ChipFiltro>
         ))}
@@ -599,7 +600,7 @@ function TarjetaProfesor({ profesor }: { profesor: ProfessorCard }) {
               key={idioma.code}
               className="inline-flex items-center gap-1 rounded-pill bg-surface-sunken px-2.5 py-1 text-[12px] font-semibold text-text-secondary"
             >
-              {idioma.flagEmoji && <span aria-hidden="true">{idioma.flagEmoji}</span>}
+              <DiscoIdioma code={idioma.code ?? ""} size={16} />
               {idioma.nameEs}
               {idioma.isNative && (
                 <span className="rounded-pill bg-primary-soft px-1.5 py-px text-[10px] font-bold text-primary-strong">

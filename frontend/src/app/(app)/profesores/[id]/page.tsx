@@ -42,7 +42,16 @@ import type {
   SlotsResponse,
 } from "@/lib/api/types";
 import { useMe } from "@/lib/auth/session";
-import { diaBogota, esGratis, fechaCorta, fechaRelativa, horaBogota, precioCop, tarifaClase } from "@/lib/format";
+import {
+  diaBogota,
+  esGratis,
+  fechaCorta,
+  fechaRelativa,
+  horaBogota,
+  minutoDelDiaBogota,
+  precioCop,
+  tarifaClase,
+} from "@/lib/format";
 import { etiquetaNivel, etiquetaObjetivo } from "@/lib/i18n";
 import { aplicarSaldo } from "@/lib/saldo";
 import { useMediaQuery } from "@/lib/useMediaQuery";
@@ -421,7 +430,7 @@ export default function AgendaProfesorPage() {
                 {detalle.languages.map((idioma) => (
                   <li key={idioma.code} className="rounded-base bg-surface-raised p-3 shadow-sm">
                     <p className="flex items-center gap-1.5 text-[14px] font-bold text-text">
-                      {idioma.flagEmoji && <span aria-hidden="true">{idioma.flagEmoji}</span>}
+                      <DiscoIdioma code={idioma.code ?? ""} size={18} />
                       {idioma.nameEs}
                       {idioma.isNative && (
                         <span className="rounded-pill bg-primary-soft px-2 py-px text-[10.5px] font-bold text-primary-strong">
@@ -684,15 +693,20 @@ function AgendaSemanal({
 
   const { porCelda, horas } = useMemo(() => {
     const celda: Record<string, Record<string, SlotView>> = {};
-    const set = new Set<string>();
+    // La hora se ordena por el minuto del día, no por su etiqueta: ordenar el texto ponía las
+    // 10:00 AM encima de las 9:00 AM y las 7:00 PM encima de las 8:00 AM.
+    const orden = new Map<string, number>();
     for (const slot of cupos.data?.slots ?? []) {
       if (!slot.startsAt) continue;
       const dia = diaBogota(slot.startsAt);
       const hora = horaBogota(slot.startsAt);
       (celda[dia] ??= {})[hora] = slot;
-      set.add(hora);
+      orden.set(hora, minutoDelDiaBogota(slot.startsAt));
     }
-    return { porCelda: celda, horas: [...set].sort() };
+    const horasOrdenadas = [...orden.entries()]
+      .sort((a, b) => a[1] - b[1])
+      .map(([hora]) => hora);
+    return { porCelda: celda, horas: horasOrdenadas };
   }, [cupos.data]);
 
   return (

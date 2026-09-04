@@ -47,6 +47,23 @@ export function horaBogota(iso: string): string {
 }
 
 /**
+ * El minuto del día en Bogotá, 0–1439. Sirve para ORDENAR horas, que es distinto de mostrarlas:
+ * ordenar las etiquetas como texto pone «10:00 AM» antes que «9:00 AM» y «7:00 PM» antes que
+ * «8:00 AM», porque compara caracteres y no momentos.
+ */
+export function minutoDelDiaBogota(iso: string): number {
+  const partes = new Intl.DateTimeFormat("en-US", {
+    timeZone: ZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date(iso));
+  const valor = (tipo: string) => Number(partes.find((p) => p.type === tipo)?.value ?? "0");
+  // Medianoche llega como 24 en algunos motores.
+  return (valor("hour") % 24) * 60 + valor("minute");
+}
+
+/**
  * "10:00 – 11:00 AM", y "11:00 AM – 12:00 PM" cuando cruzan el mediodía. El meridiano se dice una
  * sola vez si es el mismo en los dos extremos: repetirlo no añade información y alarga el renglón.
  */
