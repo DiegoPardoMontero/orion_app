@@ -56,6 +56,33 @@
   --text-h2--line-height: 1.25;
   --text-h3: clamp(1.125rem, 1rem + 0.5vw, 1.375rem);
   --text-h3--line-height: 1.3;
+
+  /* — Gamificación (§2i del entregable) —
+     Alias por función sobre colores que YA existen: ningún color nuevo entra al sistema. El coral
+     (--color-primary) queda deliberadamente fuera — es el color de la acción, y si también celebra
+     logros deja de significar "toca aquí". */
+  --color-star-solo: var(--color-accent-peach);
+  --color-star-social: var(--color-accent-lavender);
+  --color-star-ink: var(--color-text);
+  --color-star-dim: color-mix(in oklch, var(--color-text) 34%, transparent);
+  --color-star-dim-on-sky: color-mix(in oklch, var(--color-surface) 35%, transparent);
+  --color-constellation-line: color-mix(in oklch, var(--color-surface) 55%, transparent);
+  --color-constellation-pending: color-mix(in oklch, var(--color-surface) 22%, transparent);
+  --color-progress-track: color-mix(in oklch, var(--color-text) 10%, transparent);
+  --color-progress-fill: var(--color-accent-peach);
+  --color-streak-week: #e8764f;
+  --color-streak-protected: var(--color-accent-lavender);
+  --color-language-en: var(--color-accent-lavender);
+  --color-language-fr: var(--color-accent-peach);
+  --color-language-es: var(--color-text);
+  --gradient-sky: linear-gradient(180deg, #2e1e4e 0%, #5a3a78 50%, #9a5a7a 80%, #c86a5e 100%);
+  --size-star-sm: 32px;
+  --size-star-md: 48px;
+  --size-star-lg: 64px;
+  --size-star-xl: 112px;
+  --ease-celebrate: cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  --duration-celebrate: 720ms;
+
   --text-body: clamp(0.9375rem, 0.9rem + 0.2vw, 1rem);
   --text-body--line-height: 1.65;
   --text-sm: 0.8125rem;
@@ -377,6 +404,129 @@ body {
 
 .llama {
   animation: llama 2.4s ease-in-out infinite;
+}
+
+
+/* ---------------------------------------------------------------------------
+ * Cosméticos del avatar (§2e). Marcos, paletas y cielos son CSS puro —degradados,
+ * sombras y máscaras—, cero imágenes: una pieza nueva es una regla, no un archivo.
+ * --------------------------------------------------------------------------- */
+
+.avatar-orion {
+  position: relative;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  isolation: isolate;
+}
+
+/* — Cielos (el fondo del disco) — */
+.cielo-crema { background: var(--color-surface); }
+.cielo-bruma { background: radial-gradient(circle at 50% 30%, #f4eae0 0%, #eadfd4 100%); }
+.cielo-alba { background: linear-gradient(160deg, #ffe9d6 0%, #ffc189 100%); }
+.cielo-constelacion {
+  background:
+    radial-gradient(1.5px 1.5px at 30% 25%, rgba(255, 246, 238, 0.9) 50%, transparent 50%),
+    radial-gradient(1.5px 1.5px at 70% 40%, rgba(255, 246, 238, 0.7) 50%, transparent 50%),
+    radial-gradient(2px 2px at 55% 70%, rgba(255, 246, 238, 0.85) 50%, transparent 50%),
+    linear-gradient(180deg, #2e1e4e 0%, #5a3a78 100%);
+}
+.cielo-noche { background: linear-gradient(180deg, #2e1e4e 0%, #1b1424 100%); }
+.cielo-amanecer { background: var(--gradient-sky); }
+
+/* — Marcos (las órbitas) — */
+.marco-trazo { box-shadow: 0 0 0 2px var(--color-border-strong); }
+.marco-orbita { box-shadow: 0 0 0 3px var(--color-accent-peach); }
+.marco-orbita-doble {
+  box-shadow: 0 0 0 3px var(--color-accent-peach), 0 0 0 7px var(--color-accent-peach-soft);
+}
+.marco-constelacion-iii {
+  box-shadow: 0 0 0 3px var(--color-accent-lavender), 0 0 0 8px var(--color-accent-lavender-soft);
+}
+.marco-constelacion-v {
+  box-shadow:
+    0 0 0 3px var(--color-accent-lavender),
+    0 0 0 7px var(--color-accent-peach-soft),
+    0 0 0 11px var(--color-accent-lavender-soft);
+}
+.marco-halo {
+  box-shadow: 0 0 0 3px var(--color-accent-peach), 0 0 24px 6px rgba(255, 193, 137, 0.55);
+}
+.marco-orbita-amanecer {
+  box-shadow: 0 0 0 4px transparent;
+  background-image: var(--gradient-sky);
+  padding: 4px;
+}
+.marco-cielo {
+  background-image: conic-gradient(
+    from 180deg,
+    #2e1e4e, #5a3a78, #9a5a7a, #c86a5e, #ffc189, #2e1e4e
+  );
+  padding: 5px;
+  box-shadow: 0 0 26px 6px rgba(255, 193, 137, 0.45);
+}
+
+/* — Paletas (el tinte de las piezas de progreso) — */
+.paleta-trazo { --avatar-tinte: var(--color-border-strong); }
+.paleta-durazno { --avatar-tinte: var(--color-accent-peach); }
+.paleta-lavanda { --avatar-tinte: var(--color-accent-lavender); }
+.paleta-ciruela { --avatar-tinte: #7a4a8c; }
+.paleta-noche { --avatar-tinte: var(--color-night); }
+.paleta-amanecer { --avatar-tinte: #e8764f; }
+
+/* ---------------------------------------------------------------------------
+ * El encendido (§2f): 720 ms en cuatro cuadros. Solo `transform`, `opacity` y
+ * `stroke-dashoffset` — lo que el compositor puede animar sin repintar.
+ * --------------------------------------------------------------------------- */
+
+@keyframes encendido-trazo {
+  from { stroke-dashoffset: 1600; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes encendido-pulso {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+@keyframes encendido-anillo {
+  from { transform: scale(0.6); opacity: 0.85; }
+  to { transform: scale(1.6); opacity: 0; }
+}
+
+@keyframes encendido-destello {
+  0%, 100% { transform: scale(0.4); opacity: 0; }
+  50% { transform: scale(1); opacity: 1; }
+}
+
+.encendido-estrella {
+  animation: encendido-pulso var(--duration-celebrate) var(--ease-celebrate) both;
+  transform-origin: center;
+}
+.encendido-anillo {
+  animation: encendido-anillo 480ms ease-out 240ms both;
+  transform-origin: center;
+}
+.encendido-destello {
+  animation: encendido-destello 240ms ease-out 480ms both;
+  transform-origin: center;
+}
+
+/* Quien pide menos movimiento ve el cuadro final con un fundido, sin destellos ni Rigel. */
+@media (prefers-reduced-motion: reduce) {
+  .encendido-estrella,
+  .encendido-anillo,
+  .encendido-destello {
+    animation: none;
+  }
+  .encendido-estrella {
+    animation: aparecer 200ms ease-out both;
+  }
+  .encendido-anillo,
+  .encendido-destello {
+    display: none;
+  }
 }
 
 /* Quien pide menos movimiento, no lo recibe: se deja el estado final, sin transición. */
