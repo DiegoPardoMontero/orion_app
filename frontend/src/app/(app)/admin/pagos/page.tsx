@@ -81,9 +81,11 @@ function Conciliacion() {
         ))}
       </div>
 
+      {/* Con rótulo a la vista y no solo en `aria-label`: dos cajas de fecha idénticas, una al
+          lado de la otra, no dicen cuál es el inicio del período y cuál el final. */}
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <Campo type="date" value={desde} onChange={(e) => setDesde(e.target.value)} aria-label="Desde" />
-        <Campo type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} aria-label="Hasta" />
+        <RangoFecha id="conc-desde" etiqueta="Desde" valor={desde} onCambio={setDesde} />
+        <RangoFecha id="conc-hasta" etiqueta="Hasta" valor={hasta} onCambio={setHasta} />
       </div>
 
       {enRevision.length > 0 && (
@@ -273,8 +275,8 @@ function Liquidaciones() {
           Entran solo las clases que ya se dictaron y que no estén en otra liquidación.
         </p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <Campo type="date" value={inicio} onChange={(e) => setInicio(e.target.value)} aria-label="Desde" />
-          <Campo type="date" value={fin} onChange={(e) => setFin(e.target.value)} aria-label="Hasta" />
+          <RangoFecha id="liq-desde" etiqueta="Desde" valor={inicio} onCambio={setInicio} />
+          <RangoFecha id="liq-hasta" etiqueta="Hasta" valor={fin} onCambio={setFin} />
         </div>
         {errorGenerar && (
           <div className="mt-3">
@@ -421,4 +423,35 @@ function tonoPago(status: string): "menta" | "melocoton" | "lavanda" | "neutral"
     default:
       return "neutral";
   }
+}
+
+/** Un extremo del período, con su rótulo a la vista y ligado al campo. */
+function RangoFecha({
+  id,
+  etiqueta,
+  valor,
+  onCambio,
+}: {
+  id: string;
+  etiqueta: string;
+  valor: string;
+  onCambio: (v: string) => void;
+}) {
+  return (
+    <div>
+      <label
+        htmlFor={id}
+        className="block text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary"
+      >
+        {etiqueta}
+      </label>
+      <Campo
+        id={id}
+        type="date"
+        value={valor}
+        onChange={(e) => onCambio(e.target.value)}
+        className="mt-1.5"
+      />
+    </div>
+  );
 }

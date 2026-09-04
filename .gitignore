@@ -61,3 +61,6 @@ playwright-report/
 *Credentials*.png
 *credenciales*.png
 *secret*.png
+
+# Guiones de un solo uso para recorrer flujos con el navegador.
+frontend/*-tmp.mjs

@@ -183,6 +183,31 @@ idiomas y una presencial, para que la gamificación se pueda ver en local. `DevD
 `@Order(0)`: sin ese orden explícito, sobre una base recién creada `BillingDevSeeder` corría antes
 y Ana nacía sin saldo.
 
+## El aspirante a profesor (04/09/2026)
+Registrarse por «Postúlate para dar clases» ya no crea una cuenta de estudiante. `users.signup_intent`
+(V23) distingue las dos puertas de entrada, y **`OrionUserDetails` no le da `ROLE_STUDENT`** a quien
+entró por la de enseñar: como toda la experiencia del estudiante cuelga de esa autoridad en
+`SecurityConfig`, no dársela cierra las decenas de puertas de una vez.
+
+Su rol efectivo es `TEACHER_APPLICANT`, y eso es lo que devuelve `/auth/me`: el frontend dibuja el
+menú del aspirante contra una API que autoriza igual, en vez de dos versiones de la verdad.
+
+**Aprobar una postulación ahora promueve la cuenta a `PROFESSOR`** y le crea su perfil vacío. Antes
+no lo hacía, así que se aprobaba a alguien para que siguiera sin poder publicar su perfil ni abrir
+su disponibilidad. **Rechazarla devuelve la cuenta a estudiante**: rechazada no puede significar
+cuenta inservible.
+
+`FreshPrincipalFilter` relee al usuario en cada petición autenticada. Sin él, la aprobación no
+valdría hasta el siguiente login — y una baja de cuenta tampoco, que es peor.
+
+Las cuentas anteriores se quedaron en `LEARN` a propósito: marcar `TEACH` a un estudiante que
+postuló le cerraría hoy las clases que ya reservó y el saldo que ya pagó. Un estudiante que postula
+sigue siendo estudiante, con todo lo suyo.
+
+**Consecuencia que conviene tener presente:** al promover a alguien que ya usaba Orión como
+estudiante, su saldo a favor deja de ser alcanzable (`/me/credits` es de estudiantes). A la escala
+actual es raro y se resuelve a mano; si se vuelve frecuente, hay que decidir qué pasa con ese saldo.
+
 ## Pendiente / bloqueos conocidos
 - **Reservas anteriores a V20 sin idioma**: las que tenía un profesor de dos idiomas quedaron con
   `language_code` en nulo a propósito, para revisión manual. La migración deja el conteo en un
@@ -191,11 +216,40 @@ y Ana nacía sin saldo.
   flujo, pero conviene rotarla.
 - **Política de cancelación de una clase ya pagada**: el pago se queda retenido y aparece marcado en
   la conciliación. Decidir entre abonar saldo o devolver desde Wompi es política comercial.
-- **Banderas de idioma**: los emoji de bandera no se renderizan en Windows. Habría que cambiarlos por
-  códigos ("EN", "FR") o SVG.
+- **Subida de fotos y documentos en local**: exige `CLOUDINARY_URL` en el entorno. Sin ella la API
+  responde 503 con un mensaje legible (antes era un 500 sin explicación), pero el wizard de
+  postulación no se puede terminar en local: le faltarán siempre la foto y el CV.
 - **Config de producción**: `ORION_APP_BASE_URL`, `WOMPI_*`, `RESEND_API_KEY`,
   `NEXT_PUBLIC_SUPPORT_WHATSAPP`, `NEXT_PUBLIC_SITE_URL` en Railway.
 - Testimonios de la landing: ocultos hasta tener citas reales de Sofía.
+
+## Repaso de flujos (04/09/2026)
+Se recorrieron con navegador los flujos del manual —estudiante, profesor y administración, en
+escritorio y en móvil— y se corrigió lo que salió:
+
+- La grilla semanal ordenaba sus filas de hora con `.sort()` sobre la etiqueta: «10:00 AM» encima
+  de «9:00 AM». Ahora ordena por minuto del día (`minutoDelDiaBogota`, con prueba).
+- Las banderas de idioma salían como caja vacía en Windows. El **disco con el código ISO** del
+  Bloque 8 ya existía por esa razón y ahora se usa también fuera de la gamificación.
+- La ficha del estudiante le mostraba al profesor `CONVERSATION` en vez de «Conversación», no tenía
+  salida y no decía nada cuando estaba vacía.
+- El diálogo modal se dibujaba dentro de su contexto de apilamiento, así que en móvil la barra
+  inferior quedaba encima. Va en un **portal a `document.body`**.
+- El panel de notificaciones se salía por el borde izquierdo en escritorio; **Escape** no cerraba
+  ningún desplegable; y los avisos sobre una clase llevaban a la lista completa en vez de a esa
+  clase (`?clase=<id>`).
+- El **recálculo de logros anunciaba**: ocho avisos idénticos de «Encendiste 7 estrellas», uno por
+  arranque, con todas las estrellas fechadas el último. Ahora es silencioso y conserva
+  `unlocked_at`.
+- **Registrar asistencia no encendía nada**: solo lo hacía el trabajo horario. Es el camino que
+  ocurre de verdad casi siempre.
+- Tres errores que salían como 500 «Unexpected error» ahora dicen qué pasa: verbo equivocado (405),
+  código de catálogo inexistente (422 con los válidos) e integración sin configurar (503).
+- Las dos fechas del período de liquidación no tenían rótulo visible.
+
+Lo que **no** se pudo recorrer en local: el wizard de postulación completo (foto y CV exigen
+Cloudinary) y el paso por la pasarela (exige llaves de sandbox de Wompi). Los dos están cubiertos
+por tests de integración.
 
 ## Mascota
 La tabla viva de apariciones está en [`orion-mascota-guia.md`](./orion-mascota-guia.md).
