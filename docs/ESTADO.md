@@ -6,17 +6,19 @@ Resumen vivo de qué hay construido y desplegado. Se actualiza al cerrar cada pa
 
 **Backend** (Spring Boot 4.1, `co.orion`): identidad + sesión, disponibilidad + `SlotCalculator`,
 reservas, asistencia, notificaciones por correo (con `.ics` + link a Google Calendar), panel admin
-(usuarios, reservas, métricas). **Migraciones Flyway V1–V19.**
+(usuarios, reservas, métricas). **Migraciones Flyway V1–V23.**
 
 Módulos: `identity`, `scheduling`, `catalog`, `billing`, `messaging`, `notifications`, `reputation`,
-`lifecycle`, `admin`, `shared`. La dependencia que sorprende es `identity → reputation` (el perfil
-público muestra la calificación), y por eso existe `lifecycle`: es el único sitio que necesita
-reserva, pago e historial a la vez.
+`lifecycle`, `admin`, `engagement`, `shared`. La dependencia que sorprende es `identity → reputation`
+(el perfil público muestra la calificación), y por eso existe `lifecycle`: es el único sitio que
+necesita reserva, pago e historial a la vez. `engagement` es el contrario: depende de casi todos y
+nadie depende de él, así que se puede borrar entero sin tocar el marketplace.
 
 **Frontend** (Next 16, React 19, Tailwind v4): sistema de diseño **v2 "Amanecer cálido premium"**,
 mascota **Rigel** (6 poses, 2 tonos), PWA instalable (service worker + íconos de marca), y las
 pantallas del MVP (login, registro, profesores, reserva, mis clases, disponibilidad, perfil de
-profesor, admin).
+profesor, admin) más las del Bloque 8 (`/logros`, `/logros/avatar`, `/estudiantes/[id]` y «Mi ficha»
+dentro de `/cuenta`).
 
 ### Features añadidas sobre el MVP base
 - **Auto-registro de estudiantes** (`POST /auth/register`) + pantalla `/registro`.
@@ -27,9 +29,13 @@ profesor, admin).
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots), con Rigel de protagonista.
 
 ## Verificación
-- Backend: `./mvnw verify` (Testcontainers) verde.
-- Frontend: `next build` + `tsc` + `lint` verdes; **e2e Playwright** verde (semilla fresca; la suite
-  muta estado, `docker compose down -v` entre corridas completas).
+Al 04/09/2026, sobre `1f9bcd4`:
+- Backend: `./mvnw verify` (Testcontainers) — **117 unitarios + 340 de integración**, verde.
+- Frontend: `next build` + `tsc` + `lint` verdes; **39 tests de Vitest**.
+- **E2E Playwright: 15 de 16.** El que falta —el paso por la pasarela— exige llaves de *sandbox* de
+  Wompi en el entorno; su propio comentario lo advierte. La suite muta estado y asume semilla
+  fresca: `docker compose down -v` entre corridas completas.
+- El build de producción, además, servido y recorrido en navegador (escritorio y móvil).
 
 ## Pagos (Bloque 4, 02/09/2026)
 Reservar ya no confirma: la reserva nace `PENDING_PAYMENT` con el cupo bloqueado y solo pasa a
@@ -44,8 +50,11 @@ admin. Migración V16.
 
 ## Registro de profesores (02/09/2026)
 `/registro?rol=profesor` con selector visible: quien viene a enseñar aterriza en `/aplicacion` en vez
-del buscador. Entradas desde la portada, `/login` y "Enseña en Orión". No hay rol nuevo: la cuenta es
-la misma y en Orión se es profesor cuando la postulación se aprueba.
+del buscador. Entradas desde la portada, `/login` y "Enseña en Orión".
+
+> **Corregido el 04/09.** Aquí decía «no hay rol nuevo: la cuenta es la misma», y eso era justo el
+> problema: la cuenta era la misma que la de un estudiante, con buscador y reservas incluidos.
+> Ver [El aspirante a profesor](#el-aspirante-a-profesor-04092026).
 
 ## Ciclo de vida y reputación (Bloques 5 y 6, 03/09/2026)
 Reprogramación por propuesta + aceptación (el endpoint directo desapareció), reclamos por no-show
@@ -123,8 +132,11 @@ dominio, como ya hacía `TeacherApplication`. Vacío sigue valiendo; lo que no v
 
 ## Panel de progreso del estudiante (03/09/2026)
 `GET /api/v1/me/progress` y el panel en `/cuenta`: clases tomadas, horas de práctica, racha de
-semanas, mejor racha, próxima clase, mapa del último año y con quién ha practicado. **Todo sale de
+semanas, mejor racha, próxima clase, mapa de constancia y con quién ha practicado. **Todo sale de
 reservas que ya existen**: ninguna métrica inventada, ningún campo que rellenar a mano.
+
+> El mapa era anual hasta el 04/09; ahora son **12 semanas** (`GET /me/streak`). Con una clase por
+> semana, una cuadrícula de un año está vacía en un 98 % y comunica abandono en vez de progreso.
 
 Qué cuenta como clase tomada: `COMPLETED`, y `CONFIRMED` que ya terminó. Los dos no-show quedan
 fuera —si faltó el estudiante no la tomó, si faltó el profesor no la hubo—.
@@ -245,7 +257,14 @@ escritorio y en móvil— y se corrigió lo que salió:
   ocurre de verdad casi siempre.
 - Tres errores que salían como 500 «Unexpected error» ahora dicen qué pasa: verbo equivocado (405),
   código de catálogo inexistente (422 con los válidos) e integración sin configurar (503).
-- Las dos fechas del período de liquidación no tenían rótulo visible.
+- Las dos fechas del período de liquidación no tenían rótulo visible: nada decía cuál era el inicio
+  del período y cuál el final, y con eso se liquida el mes equivocado.
+- El panel del admin escribía la hora de los procesos como «6:30:35 a. m.», que no es como Orión
+  escribe una hora en ninguna otra pantalla.
+- **`retry: false` global** en TanStack Query era demasiado ancho. Un 404 o un 422 son la respuesta
+  y no mejoran repitiéndose, pero un corte de red o un 500 sí: sin reintentar, un único paquete
+  perdido dejaba a la persona en «No pudimos cargar…» con un botón que tiene que descubrir. Ahora
+  se reintenta dos veces lo que puede mejorar, y nunca un 4xx.
 
 Lo que **no** se pudo recorrer en local: el wizard de postulación completo (foto y CV exigen
 Cloudinary) y el paso por la pasarela (exige llaves de sandbox de Wompi). Los dos están cubiertos
