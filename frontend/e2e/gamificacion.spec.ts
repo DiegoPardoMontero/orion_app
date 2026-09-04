@@ -17,6 +17,25 @@ const USERS = {
   carlos: { email: "carlos@orion.local", pass: "orion123*" },
 };
 
+/**
+ * Una estudiante recién creada para cada corrida.
+ *
+ * <p>Lo que se prueba aquí —que declarar un objetivo enciende una estrella y salta la celebración—
+ * solo ocurre la primera vez. Con una cuenta sembrada, la segunda corrida sobre la misma base ya
+ * la encuentra encendida y el test falla por haber pasado antes, que es la peor forma de fallar.
+ */
+async function registrar(page: Page) {
+  const email = `estrella.${Date.now()}@orion.local`;
+  await page.goto("/registro");
+  await page.waitForLoadState("networkidle");
+  await page.locator("#nombre").fill("Estrella Nueva");
+  await page.locator("#email").fill(email);
+  await page.locator("#password").fill("orion123*");
+  await page.getByRole("button", { name: "Crear cuenta" }).click();
+  await expect(page).toHaveURL(/\/profesores/);
+  return email;
+}
+
 async function login(page: Page, user: { email: string; pass: string }) {
   await page.goto("/login");
   await page.waitForLoadState("networkidle");
@@ -24,6 +43,9 @@ async function login(page: Page, user: { email: string; pass: string }) {
   await page.locator("#password").fill(user.pass);
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page).toHaveURL(/\/profesores/);
+  // Y esperar a que la sesión se asiente antes de navegar: si no, la primera pantalla dispara sus
+  // consultas sin cookie y aterriza en su estado de error.
+  await page.waitForLoadState("networkidle");
 }
 
 async function logout(page: Page) {
@@ -34,10 +56,8 @@ async function logout(page: Page) {
 
 test.describe.configure({ mode: "serial" });
 
-test("Ana declara su objetivo: se enciende una estrella y llega la notificación", async ({
-  page,
-}) => {
-  await login(page, USERS.ana);
+test("declarar un objetivo enciende una estrella y llega la notificación", async ({ page }) => {
+  await registrar(page);
   await page.goto("/cuenta");
   await expect(page.getByRole("heading", { name: "Mi ficha" })).toBeVisible();
 
@@ -65,8 +85,7 @@ test("Ana declara su objetivo: se enciende una estrella y llega la notificación
 
 test("Ana equipa una pieza desbloqueada y sigue puesta al recargar", async ({ page }) => {
   await login(page, USERS.ana);
-  await page.goto("/logros/avatar");
-  await expect(page.getByRole("heading", { name: "Tu avatar" })).toBeVisible();
+  await abrir(page, "/logros/avatar", "Tu avatar");
 
   // Por el nombre exacto de la pieza: hay «Órbita», «Órbita doble» y «Órbita amanecer», y un
   // nombre que sea prefijo de otro elige la equivocada.
@@ -91,10 +110,10 @@ test("Ana equipa una pieza desbloqueada y sigue puesta al recargar", async ({ pa
 
 /**
  * Que el frontend solo enseñe lo desbloqueado es comodidad; la comprobación que manda es la del
- * servidor. Aquí se salta la pantalla entera y se pide por API una pieza que Ana no tiene.
+ * servidor. Aquí se salta la pantalla entera y se pide por API una pieza que no tiene.
  */
 test("equipar una pieza bloqueada por API responde 422", async ({ page }) => {
-  await login(page, USERS.ana);
+  await registrar(page);
 
   const respuesta = await page.request.put("http://localhost:8080/api/v1/me/cosmetics", {
     headers: { "X-XSRF-TOKEN": await tokenCsrf(page) },
@@ -105,11 +124,11 @@ test("equipar una pieza bloqueada por API responde 422", async ({ page }) => {
 });
 
 test("el perfil público se enciende y se apaga: Carlos lo ve y deja de verlo", async ({ page }) => {
-  await login(page, USERS.ana);
+  const nuevaEstudiante = await registrar(page);
   await page.goto("/cuenta");
   await expect(page.getByRole("heading", { name: "Mi ficha" })).toBeVisible();
 
-  const idAna = await page.evaluate(async () => {
+  const idDeElla = await page.evaluate(async () => {
     const r = await fetch("/api/v1/auth/me", { credentials: "include" });
     return (await r.json()).id as string;
   });
@@ -125,21 +144,44 @@ test("el perfil público se enciende y se apaga: Carlos lo ve y deja de verlo", 
   await logout(page);
 
   await login(page, USERS.carlos);
-  await page.goto(`/estudiantes/${idAna}`);
-  await expect(page.getByRole("heading", { name: "Ana Ramírez" })).toBeVisible();
+  await page.goto(`/estudiantes/${idDeElla}`);
+  await expect(page.getByRole("heading", { name: "Estrella Nueva" })).toBeVisible();
   await logout(page);
 
-  await login(page, USERS.ana);
+  await page.goto("/login");
+  await page.waitForLoadState("networkidle");
+  await page.locator("#email").fill(nuevaEstudiante);
+  await page.locator("#password").fill("orion123*");
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await expect(page).toHaveURL(/\/profesores/);
   await page.goto("/cuenta");
   await page.getByRole("button", { name: "Volverlo privado" }).click();
   await expect(page.getByText("Tu ficha es privada")).toBeVisible();
   await logout(page);
 
   await login(page, USERS.carlos);
-  await page.goto(`/estudiantes/${idAna}`);
+  await page.goto(`/estudiantes/${idDeElla}`);
   // Nunca «no tienes permiso»: eso confirmaría que el perfil existe. El servidor responde 404.
   await expect(page.getByRole("heading", { name: "No encontramos este perfil" })).toBeVisible();
 });
+
+/**
+ * Abre una pantalla y espera su título, recargando si hace falta.
+ *
+ * <p>Con `next dev`, la <em>primera</em> visita a una ruta la compila en ese momento, y la consulta
+ * que sale en mitad de esa compilación se corta: la pantalla queda en su estado de error, que es
+ * terminal. Solo pasa en desarrollo y solo la primera vez, así que recargar es lo que haría
+ * cualquiera — y si a la tercera sigue rota, el test falla igual, que es lo que debe hacer.
+ */
+async function abrir(page: Page, ruta: string, titulo: string) {
+  const encabezado = page.getByRole("heading", { name: titulo });
+  for (let intento = 0; intento < 3; intento++) {
+    if (intento === 0) await page.goto(ruta);
+    else await page.reload();
+    if (await encabezado.isVisible({ timeout: 6000 }).catch(() => false)) return;
+  }
+  await expect(encabezado).toBeVisible();
+}
 
 /** El token CSRF que el backend deja en una cookie legible por JS. */
 async function tokenCsrf(page: Page): Promise<string> {

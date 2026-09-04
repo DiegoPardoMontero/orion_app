@@ -294,6 +294,9 @@ test("la landing pública lleva al registro en un clic", async ({ page }) => {
 
 test("el admin invita a un profesor; un enlace inválido se rechaza", async ({ page }) => {
   await login(page, USERS.admin);
+  // Esperar a que la sesión quede establecida antes de navegar: si no, /admin/usuarios rebota a
+  // login. El admin aterriza en el panel, no en usuarios.
+  await expect(page).toHaveURL(/\/admin\/panel/);
   await page.goto("/admin/usuarios");
 
   await page.getByRole("button", { name: "Invitar profesor" }).click();

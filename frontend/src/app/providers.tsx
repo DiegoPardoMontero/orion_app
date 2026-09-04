@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
+import { ApiError } from "@/lib/api/fetch";
 
 /**
  * TanStack Query es la caché de datos del servidor. Cada consulta tiene una clave; cuando algo
@@ -16,8 +17,16 @@ export function Providers({ children }: { children: ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            // No reintentar los errores del backend (un 404 o un 422 no mejoran reintentando).
-            retry: false,
+            /*
+             * Reintentar lo que puede mejorar, y solo eso.
+             *
+             * Un 404 o un 422 son la respuesta, no un fallo: repetirlos solo hace esperar. Un corte
+             * de red o un 500, en cambio, se arreglan solos casi siempre — y sin reintentar, un
+             * único paquete perdido deja a la persona mirando «No pudimos cargar…» con un botón que
+             * tiene que descubrir y pulsar. Dos intentos más, y luego sí se le cuenta.
+             */
+            retry: (intentos, error) =>
+              error instanceof ApiError && error.status < 500 ? false : intentos < 2,
             refetchOnWindowFocus: false,
           },
         },
