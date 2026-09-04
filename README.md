@@ -19,8 +19,8 @@ frontend/   Aplicación Next.js (App Router)
 docs/       Briefs de las tareas y documentación
 ```
 
-**[docs/features.md](docs/features.md)** — qué hace Orión hoy, por rol y por regla de negocio.
-Empieza por ahí si vienes nuevo al proyecto.
+**[docs/ESTADO.md](docs/ESTADO.md)** — qué hay construido y desplegado, con las reglas y sus
+valores. Empieza por ahí si vienes nuevo al proyecto.
 
 ## 1. Levantar la infraestructura
 
@@ -191,11 +191,7 @@ npm run e2e          # levanta next dev solo; requiere backend + docker con la s
 Cubre los caminos que no pueden romperse: login/logout de cada rol, Ana reserva y el cupo
 desaparece, María ve la reserva, Ana cancela y el cupo vuelve. Corre en un viewport móvil.
 
-## 4. Probar a mano
-
-Guía paso a paso con Postman, con todos los casos de error: [docs/postman-guide.md](docs/postman-guide.md)
-
-## 5. Tests
+## 4. Tests
 
 ```bash
 cd backend
@@ -208,7 +204,7 @@ Los tests levantan un **PostgreSQL real** con Testcontainers (no H2), así que D
 estar corriendo. No hace falta que la infra de `docker compose` esté arriba: Testcontainers
 crea y destruye sus propios contenedores.
 
-## 6. Variables de entorno
+## 5. Variables de entorno
 
 | Variable | Default |
 |---|---|
