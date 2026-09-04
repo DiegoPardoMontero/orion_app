@@ -38,6 +38,7 @@ public class BookingsController {
                 body.startsAt().toInstant(),
                 body.modality(),
                 body.locationNote(),
+                body.languageCode(),
                 body.studentId()));
     }
 

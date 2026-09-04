@@ -265,7 +265,7 @@ class EarningsAndPayoutsIT extends ApiIntegrationSupport {
         OffsetDateTime at = ZonedDateTime
                 .of(WEDNESDAY, LocalTime.of(hour, 0), BusinessZone.BOGOTA).toOffsetDateTime();
         ResponseEntity<BookingResponse> response = post(BOOKINGS, anaSession,
-                new CreateBookingRequest(professor.getId(), at, "VIRTUAL", null, null),
+                new CreateBookingRequest(professor.getId(), at, "VIRTUAL", null, null, null),
                 BookingResponse.class);
         assertThat(response.getStatusCode())
                 .as("respuesta: %s", response.getBody())

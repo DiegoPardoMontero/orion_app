@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#F7EFE6; font-family:'Figtree',sans-serif; color:#33203B; }
+  a { color:#C93A26; } a:hover { color:#E8503A; }
+</style>
+</helmet>
+
+<section style="padding:56px 64px 96px; display:flex; flex-direction:column; gap:40px; width:1920px; box-sizing:border-box;">
+
+  <svg width="0" height="0" style="position:absolute;" aria-hidden="true">
+    <defs>
+      <linearGradient id="gSolo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD9B5"></stop><stop offset="1" stop-color="#FFC189"></stop></linearGradient>
+      <linearGradient id="gSocial" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D9CDF3"></stop><stop offset="1" stop-color="#B9A7E6"></stop></linearGradient>
+      <radialGradient id="glowSolo"><stop offset="0" stop-color="#FFC189" stop-opacity=".55"></stop><stop offset="1" stop-color="#FFC189" stop-opacity="0"></stop></radialGradient>
+      <radialGradient id="glowSocial"><stop offset="0" stop-color="#B9A7E6" stop-opacity=".6"></stop><stop offset="1" stop-color="#B9A7E6" stop-opacity="0"></stop></radialGradient>
+      <radialGradient id="glowSky"><stop offset="0" stop-color="#FFC189" stop-opacity=".7"></stop><stop offset="1" stop-color="#FFC189" stop-opacity="0"></stop></radialGradient>
+    </defs>
+  </svg>
+
+  <div style="display:flex; flex-direction:column; gap:12px; max-width:900px;">
+    <div style="color:#7A6B85; font-size:11px; font-weight:700; letter-spacing:.18em; text-transform:uppercase;">Orión · Gamificación · Etapa 2 (v2) · Dirección C «Sello» · lenguaje: constelación</div>
+    <h1 style="margin:0; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:44px; line-height:1.06; text-wrap:pretty;">Cada logro es una estrella. El tablero es un cielo que se puebla.</h1>
+    <p style="margin:0; color:#5E4E6B; font-size:16px; line-height:1.65; text-wrap:pretty;">Apagada mientras está bloqueada, encendida al conseguirse. El escalón no es bronce/plata/oro: es <strong style="color:#33203B;">brillo</strong> — una estrella, una estrella con halo, una estrella con halo y rayos. Las estrellas de una familia se unen con líneas al completarse y forman su figura. Los marcos del avatar son órbitas y constelaciones. Rigel conserva su voz; el vocabulario de estrellas es de todo el sistema.</p>
+  </div>
+
+  <!-- ============ 2a · GRAMÁTICA ============ -->
+  <div id="2a" style="background:#FFFFFF; border-radius:28px; padding:30px 32px 32px; display:flex; flex-direction:column; gap:24px; box-shadow:0 8px 32px -14px rgba(51,32,59,.22); width:1792px; box-sizing:border-box;">
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:24px;">
+      <div style="display:flex; flex-direction:column; gap:8px; max-width:820px;">
+        <div style="color:#7A6B85; font-size:11px; font-weight:700; letter-spacing:.16em;">GRAMÁTICA DE UNA ESTRELLA</div>
+        <h2 style="margin:0; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:30px; line-height:1.1;">Tres brillos, tres estados, dos colores</h2>
+        <p style="margin:0; color:#5E4E6B; font-size:14px; line-height:1.6; text-wrap:pretty;">Estrella de cinco puntas redondeadas (radio exterior 220, interior 118, trazo 50 con `stroke-linejoin: round`), viewBox 512, centro (256, 256). El brillo se lee por forma aun apagado: el halo y los rayos se dibujan en línea discontinua cuando la estrella está bloqueada. El color dice la familia: durazno = lo que haces solo; lavanda = lo que involucra a otros.</p>
+      </div>
+      <a href="#2a" style="text-decoration:none; font-size:12px; font-weight:700; padding:5px 11px; border-radius:999px; background:#33203B; color:#FFF6EE; flex-shrink:0;">2a</a>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px;">
+      <sc-for list="{{ brillos }}" as="e" hint-placeholder-count="3">
+        <div style="display:flex; gap:18px; padding:20px; border-radius:20px; background:#FFF6EE; align-items:center;">
+          <svg viewBox="0 0 512 512" width="128" height="128" style="flex-shrink:0;">
+            <circle cx="256" cy="256" r="250" fill="url(#glowSolo)"></circle>
+            <path d="{{ e.rays }}" fill="none" stroke="#33203B" stroke-width="16" stroke-linecap="round"></path>
+            <path d="{{ e.halo }}" fill="none" stroke="#33203B" stroke-width="8"></path>
+            <path d="{{ e.star }}" fill="url(#gSolo)" stroke="#FFC189" stroke-width="50" stroke-linejoin="round" paint-order="stroke fill"></path>
+          </svg>
+          <div style="display:flex; flex-direction:column; gap:4px; font-size:13.5px; line-height:1.5; color:#5E4E6B;">
+            <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:20px; color:#33203B;">{{ e.name }}</div>
+            <div>{{ e.desc }}</div>
+            <div style="font-family:monospace; font-size:12px; color:#7A6B85;">{{ e.file }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px;">
+      <div style="display:flex; gap:18px; padding:20px; border-radius:20px; background:#FFF6EE; align-items:center;">
+        <svg viewBox="0 0 512 512" width="128" height="128" style="flex-shrink:0;">
+          <path d="{{ starD }}" fill="none" stroke="#33203B" stroke-width="10" stroke-linejoin="round" stroke-dasharray="16 14" opacity=".34"></path>
+          <g transform="translate(172 172) scale(7)" fill="none" stroke="#33203B" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" opacity=".3"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"></path><rect x="2" y="6" width="14" height="12" rx="2"></rect></g>
+          <circle cx="416" cy="416" r="60" fill="#FFF6EE" stroke="#33203B" stroke-width="10"></circle>
+          <g transform="translate(389 386) scale(2.25)" fill="none" stroke="#33203B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></g>
+        </svg>
+        <div style="display:flex; flex-direction:column; gap:4px; font-size:13.5px; line-height:1.5; color:#5E4E6B;">
+          <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:20px; color:#33203B;">Apagada</div>
+          <div>Contorno discontinuo (10 px, 16/14) al 34 %, glifo al 30 %, candado en (416, 416) r 60. Se lee como una estrella que aún no ha salido, no como algo roto.</div>
+          <div style="font-family:monospace; font-size:12px; color:#7A6B85;">…-apagada.svg</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:18px; padding:20px; border-radius:20px; background:#FFF6EE; align-items:center;">
+        <svg viewBox="0 0 512 512" width="128" height="128" style="flex-shrink:0;">
+          <circle cx="256" cy="256" r="240" fill="none" stroke="#33203B" stroke-width="12" opacity=".1"></circle>
+          <circle cx="256" cy="256" r="240" fill="none" stroke="#FFC189" stroke-width="14" stroke-linecap="round" stroke-dasharray="905 1508" transform="rotate(-90 256 256)"></circle>
+          <g transform="translate(256 256) scale(.8) translate(-256 -256)">
+            <path d="{{ starD }}" fill="#FFF6EE" stroke="#33203B" stroke-width="10" stroke-linejoin="round" paint-order="stroke fill" opacity=".9"></path>
+            <g transform="translate(172 172) scale(7)" fill="none" stroke="#33203B" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" opacity=".75"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"></path><rect x="2" y="6" width="14" height="12" rx="2"></rect></g>
+          </g>
+        </svg>
+        <div style="display:flex; flex-direction:column; gap:4px; font-size:13.5px; line-height:1.5; color:#5E4E6B;">
+          <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:20px; color:#33203B;">Encendiéndose</div>
+          <div>Órbita de progreso r 240 en el color de la familia (circunferencia 1508; `dasharray` = avance × 1508), estrella al 80 % en contorno continuo, pastilla “n de N” debajo. Siempre dice cuánto falta.</div>
+          <div style="font-family:monospace; font-size:12px; color:#7A6B85;">…-progreso.svg + data-progress</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:18px; padding:20px; border-radius:20px; background:#FFF6EE; align-items:center;">
+        <svg viewBox="0 0 512 512" width="128" height="128" style="flex-shrink:0;">
+          <circle cx="256" cy="256" r="250" fill="url(#glowSolo)"></circle>
+          <path d="{{ starD }}" fill="url(#gSolo)" stroke="#FFC189" stroke-width="50" stroke-linejoin="round" paint-order="stroke fill"></path>
+          <g transform="translate(172 172) scale(7)" fill="none" stroke="#33203B" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"></path><rect x="2" y="6" width="14" height="12" rx="2"></rect></g>
+        </svg>
+        <div style="display:flex; flex-direction:column; gap:4px; font-size:13.5px; line-height:1.5; color:#5E4E6B;">
+          <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:20px; color:#33203B;">Encendida</div>
+          <div>Relleno degradado de la familia, resplandor radial r 250 detrás (55 % → 0), glifo tinta al 100 %. Sin candado. El brillo viene de la forma, no de un efecto.</div>
+          <div style="font-family:monospace; font-size:12px; color:#7A6B85;">…-encendida.svg</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2b · CIELO ============ -->
+  <div id="2b" style="background:#FFFFFF; border-radius:28px; padding:30px 32px 32px; display:flex; flex-direction:column; gap:22px; box-shadow:0 8px 32px -14px rgba(51,32,59,.22); width:1792px; box-sizing:border-box;">
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:24px;">
+      <div style="display:flex; flex-direction:column; gap:8px; max-width:820px;">
+        <div style="color:#7A6B85; font-size:11px; font-weight:700; letter-spacing:.16em;">EL CIELO · CINCO CONSTELACIONES</div>
+        <h2 style="margin:0; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:30px; line-height:1.1;">Las estrellas de una familia forman una figura</h2>
+        <p style="margin:0; color:#5E4E6B; font-size:14px; line-height:1.6; text-wrap:pretty;">Cada familia tiene una figura fija (coordenadas abajo). La línea entre dos estrellas se dibuja cuando ambas están encendidas; la figura cierra al completar la familia. Un cielo recién llegado no está vacío: todas las estrellas están ahí, apagadas, esperando — igual que la constelación del login. Sobre el degradado del amanecer, como panel de marca.</p>
+      </div>
+      <a href="#2b" style="text-decoration:none; font-size:12px; font-weight:700; padding:5px 11px; border-radius:999px; background:#33203B; color:#FFF6EE; flex-shrink:0;">2b</a>
+    </div>
+    <div style="position:relative; width:1728px; height:560px; border-radius:24px; overflow:hidden; background:linear-gradient(180deg,#2E1E4E 0%,#5A3A78 50%,#9A5A7A 80%,#C86A5E 100%);">
+      <sc-for list="{{ familias }}" as="f" hint-placeholder-count="5">
+        <svg viewBox="0 0 1728 560" width="1728" height="560" style="position:absolute; inset:0;">
+          <path d="{{ f.lines }}" fill="none" stroke="#FFF6EE" stroke-width="2" opacity=".55"></path>
+          <path d="{{ f.pending }}" fill="none" stroke="#FFF6EE" stroke-width="2" stroke-dasharray="4 8" opacity=".22"></path>
+        </svg>
+        <sc-for list="{{ f.stars }}" as="s" hint-placeholder-count="4">
+          <div style="position:absolute; left:{{ s.left }}px; top:{{ s.top }}px; width:{{ s.size }}px; display:flex; flex-direction:column; align-items:center; gap:4px;">
+            <svg viewBox="0 0 512 512" width="{{ s.size }}" height="{{ s.size }}">
+              <circle cx="256" cy="256" r="250" fill="url(#glowSky)" opacity="{{ s.glow }}"></circle>
+              <path d="{{ s.rays }}" fill="none" stroke="#FFF6EE" stroke-width="16" stroke-linecap="round" opacity="{{ s.lineOp }}"></path>
+              <path d="{{ s.halo }}" fill="none" stroke="#FFF6EE" stroke-width="8" opacity="{{ s.lineOp }}"></path>
+              <path d="{{ s.star }}" fill="{{ s.fill }}" stroke="{{ s.stroke }}" stroke-width="{{ s.sw }}" stroke-linejoin="round" stroke-dasharray="{{ s.dash }}" paint-order="stroke fill" opacity="{{ s.op }}"></path>
+              <circle cx="256" cy="256" r="240" fill="none" stroke="#FFC189" stroke-width="12" stroke-linecap="round" stroke-dasharray="{{ s.prog }}" transform="rotate(-90 256 256)"></circle>
+            </svg>
+            <div style="font-size:10.5px; font-weight:600; color:#FFF6EE; opacity:{{ s.labelOp }}; white-space:nowrap;">{{ s.label }}</div>
+          </div>
+        </sc-for>
+        <div style="position:absolute; left:{{ f.lx }}px; top:{{ f.ly }}px; display:flex; flex-direction:column; gap:2px;">
+          <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:15px; color:#FFF6EE;">{{ f.name }}</div>
+          <div style="font-size:11px; color:#FFF6EE; opacity:.7;">{{ f.status }}</div>
+        </div>
+      </sc-for>
+      <svg viewBox="0 0 200 210" width="90" height="94" style="position:absolute; left:400px; bottom:14px;" aria-hidden="true">
+        <g stroke="#33203B" stroke-width="7" stroke-linecap="round"><line x1="86" y1="142" x2="83" y2="167"></line><line x1="114" y1="142" x2="117" y2="167"></line></g>
+        <ellipse cx="75" cy="176" rx="21" ry="11" fill="#2B2430"></ellipse><ellipse cx="125" cy="176" rx="21" ry="11" fill="#2B2430"></ellipse>
+        <polygon points="100,36 115.3,75 157.1,77.5 124.7,104 135.3,144.5 100,122 64.7,144.5 75.3,104 42.9,77.5 84.7,75" fill="#FFCE3A" stroke="#FFCE3A" stroke-width="26" stroke-linejoin="round" paint-order="stroke fill"></polygon>
+        <ellipse cx="80" cy="62" rx="17" ry="9" fill="#FFF6EE" opacity=".45" transform="rotate(-32 80 62)"></ellipse>
+        <ellipse cx="70" cy="106" rx="10" ry="6.5" fill="#FF8E76" opacity=".8"></ellipse><ellipse cx="130" cy="106" rx="10" ry="6.5" fill="#FF8E76" opacity=".8"></ellipse>
+        <circle cx="88" cy="91" r="10" fill="#2B2430"></circle><circle cx="118" cy="91" r="10" fill="#2B2430"></circle><circle cx="85.5" cy="87" r="3.4" fill="#FFF6EE"></circle><circle cx="115.5" cy="87" r="3.4" fill="#FFF6EE"></circle>
+        <path d="M89,102 Q100,116 111,102 Q100,107 89,102 Z" fill="#5A2436"></path>
+        <path d="M148,96 L175,93" stroke="#33203B" stroke-width="7" stroke-linecap="round" fill="none"></path>
+        <circle cx="180" cy="93" r="12" fill="#FFFFFF" stroke="#33203B" stroke-width="3"></circle><path d="M186 93 L196 93" stroke="#33203B" stroke-width="7" stroke-linecap="round"></path>
+        <path d="M60,118 L37,139" stroke="#33203B" stroke-width="7" stroke-linecap="round" fill="none"></path>
+        <circle cx="25" cy="152" r="5" fill="#FFFFFF" stroke="#33203B" stroke-width="3"></circle><circle cx="34" cy="143" r="12" fill="#FFFFFF" stroke="#33203B" stroke-width="3"></circle>
+      </svg>
+    </div>
+    <div style="display:flex; flex-wrap:wrap; gap:24px; font-size:12.5px; line-height:1.55; color:#5E4E6B;">
+      <div style="flex:1; min-width:300px;"><strong style="color:#33203B;">Figuras (coordenadas en un cielo de 1728×560, estrella centrada).</strong> Primeros pasos · cometa: (180,220) (270,130) (370,200) (290,320). Constancia · arco: (540,340) (620,240) (720,200) (820,230) (900,320). Volumen · escalera: (1000,400) (1080,320) (1160,350) (1240,240) (1330,190). Amplitud · triángulo: (1420,150) (1520,220) (1440,300). Compromiso · balanza: (1500,390) (1590,450) (1640,350). En 390 px el cielo se apila por familia, una figura por fila.</div>
+      <div style="flex:1; min-width:300px;"><strong style="color:#33203B;">Rigel en el cielo.</strong> Cameo en pose Guía (90 px) señalando la siguiente estrella por encender; aparece una sola vez y desaparece si el cielo está completo. En 390 px no aparece: el cielo es demasiado denso.</div>
+    </div>
+  </div>
+
+  <!-- ============ 2c · 20 LOGROS ============ -->
+  <div id="2c" style="background:#FFFFFF; border-radius:28px; padding:30px 32px 32px; display:flex; flex-direction:column; gap:24px; box-shadow:0 8px 32px -14px rgba(51,32,59,.22); width:1792px; box-sizing:border-box;">
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:24px;">
+      <div style="display:flex; flex-direction:column; gap:8px; max-width:820px;">
+        <div style="color:#7A6B85; font-size:11px; font-weight:700; letter-spacing:.16em;">INVENTARIO · 20 ESTRELLAS × 3 ESTADOS</div>
+        <h2 style="margin:0; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:30px; line-height:1.1;">Nombradas por lo que la persona hizo</h2>
+        <p style="margin:0; color:#5E4E6B; font-size:14px; line-height:1.6; text-wrap:pretty;">Los cuatro primeros se encienden en la primera semana. Cada tarjeta: apagada · encendiéndose · encendida, con archivo y condición de desbloqueo. Es el catálogo de la base de datos.</p>
+      </div>
+      <a href="#2c" style="text-decoration:none; font-size:12px; font-weight:700; padding:5px 11px; border-radius:999px; background:#33203B; color:#FFF6EE; flex-shrink:0;">2c</a>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px;">
+      <sc-for list="{{ logros }}" as="l" hint-placeholder-count="20">
+        <div style="display:flex; flex-direction:column; gap:12px; padding:18px 18px 16px; border-radius:20px; background:#FFF6EE;">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <span style="font-size:11px; font-weight:700; letter-spacing:.12em; color:#7A6B85; text-transform:uppercase;">{{ l.familia }}</span>
+            <span style="font-size:11px; font-weight:600; color:#7A6B85;">{{ l.brillo }}</span>
+          </div>
+          <div style="display:flex; gap:8px; justify-content:space-between;">
+            <div style="position:relative; width:112px; height:112px;"><svg viewBox="0 0 512 512" width="112" height="112">
+              <path d="{{ l.rays }}" fill="none" stroke="#33203B" stroke-width="14" stroke-linecap="round" stroke-dasharray="14 12" opacity=".3"></path>
+              <path d="{{ l.halo }}" fill="none" stroke="#33203B" stroke-width="8" stroke-dasharray="14 12" opacity=".3"></path>
+              <path d="{{ l.star }}" fill="none" stroke="#33203B" stroke-width="10" stroke-linejoin="round" stroke-dasharray="16 14" opacity=".34"></path>
+              <g transform="translate(172 172) scale(7)" fill="none" stroke="#33203B" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" opacity=".3"><path d="{{ l.glyph }}"></path></g>
+              <circle cx="416" cy="416" r="60" fill="#FFF6EE" stroke="#33203B" stroke-width="10"></circle>
+              <g transform="translate(389 386) scale(2.25)" fill="none" stroke="#33203B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></g>
+            </svg>
+            <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding-bottom:4px; font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:{{ l.numPx }}px; color:#33203B; opacity:.3; pointer-events:none;">{{ l.num }}</div></div>
+            <div style="position:relative; width:112px; height:112px;"><svg viewBox="0 0 512 512" width="112" height="112">
+              <circle cx="256" cy="256" r="240" fill="none" stroke="#33203B" stroke-width="12" opacity=".1"></circle>
+              <circle cx="256" cy="256" r="240" fill="none" stroke="{{ l.ring }}" stroke-width="14" stroke-linecap="round" stroke-dasharray="{{ l.dash }}" transform="rotate(-90 256 256)"></circle>
+              <g transform="translate(256 256) scale(.8) translate(-256 -256)">
+                <path d="{{ l.rays }}" fill="none" stroke="#33203B" stroke-width="14" stroke-linecap="round" opacity=".5"></path>
+                <path d="{{ l.halo }}" fill="none" stroke="#33203B" stroke-width="8" opacity=".5"></path>
+                <path d="{{ l.star }}" fill="#FFF6EE" stroke="#33203B" stroke-width="10" stroke-linejoin="round" paint-order="stroke fill" opacity=".9"></path>
+                <g transform="translate(172 172) scale(7)" fill="none" stroke="#33203B" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" opacity=".75"><path d="{{ l.glyph }}"></path></g>
+              </g>
+            </svg>
+            <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding-bottom:8px; font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:{{ l.numPxSm }}px; color:#33203B; opacity:.75; pointer-events:none;">{{ l.num }}</div>
+            <div style="position:absolute; left:50%; bottom:2px; transform:translateX(-50%); padding:2px 8px; border-radius:999px; background:#33203B; color:#FFF6EE; font-size:8.5px; font-weight:700; white-space:nowrap; pointer-events:none;">{{ l.progresoTxt }}</div></div>
+            <div style="position:relative; width:112px; height:112px;"><svg viewBox="0 0 512 512" width="112" height="112">
+              <circle cx="256" cy="256" r="250" fill="{{ l.glow }}"></circle>
+              <path d="{{ l.rays }}" fill="none" stroke="#33203B" stroke-width="14" stroke-linecap="round"></path>
+              <path d="{{ l.halo }}" fill="none" stroke="#33203B" stroke-width="8"></path>
+              <path d="{{ l.star }}" fill="{{ l.fill }}" stroke="{{ l.stroke }}" stroke-width="50" stroke-linejoin="round" paint-order="stroke fill"></path>
+              <g transform="translate(172 172) scale(7)" fill="none" stroke="#33203B" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="{{ l.glyph }}"></path></g>
+            </svg>
+            <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none; color:#33203B;">
+              <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:{{ l.numPx }}px; line-height:1;">{{ l.num }}</div>
+              <div style="font-family:'Figtree',sans-serif; font-weight:700; font-size:6.5px; letter-spacing:.1em;">{{ l.sub }}</div>
+            </div></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:17px;">{{ l.nombre }}</div>
+            <div style="font-size:12.5px; color:#5E4E6B; line-height:1.45;">{{ l.cond }}</div>
+            <div style="font-family:monospace; font-size:11px; color:#7A6B85; margin-top:4px;">{{ l.file }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- ============ 2d · SELLO Y ZONAS ============ -->
+  <div id="2d" style="background:#FFFFFF; border-radius:28px; padding:30px 32px 32px; display:flex; flex-direction:column; gap:24px; box-shadow:0 8px 32px -14px rgba(51,32,59,.22); width:1792px; box-sizing:border-box;">
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:24px;">
+      <div style="display:flex; flex-direction:column; gap:8px; max-width:820px;">
+        <div style="color:#7A6B85; font-size:11px; font-weight:700; letter-spacing:.16em;">EL SELLO DE NIVEL · GUÍA DE CAPAS</div>
+        <h2 style="margin:0; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:30px; line-height:1.1;">La estrella del estudiante bajo su foto</h2>
+        <p style="margin:0; color:#5E4E6B; font-size:14px; line-height:1.6; text-wrap:pretty;">Sube por constancia acumulada. Misma familia visual que los logros, pero en tinta plana y sin cara: nunca se confunde con Rigel ni con una estrella de logro. Los tres accesorios se anclan a zonas fijas del viewBox 512, apilados fondo → estrella → base → centro → corona.</p>
+      </div>
+      <a href="#2d" style="text-decoration:none; font-size:12px; font-weight:700; padding:5px 11px; border-radius:999px; background:#33203B; color:#FFF6EE; flex-shrink:0;">2d</a>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr) 1.3fr; gap:16px;">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 18px 18px; border-radius:20px; background:#FFF6EE;">
+        <svg viewBox="0 0 512 512" width="140" height="140"><circle cx="256" cy="256" r="240" fill="#FFF6EE" stroke="#33203B" stroke-width="10" opacity=".9"></circle><path d="M256 96 C268 214 298 244 416 256 C298 268 268 298 256 416 C244 298 214 268 96 256 C214 244 244 214 256 96Z" fill="none" stroke="#33203B" stroke-width="26" stroke-linejoin="round" opacity=".6"></path></svg>
+        <div style="text-align:center; display:flex; flex-direction:column; gap:3px;"><div style="font-weight:700; font-size:14px;">Nivel 1 · Lucero</div><div style="font-size:12px; color:#7A6B85; line-height:1.45;">Desde el registro. Cuatro puntas en contorno.</div><div style="font-family:monospace; font-size:11px; color:#7A6B85;">sello-nivel-1.svg</div></div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 18px 18px; border-radius:20px; background:#FFF6EE;">
+        <svg viewBox="0 0 512 512" width="140" height="140"><circle cx="256" cy="256" r="240" fill="#FFC189"></circle><polygon points="256,96 292,196 400,202 316,270 344,376 256,318 168,376 196,270 112,202 220,196" fill="#33203B" stroke="#33203B" stroke-width="36" stroke-linejoin="round" paint-order="stroke fill"></polygon></svg>
+        <div style="text-align:center; display:flex; flex-direction:column; gap:3px;"><div style="font-weight:700; font-size:14px;">Nivel 2 · Estrella</div><div style="font-size:12px; color:#7A6B85; line-height:1.45;">A las 8 semanas acumuladas. Cinco puntas rellenas.</div><div style="font-family:monospace; font-size:11px; color:#7A6B85;">sello-nivel-2.svg</div></div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 18px 18px; border-radius:20px; background:#FFF6EE;">
+        <svg viewBox="0 0 512 512" width="140" height="140"><circle cx="256" cy="256" r="240" fill="#33203B"></circle><g stroke="#FFC189" stroke-width="22" stroke-linecap="round"><line x1="256" y1="52" x2="256" y2="92"></line><line x1="256" y1="420" x2="256" y2="460"></line><line x1="52" y1="256" x2="92" y2="256"></line><line x1="420" y1="256" x2="460" y2="256"></line><line x1="112" y1="112" x2="140" y2="140"></line><line x1="400" y1="112" x2="372" y2="140"></line><line x1="112" y1="400" x2="140" y2="372"></line><line x1="400" y1="400" x2="372" y2="372"></line></g><polygon points="256,132 288,220 382,225 308,283 332,374 256,322 180,374 204,283 130,225 224,220" fill="#FFC189" stroke="#FFC189" stroke-width="30" stroke-linejoin="round" paint-order="stroke fill"></polygon></svg>
+        <div style="text-align:center; display:flex; flex-direction:column; gap:3px;"><div style="font-weight:700; font-size:14px;">Nivel 3 · Sol</div><div style="font-size:12px; color:#7A6B85; line-height:1.45;">A las 24 semanas acumuladas. Ocho rayos, tinta invertida.</div><div style="font-family:monospace; font-size:11px; color:#7A6B85;">sello-nivel-3.svg</div></div>
+      </div>
+      <div style="display:flex; gap:18px; padding:22px 20px 18px; border-radius:20px; background:#FFF6EE; align-items:center;">
+        <svg viewBox="0 0 512 512" width="190" height="190" style="flex-shrink:0;">
+          <circle cx="256" cy="256" r="240" fill="#FFC189"></circle>
+          <polygon points="256,96 292,196 400,202 316,270 344,376 256,318 168,376 196,270 112,202 220,196" fill="#33203B" stroke="#33203B" stroke-width="36" stroke-linejoin="round" paint-order="stroke fill"></polygon>
+          <rect x="146" y="20" width="220" height="110" rx="20" fill="none" stroke="#C93A26" stroke-width="4" stroke-dasharray="10 8"></rect>
+          <rect x="176" y="176" width="160" height="160" rx="80" fill="none" stroke="#C93A26" stroke-width="4" stroke-dasharray="10 8"></rect>
+          <rect x="136" y="392" width="240" height="100" rx="20" fill="none" stroke="#C93A26" stroke-width="4" stroke-dasharray="10 8"></rect>
+          <text x="256" y="66" text-anchor="middle" font-family="Figtree, sans-serif" font-weight="700" font-size="30" fill="#C93A26">CORONA · z3</text>
+          <text x="256" y="266" text-anchor="middle" font-family="Figtree, sans-serif" font-weight="700" font-size="30" fill="#FFF6EE">CENTRO · z2</text>
+          <text x="256" y="452" text-anchor="middle" font-family="Figtree, sans-serif" font-weight="700" font-size="30" fill="#C93A26">BASE · z1</text>
+        </svg>
+        <div style="display:flex; flex-direction:column; gap:8px; font-size:12.5px; line-height:1.5; color:#5E4E6B;">
+          <div style="font-weight:700; color:#33203B; font-size:14px;">Zonas de anclaje (viewBox 512)</div>
+          <div><strong style="color:#33203B;">Corona</strong> · caja (146, 20) 220×110 · ancla inferior-centro (256, 130) · z 3</div>
+          <div><strong style="color:#33203B;">Centro</strong> · círculo (256, 256) r 80 · ancla centro · z 2</div>
+          <div><strong style="color:#33203B;">Base</strong> · caja (136, 392) 240×100 · ancla superior-centro (256, 392) · z 1</div>
+          <div style="color:#7A6B85;">Un accesorio por zona. Nada sale del círculo r 240; nada tapa más del 40 % de la estrella.</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px;">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 18px 18px; border-radius:20px; background:#FFF6EE;">
+        <svg viewBox="0 0 512 512" width="140" height="140"><circle cx="256" cy="256" r="240" fill="#FFC189"></circle><polygon points="256,96 292,196 400,202 316,270 344,376 256,318 168,376 196,270 112,202 220,196" fill="#33203B" stroke="#33203B" stroke-width="36" stroke-linejoin="round" paint-order="stroke fill"></polygon>
+          <path d="M150 110 q106 -80 212 0" fill="none" stroke="#33203B" stroke-width="12" stroke-linecap="round" stroke-dasharray="1 40"></path>
+          <circle cx="150" cy="110" r="12" fill="#33203B"></circle><circle cx="203" cy="72" r="9" fill="#33203B"></circle><circle cx="256" cy="60" r="12" fill="#33203B"></circle><circle cx="309" cy="72" r="9" fill="#33203B"></circle><circle cx="362" cy="110" r="12" fill="#33203B"></circle>
+          <path d="M150 110 L203 72 L256 60 L309 72 L362 110" fill="none" stroke="#33203B" stroke-width="5"></path>
+        </svg>
+        <div style="text-align:center; display:flex; flex-direction:column; gap:3px;"><div style="font-weight:700; font-size:14px;">Corona de estrellas</div><div style="font-size:12px; color:#7A6B85; line-height:1.45;">Zona corona: cinco puntos unidos, un arco de constelación. Con «Un mes seguido».</div><div style="font-family:monospace; font-size:11px; color:#7A6B85;">accesorio-corona-constelacion.svg</div></div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 18px 18px; border-radius:20px; background:#FFF6EE;">
+        <svg viewBox="0 0 512 512" width="140" height="140"><circle cx="256" cy="256" r="240" fill="#FFC189"></circle><polygon points="256,96 292,196 400,202 316,270 344,376 256,318 168,376 196,270 112,202 220,196" fill="#33203B" stroke="#33203B" stroke-width="36" stroke-linejoin="round" paint-order="stroke fill"></polygon>
+          <circle cx="256" cy="256" r="72" fill="#FFF6EE" stroke="#33203B" stroke-width="10"></circle>
+          <text x="256" y="282" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="76" fill="#33203B">M</text>
+        </svg>
+        <div style="text-align:center; display:flex; flex-direction:column; gap:3px;"><div style="font-weight:700; font-size:14px;">Monograma</div><div style="font-size:12px; color:#7A6B85; line-height:1.45;">Zona centro. Inicial del nombre. Con «Perfil listo».</div><div style="font-family:monospace; font-size:11px; color:#7A6B85;">accesorio-centro-monograma.svg</div></div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 18px 18px; border-radius:20px; background:#FFF6EE;">
+        <svg viewBox="0 0 512 512" width="140" height="140"><circle cx="256" cy="256" r="240" fill="#FFC189"></circle><polygon points="256,96 292,196 400,202 316,270 344,376 256,318 168,376 196,270 112,202 220,196" fill="#33203B" stroke="#33203B" stroke-width="36" stroke-linejoin="round" paint-order="stroke fill"></polygon>
+          <path d="M120 420 q136 -70 272 0" fill="none" stroke="#33203B" stroke-width="12" stroke-linecap="round"></path>
+          <path d="M120 420 q136 -70 272 0" fill="none" stroke="#FFF6EE" stroke-width="4" stroke-linecap="round" stroke-dasharray="1 22"></path>
+        </svg>
+        <div style="text-align:center; display:flex; flex-direction:column; gap:3px;"><div style="font-weight:700; font-size:14px;">Órbita</div><div style="font-size:12px; color:#7A6B85; line-height:1.45;">Zona base: un arco orbital bajo la estrella. Con «Diez clases».</div><div style="font-family:monospace; font-size:11px; color:#7A6B85;">accesorio-base-orbita.svg</div></div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 18px 18px; border-radius:20px; background:#33203B; color:#FFF6EE;">
+        <svg viewBox="0 0 512 512" width="140" height="140"><circle cx="256" cy="256" r="240" fill="#B9A7E6"></circle><polygon points="256,96 292,196 400,202 316,270 344,376 256,318 168,376 196,270 112,202 220,196" fill="#33203B" stroke="#33203B" stroke-width="36" stroke-linejoin="round" paint-order="stroke fill"></polygon>
+          <path d="M120 420 q136 -70 272 0" fill="none" stroke="#33203B" stroke-width="12" stroke-linecap="round"></path>
+          <path d="M120 420 q136 -70 272 0" fill="none" stroke="#FFF6EE" stroke-width="4" stroke-linecap="round" stroke-dasharray="1 22"></path>
+          <circle cx="256" cy="256" r="72" fill="#FFF6EE" stroke="#33203B" stroke-width="10"></circle>
+          <text x="256" y="282" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="76" fill="#33203B">M</text>
+          <circle cx="150" cy="110" r="12" fill="#33203B"></circle><circle cx="203" cy="72" r="9" fill="#33203B"></circle><circle cx="256" cy="60" r="12" fill="#33203B"></circle><circle cx="309" cy="72" r="9" fill="#33203B"></circle><circle cx="362" cy="110" r="12" fill="#33203B"></circle>
+          <path d="M150 110 L203 72 L256 60 L309 72 L362 110" fill="none" stroke="#33203B" stroke-width="5"></path>
+        </svg>
+        <div style="text-align:center; display:flex; flex-direction:column; gap:3px;"><div style="font-weight:700; font-size:14px;">Las tres capas juntas</div><div style="font-size:12px; color:#B9A7E6; line-height:1.45;">Paleta «Lavanda» + corona + monograma + órbita. El orden z1→z3 evita cualquier cruce.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2e · ÓRBITAS, PALETAS, CIELOS ============ -->
+  <div id="2e" style="background:#FFFFFF; border-radius:28px; padding:30px 32px 32px; display:flex; flex-direction:column; gap:26px; box-shadow:0 8px 32px -14px rgba(51,32,59,.22); width:1792px; box-sizing:border-box;">
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:24px;">
+      <div style="display:flex; flex-direction:column; gap:8px; max-width:820px;">
+        <div style="color:#7A6B85; font-size:11px; font-weight:700; letter-spacing:.16em;">MARCOS = ÓRBITAS Y CONSTELACIONES · PALETAS · CIELOS — CSS PURO</div>
+        <h2 style="margin:0; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:30px; line-height:1.1;">Lo que orbita la foto</h2>
+        <p style="margin:0; color:#5E4E6B; font-size:14px; line-height:1.6; text-wrap:pretty;">Ordenados de más fácil a más difícil. El primero de cada fila es el inicial. Puntos con `radial-gradient`, arcos con `conic-gradient`, anillos con `box-shadow`: sin imágenes, sin SVG. La paleta tiñe órbita y sello a la vez; el cielo va detrás de la tarjeta de perfil.</p>
+      </div>
+      <a href="#2e" style="text-decoration:none; font-size:12px; font-weight:700; padding:5px 11px; border-radius:999px; background:#33203B; color:#FFF6EE; flex-shrink:0;">2e</a>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <div style="font-size:11px; font-weight:700; letter-spacing:.14em; color:#7A6B85;">8 ÓRBITAS · marco-{nombre}.css</div>
+      <div style="display:grid; grid-template-columns:repeat(8,1fr); gap:14px;">
+        <sc-for list="{{ marcos }}" as="m" hint-placeholder-count="8">
+          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 12px 16px; border-radius:20px; background:#FFF6EE;">
+            <div style="width:124px; height:124px; display:flex; align-items:center; justify-content:center;">
+              <div style="{{ m.outer }}">
+                <div style="{{ m.inner }}">MC</div>
+              </div>
+            </div>
+            <div style="text-align:center; display:flex; flex-direction:column; gap:3px;">
+              <div style="font-weight:700; font-size:13px;">{{ m.name }}</div>
+              <div style="font-size:11.5px; color:#7A6B85; line-height:1.4;">{{ m.cond }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:28px;">
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="font-size:11px; font-weight:700; letter-spacing:.14em; color:#7A6B85;">6 PALETAS · tiñen órbita + sello</div>
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px;">
+          <sc-for list="{{ paletas }}" as="p" hint-placeholder-count="6">
+            <div style="display:flex; gap:14px; align-items:center; padding:14px 16px; border-radius:18px; background:#FFF6EE;">
+              <div style="display:flex; flex-direction:column; width:44px; height:44px; border-radius:50%; overflow:hidden; box-shadow:0 0 0 2px #FFFFFF; flex-shrink:0;">
+                <div style="flex:1; background:{{ p.a }};"></div>
+                <div style="flex:1; background:{{ p.b }};"></div>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:2px;">
+                <div style="font-weight:700; font-size:13px;">{{ p.name }}</div>
+                <div style="font-size:11.5px; color:#7A6B85; line-height:1.4;">{{ p.cond }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="font-size:11px; font-weight:700; letter-spacing:.14em; color:#7A6B85;">6 CIELOS · fondo-{nombre}.css</div>
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px;">
+          <sc-for list="{{ fondos }}" as="f" hint-placeholder-count="6">
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <div style="height:88px; border-radius:18px; background:{{ f.css }}; box-shadow:inset 0 0 0 1px rgba(51,32,59,.08);"></div>
+              <div style="display:flex; flex-direction:column; gap:2px; padding:0 4px;">
+                <div style="font-weight:700; font-size:13px;">{{ f.name }}</div>
+                <div style="font-size:11.5px; color:#7A6B85; line-height:1.4;">{{ f.cond }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2f · ENCENDIDO ============ -->
+  <div id="2f" style="background:#FFFFFF; border-radius:28px; padding:30px 32px 32px; display:flex; flex-direction:column; gap:24px; box-shadow:0 8px 32px -14px rgba(51,32,59,.22); width:1792px; box-sizing:border-box;">
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:24px;">
+      <div style="display:flex; flex-direction:column; gap:8px; max-width:820px;">
+        <div style="color:#7A6B85; font-size:11px; font-weight:700; letter-spacing:.16em;">EL MOMENTO DE DESBLOQUEO · UNA ESTRELLA SE ENCIENDE</div>
+        <h2 style="margin:0; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:30px; line-height:1.1;">El único derroche permitido, en 720 ms</h2>
+        <p style="margin:0; color:#5E4E6B; font-size:14px; line-height:1.6; text-wrap:pretty;">Cuatro cuadros clave. Todo en CSS (`transform`, `opacity`, `stroke-dashoffset`), sin partículas ni confeti. Con `prefers-reduced-motion` se muestra directamente el cuadro 4 con un fundido de 200 ms. Rigel entra como cameo (pose Celebración, 80 px) solo en la versión completa; en reducido no aparece.</p>
+      </div>
+      <a href="#2f" style="text-decoration:none; font-size:12px; font-weight:700; padding:5px 11px; border-radius:999px; background:#33203B; color:#FFF6EE; flex-shrink:0;">2f</a>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr) 1.2fr; gap:16px; align-items:stretch;">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 16px 18px; border-radius:20px; background:linear-gradient(180deg,#2E1E4E,#5A3A78);">
+        <svg viewBox="0 0 512 512" width="150" height="150"><path d="{{ starD }}" fill="none" stroke="#FFF6EE" stroke-width="10" stroke-linejoin="round" stroke-dasharray="16 14" opacity=".35"></path></svg>
+        <div style="text-align:center; color:#FFF6EE;"><div style="font-weight:700; font-size:13px;">0 ms · Apagada</div><div style="font-size:11.5px; opacity:.7; line-height:1.4;">Estado de reposo. Contorno discontinuo.</div></div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 16px 18px; border-radius:20px; background:linear-gradient(180deg,#2E1E4E,#5A3A78);">
+        <svg viewBox="0 0 512 512" width="150" height="150"><path d="{{ starD }}" fill="none" stroke="#FFF6EE" stroke-width="10" stroke-linejoin="round" opacity=".9"></path><path d="{{ starD }}" fill="#FFC189" opacity=".35" transform="translate(256 256) scale(.7) translate(-256 -256)"></path></svg>
+        <div style="text-align:center; color:#FFF6EE;"><div style="font-weight:700; font-size:13px;">0–240 ms · Trazo</div><div style="font-size:11.5px; opacity:.7; line-height:1.4;">El contorno se completa (`stroke-dashoffset` → 0, ease-out). El relleno nace del centro (`scale` .6 → 1).</div></div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 16px 18px; border-radius:20px; background:linear-gradient(180deg,#2E1E4E,#5A3A78);">
+        <svg viewBox="0 0 512 512" width="150" height="150"><circle cx="256" cy="256" r="250" fill="url(#glowSky)"></circle><path d="{{ starD }}" fill="#FFC189" stroke="#FFC189" stroke-width="50" stroke-linejoin="round" paint-order="stroke fill" transform="translate(256 256) scale(1.08) translate(-256 -256)"></path><circle cx="256" cy="256" r="236" fill="none" stroke="#FFF6EE" stroke-width="6" opacity=".6"></circle></svg>
+        <div style="text-align:center; color:#FFF6EE;"><div style="font-weight:700; font-size:13px;">240–480 ms · Encendido</div><div style="font-size:11.5px; opacity:.7; line-height:1.4;">Sobrepaso a `scale(1.08)` con `--ease-celebrate`; el resplandor sube a 70 %; un anillo crema se expande y se disuelve.</div></div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 16px 18px; border-radius:20px; background:linear-gradient(180deg,#2E1E4E,#5A3A78);">
+        <svg viewBox="0 0 512 512" width="150" height="150"><circle cx="256" cy="256" r="250" fill="url(#glowSky)" opacity=".8"></circle><path d="{{ starD }}" fill="url(#gSolo)" stroke="#FFC189" stroke-width="50" stroke-linejoin="round" paint-order="stroke fill"></path><g transform="translate(172 172) scale(7)" fill="none" stroke="#33203B" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"></path><rect x="2" y="6" width="14" height="12" rx="2"></rect></g><path d="M60 80l4 10 10 4-10 4-4 10-4-10-10-4 10-4z M440 120l3 8 8 3-8 3-3 8-3-8-8-3 8-3z M420 430l3.5 9 9 3.5-9 3.5-3.5 9-3.5-9-9-3.5 9-3.5z" fill="#FFF6EE" opacity=".9"></path></svg>
+        <div style="text-align:center; color:#FFF6EE;"><div style="font-weight:700; font-size:13px;">480–720 ms · Reposo</div><div style="font-size:11.5px; opacity:.7; line-height:1.4;">Vuelve a `scale(1)`, aparece el glifo (fade 160 ms) y tres destellos crema con desfase de 60 ms. Estado final = «encendida».</div></div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:10px; padding:22px 20px 18px; border-radius:20px; background:#FFF6EE; font-size:12.5px; line-height:1.5; color:#5E4E6B;">
+        <div style="font-weight:700; color:#33203B; font-size:14px;">Mini guía de motion</div>
+        <div><strong style="color:#33203B;">Duración total</strong> 720 ms (`--duration-celebrate`). Nunca se encadena: si se desbloquean dos a la vez, se muestran en secuencia con 400 ms entre ellas.</div>
+        <div><strong style="color:#33203B;">Easing</strong> trazo: `cubic-bezier(.2,.7,.2,1)`; encendido: `--ease-celebrate: cubic-bezier(.2,.9,.3,1.2)`; reposo: `ease-out`.</div>
+        <div><strong style="color:#33203B;">Línea de constelación</strong> si esta estrella cierra un tramo, la línea se dibuja después (`stroke-dashoffset`, 320 ms, ease-in-out) desde la estrella vecina hacia la nueva.</div>
+        <div><strong style="color:#33203B;">Sonido</strong> ninguno. <strong style="color:#33203B;">Haptics</strong> un pulso ligero en móvil al cuadro 3, si el sistema lo permite.</div>
+        <div><strong style="color:#33203B;">Reducido</strong> cuadro 4 con fade 200 ms; sin destellos, sin Rigel, sin anillo.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2g · RACHA ============ -->
+  <div id="2g" style="background:#FFFFFF; border-radius:28px; padding:30px 32px 32px; display:flex; flex-direction:column; gap:24px; box-shadow:0 8px 32px -14px rgba(51,32,59,.22); width:1792px; box-sizing:border-box;">
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:24px;">
+      <div style="display:flex; flex-direction:column; gap:8px; max-width:820px;">
+        <div style="color:#7A6B85; font-size:11px; font-weight:700; letter-spacing:.16em;">RACHA SEMANAL · TRES ESTADOS</div>
+        <h2 style="margin:0; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:30px; line-height:1.1;">Semanas, nunca días. Y nunca “fallaste”.</h2>
+        <p style="margin:0; color:#5E4E6B; font-size:14px; line-height:1.6; text-wrap:pretty;">Cada semana es una estrella pequeña de cuatro puntas: encendida si hubo clase, en contorno la semana en curso, discontinua la futura. Ocho semanas visibles. El estado “recién perdida” cambia solo el número y el copy: misma forma, mismo color, sin rojo.</p>
+      </div>
+      <a href="#2g" style="text-decoration:none; font-size:12px; font-weight:700; padding:5px 11px; border-radius:999px; background:#33203B; color:#FFF6EE; flex-shrink:0;">2g</a>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px;">
+      <sc-for list="{{ rachas }}" as="r" hint-placeholder-count="3">
+        <div style="padding:24px; border-radius:22px; background:#FFF6EE; display:flex; flex-direction:column; gap:16px; position:relative; overflow:hidden;">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <span style="font-size:11px; font-weight:700; letter-spacing:.14em; color:#7A6B85;">{{ r.tag }}</span>
+            <span style="padding:5px 12px; border-radius:999px; background:{{ r.pillBg }}; color:#33203B; font-size:12px; font-weight:700; box-shadow:{{ r.pillShadow }};">{{ r.pill }}</span>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <sc-for list="{{ r.weeks }}" as="w" hint-placeholder-count="8">
+              <svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 2C13 9 15 11 22 12C15 13 13 15 12 22C11 15 9 13 2 12C9 11 11 9 12 2Z" fill="{{ w.fill }}" stroke="{{ w.stroke }}" stroke-width="1.6" stroke-linejoin="round" stroke-dasharray="{{ w.dash }}"></path><path d="{{ w.icon }}" fill="none" stroke="#33203B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" transform="translate(7.2 7.2) scale(.4)"></path></svg>
+            </sc-for>
+          </div>
+          <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:22px; line-height:1.15; max-width:300px;">{{ r.title }}</div>
+          <div style="font-size:13.5px; color:#5E4E6B; line-height:1.5; max-width:300px;">{{ r.body }}</div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="font-size:12.5px; color:#7A6B85; line-height:1.5;">Rigel no aparece en la racha: el dato ya habla. Su único cameo de progreso es el cielo (2b) y el encendido (2f).</div>
+  </div>
+
+  <!-- ============ 2h · IDIOMAS ============ -->
+  <div id="2h" style="background:#FFFFFF; border-radius:28px; padding:30px 32px 32px; display:flex; flex-direction:column; gap:24px; box-shadow:0 8px 32px -14px rgba(51,32,59,.22); width:1792px; box-sizing:border-box;">
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:24px;">
+      <div style="display:flex; flex-direction:column; gap:8px; max-width:820px;">
+        <div style="color:#7A6B85; font-size:11px; font-weight:700; letter-spacing:.16em;">ENCARGO ADICIONAL · INSIGNIAS DE IDIOMA</div>
+        <h2 style="margin:0; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:30px; line-height:1.1;">Un idioma no es un país</h2>
+        <p style="margin:0; color:#5E4E6B; font-size:14px; line-height:1.6; text-wrap:pretty;">Sin banderas. Código ISO 639-1 en Bricolage 800 dentro de un disco 512, con un color fijo por idioma tomado de la paleta. Para agregar alemán: «DE», siguiente color de la lista (ciruela #7A4A8C, texto crema). Se renderiza igual en Windows, Android y correo.</p>
+      </div>
+      <a href="#2h" style="text-decoration:none; font-size:12px; font-weight:700; padding:5px 11px; border-radius:999px; background:#33203B; color:#FFF6EE; flex-shrink:0;">2h</a>
+    </div>
+    <div style="display:flex; gap:40px; align-items:center; flex-wrap:wrap;">
+      <div style="display:flex; gap:20px; align-items:center;">
+        <svg viewBox="0 0 512 512" width="96" height="96"><circle cx="256" cy="256" r="240" fill="#B9A7E6"></circle><text x="256" y="312" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#33203B">EN</text></svg>
+        <svg viewBox="0 0 512 512" width="96" height="96"><circle cx="256" cy="256" r="240" fill="#FFC189"></circle><text x="256" y="312" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#33203B">FR</text></svg>
+        <svg viewBox="0 0 512 512" width="96" height="96"><circle cx="256" cy="256" r="240" fill="#33203B"></circle><text x="256" y="312" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#FFF6EE">ES</text></svg>
+        <svg viewBox="0 0 512 512" width="96" height="96" style="opacity:.5;"><circle cx="256" cy="256" r="240" fill="none" stroke="#7A4A8C" stroke-width="12" stroke-dasharray="20 16"></circle><text x="256" y="312" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#7A4A8C">DE</text></svg>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div style="font-size:11px; font-weight:700; letter-spacing:.14em; color:#7A6B85;">EN CHIP · 24 PX</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <span style="display:inline-flex; align-items:center; gap:8px; padding:6px 14px 6px 6px; border-radius:999px; background:#FFF6EE; box-shadow:0 0 0 1px rgba(51,32,59,.1); font-size:13px; font-weight:600;"><svg viewBox="0 0 512 512" width="24" height="24"><circle cx="256" cy="256" r="240" fill="#B9A7E6"></circle><text x="256" y="312" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#33203B">EN</text></svg>Inglés</span>
+          <span style="display:inline-flex; align-items:center; gap:8px; padding:6px 14px 6px 6px; border-radius:999px; background:#FFF6EE; box-shadow:0 0 0 1px rgba(51,32,59,.1); font-size:13px; font-weight:600;"><svg viewBox="0 0 512 512" width="24" height="24"><circle cx="256" cy="256" r="240" fill="#FFC189"></circle><text x="256" y="312" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#33203B">FR</text></svg>Francés</span>
+          <span style="display:inline-flex; align-items:center; gap:8px; padding:6px 14px 6px 6px; border-radius:999px; background:#FFF6EE; box-shadow:0 0 0 1px rgba(51,32,59,.1); font-size:13px; font-weight:600;"><svg viewBox="0 0 512 512" width="24" height="24"><circle cx="256" cy="256" r="240" fill="#33203B"></circle><text x="256" y="312" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#FFF6EE">ES</text></svg>Español</span>
+        </div>
+        <div style="font-family:monospace; font-size:12px; color:#7A6B85;">idioma-en.svg · idioma-fr.svg · idioma-es.svg · (idioma-de.svg)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2i · TOKENS ============ -->
+  <div id="2i" style="background:#33203B; color:#FFF6EE; border-radius:28px; padding:30px 32px 32px; display:flex; flex-direction:column; gap:20px; box-shadow:0 8px 32px -14px rgba(51,32,59,.4); width:1792px; box-sizing:border-box;">
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:24px;">
+      <div style="display:flex; flex-direction:column; gap:8px; max-width:820px;">
+        <div style="color:#B9A7E6; font-size:11px; font-weight:700; letter-spacing:.16em;">TOKENS NUEVOS · @theme · NOMBRADOS POR FUNCIÓN</div>
+        <h2 style="margin:0; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:30px; line-height:1.1;">Ningún color nuevo; alias por función</h2>
+      </div>
+      <a href="#2i" style="text-decoration:none; font-size:12px; font-weight:700; padding:5px 11px; border-radius:999px; background:#FFF6EE; color:#33203B; flex-shrink:0;">2i</a>
+    </div>
+    <pre style="margin:0; font-family:ui-monospace, monospace; font-size:13px; line-height:1.7; color:#FFF6EE; white-space:pre-wrap;">@theme {
+  --color-star-solo:            var(--color-accent-peach);      /* #FFC189 · primeros pasos, constancia, volumen */
+  --color-star-social:          var(--color-accent-lavender);   /* #B9A7E6 · amplitud, compromiso */
+  --color-star-ink:             var(--color-text);              /* #33203B · glifos, contornos, sello */
+  --color-star-dim:             color-mix(in oklch, var(--color-text) 34%, transparent);   /* apagada sobre crema */
+  --color-star-dim-on-sky:      color-mix(in oklch, var(--color-surface) 35%, transparent); /* apagada sobre el cielo */
+  --color-constellation-line:   color-mix(in oklch, var(--color-surface) 55%, transparent);
+  --color-constellation-pending:color-mix(in oklch, var(--color-surface) 22%, transparent);
+  --color-progress-track:       color-mix(in oklch, var(--color-text) 10%, transparent);
+  --color-progress-fill:        var(--color-accent-peach);
+  --color-streak-week:          #E8764F;                        /* semana cumplida (tono del degradado) */
+  --color-streak-protected:     var(--color-accent-lavender);
+  --color-language-en:          var(--color-accent-lavender);
+  --color-language-fr:          var(--color-accent-peach);
+  --color-language-es:          var(--color-text);
+  --gradient-sky:               linear-gradient(180deg,#2E1E4E 0%,#5A3A78 50%,#9A5A7A 80%,#C86A5E 100%);
+  --size-star-sm: 32px; --size-star-md: 48px; --size-star-lg: 64px; --size-star-xl: 112px;
+  --ease-celebrate: cubic-bezier(.2,.9,.3,1.2);
+  --duration-celebrate: 720ms;
+}</pre>
+    <div style="font-size:13px; color:#B9A7E6; line-height:1.55; max-width:900px;">El coral (`--color-primary`) no aparece en ningún token de gamificación: queda para la acción. El degradado del cielo es el mismo amanecer del login, cortado antes del durazno para que las estrellas encendidas contrasten.</div>
+  </div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const circ = (cx, cy, r) => `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0`;
+    const rect = (x, y, w, h, r) => `M${x + r} ${y}h${w - 2 * r}a${r} ${r} 0 0 1 ${r} ${r}v${h - 2 * r}a${r} ${r} 0 0 1 ${-r} ${r}h${-(w - 2 * r)}a${r} ${r} 0 0 1 ${-r} ${-r}v${-(h - 2 * r)}a${r} ${r} 0 0 1 ${r} ${-r}z`;
+    const poly = (n, ro, ri, rot = -90) => {
+      const pts = [];
+      for (let i = 0; i < n * 2; i++) {
+        const r = i % 2 ? ri : ro, a = (rot + (180 / n) * i) * Math.PI / 180;
+        pts.push(`${(256 + r * Math.cos(a)).toFixed(1)} ${(256 + r * Math.sin(a)).toFixed(1)}`);
+      }
+      return 'M' + pts.join('L') + 'Z';
+    };
+    const starD = poly(5, 220, 118);
+    const haloD = circ(256, 256, 246);
+    const raysD = 'M256 4V30M256 482V508M4 256H30M482 256H508';
+    const brilloDef = {
+      1: { halo: '', rays: '', label: 'Brillo 1' },
+      2: { halo: haloD, rays: '', label: 'Brillo 2' },
+      3: { halo: haloD, rays: raysD, label: 'Brillo 3' },
+    };
+    const brillos = [
+      { star: starD, halo: '', rays: '', name: 'Brillo 1 · estrella', desc: 'Logros puntuales y primeros hitos. Solo la estrella.', file: 'data-brillo="1"' },
+      { star: starD, halo: haloD, rays: '', name: 'Brillo 2 · con halo', desc: 'Hitos medios de constancia y volumen. Anillo r 246, trazo 8.', file: 'data-brillo="2"' },
+      { star: starD, halo: haloD, rays: raysD, name: 'Brillo 3 · con rayos', desc: 'Los dos hitos mayores: 24 semanas y 100 clases. Halo + cuatro rayos cardinales.', file: 'data-brillo="3"' },
+    ];
+    const G = {
+      calPlus: rect(3, 4, 18, 18, 2) + 'M16 2v4M8 2v4M3 10h18M12 14v6M9 17h6',
+      video: 'm16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5' + rect(2, 6, 14, 12, 2),
+      userCheck: 'M2 21a8 8 0 0 1 13.292-6' + circ(10, 8, 5) + 'm16 19 2 2 4-4',
+      msg: 'M7.9 20A9 9 0 1 0 4 16.1L2 22Z',
+      users: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' + circ(9, 7, 4) + 'M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+      lang: 'm5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1m22 22-5-10-5 10M14 18h6',
+      pin: 'M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0' + circ(12, 10, 3),
+      pen: 'M12 20h9M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z',
+      target: circ(12, 12, 10) + circ(12, 12, 6) + circ(12, 12, 2),
+      shield: 'M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z m9 12 2 2 4-4',
+    };
+    const fam = {
+      primeros: { label: 'Primeros pasos', fill: 'url(#gSolo)', stroke: '#FFC189', glow: 'url(#glowSolo)' },
+      constancia: { label: 'Constancia', fill: 'url(#gSolo)', stroke: '#FFC189', glow: 'url(#glowSolo)' },
+      volumen: { label: 'Volumen', fill: 'url(#gSolo)', stroke: '#FFC189', glow: 'url(#glowSolo)' },
+      amplitud: { label: 'Amplitud', fill: 'url(#gSocial)', stroke: '#B9A7E6', glow: 'url(#glowSocial)' },
+      compromiso: { label: 'Compromiso', fill: 'url(#gSocial)', stroke: '#B9A7E6', glow: 'url(#glowSocial)' },
+    };
+    const raw = [
+      ['primeros', 'primera-reserva', 'Primera reserva', 'Reservó su primera clase.', 1, G.calPlus, null, 0, 1],
+      ['primeros', 'primera-clase', 'Primera clase', 'Tomó su primera clase en vivo.', 1, G.video, null, 0, 1],
+      ['primeros', 'perfil-listo', 'Perfil listo', 'Foto, objetivo e idioma completos.', 1, G.userCheck, null, 2, 3],
+      ['primeros', 'primer-mensaje', 'Primer mensaje', 'Escribió a un profesor antes de la clase.', 1, G.msg, null, 0, 1],
+      ['constancia', '2-semanas', 'Dos semanas seguidas', '2 semanas consecutivas con clase.', 1, null, ['2', 'SEM'], 1, 2],
+      ['constancia', '4-semanas', 'Un mes seguido', '4 semanas consecutivas.', 1, null, ['4', 'SEM'], 3, 4],
+      ['constancia', '8-semanas', 'Dos meses seguidos', '8 semanas consecutivas. Sube el sello a nivel 2.', 2, null, ['8', 'SEM'], 5, 8],
+      ['constancia', '12-semanas', 'Un trimestre seguido', '12 semanas consecutivas.', 2, null, ['12', 'SEM'], 9, 12],
+      ['constancia', '24-semanas', 'Medio año seguido', '24 semanas consecutivas. Sube el sello a nivel 3.', 3, null, ['24', 'SEM'], 14, 24],
+      ['volumen', '5-clases', 'Cinco clases', '5 clases tomadas.', 1, null, ['5', 'CLASES'], 3, 5],
+      ['volumen', '10-clases', 'Diez clases', '10 clases tomadas.', 1, null, ['10', 'CLASES'], 7, 10],
+      ['volumen', '25-clases', 'Veinticinco clases', '25 clases tomadas.', 2, null, ['25', 'CLASES'], 18, 25],
+      ['volumen', '50-clases', 'Cincuenta clases', '50 clases tomadas.', 2, null, ['50', 'CLASES'], 31, 50],
+      ['volumen', '100-clases', 'Cien clases', '100 clases tomadas.', 3, null, ['100', 'CLASES'], 64, 100],
+      ['amplitud', 'tres-voces', 'Tres voces', 'Clases con 3 profesores distintos.', 1, G.users, null, 2, 3],
+      ['amplitud', 'dos-idiomas', 'Dos idiomas', 'Al menos una clase en un segundo idioma.', 1, G.lang, null, 1, 2],
+      ['amplitud', 'presencial', 'Cara a cara', 'Tomó una clase presencial.', 1, G.pin, null, 0, 1],
+      ['compromiso', 'primera-resena', 'Tu primera reseña', 'Escribió una reseña a un profesor.', 1, G.pen, null, 0, 1],
+      ['compromiso', 'objetivo', 'Objetivo declarado', 'Definió para qué está aprendiendo.', 1, G.target, null, 0, 1],
+      ['compromiso', 'mes-sin-cancelar', 'Un mes sin cancelaciones', '30 días con todas las clases cumplidas.', 1, G.shield, null, 19, 30],
+    ];
+    const logros = raw.map(([f, slug, nombre, cond, br, glyph, num, done, total]) => {
+      const fm = fam[f], b = brilloDef[br], n = num ? num[0] : '';
+      return {
+        familia: fm.label, brillo: b.label, nombre, cond,
+        star: starD, halo: b.halo, rays: b.rays,
+        fill: fm.fill, stroke: fm.stroke, ring: fm.stroke, glow: fm.glow,
+        glyph: glyph || '', num: n, sub: num ? num[1] : '',
+        numPx: n.length >= 3 ? 20 : 26, numPxSm: n.length >= 3 ? 16 : 21,
+        dash: `${Math.round(1508 * done / total)} 1508`, progresoTxt: `${done} de ${total}`,
+        file: `logro-${f}-${slug}-{apagada|progreso|encendida}.svg`,
+      };
+    });
+
+    // Cielo
+    const skyDef = [
+      { name: 'Primeros pasos', key: 'primeros', pts: [[180, 220], [270, 130], [370, 200], [290, 320]], close: true, lit: 4, lx: 150, ly: 380 },
+      { name: 'Constancia', key: 'constancia', pts: [[540, 340], [620, 240], [720, 200], [820, 230], [900, 320]], close: false, lit: 3, lx: 640, ly: 400 },
+      { name: 'Volumen', key: 'volumen', pts: [[1000, 400], [1080, 320], [1160, 350], [1240, 240], [1330, 190]], close: false, lit: 2, lx: 1030, ly: 470 },
+      { name: 'Amplitud', key: 'amplitud', pts: [[1420, 150], [1520, 220], [1440, 300]], close: true, lit: 1, lx: 1380, ly: 360 },
+      { name: 'Compromiso', key: 'compromiso', pts: [[1500, 390], [1590, 450], [1640, 350]], close: true, lit: 0, lx: 1420, ly: 470 },
+    ];
+    const byFam = {};
+    raw.forEach(r => { (byFam[r[0]] = byFam[r[0]] || []).push(r); });
+    const familias = skyDef.map(f => {
+      const items = byFam[f.key];
+      const stars = f.pts.map(([x, y], i) => {
+        const it = items[i], br = brilloDef[it[4]], lit = i < f.lit, prog = !lit && i === f.lit;
+        const size = it[4] === 3 ? 76 : it[4] === 2 ? 64 : 54;
+        const done = it[7], total = it[8];
+        return {
+          left: x - size / 2, top: y - size / 2, size,
+          star: starD, halo: br.halo, rays: br.rays,
+          fill: lit ? '#FFC189' : 'none', stroke: lit ? '#FFC189' : '#FFF6EE', sw: lit ? 50 : 12,
+          dash: lit || prog ? '' : '18 16', op: lit ? 1 : prog ? .85 : .35,
+          glow: lit ? 1 : 0, lineOp: lit ? .9 : .3,
+          prog: prog ? `${Math.round(1508 * done / total)} 1508` : '0 1508',
+          label: lit ? it[2] : prog ? `${it[2]} · ${done} de ${total}` : it[2], labelOp: lit ? .95 : prog ? .85 : .45,
+        };
+      });
+      const seg = (a, b) => `M${a[0]} ${a[1]}L${b[0]} ${b[1]}`;
+      const n = f.pts.length, lines = [], pending = [];
+      for (let i = 0; i < n; i++) {
+        const j = (i + 1) % n;
+        if (j === 0 && !f.close) break;
+        const both = i < f.lit && j < f.lit;
+        (both ? lines : pending).push(seg(f.pts[i], f.pts[j]));
+      }
+      if (f.close && f.lit === n) { /* all closed */ }
+      const complete = f.lit === n;
+      return { name: f.name, lx: f.lx, ly: f.ly, stars, lines: lines.join(''), pending: pending.join(''),
+        status: complete ? 'Constelación completa' : f.lit === 0 ? `${n} estrellas por encender` : `${f.lit} de ${n} encendidas` };
+    });
+
+    // Marcos (órbitas)
+    const photo = 'width:100%; height:100%; border-radius:50%; background:radial-gradient(circle at 38% 28%, #F4CDB0, #9A6452 72%); display:flex; align-items:center; justify-content:center; font-family:Bricolage Grotesque, sans-serif; font-weight:700; font-size:28px; color:rgba(255,246,238,.9); box-sizing:border-box;';
+    const dot = (x, y, r, c) => `radial-gradient(circle at ${x}% ${y}%, ${c} ${r}px, transparent ${r + 1}px)`;
+    const marcos = [
+      { name: 'Trazo', cond: 'Inicial. Línea tinta 1.5 px + luz crema.', outer: 'width:96px; height:96px; border-radius:50%; padding:3px; background:#FFF6EE; box-shadow:0 0 0 1.5px rgba(51,32,59,.18); box-sizing:border-box;', inner: photo },
+      { name: 'Órbita', cond: 'Primera clase. Un satélite durazno.', outer: `width:108px; height:108px; border-radius:50%; padding:9px; box-shadow:inset 0 0 0 2px rgba(51,32,59,.3); background:${dot(84, 14, 5, '#E8764F')}; box-sizing:border-box;`, inner: photo },
+      { name: 'Órbita doble', cond: 'Dos semanas seguidas.', outer: `width:112px; height:112px; border-radius:50%; padding:11px; box-shadow:inset 0 0 0 2px rgba(51,32,59,.3), inset 0 0 0 7px #FFF6EE, inset 0 0 0 9px #FFC189; background:${dot(84, 14, 5, '#E8764F')}, ${dot(12, 78, 4, '#33203B')}; box-sizing:border-box;`, inner: photo },
+      { name: 'Constelación III', cond: 'Tres voces. Tres estrellas unidas por un arco.', outer: `width:110px; height:110px; border-radius:50%; padding:10px; background:${dot(50, 4, 5, '#33203B')}, ${dot(93, 70, 5, '#33203B')}, ${dot(7, 70, 5, '#33203B')}, conic-gradient(from -60deg, #33203B 0 120deg, transparent 120deg 360deg); -webkit-mask: radial-gradient(circle, transparent 46px, #000 47px, #000 100%); mask: radial-gradient(circle, transparent 46px, #000 47px); box-sizing:border-box;`, inner: photo + 'visibility:hidden;' },
+      { name: 'Constelación V', cond: 'Un mes seguido. Cinco estrellas, arco completo.', outer: `width:112px; height:112px; border-radius:50%; padding:11px; box-shadow:inset 0 0 0 2px rgba(51,32,59,.22); background:${dot(50, 3, 5, '#33203B')}, ${dot(95, 36, 5, '#33203B')}, ${dot(78, 95, 5, '#33203B')}, ${dot(22, 95, 5, '#33203B')}, ${dot(5, 36, 5, '#33203B')}; box-sizing:border-box;`, inner: photo },
+      { name: 'Halo', cond: 'Diez clases. Resplandor lavanda.', outer: 'width:100px; height:100px; border-radius:50%; padding:4px; background:#FFF6EE; box-shadow:0 0 0 2px #B9A7E6, 0 10px 30px -2px rgba(185,167,230,.95); box-sizing:border-box;', inner: photo },
+      { name: 'Órbita amanecer', cond: 'Un trimestre seguido.', outer: 'width:110px; height:110px; border-radius:50%; padding:6px; background:conic-gradient(from 210deg, #2E1E4E, #7A4A8C, #E8764F, #FFC189, #2E1E4E); box-shadow:0 12px 24px -10px rgba(232,118,79,.6); box-sizing:border-box;', inner: photo + 'box-shadow:inset 0 0 0 3px #FFF6EE;' },
+      { name: 'Cielo', cond: 'Medio año seguido o cien clases.', outer: `width:116px; height:116px; border-radius:50%; padding:13px; background:${dot(20, 22, 2, '#FFC189')}, ${dot(82, 16, 1.5, '#FFF6EE')}, ${dot(90, 60, 2, '#FFF6EE')}, ${dot(14, 74, 1.5, '#FFC189')}, ${dot(60, 92, 2, '#FFF6EE')}, #2E1E4E; box-shadow:inset 0 0 0 9px #2E1E4E, inset 0 0 0 11px #FFC189; box-sizing:border-box;`, inner: photo },
+    ];
+    // Constelación III needs the photo visible: render photo separately by making the outer a ring only
+    marcos[3].outer = `width:110px; height:110px; border-radius:50%; padding:10px; background:${dot(50, 4, 5, '#33203B')}, ${dot(93, 70, 5, '#33203B')}, ${dot(7, 70, 5, '#33203B')}, conic-gradient(from -60deg at 50% 50%, #33203B 0 120deg, transparent 120deg 360deg) border-box; box-shadow: inset 0 0 0 3px #FFF6EE; box-sizing:border-box;`;
+    marcos[3].inner = photo + 'box-shadow:0 0 0 6px #FFF6EE;';
+    const paletas = [
+      { name: 'Trazo', a: '#FFF6EE', b: '#33203B', cond: 'Inicial. Crema y tinta.' },
+      { name: 'Durazno', a: '#FFC189', b: '#33203B', cond: 'Primera clase.' },
+      { name: 'Lavanda', a: '#B9A7E6', b: '#33203B', cond: 'Dos idiomas o tres voces.' },
+      { name: 'Ciruela', a: '#7A4A8C', b: '#FFF6EE', cond: 'Veinticinco clases.' },
+      { name: 'Noche', a: '#2E1E4E', b: '#FFC189', cond: 'Un trimestre seguido.' },
+      { name: 'Amanecer', a: 'linear-gradient(90deg,#7A4A8C,#E8764F)', b: '#FFC189', cond: 'Medio año seguido.' },
+    ];
+    const fondos = [
+      { name: 'Crema', css: '#FFF6EE', cond: 'Inicial.' },
+      { name: 'Bruma', css: 'radial-gradient(circle at 50% 30%, rgba(185,167,230,.55), #FFF6EE 75%)', cond: 'Perfil listo.' },
+      { name: 'Alba', css: 'linear-gradient(180deg, #FFF6EE, #FFE3CC)', cond: 'Cinco clases.' },
+      { name: 'Constelación', css: `${dot(20, 30, 1.5, '#33203B')}, ${dot(70, 60, 1.5, '#33203B')}, ${dot(85, 20, 1.5, '#7A4A8C')}, ${dot(40, 80, 1, '#7A4A8C')}, #FFF6EE`, cond: 'Dos meses seguidos.' },
+      { name: 'Noche', css: `${dot(30, 25, 1.5, '#FFC189')}, ${dot(75, 65, 1.2, '#FFF6EE')}, ${dot(55, 40, 1, '#FFF6EE')}, #2E1E4E`, cond: 'Cincuenta clases.' },
+      { name: 'Amanecer', css: 'linear-gradient(180deg,#2E1E4E,#7A4A8C 46%,#E8764F 82%,#FFC189)', cond: 'Medio año seguido.' },
+    ];
+
+    // Racha
+    const W = (state) => ({
+      lit: { fill: '#E8764F', stroke: '#E8764F', dash: '', icon: '' },
+      cur: { fill: 'none', stroke: '#E8764F', dash: '', icon: '' },
+      fut: { fill: 'none', stroke: 'rgba(51,32,59,.3)', dash: '2 2.5', icon: '' },
+      prot: { fill: '#B9A7E6', stroke: '#B9A7E6', dash: '', icon: G.shield.split(' m9')[0] },
+    })[state];
+    const rachas = [
+      { tag: 'ACTIVA', pill: '6 semanas seguidas', pillBg: '#FFC189', pillShadow: 'none', weeks: ['lit', 'lit', 'lit', 'lit', 'lit', 'lit', 'cur', 'fut'].map(W), title: 'Vas 6 semanas seguidas.', body: 'Tu próxima clase es el jueves. Con ella cierras la semana 7.' },
+      { tag: 'PROTEGIDA', pill: '6 semanas · 1 protegida', pillBg: '#B9A7E6', pillShadow: 'none', weeks: ['lit', 'lit', 'lit', 'lit', 'prot', 'lit', 'cur', 'fut'].map(W), title: 'Tu racha sigue: usamos tu semana protegida.', body: 'Cada mes tienes una semana libre que no corta la racha. La próxima se renueva el 1 de octubre.' },
+      { tag: 'EMPEZAMOS DE NUEVO', pill: 'Mejor racha: 6 semanas', pillBg: '#FFFFFF', pillShadow: '0 0 0 1.5px rgba(51,32,59,.14)', weeks: ['cur', 'fut', 'fut', 'fut', 'fut', 'fut', 'fut', 'fut'].map(W), title: 'Esta semana empieza una racha nueva.', body: 'Tu mejor marca sigue guardada. Reserva una clase y la primera estrella es tuya.' },
+    ];
+
+    return { starD, brillos, logros, familias, marcos, paletas, fondos, rachas };
+  }
+}
+</script>
+</body>
+</html>

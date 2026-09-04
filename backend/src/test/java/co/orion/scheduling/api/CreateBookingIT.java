@@ -125,7 +125,7 @@ class CreateBookingIT extends ApiIntegrationSupport {
     }
 
     private CreateBookingRequest request(UUID professorId, int hour, UUID studentId) {
-        return new CreateBookingRequest(professorId, wednesdayAt(hour), "VIRTUAL", null, studentId);
+        return new CreateBookingRequest(professorId, wednesdayAt(hour), "VIRTUAL", null, null, studentId);
     }
 
     @Test
@@ -184,7 +184,7 @@ class CreateBookingIT extends ApiIntegrationSupport {
     void anInPersonBookingHasNoMeetingLink() {
         ResponseEntity<BookingResponse> response = post(
                 BOOKINGS, anaSession,
-                new CreateBookingRequest(maria.getId(), wednesdayAt(9), "IN_PERSON", "Café del centro", null),
+                new CreateBookingRequest(maria.getId(), wednesdayAt(9), "IN_PERSON", "Café del centro", null, null),
                 BookingResponse.class);
 
         var saved = bookings.findById(response.getBody().id()).orElseThrow();
@@ -251,7 +251,7 @@ class CreateBookingIT extends ApiIntegrationSupport {
     void anInvalidModalityIsRejected() {
         ResponseEntity<Map> response = post(
                 BOOKINGS, anaSession,
-                new CreateBookingRequest(maria.getId(), wednesdayAt(9), "TELEPATIA", null, null),
+                new CreateBookingRequest(maria.getId(), wednesdayAt(9), "TELEPATIA", null, null, null),
                 Map.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);

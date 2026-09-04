@@ -138,7 +138,7 @@ class TeacherApplicationGateIT extends ApiIntegrationSupport {
     @Test
     void aPendingProfessorCannotReceiveABooking() {
         ResponseEntity<Map> res = post("/api/v1/bookings", anaSession,
-                new CreateBookingRequest(pending.getId(), wednesdayAt(9), "VIRTUAL", null, null), Map.class);
+                new CreateBookingRequest(pending.getId(), wednesdayAt(9), "VIRTUAL", null, null, null), Map.class);
         assertThat(res.getStatusCode().value()).isEqualTo(403);
     }
 }

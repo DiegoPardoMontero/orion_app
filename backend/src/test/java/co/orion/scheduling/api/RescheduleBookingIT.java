@@ -103,7 +103,7 @@ class RescheduleBookingIT extends ApiIntegrationSupport {
     private UUID book(Session session, LocalDate day, int hour) {
         ResponseEntity<BookingResponse> response = post(
                 BOOKINGS, session,
-                new CreateBookingRequest(maria.getId(), at(day, hour), "VIRTUAL", null, null),
+                new CreateBookingRequest(maria.getId(), at(day, hour), "VIRTUAL", null, null, null),
                 BookingResponse.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         // Reprogramar es una operación sobre una clase que existe, y una clase existe cuando está

@@ -18,6 +18,13 @@ public final class TestBookings {
     /** Un plazo de pago cualquiera: al confirmar se borra, así que su valor no influye en nada. */
     private static final Duration ANY_HOLD = Duration.ofMinutes(20);
 
+    /**
+     * El idioma por defecto de una reserva de prueba. Casi ningún test habla de idiomas, y
+     * obligarles a pasarlo llenaría doce ficheros de un "EN" que no dice nada; los que sí lo
+     * necesitan usan las sobrecargas que lo reciben.
+     */
+    public static final String DEFAULT_LANGUAGE = "EN";
+
     private TestBookings() {
     }
 
@@ -28,8 +35,20 @@ public final class TestBookings {
                                     BookingModality modality,
                                     String locationNote,
                                     UUID createdBy) {
-        Booking booking = awaitingPayment(
-                studentId, professorId, startsAt, endsAt, modality, locationNote, createdBy);
+        return confirmed(studentId, professorId, startsAt, endsAt, modality, locationNote,
+                DEFAULT_LANGUAGE, createdBy);
+    }
+
+    public static Booking confirmed(UUID studentId,
+                                    UUID professorId,
+                                    Instant startsAt,
+                                    Instant endsAt,
+                                    BookingModality modality,
+                                    String locationNote,
+                                    String languageCode,
+                                    UUID createdBy) {
+        Booking booking = awaitingPayment(studentId, professorId, startsAt, endsAt, modality,
+                locationNote, languageCode, createdBy);
         booking.confirmPayment();
         return booking;
     }
@@ -51,7 +70,19 @@ public final class TestBookings {
                                           BookingModality modality,
                                           String locationNote,
                                           UUID createdBy) {
+        return awaitingPayment(studentId, professorId, startsAt, endsAt, modality, locationNote,
+                DEFAULT_LANGUAGE, createdBy);
+    }
+
+    public static Booking awaitingPayment(UUID studentId,
+                                          UUID professorId,
+                                          Instant startsAt,
+                                          Instant endsAt,
+                                          BookingModality modality,
+                                          String locationNote,
+                                          String languageCode,
+                                          UUID createdBy) {
         return new Booking(studentId, professorId, startsAt, endsAt, modality, locationNote,
-                createdBy, startsAt.minus(ANY_HOLD));
+                languageCode, createdBy, startsAt.minus(ANY_HOLD));
     }
 }

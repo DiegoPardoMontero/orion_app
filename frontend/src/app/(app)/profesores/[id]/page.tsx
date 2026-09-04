@@ -12,6 +12,7 @@ import {
   Clock,
   CreditCard,
   GraduationCap,
+  Languages,
   Mail,
   MapPin,
   MessageCircle,
@@ -23,6 +24,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { Avatar } from "@/components/Avatar";
+import { DiscoIdioma } from "@/components/DiscoIdioma";
 import { LineaImporte } from "@/components/dinero";
 import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { EstrellaRating, EstrellasFijas } from "@/components/Rating";
@@ -70,6 +72,7 @@ export default function AgendaProfesorPage() {
   const [diaElegido, setDiaElegido] = useState<string | null>(null);
   const [cupoElegido, setCupoElegido] = useState<string | null>(null);
   const [modalidad, setModalidad] = useState<Modality>("VIRTUAL");
+  const [idioma, setIdioma] = useState<string | null>(null);
   const [nota, setNota] = useState("");
 
   const profesor = useQuery({
@@ -112,6 +115,7 @@ export default function AgendaProfesorPage() {
           professorId: id,
           startsAt,
           modality: modalidad,
+          languageCode: idiomaDeLaClase ?? undefined,
           locationNote: modalidad === "IN_PERSON" ? nota.trim() || undefined : undefined,
         },
       }),
@@ -164,6 +168,12 @@ export default function AgendaProfesorPage() {
       ? `${fechaCorta(cupoElegido)} · ${horaBogota(cupoElegido)} · ${modalidad === "VIRTUAL" ? "Virtual" : "Presencial"}`
       : null;
 
+  const idiomasQueEnsena = detalle.languages ?? [];
+  // Con un solo idioma no se pregunta: se manda ese. Con varios, el que haya elegido —y si no ha
+  // elegido, se manda null y el backend responde 422, que es la verdad.
+  const idiomaDeLaClase =
+    idiomasQueEnsena.length === 1 ? (idiomasQueEnsena[0].code ?? null) : idioma;
+
   const precio = detalle.hourlyRateCop ?? null;
   // La misma regla que aplica el backend, mínimo de la pasarela incluido: si el desglose de aquí y
   // el del checkout no coinciden al peso, el estudiante ve cambiar el precio entre dos pantallas.
@@ -172,9 +182,42 @@ export default function AgendaProfesorPage() {
     saldo.data?.balanceCop ?? 0,
   );
 
-  // Controles compartidos entre móvil y desktop: modalidad, nota, confirmación.
+  // Controles compartidos entre móvil y desktop: idioma, modalidad, nota, confirmación.
   const controles: ReactNode = (
     <>
+      {/* El selector solo aparece cuando hay algo que elegir. Con un idioma el backend lo asigna
+          solo, y preguntar entre una opción sería un paso de más. */}
+      {idiomasQueEnsena.length > 1 && (
+        <Bloque
+          tono="lavanda"
+          titulo="Idioma de la clase"
+          icono={<Languages size={16} strokeWidth={1.75} />}
+        >
+          <div className="flex flex-wrap gap-2">
+            {idiomasQueEnsena.map((lang) => (
+              <button
+                key={lang.code}
+                type="button"
+                onClick={() => setIdioma(lang.code ?? null)}
+                className={`inline-flex min-h-11 items-center gap-2 rounded-pill border-[1.5px] px-4 text-[14px] font-bold transition-colors ${
+                  idioma === lang.code
+                    ? "border-transparent bg-night text-on-primary"
+                    : "border-border bg-surface-raised text-text hover:bg-surface-sunken"
+                }`}
+              >
+                <DiscoIdioma code={lang.code ?? ""} />
+                {lang.nameEs}
+              </button>
+            ))}
+          </div>
+          {!idioma && (
+            <p className="mt-2 text-[12.5px] text-text-secondary">
+              Elige en cuál quieres la clase.
+            </p>
+          )}
+        </Bloque>
+      )}
+
       <Bloque tono="menta" titulo="Modalidad" icono={<Video size={16} strokeWidth={1.75} />}>
         <Segmento<Modality>
           valor={modalidad}

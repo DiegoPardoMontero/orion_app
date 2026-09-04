@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.catalog.application.PlatformSettingsService;
+import co.orion.identity.persistence.ProfessorLanguageRepository;
 import co.orion.identity.persistence.UserRepository;
 import co.orion.scheduling.domain.Booking;
 import co.orion.scheduling.domain.BookingCancelledEvent;
@@ -40,6 +41,7 @@ public class BookingService {
     private final BookingRepository bookings;
     private final UserRepository users;
     private final SlotQueryService slots;
+    private final ProfessorLanguageRepository professorLanguages;
     private final MeetingLinkProvider meetingLinks;
     private final PaymentInitiator payments;
     private final PlatformSettingsService settings;
@@ -49,6 +51,7 @@ public class BookingService {
     public BookingService(BookingRepository bookings,
                           UserRepository users,
                           SlotQueryService slots,
+                          ProfessorLanguageRepository professorLanguages,
                           MeetingLinkProvider meetingLinks,
                           PaymentInitiator payments,
                           PlatformSettingsService settings,
@@ -57,6 +60,7 @@ public class BookingService {
         this.bookings = bookings;
         this.users = users;
         this.slots = slots;
+        this.professorLanguages = professorLanguages;
         this.meetingLinks = meetingLinks;
         this.payments = payments;
         this.settings = settings;
@@ -95,6 +99,7 @@ public class BookingService {
                              Instant startsAt,
                              String modalityName,
                              String locationNote,
+                             String requestedLanguage,
                              UUID requestedStudentId) {
         UUID studentId = resolveStudent(actor, requestedStudentId);
         BookingModality modality = parseModality(modalityName);
@@ -108,7 +113,8 @@ public class BookingService {
         }
 
         Booking booking = new Booking(studentId, professorId, startsAt, endsAt, modality,
-                locationNote, actor.getId(), payments.holdExpiry(clock.instant()));
+                locationNote, resolveLanguage(professorId, requestedLanguage), actor.getId(),
+                payments.holdExpiry(clock.instant()));
 
         Booking saved = saveOrLoseTheRace(booking);
         PaymentTicket ticket = payments.initiate(saved);
@@ -117,6 +123,41 @@ public class BookingService {
             saved = confirm(saved);
         }
         return new NewBooking(saved, ticket);
+    }
+
+    /**
+     * En qué idioma se da esta clase.
+     *
+     * Si el profesor enseña uno solo, se asigna sin preguntar: obligar a elegir entre una opción
+     * es un paso de más. Si enseña varios, hay que decirlo — deducirlo sería inventarlo, y este es
+     * justamente el dato que no se puede recuperar después.
+     *
+     * El idioma que llegue tiene que ser uno de los suyos. Que el frontend solo ofrezca los
+     * correctos es cortesía; la comprobación es esto.
+     */
+    private String resolveLanguage(UUID professorId, String requested) {
+        List<String> suyos = professorLanguages.findByProfessorId(professorId).stream()
+                .map(pl -> pl.getLanguageCode())
+                .toList();
+
+        if (requested == null || requested.isBlank()) {
+            if (suyos.size() == 1) {
+                return suyos.get(0);
+            }
+            if (suyos.isEmpty()) {
+                // Un profesor publicado sin idiomas no debería existir, pero si existe no se le
+                // puede inventar uno: la reserva queda sin idioma, como las anteriores a la V20.
+                return null;
+            }
+            throw new UnprocessableException(
+                    "Este profesor enseña varios idiomas: elige en cuál quieres la clase.");
+        }
+
+        String normalizado = requested.trim().toUpperCase();
+        if (!suyos.contains(normalizado)) {
+            throw new UnprocessableException("Este profesor no enseña ese idioma.");
+        }
+        return normalizado;
     }
 
     /**

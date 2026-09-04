@@ -7,6 +7,7 @@ import java.util.Locale;
 
 import org.springframework.stereotype.Component;
 
+import co.orion.catalog.persistence.LanguageRepository;
 import co.orion.identity.domain.User;
 import co.orion.scheduling.domain.Booking;
 import co.orion.scheduling.domain.BookingModality;
@@ -27,27 +28,47 @@ public class BookingEmailComposer {
 
     private final IcsGenerator icsGenerator;
     private final GoogleCalendarLinkBuilder calendarLinks;
+    private final LanguageRepository languages;
     private final Clock clock;
 
     public BookingEmailComposer(IcsGenerator icsGenerator,
                                 GoogleCalendarLinkBuilder calendarLinks,
+                                LanguageRepository languages,
                                 Clock clock) {
         this.icsGenerator = icsGenerator;
         this.calendarLinks = calendarLinks;
+        this.languages = languages;
         this.clock = clock;
+    }
+
+    /**
+     * El idioma en palabras ("Inglés"), o null si la reserva no lo tiene — las anteriores a la V20
+     * de profesores multi-idioma. Donde no se sabe, no se dice nada: mejor una línea menos que una
+     * línea inventada.
+     */
+    private String languageOf(Booking booking) {
+        if (booking.getLanguageCode() == null) {
+            return null;
+        }
+        return languages.findById(booking.getLanguageCode())
+                .map(l -> l.getNameEs())
+                .orElse(null);
     }
 
     /** Correo de confirmación para uno de los dos participantes. */
     public BookingEmail confirmation(Booking booking, User recipient, User counterpart, boolean recipientIsStudent) {
         String when = humanWhen(booking);
         String modality = modalityOf(booking);
-        String title = recipientIsStudent
-                ? "Clase de inglés con " + counterpart.getFullName()
-                : "Clase de inglés con " + counterpart.getFullName();
+        String language = languageOf(booking);
+
+        // "Clase de inglés" estaba escrito a mano y dejó de ser cierto en cuanto hubo francés.
+        // Donde no se sabe el idioma —reservas anteriores a la V20— se dice "Clase" a secas.
+        String que = language == null ? "Clase" : "Clase de " + language.toLowerCase(ES_CO);
+        String title = que + " con " + counterpart.getFullName();
 
         String details = recipientIsStudent
-                ? "Tu clase de inglés en Orión con " + counterpart.getFullName() + "."
-                : "Clase de inglés en Orión con " + counterpart.getFullName() + ".";
+                ? "Tu " + que.toLowerCase(ES_CO) + " en Orión con " + counterpart.getFullName() + "."
+                : que + " en Orión con " + counterpart.getFullName() + ".";
 
         String meetingLink = booking.getMeetingLink();
         String location = booking.getLocationNote() != null
@@ -84,6 +105,7 @@ public class BookingEmailComposer {
                 <p>%s</p>
                 <ul>
                   <li><strong>Cuándo:</strong> %s</li>
+                  %s
                   <li><strong>Modalidad:</strong> %s</li>
                   %s
                   <li><strong>Con:</strong> %s</li>
@@ -97,6 +119,7 @@ public class BookingEmailComposer {
                 greeting,
                 opening,
                 when,
+                language != null ? "<li><strong>Idioma:</strong> " + language + "</li>" : "",
                 modality,
                 booking.getLocationNote() != null
                         ? "<li><strong>Dónde:</strong> " + booking.getLocationNote() + "</li>"
@@ -111,7 +134,7 @@ public class BookingEmailComposer {
                 %s
 
                 Cuándo: %s
-                Modalidad: %s
+                %sModalidad: %s
                 Con: %s
                 %sCoordinen los detalles dentro de Orión, en la sección de Mensajes.
 
@@ -119,8 +142,9 @@ public class BookingEmailComposer {
 
                 ¡Nos vemos en clase!
                 El equipo de Orión
-                """.formatted(greeting, opening, when, modality, counterpart.getFullName(),
-                meetingText, calendarLink);
+                """.formatted(greeting, opening, when,
+                language != null ? "Idioma: " + language + "\n" : "",
+                modality, counterpart.getFullName(), meetingText, calendarLink);
 
         return new BookingEmail(recipient.getEmail(), subject, html, text, ics);
     }

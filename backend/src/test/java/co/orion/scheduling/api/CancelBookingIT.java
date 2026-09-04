@@ -244,7 +244,7 @@ class CancelBookingIT extends ApiIntegrationSupport {
                 "/api/v1/bookings", carlosSession,
                 new CreateBookingRequest(maria.getId(),
                         wednesdayAt(9).atZone(BusinessZone.BOGOTA).toOffsetDateTime(),
-                        "VIRTUAL", null, null),
+                        "VIRTUAL", null, null, null),
                 BookingResponse.class);
 
         // El índice único es parcial: la fila cancelada no bloquea la nueva reserva.

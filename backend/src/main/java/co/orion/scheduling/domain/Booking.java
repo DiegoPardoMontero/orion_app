@@ -64,6 +64,14 @@ public class Booking {
     @Column(name = "meeting_link", length = 300)
     private String meetingLink;
 
+    /**
+     * En qué idioma se da la clase. Nulo solo en las reservas anteriores a la V20 cuyo profesor
+     * enseñaba más de uno: ahí no se puede deducir, y "no lo sabemos" es la verdad. En las nuevas
+     * siempre está — el servicio lo asigna o lo exige.
+     */
+    @Column(name = "language_code", length = 5)
+    private String languageCode;
+
     /** Clase de prueba (Q7). La columna existe desde la V16; el flujo que la enciende no. */
     @Column(name = "is_trial", nullable = false)
     private boolean trial;
@@ -114,6 +122,7 @@ public class Booking {
                    Instant endsAt,
                    BookingModality modality,
                    String locationNote,
+                   String languageCode,
                    UUID createdBy,
                    Instant expiresAt) {
         this.studentId = Objects.requireNonNull(studentId, "studentId");
@@ -122,9 +131,19 @@ public class Booking {
         this.endsAt = Objects.requireNonNull(endsAt, "endsAt");
         this.modality = Objects.requireNonNull(modality, "modality");
         this.locationNote = locationNote;
+        this.languageCode = languageCode;
         this.createdBy = Objects.requireNonNull(createdBy, "createdBy");
         this.expiresAt = Objects.requireNonNull(expiresAt, "expiresAt");
         this.status = BookingStatus.PENDING_PAYMENT;
+    }
+
+    public String getLanguageCode() {
+        return languageCode;
+    }
+
+    /** Solo para completar a mano una reserva histórica sin idioma, desde administración. */
+    public void assignLanguage(String languageCode) {
+        this.languageCode = Objects.requireNonNull(languageCode, "languageCode");
     }
 
     public boolean isConfirmed() {

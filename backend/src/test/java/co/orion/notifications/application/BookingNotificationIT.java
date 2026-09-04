@@ -131,7 +131,7 @@ class BookingNotificationIT extends ApiIntegrationSupport {
         return new CreateBookingRequest(
                 maria.getId(),
                 ZonedDateTime.of(WEDNESDAY, LocalTime.of(9, 0), BusinessZone.BOGOTA).toOffsetDateTime(),
-                "VIRTUAL", "Google Meet", null);
+                "VIRTUAL", "Google Meet", null, null);
     }
 
     /**

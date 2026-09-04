@@ -26,5 +26,12 @@ public record CreateBookingRequest(
         @Size(max = 300, message = "locationNote no puede superar 300 caracteres")
         String locationNote,
 
+        /**
+         * El idioma de la clase. Opcional cuando el profesor enseña uno solo —se asigna sin
+         * preguntar—; obligatorio cuando enseña varios, porque ahí deducirlo sería inventarlo.
+         */
+        @Size(max = 5)
+        String languageCode,
+
         UUID studentId) {
 }

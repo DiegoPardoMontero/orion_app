@@ -383,7 +383,7 @@ class PaymentFlowIT extends ApiIntegrationSupport {
     private CreateBookingRequest bookingRequest(int hour) {
         OffsetDateTime at = ZonedDateTime
                 .of(WEDNESDAY, LocalTime.of(hour, 0), BusinessZone.BOGOTA).toOffsetDateTime();
-        return new CreateBookingRequest(maria.getId(), at, "VIRTUAL", null, null);
+        return new CreateBookingRequest(maria.getId(), at, "VIRTUAL", null, null, null);
     }
 
     @SuppressWarnings("rawtypes")

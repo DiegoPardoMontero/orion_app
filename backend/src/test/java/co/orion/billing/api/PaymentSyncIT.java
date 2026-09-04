@@ -221,7 +221,7 @@ class PaymentSyncIT extends ApiIntegrationSupport {
         OffsetDateTime at = ZonedDateTime
                 .of(WEDNESDAY, LocalTime.of(hour, 0), BusinessZone.BOGOTA).toOffsetDateTime();
         ResponseEntity<BookingResponse> response = post(BOOKINGS, anaSession,
-                new CreateBookingRequest(maria.getId(), at, "VIRTUAL", null, null),
+                new CreateBookingRequest(maria.getId(), at, "VIRTUAL", null, null, null),
                 BookingResponse.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         return response.getBody().id();
