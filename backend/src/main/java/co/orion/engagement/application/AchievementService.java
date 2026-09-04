@@ -167,9 +167,17 @@ public class AchievementService {
      */
     @Transactional
     public void recompute(UUID studentId) {
-        userAchievements.deleteByUserId(studentId);
+        // Las protecciones sí se recalculan desde cero: son derivadas del historial y nada más.
         protections.deleteByUserId(studentId);
-        reevaluar(studentId);
+        // Las filas de logros NO se borran, y ese es el punto: `unlocked_at` es un hecho histórico
+        // —cuándo encendió cada estrella— y un recálculo no puede reescribir la fecha en la que
+        // pasó algo. Borrarlas tampoco hacía falta para que el resultado fuera exacto:
+        // `recordProgress` fija el progreso en absoluto y `unlock` es idempotente.
+        //
+        // Y va en silencio. Un recálculo no es un momento en la vida de nadie: es reconciliación.
+        // Anunciarlo hacía que cada arranque del backfill le dijera a la misma persona que acababa
+        // de encender siete estrellas, otra vez.
+        reevaluar(studentId, false);
     }
 
     /* ------------------------------------------------------------------ */
@@ -205,6 +213,10 @@ public class AchievementService {
      * fallo, no como una celebración.
      */
     private void reevaluar(UUID studentId) {
+        reevaluar(studentId, true);
+    }
+
+    private void reevaluar(UUID studentId, boolean anunciar) {
         Instant ahora = clock.instant();
         AchievementInput input = fotoDe(studentId, ahora);
 
@@ -240,7 +252,7 @@ public class AchievementService {
             userAchievements.save(estado);
         }
 
-        if (!encendidosAhora.isEmpty()) {
+        if (anunciar && !encendidosAhora.isEmpty()) {
             events.publishEvent(new AchievementUnlockedEvent(studentId, List.copyOf(encendidosAhora)));
         }
     }

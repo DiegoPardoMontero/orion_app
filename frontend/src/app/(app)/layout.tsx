@@ -42,6 +42,7 @@ import {
 } from "@/lib/auth/roles";
 import type { Role } from "@/lib/auth/session";
 import { useLogout, useMe } from "@/lib/auth/session";
+import { useCerrarConEscape } from "@/lib/useCerrarConEscape";
 import { useMensajesNoLeidos } from "@/lib/mensajeria";
 
 /** Cada ruta lleva su ícono; el activo va relleno para no marcarse solo por color. */
@@ -413,6 +414,8 @@ function MenuUsuario({
         </span>
       </button>
     );
+
+  useCerrarConEscape(abierto, () => setAbierto(false));
 
   return (
     <div className="relative">

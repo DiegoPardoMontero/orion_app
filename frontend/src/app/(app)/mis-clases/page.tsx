@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { CalendarioClases } from "@/components/CalendarioClases";
 import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
@@ -38,7 +38,23 @@ type Scope = "upcoming" | "past";
 type Vista = "agenda" | "calendario";
 
 export default function MisClasesPage() {
-  const [scope, setScope] = useState<Scope>("upcoming");
+  return (
+    <Suspense fallback={null}>
+      <Contenido />
+    </Suspense>
+  );
+}
+
+function Contenido() {
+  // Un aviso sobre una clase llega con `?clase=<id>` y, cuando se sabe, con `?scope=past`. Sin
+  // esto la campana dejaba a la persona en la lista completa, a buscar de cuál se hablaba.
+  const params = useSearchParams();
+  const claseSenalada = params.get("clase");
+  const scopeDelEnlace: Scope = params.get("scope") === "past" ? "past" : "upcoming";
+
+  const [scopeElegido, setScopeElegido] = useState<Scope | null>(null);
+  const scope = scopeElegido ?? scopeDelEnlace;
+  const setScope = setScopeElegido;
   const [vista, setVista] = useState<Vista>("agenda");
   const { data: me } = useMe();
 
@@ -126,7 +142,7 @@ export default function MisClasesPage() {
           primera, no debajo. Aquí el orden se lee bajando, que es como se lee una agenda.
         */}
         {vista === "agenda" ? (
-          <Agenda clases={data ?? []} scope={scope} esProfesor={esProfesor} />
+          <Agenda clases={data ?? []} scope={scope} esProfesor={esProfesor} senalada={claseSenalada} />
         ) : (
           <VistaCalendario clases={data ?? []} scope={scope} esProfesor={esProfesor} />
         )}
@@ -189,11 +205,22 @@ function Agenda({
   clases,
   scope,
   esProfesor,
+  senalada,
 }: {
   clases: MyBookingResponse[];
   scope: Scope;
   esProfesor: boolean;
+  /** La clase de la que hablaba el aviso que trajo hasta aquí. */
+  senalada?: string | null;
 }) {
+  // Resaltarla no basta si queda fuera de la pantalla: el aviso prometía llevar a una clase.
+  useEffect(() => {
+    if (!senalada) return;
+    document
+      .getElementById(`clase-${senalada}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [senalada, clases]);
+
   const dias = useMemo(() => {
     const grupos: { dia: string; clases: MyBookingResponse[] }[] = [];
     for (const clase of clases) {
@@ -222,7 +249,13 @@ function Agenda({
           {/* La línea de tiempo: un filete vertical del que cuelga cada clase por su hora. */}
           <ul className="flex flex-col gap-2.5 border-l-2 border-border pl-4">
             {grupo.clases.map((clase, i) => (
-              <li key={clase.id} className="relative">
+              <li
+                key={clase.id}
+                id={`clase-${clase.id}`}
+                className={`relative scroll-mt-24 ${
+                  clase.id === senalada ? "rounded-card ring-2 ring-primary ring-offset-4 ring-offset-surface" : ""
+                }`}
+              >
                 <span
                   aria-hidden="true"
                   className={`absolute -left-[21px] top-5 h-2.5 w-2.5 rounded-full ring-4 ring-surface ${

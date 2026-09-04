@@ -65,7 +65,7 @@ public class LifecycleNotificationListener {
                     notifications.create(target, "RESCHEDULE_REQUESTED",
                             "Te proponen cambiar el horario de una clase",
                             "Nueva propuesta: " + whenIs(request) + ". Acéptala o propón otra hora.",
-                            "/mis-clases");
+                            claseFutura(booking.getId()));
                 })));
     }
 
@@ -83,7 +83,7 @@ public class LifecycleNotificationListener {
                             event.accepted()
                                     ? "Tu clase quedó para " + whenIs(request) + "."
                                     : "La clase sigue a su hora original. Puedes proponer otro horario.",
-                            "/mis-clases");
+                            claseFutura(booking.getId()));
                 })));
     }
 
@@ -96,7 +96,7 @@ public class LifecycleNotificationListener {
                     notifications.create(booking.getProfessorId(), "DISPUTE_OPENED",
                             "Un estudiante reportó un problema con una clase",
                             "Estamos revisando lo ocurrido. Te contamos apenas se resuelva.",
-                            "/mis-clases");
+                            clasePasada(booking.getId()));
                     // Y a cada admin, porque es dinero congelado esperando una decisión.
                     users.findByRoleAndStatus(UserRole.ADMIN, UserStatus.ACTIVE).forEach(admin ->
                             notifications.create(admin.getId(), "DISPUTE_OPENED",
@@ -127,6 +127,22 @@ public class LifecycleNotificationListener {
     }
 
     /** El hecho ya ocurrió y está guardado: que falle un aviso no puede deshacerlo. */
+    /**
+     * Un aviso sobre una clase concreta lleva a esa clase, no a la lista.
+     *
+     * <p>Llevar a «Mis clases» a secas obliga a buscar de cuál se hablaba, y quien tiene seis
+     * clases esta semana no lo adivina. El {@code scope} viaja porque aquí sí se sabe: una
+     * propuesta de horario siempre es sobre una clase futura y un reclamo siempre sobre una que ya
+     * pasó, así que el enlace abre la pestaña correcta sin que el frontend tenga que averiguarlo.
+     */
+    private String claseFutura(UUID bookingId) {
+        return "/mis-clases?clase=" + bookingId;
+    }
+
+    private String clasePasada(UUID bookingId) {
+        return "/mis-clases?scope=past&clase=" + bookingId;
+    }
+
     private void safely(Runnable action) {
         try {
             action.run();

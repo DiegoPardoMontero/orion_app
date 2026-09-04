@@ -14,6 +14,7 @@ import {
   useNotificaciones,
   useNotificacionesNoLeidas,
 } from "@/lib/mensajeria";
+import { useCerrarConEscape } from "@/lib/useCerrarConEscape";
 
 /** Momento relativo compacto para el panel: hora si es de hoy, si no la fecha corta. */
 function cuando(iso: string | undefined): string {
@@ -44,6 +45,7 @@ export function CampanaNotificaciones({
   const [abierto, setAbierto] = useState(false);
 
   const noLeidas = useNotificacionesNoLeidas(true);
+  useCerrarConEscape(abierto, () => setAbierto(false));
   const { data, isPending, isError, refetch } = useNotificaciones(abierto);
 
   function refrescar() {

@@ -12,6 +12,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +27,7 @@ import org.springframework.context.annotation.Primary;
 
 import co.orion.TestcontainersConfiguration;
 import co.orion.engagement.application.AchievementService;
+import co.orion.engagement.domain.AchievementUnlockedEvent;
 import co.orion.engagement.domain.UserAchievement;
 import co.orion.engagement.persistence.PointEventRepository;
 import co.orion.engagement.persistence.StreakProtectionRepository;
@@ -63,7 +65,26 @@ class MotorDeLogrosIT extends ApiIntegrationSupport {
         Clock fixedClock() {
             return Clock.fixed(FROZEN_NOW, ZoneOffset.UTC);
         }
+
+        /** Escucha lo que el motor anuncia, para poder afirmar también cuándo NO anuncia. */
+        @Bean
+        AvisosCapturados avisosCapturados() {
+            return new AvisosCapturados();
+        }
     }
+
+    static class AvisosCapturados {
+        final List<AchievementUnlockedEvent> recibidos = new CopyOnWriteArrayList<>();
+
+        @org.springframework.transaction.event.TransactionalEventListener(
+                phase = org.springframework.transaction.event.TransactionPhase.AFTER_COMMIT)
+        public void on(AchievementUnlockedEvent evento) {
+            recibidos.add(evento);
+        }
+    }
+
+    @Autowired
+    private AvisosCapturados avisos;
 
     @Autowired
     private AchievementService motor;
@@ -380,6 +401,31 @@ class MotorDeLogrosIT extends ApiIntegrationSupport {
         var estado = estadoDe(ana.getId());
         assertThat(estado.get("primeros-primera-clase").isUnlocked()).isTrue();
         assertThat(pointEvents.totalPointsOf(ana.getId())).isPositive();
+    }
+
+    /**
+     * El recálculo es reconciliación, no un momento: ni avisa ni reescribe la historia.
+     *
+     * <p>Los dos fallos que esto fija se veían en la campana de un entorno real: ocho avisos
+     * idénticos de «Encendiste 7 estrellas», uno por cada vez que el backfill había corrido al
+     * arrancar; y todas las estrellas con la misma fecha de encendido, la del último arranque, en
+     * vez de la del día en que cada una se ganó.
+     */
+    @Test
+    void recomputeNiAvisaDeNuevoNiReescribeCuandoSeEncendioCadaEstrella() {
+        Booking clase = claseTomada(maria, LocalDate.of(2026, 7, 20));
+        motor.onLessonCompleted(ana.getId(), clase.getId(), FROZEN_NOW);
+
+        var primeraVez = estadoDe(ana.getId()).get("primeros-primera-clase").getUnlockedAt();
+        assertThat(primeraVez).isNotNull();
+        int avisosAntes = avisos.recibidos.size();
+
+        motor.recompute(ana.getId());
+
+        assertThat(estadoDe(ana.getId()).get("primeros-primera-clase").getUnlockedAt())
+                .as("la fecha de encendido es un hecho, no un dato recalculable")
+                .isEqualTo(primeraVez);
+        assertThat(avisos.recibidos).hasSize(avisosAntes);
     }
 
     /** Y sobre un historial que nunca se procesó: el backfill llega al mismo sitio. */
