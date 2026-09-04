@@ -93,6 +93,9 @@ public class SecurityConfig {
                         .hasRole("STUDENT")
                 .requestMatchers("/api/v1/students/*/profile")
                         .hasAnyRole("STUDENT", "PROFESSOR", "ADMIN")
+                // La gamificación es del estudiante: mide lo que él ha recorrido.
+                .requestMatchers("/api/v1/me/engagement", "/api/v1/me/achievements",
+                        "/api/v1/me/cosmetics", "/api/v1/me/streak").hasRole("STUDENT")
                 // La asistencia la registra quien dio la clase.
                 .requestMatchers(HttpMethod.POST, "/api/v1/bookings/*/attendance").hasRole("PROFESSOR")
                 // Reseñar una clase es del estudiante; reportar una reseña, del profesor reseñado.
