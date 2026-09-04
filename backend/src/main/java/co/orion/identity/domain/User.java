@@ -54,6 +54,10 @@ public class User {
     @Column(name = "status", nullable = false, length = 20)
     private UserStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "signup_intent", nullable = false, length = 10)
+    private SignupIntent signupIntent;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -72,6 +76,7 @@ public class User {
         this.fullName = Objects.requireNonNull(fullName, "fullName");
         this.role = Objects.requireNonNull(role, "role");
         this.status = UserStatus.ACTIVE;
+        this.signupIntent = SignupIntent.LEARN;
     }
 
     /** Única dirección donde se decide la forma canónica del email. */
@@ -97,6 +102,37 @@ public class User {
 
     public void changeFullName(String fullName) {
         this.fullName = Objects.requireNonNull(fullName, "fullName");
+    }
+
+    public SignupIntent getSignupIntent() {
+        return signupIntent;
+    }
+
+    /**
+     * Marca que esta cuenta vino a enseñar. Solo el auto-registro la llama, y una sola vez: quien
+     * ya está usando Orión como estudiante no se convierte en aspirante por postularse — tiene
+     * clases reservadas y saldo pagado, y quitárselos sería un castigo por querer enseñar.
+     */
+    public void intendsToTeach() {
+        this.signupIntent = SignupIntent.TEACH;
+    }
+
+    /**
+     * Vuelve a la intención de aprender. Se usa cuando la postulación se rechaza: en vez de dejar
+     * la cuenta en un callejón sin salida, sigue siendo una cuenta de estudiante perfectamente
+     * normal.
+     */
+    public void intendsToLearn() {
+        this.signupIntent = SignupIntent.LEARN;
+    }
+
+    /**
+     * La cuenta pasa a ser de profesor. Solo lo llama la aprobación de una postulación: es la única
+     * puerta por la que alguien empieza a enseñar en Orión.
+     */
+    public void becomeProfessor() {
+        this.role = UserRole.PROFESSOR;
+        this.signupIntent = SignupIntent.LEARN;
     }
 
     public void activate() {

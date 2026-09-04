@@ -15,6 +15,8 @@ export const HOME_BY_ROLE: Record<Role, string> = {
   PROFESSOR: "/mis-clases",
   // El admin entra al panel: lo primero que necesita ver es si algo espera su decisión.
   ADMIN: "/admin/panel",
+  // El aspirante entra a su postulación, que es lo único que tiene por hacer aquí.
+  TEACHER_APPLICANT: "/aplicacion",
 };
 
 export const NAV_BY_ROLE: Record<Role, NavGroup[]> = {
@@ -53,6 +55,11 @@ export const NAV_BY_ROLE: Record<Role, NavGroup[]> = {
       ],
     },
     { titulo: "Mi cuenta", items: [{ href: "/perfil", label: "Perfil público" }] },
+  ],
+  // El aspirante no tiene menú de estudiante porque no tiene experiencia de estudiante: mientras
+  // su postulación espera, lo único que puede hacer en Orión es llevarla y cuidar su cuenta.
+  TEACHER_APPLICANT: [
+    { items: [{ href: "/aplicacion/estado", label: "Mi postulación" }] },
   ],
   ADMIN: [
     { items: [{ href: "/admin/panel", label: "Panel" }] },
@@ -100,6 +107,7 @@ export const TABS_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/ganancias", label: "Ganancias" },
     { href: "/perfil", label: "Perfil" },
   ],
+  TEACHER_APPLICANT: [{ href: "/aplicacion/estado", label: "Postulación" }],
   ADMIN: [
     { href: "/admin/panel", label: "Panel" },
     { href: "/admin/reclamos", label: "Reclamos" },
@@ -127,7 +135,7 @@ const ACCESS: { prefix: string; roles: Role[] }[] = [
   { prefix: "/perfil", roles: ["PROFESSOR"] },
   // La postulación a profesor: la abre un estudiante que quiere enseñar o un profesor recién
   // creado por el admin que aún no completa su perfil. El admin revisa desde /admin/aplicaciones.
-  { prefix: "/aplicacion", roles: ["STUDENT", "PROFESSOR"] },
+  { prefix: "/aplicacion", roles: ["STUDENT", "PROFESSOR", "TEACHER_APPLICANT"] },
   { prefix: "/admin", roles: ["ADMIN"] },
 ];
 

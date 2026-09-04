@@ -17,6 +17,8 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
+import co.orion.shared.error.ServiceUnavailableException;
+
 /**
  * Documentos privados en Cloudinary con {@code type: authenticated} (no {@code upload}): no son
  * accesibles por URL pública. Se guardan bajo {@code orion/documents/{userId}/} y la lectura es
@@ -57,7 +59,8 @@ public class CloudinaryDocumentStorage implements DocumentStorage {
     @Override
     public String upload(byte[] bytes, String contentType, UUID userId, String fileName) {
         if (cloudName.isBlank() || apiKey.isBlank() || apiSecret.isBlank()) {
-            throw new IllegalStateException("Cloudinary no está configurado (falta CLOUDINARY_URL)");
+            throw new ServiceUnavailableException(
+                    "No podemos recibir documentos en este momento. Inténtalo más tarde.");
         }
 
         long timestamp = clock.instant().getEpochSecond();

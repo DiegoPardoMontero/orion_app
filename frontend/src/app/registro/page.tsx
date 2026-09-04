@@ -88,6 +88,9 @@ function Registro() {
         email: email.trim(),
         password,
         whatsappPhone: whatsapp.trim() || undefined,
+        // La intención viaja al backend y no se queda en esta pantalla: es lo que decide que la
+        // cuenta nazca como aspirante y no como estudiante que además postuló.
+        wantsToTeach: intencion === "ensenar",
       },
       {
         // Quien viene a enseñar entra directo a su postulación; quien viene a aprender, al

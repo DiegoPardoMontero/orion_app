@@ -27,8 +27,18 @@ function cuando(iso: string | undefined): string {
  * La campana del shell: un botón con badge del número de notificaciones sin leer (poll cada 30 s) y
  * un panel desplegable. Al tocar una notificación se marca leída y se navega a su `linkPath`; también
  * hay "marcar todas como leídas". Un clic fuera cierra el panel.
+ *
+ * @param anclaje de qué lado del botón crece el panel. En la cabecera móvil crece hacia la
+ * izquierda («derecha»: el borde derecho coincide con el del botón). En el lateral de escritorio
+ * tiene que crecer hacia la derecha, sobre el contenido: el lateral mide 248 px y el panel 320,
+ * así que anclado a la derecha se salía 130 px por el borde izquierdo de la pantalla y las
+ * notificaciones aparecían cortadas.
  */
-export function CampanaNotificaciones() {
+export function CampanaNotificaciones({
+  anclaje = "derecha",
+}: {
+  anclaje?: "derecha" | "izquierda";
+} = {}) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [abierto, setAbierto] = useState(false);
@@ -87,7 +97,11 @@ export function CampanaNotificaciones() {
             onClick={() => setAbierto(false)}
             className="fixed inset-0 z-40 cursor-default"
           />
-          <div className="absolute right-0 top-full z-50 mt-2 w-[320px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-card border border-border bg-surface-raised shadow-lg">
+          <div
+            className={`absolute top-full z-50 mt-2 w-[320px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-card border border-border bg-surface-raised shadow-lg ${
+              anclaje === "derecha" ? "right-0" : "left-0"
+            }`}
+          >
             <div className="flex items-center justify-between border-b border-surface-sunken px-4 py-3">
               <p className="text-[14px] font-bold text-text">Notificaciones</p>
               {noLeidas > 0 && (

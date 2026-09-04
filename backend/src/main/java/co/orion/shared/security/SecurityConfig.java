@@ -16,6 +16,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfiguration;
@@ -30,7 +31,8 @@ public class SecurityConfig {
     // también implementa CorsConfigurationSource y haría ambigua la inyección por tipo.
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http,
-                                    @Qualifier("corsConfigurationSource") CorsConfigurationSource corsSource)
+                                    @Qualifier("corsConfigurationSource") CorsConfigurationSource corsSource,
+                                    FreshPrincipalFilter freshPrincipal)
             throws Exception {
         http
             .cors(c -> c.configurationSource(corsSource))
@@ -46,6 +48,9 @@ public class SecurityConfig {
                         // protege es la firma del propio evento, verificada antes de tocar la base.
                         "/api/v1/webhooks/payments/**"))
             .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
+            // Antes de autorizar, el principal se refresca contra la base: así una aprobación o una
+            // baja de cuenta valen desde la siguiente petición y no desde el siguiente login.
+            .addFilterBefore(freshPrincipal, AuthorizationFilter.class)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/webhooks/payments/**").permitAll()
@@ -66,6 +71,10 @@ public class SecurityConfig {
                 // no lo cubre /professors/*, que solo casa un segmento).
                 .requestMatchers(HttpMethod.GET, "/api/v1/professors/*/reviews").permitAll()
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                // El aspirante a profesor no tiene experiencia de estudiante: lo que puede hacer es
+                // llevar su postulación, mantener su cuenta y leer sus avisos. Todo lo demás cuelga
+                // de ROLE_STUDENT, que no tiene, así que se cierra solo.
+                .requestMatchers("/api/v1/me/account").authenticated()
                 // Postulación a profesor: cualquier usuario autenticado puede aspirar y llevar su wizard.
                 .requestMatchers("/api/v1/teacher-applications").authenticated()
                 .requestMatchers("/api/v1/me/teacher-application", "/api/v1/me/teacher-application/**").authenticated()

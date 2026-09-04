@@ -3,7 +3,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/fetch";
 
-export type Role = "STUDENT" | "PROFESSOR" | "ADMIN";
+/**
+ * El rol EFECTIVO que devuelve el backend, no la columna de la base.
+ *
+ * `TEACHER_APPLICANT` es quien se registró para enseñar y todavía espera una decisión. En la base
+ * su rol es STUDENT —para que su cuenta siga siendo una cuenta completa si lo rechazan—, pero ni
+ * la autorización del backend ni esta aplicación lo tratan como estudiante: no reserva, no paga y
+ * no tiene saldo. Lo que tiene es su postulación.
+ */
+export type Role = "STUDENT" | "PROFESSOR" | "ADMIN" | "TEACHER_APPLICANT";
 
 export type Me = {
   id: string;
@@ -46,6 +54,8 @@ export type RegisterInput = {
   email: string;
   password: string;
   whatsappPhone?: string;
+  /** Se registró desde «Postúlate para dar clases»: la cuenta nace como aspirante, no estudiante. */
+  wantsToTeach?: boolean;
 };
 
 /**

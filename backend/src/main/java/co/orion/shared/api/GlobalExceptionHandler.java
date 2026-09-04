@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -23,6 +24,7 @@ import co.orion.shared.error.BusinessRuleViolationException;
 import co.orion.shared.error.ConflictException;
 import co.orion.shared.error.ForbiddenException;
 import co.orion.shared.error.ResourceNotFoundException;
+import co.orion.shared.error.ServiceUnavailableException;
 import co.orion.shared.error.UnprocessableException;
 
 @RestControllerAdvice
@@ -102,6 +104,30 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNoResource(NoResourceFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Recurso no encontrado"));
+    }
+
+    /**
+     * El verbo equivocado sobre una ruta que sí existe es 405, no 500. Caía en el cajón de sastre,
+     * y entonces un `POST` donde iba un `PUT` se veía igual que una base caída: mismo 500, mismo
+     * «Unexpected error», y una traza en el log que hacía perder la tarde.
+     */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<Map<String, Object>> handleMethodNotAllowed(
+            HttpRequestMethodNotSupportedException ex) {
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(Map.of("error", "Este recurso no admite " + ex.getMethod()));
+    }
+
+    /**
+     * Una integración que falta o falla. Se distingue del 500 genérico porque aquí sí se sabe qué
+     * pasó y se puede decir: quien intenta subir su foto y recibe «Unexpected error» no tiene forma
+     * de saber que lo que falta es una variable de entorno.
+     */
+    @ExceptionHandler(ServiceUnavailableException.class)
+    public ResponseEntity<Map<String, Object>> handleUnavailable(ServiceUnavailableException ex) {
+        log.error("Integración no disponible: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(Map.of("error", ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)

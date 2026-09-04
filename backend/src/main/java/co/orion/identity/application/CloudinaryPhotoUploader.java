@@ -15,6 +15,8 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
+import co.orion.shared.error.ServiceUnavailableException;
+
 /**
  * Subida firmada a Cloudinary por REST (sin SDK, para no arriesgar el build con una dependencia
  * nueva). La imagen se guarda ya como avatar 400×400 recortado a la cara (`c_fill,g_face`).
@@ -57,7 +59,10 @@ public class CloudinaryPhotoUploader implements PhotoUploader {
     @Override
     public String upload(byte[] bytes, String contentType) {
         if (cloudName.isBlank() || apiKey.isBlank() || apiSecret.isBlank()) {
-            throw new IllegalStateException("Cloudinary no está configurado (falta CLOUDINARY_URL)");
+            // El mensaje que ve la persona no menciona la variable de entorno —no es asunto suyo—
+            // pero el log sí, que es donde alguien puede hacer algo al respecto.
+            throw new ServiceUnavailableException(
+                    "No podemos recibir fotos en este momento. Inténtalo más tarde.");
         }
 
         long timestamp = clock.instant().getEpochSecond();

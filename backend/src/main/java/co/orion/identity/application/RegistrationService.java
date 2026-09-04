@@ -36,6 +36,12 @@ public class RegistrationService {
 
     @Transactional
     public User register(String fullName, String email, String rawPassword, String whatsappPhone) {
+        return register(fullName, email, rawPassword, whatsappPhone, false);
+    }
+
+    @Transactional
+    public User register(String fullName, String email, String rawPassword, String whatsappPhone,
+                         boolean wantsToTeach) {
         if (rawPassword == null || rawPassword.length() < MIN_PASSWORD_LENGTH) {
             throw new BusinessRuleViolationException(
                     "La contraseña debe tener al menos " + MIN_PASSWORD_LENGTH + " caracteres");
@@ -47,11 +53,16 @@ public class RegistrationService {
 
         User user = new User(email, passwordEncoder.encode(rawPassword), fullName, UserRole.STUDENT);
         user.changeWhatsappPhone(PhoneNumbers.toE164(whatsappPhone));
+        if (wantsToTeach) {
+            user.intendsToTeach();
+        }
 
         try {
             User creado = users.saveAndFlush(user);
             // La ficha nace con la cuenta: así ningún código tiene que manejar el caso
-            // "estudiante sin ficha", y el perfil nace privado, que es lo que debe ser.
+            // "estudiante sin ficha", y el perfil nace privado, que es lo que debe ser. También la
+            // del aspirante: si mañana su postulación se rechaza, la cuenta sigue siendo una cuenta
+            // de estudiante completa, sin nada que reparar.
             studentProfiles.createFor(creado);
             return creado;
         } catch (DataIntegrityViolationException ex) {

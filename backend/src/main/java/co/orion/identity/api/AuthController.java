@@ -66,7 +66,8 @@ public class AuthController {
     public UserResponse register(@Valid @RequestBody RegisterRequest body,
                                  HttpServletRequest request,
                                  HttpServletResponse response) {
-        registrationService.register(body.fullName(), body.email(), body.password(), body.whatsappPhone());
+        registrationService.register(body.fullName(), body.email(), body.password(),
+                body.whatsappPhone(), body.wantsToTeach());
         return authenticateAndOpenSession(body.email(), body.password(), request, response);
     }
 

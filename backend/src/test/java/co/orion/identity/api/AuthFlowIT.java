@@ -164,7 +164,7 @@ class AuthFlowIT {
 
     @Test
     void aNewStudentCanRegisterAndLandsLoggedIn() {
-        RegisterRequest body = new RegisterRequest("Camila Ortiz", "camila@orion.test", "orion123*", "+573001112233");
+        RegisterRequest body = new RegisterRequest("Camila Ortiz", "camila@orion.test", "orion123*", "+573001112233", false);
 
         ResponseEntity<UserResponse> response = rest.postForEntity("/api/v1/auth/register", body, UserResponse.class);
 
@@ -183,7 +183,7 @@ class AuthFlowIT {
 
     @Test
     void registeringWithAnExistingEmailIsRejected() {
-        RegisterRequest body = new RegisterRequest("Ana Otra", STUDENT_EMAIL, "orion123*", null);
+        RegisterRequest body = new RegisterRequest("Ana Otra", STUDENT_EMAIL, "orion123*", null, false);
 
         ResponseEntity<Map> response = rest.postForEntity("/api/v1/auth/register", body, Map.class);
 
@@ -193,7 +193,7 @@ class AuthFlowIT {
 
     @Test
     void registeringWithAShortPasswordIsRejected() {
-        RegisterRequest body = new RegisterRequest("Clave Corta", "corta@orion.test", "1234567", null);
+        RegisterRequest body = new RegisterRequest("Clave Corta", "corta@orion.test", "1234567", null, false);
 
         ResponseEntity<Map> response = rest.postForEntity("/api/v1/auth/register", body, Map.class);
 

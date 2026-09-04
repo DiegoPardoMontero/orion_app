@@ -74,6 +74,7 @@ const ETIQUETA_ROL: Record<Role, string> = {
   STUDENT: "Estudiante",
   PROFESSOR: "Profesor",
   ADMIN: "Administración",
+  TEACHER_APPLICANT: "Aspirante a profesor",
 };
 
 /**
@@ -88,12 +89,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   const allowed = me ? canAccess(me.role, pathname) : false;
 
-  // La postulación solo interesa a quien puede postular (estudiante o profesor); el admin nunca.
-  const esAplicante = me?.role === "STUDENT" || me?.role === "PROFESSOR";
+  // La postulación interesa a quien puede postular; el admin nunca.
+  const esAplicante =
+    me?.role === "STUDENT" || me?.role === "PROFESSOR" || me?.role === "TEACHER_APPLICANT";
   const aplic = useMiAplicacion(esAplicante);
 
-  // Los mensajes internos son de estudiante y profesor: el badge suma los no leídos de la bandeja.
-  const noLeidosMensajes = useMensajesNoLeidos(esAplicante);
+  // Los mensajes internos son de estudiante y profesor. El aspirante no los tiene: preguntarlos
+  // por él solo consigue un 403 en la consola en cada pantalla que abra.
+  const tieneMensajeria = me?.role === "STUDENT" || me?.role === "PROFESSOR";
+  const noLeidosMensajes = useMensajesNoLeidos(tieneMensajeria);
 
   useEffect(() => {
     if (isError) {
@@ -161,6 +165,7 @@ function construirNav(
     items: [{ href: "/aplicacion/estado", label: "Mi solicitud" }],
   };
 
+  // El aspirante ya lleva su postulación en el menú base: añadirla otra vez la duplicaría.
   const enCurso =
     (role === "PROFESSOR" && !app.aprobado) ||
     (role === "STUDENT" && !app.noAplico && !!app.status);
@@ -317,7 +322,7 @@ function Sidebar({
     <aside className="sticky top-0 hidden h-dvh w-[248px] shrink-0 flex-col border-r border-surface-sunken bg-surface px-4 py-6 lg:flex">
       <div className="flex items-center justify-between pl-3">
         <Wordmark className="text-[18px] text-primary" />
-        <CampanaNotificaciones />
+        <CampanaNotificaciones anclaje="izquierda" />
       </div>
 
       <p className="mt-8 px-3 text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted">

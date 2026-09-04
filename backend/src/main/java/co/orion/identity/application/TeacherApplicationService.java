@@ -30,6 +30,7 @@ import co.orion.identity.domain.ProfessorProfile;
 import co.orion.identity.domain.TeacherApplication;
 import co.orion.identity.domain.TeacherApplicationEvent;
 import co.orion.identity.domain.User;
+import co.orion.identity.domain.UserRole;
 import co.orion.identity.persistence.AgreementAcceptanceRepository;
 import co.orion.identity.persistence.ProfessorGoalRepository;
 import co.orion.identity.persistence.ProfessorLanguageLevelRepository;
@@ -214,9 +215,34 @@ public class TeacherApplicationService {
         events.save(new TeacherApplicationEvent(
                 applicationId, ApplicationEventType.APPROVED, adminId, "Aprobada"));
         applications.save(application);
+        promoverAProfesor(application.getUserId());
         audit.record(adminId, "APPROVE_APPLICATION", "teacher_application", applicationId,
                 "{\"status\":\"APPROVED\"}");
         notify(application.getUserId(), TeacherApplicationDecidedEvent.Decision.APPROVED, null);
+    }
+
+    /**
+     * Aprobar una postulación convierte la cuenta en una cuenta de profesor.
+     *
+     * <p>Faltaba, y era el eslabón que dejaba el camino a medias: la postulación quedaba aprobada
+     * pero la cuenta seguía siendo de estudiante, así que la persona no podía publicar su perfil ni
+     * abrir su disponibilidad —todo eso exige rol de profesor—. Se aprobaba a alguien para que no
+     * pudiera enseñar.
+     *
+     * <p>El perfil vacío se crea aquí mismo si no existía: un profesor sin perfil no tendría dónde
+     * poner su tarifa, y publicar sería imposible por una razón que nadie podría adivinar.
+     */
+    private void promoverAProfesor(UUID userId) {
+        users.findById(userId).ifPresent(user -> {
+            if (user.getRole() == UserRole.PROFESSOR) {
+                return;
+            }
+            user.becomeProfessor();
+            users.save(user);
+            if (profiles.findById(user.getId()).isEmpty()) {
+                profiles.save(new ProfessorProfile(user));
+            }
+        });
     }
 
     @Transactional
@@ -228,6 +254,13 @@ public class TeacherApplicationService {
         events.save(new TeacherApplicationEvent(
                 applicationId, ApplicationEventType.REJECTED, adminId, reason));
         applications.save(application);
+        // Rechazada no puede significar «cuenta inservible». Quien entró por la puerta de enseñar
+        // vuelve a ser una cuenta de estudiante normal, con todo lo que eso trae, en vez de quedar
+        // mirando para siempre una pantalla de espera que ya no espera nada.
+        users.findById(application.getUserId()).ifPresent(user -> {
+            user.intendsToLearn();
+            users.save(user);
+        });
         audit.record(adminId, "REJECT_APPLICATION", "teacher_application", applicationId,
                 "{\"status\":\"REJECTED\"}");
         notify(application.getUserId(), TeacherApplicationDecidedEvent.Decision.REJECTED, reason);

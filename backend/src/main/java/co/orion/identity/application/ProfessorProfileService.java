@@ -3,6 +3,8 @@ package co.orion.identity.application;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -12,7 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 import co.orion.catalog.application.PlatformSettingsService;
 import co.orion.catalog.domain.Language;
 import co.orion.catalog.domain.RateBreakdown;
+import co.orion.catalog.domain.TeachingGoal;
 import co.orion.catalog.persistence.LanguageRepository;
+import co.orion.catalog.persistence.TeachingGoalRepository;
 import co.orion.identity.api.ProfessorDetail;
 import co.orion.identity.api.ProfileLanguage;
 import co.orion.identity.api.ProfileResponse;
@@ -44,6 +48,7 @@ public class ProfessorProfileService {
     private final ProfessorLanguageLevelRepository levelsOf;
     private final ProfessorGoalRepository goalsOf;
     private final LanguageRepository languageCatalog;
+    private final TeachingGoalRepository goalCatalog;
     private final PlatformSettingsService settings;
     private final ProfessorAccessService access;
     private final ProfessorRatingService ratings;
@@ -54,6 +59,7 @@ public class ProfessorProfileService {
                                    ProfessorLanguageLevelRepository levelsOf,
                                    ProfessorGoalRepository goalsOf,
                                    LanguageRepository languageCatalog,
+                                   TeachingGoalRepository goalCatalog,
                                    PlatformSettingsService settings,
                                    ProfessorAccessService access,
                                    ProfessorRatingService ratings) {
@@ -63,6 +69,7 @@ public class ProfessorProfileService {
         this.levelsOf = levelsOf;
         this.goalsOf = goalsOf;
         this.languageCatalog = languageCatalog;
+        this.goalCatalog = goalCatalog;
         this.settings = settings;
         this.access = access;
         this.ratings = ratings;
@@ -171,9 +178,58 @@ public class ProfessorProfileService {
                 .orElseThrow(() -> new ResourceNotFoundException("Profesor no encontrado"));
     }
 
+    /**
+     * Los tres niveles que Orión reconoce. El árbitro final sigue siendo el CHECK de la base; esto
+     * es el chequeo amable que lo precede, y existe porque sin él un nivel escrito a mano —«A1», que
+     * es lo que cualquiera esperaría— se estrellaba contra la constraint y salía como 500
+     * «Unexpected error», sin decir en ningún momento cuáles eran los valores buenos.
+     */
+    private static final List<String> NIVELES = List.of("BEGINNER", "INTERMEDIATE", "ADVANCED");
+
+    private String nivelValido(String level) {
+        String limpio = level == null ? "" : level.trim().toUpperCase();
+        if (!NIVELES.contains(limpio)) {
+            throw new UnprocessableException(
+                    "Nivel desconocido: «" + level + "». Usa BEGINNER, INTERMEDIATE o ADVANCED.");
+        }
+        return limpio;
+    }
+
     // --- helpers ---
 
+    /**
+     * Un código que no está en el catálogo es un 422 que lo dice, no una violación de clave ajena
+     * convertida en 500. Es el mismo criterio que con los niveles: el árbitro sigue siendo la base,
+     * pero el mensaje lo escribe quien sabe de qué habla.
+     */
+    private void validarCatalogos(UpdateProfileRequest req) {
+        if (req.languages() != null) {
+            Set<String> idiomas = languageCatalog.findAll().stream()
+                    .map(Language::getCode).collect(Collectors.toSet());
+            for (UpdateProfileRequest.LanguageEntry entry : req.languages()) {
+                if (entry != null && entry.code() != null && !entry.code().isBlank()
+                        && !idiomas.contains(entry.code())) {
+                    throw new UnprocessableException(
+                            "Idioma desconocido: «" + entry.code() + "». Disponibles: "
+                                    + String.join(", ", new TreeSet<>(idiomas)) + ".");
+                }
+            }
+        }
+        if (req.goals() != null) {
+            Set<String> objetivos = goalCatalog.findAll().stream()
+                    .map(TeachingGoal::getCode).collect(Collectors.toSet());
+            for (String code : req.goals()) {
+                if (code != null && !code.isBlank() && !objetivos.contains(code)) {
+                    throw new UnprocessableException(
+                            "Objetivo desconocido: «" + code + "». Disponibles: "
+                                    + String.join(", ", new TreeSet<>(objetivos)) + ".");
+                }
+            }
+        }
+    }
+
     private void replaceSelections(UUID professorId, UpdateProfileRequest req) {
+        validarCatalogos(req);
         levelsOf.deleteByProfessorId(professorId);
         languagesOf.deleteByProfessorId(professorId);
         goalsOf.deleteByProfessorId(professorId);
@@ -188,7 +244,8 @@ public class ProfessorProfileService {
                 newLanguages.add(new ProfessorLanguage(professorId, entry.code(), entry.isNative()));
                 if (entry.levels() != null) {
                     for (String level : entry.levels()) {
-                        newLevels.add(new ProfessorLanguageLevel(professorId, entry.code(), level));
+                        newLevels.add(new ProfessorLanguageLevel(
+                                professorId, entry.code(), nivelValido(level)));
                     }
                 }
             }
