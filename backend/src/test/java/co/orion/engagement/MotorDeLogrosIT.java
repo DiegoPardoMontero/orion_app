@@ -35,6 +35,7 @@ import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.identity.persistence.ProfessorProfileRepository;
 import co.orion.scheduling.TestBookings;
+import co.orion.scheduling.application.AttendanceService;
 import co.orion.scheduling.domain.Booking;
 import co.orion.scheduling.domain.BookingModality;
 import co.orion.scheduling.domain.BookingStatus;
@@ -81,6 +82,9 @@ class MotorDeLogrosIT extends ApiIntegrationSupport {
 
     @Autowired
     private StreakProtectionRepository protections;
+
+    @Autowired
+    private AttendanceService asistencia;
 
     private User ana;
     private User maria;
@@ -356,6 +360,26 @@ class MotorDeLogrosIT extends ApiIntegrationSupport {
         assertThat(pointEvents.totalPointsOf(ana.getId())).isEqualTo(puntosIncremental);
         assertThat(protections.findByUserId(ana.getId()).stream().map(p -> p.getWeekStart()).sorted())
                 .containsExactlyElementsOf(proteccionesIncremental);
+    }
+
+    /**
+     * El otro camino por el que se cierra una clase.
+     *
+     * <p>Hay dos: el trabajo horario que autocompleta lo que ya terminó, y el profesor que registra
+     * la asistencia. El segundo es el que ocurre de verdad casi siempre —el profesor cierra su
+     * clase el mismo día—, y durante un rato fue el único que no encendía nada.
+     */
+    @Test
+    void laAsistenciaRegistradaPorElProfesorTambienEnciendeLaEstrella() {
+        Booking booking = bookings.save(TestBookings.confirmed(ana.getId(), maria.getId(),
+                enBogota(LocalDate.of(2026, 7, 20), 18), enBogota(LocalDate.of(2026, 7, 20), 19),
+                BookingModality.VIRTUAL, null, "EN", ana.getId()));
+
+        asistencia.record(maria, booking.getId(), true, null);
+
+        var estado = estadoDe(ana.getId());
+        assertThat(estado.get("primeros-primera-clase").isUnlocked()).isTrue();
+        assertThat(pointEvents.totalPointsOf(ana.getId())).isPositive();
     }
 
     /** Y sobre un historial que nunca se procesó: el backfill llega al mismo sitio. */

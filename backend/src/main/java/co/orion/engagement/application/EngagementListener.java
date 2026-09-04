@@ -10,6 +10,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import co.orion.identity.domain.StudentProfileUpdatedEvent;
 import co.orion.lifecycle.domain.LessonCompletedEvent;
+import co.orion.scheduling.domain.BookingCompletedEvent;
 import co.orion.scheduling.domain.BookingCreatedEvent;
 
 /**
@@ -41,6 +42,14 @@ public class EngagementListener {
         seguro(() -> achievements.onLessonCompleted(
                 event.studentId(), event.bookingId(), event.completedAt()),
                 "clase completada " + event.bookingId());
+    }
+
+    /** El cierre manual del profesor. Llega antes que el trabajo horario y cuenta igual. */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void on(BookingCompletedEvent event) {
+        seguro(() -> achievements.onAttendanceRecorded(event.bookingId(), event.attended()),
+                "asistencia registrada en " + event.bookingId());
     }
 
     /** Reservar no da puntos: solo enciende «Primera reserva». */

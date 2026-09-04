@@ -126,6 +126,29 @@ public class AchievementService {
         reevaluar(studentId);
     }
 
+    /**
+     * El profesor registró la asistencia y con eso cerró la clase a mano, antes de que el trabajo
+     * horario pasara por ella. Es el mismo hecho que {@code LessonCompletedEvent} entrando por otra
+     * puerta, y por eso no hay que temer que llegue dos veces: el índice único de
+     * {@code point_events} sobre (fuente, origen) es quien garantiza que la clase se pague una sola
+     * vez, no el orden en que lleguen los eventos.
+     *
+     * <p>Sin esto, una clase que el profesor cerró él mismo no encendía nada hasta que otra cosa
+     * cualquiera disparara un recálculo.
+     */
+    @Transactional
+    public void onAttendanceRecorded(UUID bookingId, boolean attended) {
+        bookings.findById(bookingId).ifPresent(booking -> {
+            if (attended) {
+                onLessonCompleted(booking.getStudentId(), bookingId, clock.instant());
+            } else {
+                // Una inasistencia no da puntos, pero sí cambia el estado de la reserva: hay que
+                // recalcular para que nada quede contando una clase que no ocurrió.
+                reevaluar(booking.getStudentId());
+            }
+        });
+    }
+
     /** Reservar no da puntos: solo enciende «Primera reserva». */
     @Transactional
     public void onBookingCreated(UUID bookingId) {

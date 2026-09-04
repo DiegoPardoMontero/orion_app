@@ -351,9 +351,21 @@ function TarjetaClase({
         <div className="mt-3 flex items-center gap-2.5">
           <Avatar nombre={nombreContraparte} fotoUrl={contraparte?.photoUrl} size="sm" />
           <div className="min-w-0">
-            <span className="block text-[13.5px] font-semibold">
-              {esProfesor ? nombreContraparte : `Prof. ${nombreContraparte}`}
-            </span>
+            {/* El profesor entra a la ficha de su estudiante desde aquí: es donde están sus
+                objetivos y su nivel, que es lo que necesita para preparar la clase. Haber tenido
+                clase con él es justo lo que le da derecho a verla, así que el enlace nunca falla. */}
+            {esProfesor && contraparte?.id ? (
+              <Link
+                href={`/estudiantes/${contraparte.id}`}
+                className="block text-[13.5px] font-semibold underline decoration-border underline-offset-4 transition-colors hover:decoration-primary focus-visible:shadow-focus"
+              >
+                {nombreContraparte}
+              </Link>
+            ) : (
+              <span className="block text-[13.5px] font-semibold">
+                {esProfesor ? nombreContraparte : `Prof. ${nombreContraparte}`}
+              </span>
+            )}
             {contraparte?.headline && (
               <span className="block truncate text-[12px] text-text-muted">{contraparte.headline}</span>
             )}

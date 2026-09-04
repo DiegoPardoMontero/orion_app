@@ -35,6 +35,16 @@ async function logout(page: Page) {
   await page.waitForURL("**/login");
 }
 
+/**
+ * El cupo se anuncia como «8:00 AM» y la tarjeta de la clase lo muestra como «8:00 – 9:00 AM»: el
+ * meridiano va una sola vez, al final del rango. Buscar la tarjeta por el texto del cupo no
+ * encuentra nada, y buscarla solo por «8:00» encuentra también la de las 8 de la noche.
+ */
+function comoEnLaTarjeta(hora: string): RegExp {
+  const [inicio, meridiano] = hora.split(/\s+/);
+  return new RegExp(`${inicio.replace(":", "\\:")}\\s*[–-]\\s*\\d{1,2}\\:\\d{2}\\s*${meridiano}`);
+}
+
 test.describe.configure({ mode: "serial" });
 
 test("cada rol entra y sale de su propio home", async ({ page }) => {
@@ -47,7 +57,8 @@ test("cada rol entra y sale de su propio home", async ({ page }) => {
   await logout(page);
 
   await login(page, USERS.admin);
-  await expect(page).toHaveURL(/\/admin\/usuarios/);
+  // El admin entra al panel: lo primero que necesita ver es si algo espera su decisión.
+  await expect(page).toHaveURL(/\/admin\/panel/);
   await logout(page);
 });
 
@@ -98,7 +109,10 @@ test("Ana reserva un cupo lejano y lo cancela: el cupo vuelve a la agenda", asyn
   // Cancelamos exactamente la clase que acabamos de reservar (la de `hora`), no "la primera
   // cancelable": si Ana tiene varias reservas el mismo día, un .first() tocaría la equivocada
   // y el cupo que verificamos abajo nunca reaparecería.
-  const cancelar = page.locator("main li", { hasText: hora }).getByRole("button", { name: "Cancelar" });
+  const cancelar = page
+    .locator("main li")
+    .filter({ hasText: comoEnLaTarjeta(hora) })
+    .getByRole("button", { name: "Cancelar" });
   await expect(cancelar).toBeEnabled();
   await cancelar.click();
   await expect(page.getByText("¿Cancelar esta clase?")).toBeVisible();
@@ -159,9 +173,9 @@ test("un estudiante reprograma una clase a otro cupo", async ({ page }) => {
   await page.getByRole("button", { name: "Confirmar reserva" }).click();
   await expect(page).toHaveURL(/\/mis-clases/);
 
-  // Abrimos Reprogramar en la primera clase habilitada y elegimos un nuevo cupo.
+  // Abrimos «Otro horario» en la primera clase habilitada y elegimos un nuevo cupo.
   const reprogramar = page
-    .getByRole("button", { name: "Reprogramar" })
+    .getByRole("button", { name: "Otro horario" })
     .and(page.locator(":not([disabled])"))
     .first();
   await reprogramar.click();
@@ -280,7 +294,7 @@ test("la landing pública lleva al registro en un clic", async ({ page }) => {
 
 test("el admin invita a un profesor; un enlace inválido se rechaza", async ({ page }) => {
   await login(page, USERS.admin);
-  await expect(page).toHaveURL(/\/admin\/usuarios/);
+  await page.goto("/admin/usuarios");
 
   await page.getByRole("button", { name: "Invitar profesor" }).click();
   const dialog = page.getByRole("dialog");

@@ -1,7 +1,11 @@
 package co.orion.identity.application;
 
+import java.time.Clock;
 import java.time.DayOfWeek;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,14 +39,23 @@ import co.orion.identity.persistence.TeacherApplicationEventRepository;
 import co.orion.identity.persistence.TeacherApplicationRepository;
 import co.orion.identity.persistence.UserRepository;
 import co.orion.scheduling.domain.AvailabilityRule;
+import co.orion.scheduling.domain.Booking;
+import co.orion.scheduling.domain.BookingModality;
+import co.orion.scheduling.domain.BookingStatus;
 import co.orion.scheduling.persistence.AvailabilityRuleRepository;
+import co.orion.scheduling.persistence.BookingRepository;
+import co.orion.shared.time.BusinessZone;
 
 /**
  * Datos de desarrollo. Idempotente: cada usuario se crea solo si su email no existe todavía.
  * Los profesores nacen con tarifa, idioma y objetivos para poblar el marketplace desde el arranque.
  */
+// El primero de los runners: los demás lo dan por hecho. `BillingDevSeeder` va en 100 y solo
+// siembra saldo si la estudiante ya existe, así que sin este orden explícito, sobre una base
+// recién creada, Ana nacía sin saldo y no había forma de confirmar una clase en local.
 @Component
 @Profile("local")
+@Order(0)
 public class DevDataSeeder implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DevDataSeeder.class);
@@ -54,6 +68,8 @@ public class DevDataSeeder implements ApplicationRunner {
     private final ProfessorLanguageLevelRepository levels;
     private final ProfessorGoalRepository goals;
     private final AvailabilityRuleRepository rules;
+    private final BookingRepository bookings;
+    private final Clock clock;
     private final TeacherApplicationRepository applications;
     private final TeacherApplicationEventRepository applicationEvents;
     private final PasswordEncoder passwordEncoder;
@@ -66,6 +82,8 @@ public class DevDataSeeder implements ApplicationRunner {
                          ProfessorLanguageLevelRepository levels,
                          ProfessorGoalRepository goals,
                          AvailabilityRuleRepository rules,
+                         BookingRepository bookings,
+                         Clock clock,
                          TeacherApplicationRepository applications,
                          TeacherApplicationEventRepository applicationEvents,
                          PasswordEncoder passwordEncoder,
@@ -77,6 +95,8 @@ public class DevDataSeeder implements ApplicationRunner {
         this.levels = levels;
         this.goals = goals;
         this.rules = rules;
+        this.bookings = bookings;
+        this.clock = clock;
         this.applications = applications;
         this.applicationEvents = applicationEvents;
         this.passwordEncoder = passwordEncoder;
@@ -98,6 +118,53 @@ public class DevDataSeeder implements ApplicationRunner {
                 new RuleSpec(DayOfWeek.WEDNESDAY, LocalTime.of(8, 0), LocalTime.of(11, 0)));
         seedAvailability("juan@orion.local",
                 new RuleSpec(DayOfWeek.TUESDAY, LocalTime.of(15, 0), LocalTime.of(18, 0)));
+
+        seedHistorialDeAna();
+    }
+
+    /**
+     * Cuatro clases pasadas de Ana, ya cerradas.
+     *
+     * <p>Sin historial, un entorno de desarrollo recién levantado enseña la gamificación entera
+     * vacía —cielo apagado, racha en cero, ninguna pieza que ponerse— y no hay forma de mirar lo
+     * que se construyó. Las cuatro van en semanas distintas y con dos profesores para que la racha,
+     * el volumen y la amplitud tengan algo que contar. El backfill de {@code engagement}, que corre
+     * después de esto, es quien enciende lo que corresponda.
+     */
+    private void seedHistorialDeAna() {
+        Optional<User> estudiante = users.findByEmailIgnoreCase("ana@orion.local");
+        Optional<User> maria = users.findByEmailIgnoreCase("maria@orion.local");
+        Optional<User> juan = users.findByEmailIgnoreCase("juan@orion.local");
+        if (estudiante.isEmpty() || maria.isEmpty() || juan.isEmpty()) {
+            return;
+        }
+        UUID anaId = estudiante.get().getId();
+        // Idempotente como el resto: si ya tiene clases cerradas, no se siembran otras.
+        if (bookings.existsByStudentIdAndStatus(anaId, BookingStatus.COMPLETED)) {
+            return;
+        }
+
+        Instant ahora = clock.instant();
+        record ClasePasada(UUID profesor, int semanasAtras, BookingModality modalidad, String idioma) {
+        }
+        List<ClasePasada> historial = List.of(
+                new ClasePasada(maria.get().getId(), 4, BookingModality.VIRTUAL, "EN"),
+                new ClasePasada(maria.get().getId(), 3, BookingModality.VIRTUAL, "EN"),
+                new ClasePasada(juan.get().getId(), 2, BookingModality.IN_PERSON, "FR"),
+                new ClasePasada(maria.get().getId(), 1, BookingModality.VIRTUAL, "EN"));
+
+        for (ClasePasada clase : historial) {
+            Instant inicio = ZonedDateTime.ofInstant(ahora, BusinessZone.BOGOTA)
+                    .minusWeeks(clase.semanasAtras())
+                    .withHour(18).withMinute(0).withSecond(0).withNano(0)
+                    .toInstant();
+            Booking booking = new Booking(anaId, clase.profesor(), inicio, inicio.plus(Duration.ofHours(1)),
+                    clase.modalidad(), null, clase.idioma(), anaId, inicio);
+            booking.confirmPayment();
+            booking.autoComplete(inicio.plus(Duration.ofHours(1)));
+            bookings.save(booking);
+        }
+        log.info("Sembradas {} clases pasadas de Ana para poder ver la gamificación.", historial.size());
     }
 
     private record RuleSpec(DayOfWeek weekday, LocalTime startTime, LocalTime endTime) {

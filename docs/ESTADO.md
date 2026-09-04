@@ -145,13 +145,48 @@ Rigel estrena **pose de profesor** (birrete, gafas y tiza) para `/registro?rol=p
 **Eslogan vigente: «Find your right teacher, learn your way»**, en login, landing, metadatos,
 manifest y pie de los correos.
 
+## Gamificación · Bloque 8 (04/09/2026)
+Módulo nuevo **`engagement`**, el único que depende de todos y del que no depende nadie: se puede
+borrar entero sin tocar el marketplace. Entra por eventos (`LessonCompletedEvent`,
+`BookingCompletedEvent`, `BookingCreatedEvent`, `StudentProfileUpdatedEvent`) y no llama a ningún
+otro módulo.
+
+Migraciones **V20** (`bookings.language_code`, poblado solo donde el profesor enseña un único
+idioma), **V21** (`student_profiles`, `student_goals`, `student_accessories`) y **V22**
+(`point_events` append-only con índice único por origen, `achievements` con los 20 del diseño,
+`user_achievements`, `cosmetics` con PK compuesta `(kind, code)`, `streak_protections`).
+
+**Todo estudiante tiene ficha**: nivel autodeclarado, idioma, motivación y objetivos, más su avatar
+compuesto (marco, paleta, cielo y hasta tres accesorios, todo CSS). El perfil es **privado por
+defecto** y los menores de 18 no lo pueden publicar. Tres capas de visibilidad, y cuando no hay
+derecho a ver se responde **404, nunca 403**: un 403 confirmaría que el perfil existe.
+
+**20 logros en cinco familias**, con progreso y tres niveles de brillo. La lógica de racha y de
+criterios vive en clases puras (`StreakCalculator`, `AchievementEvaluators`) con el "ahora" por
+parámetro, como `SlotCalculator`. Regla que conviene recordar: **una semana protegida puentea la
+racha pero no la suma**. Las clases gratuitas no puntúan salvo que
+`gamification_count_free_lessons` diga lo contrario.
+
+`recompute` es idempotente y deja el mismo estado exacto que el procesamiento incremental — es el
+test que protege el bloque. El `EngagementBackfillRunner` corre el último de todos los
+`ApplicationRunner` y enciende lo que ya estaba ganado.
+
+Pantallas: **/logros** (el cielo, cinco constelaciones), **/logros/avatar** (lo bloqueado a la vista
+con su condición en español), **/estudiantes/[id]** (la vista del profesor, enlazada desde la
+tarjeta de clase y desde el hilo de mensajes), **Mi ficha** en `/cuenta`, y **el encendido**, la
+celebración de 720 ms que vive en el armazón de la app —una clase se cierra casi nunca mientras
+miras el tablero—. El mapa anual del panel fue **reemplazado por doce semanas**: con una clase por
+semana, una cuadrícula anual está vacía en un 98 % y comunica abandono.
+
+**Semilla de desarrollo**: Ana nace con cuatro clases pasadas en cuatro semanas distintas, dos
+idiomas y una presencial, para que la gamificación se pueda ver en local. `DevDataSeeder` va con
+`@Order(0)`: sin ese orden explícito, sobre una base recién creada `BillingDevSeeder` corría antes
+y Ana nacía sin saldo.
+
 ## Pendiente / bloqueos conocidos
-- **Nivel autodeclarado y objetivos con progreso**: aprobados por producto, **sin construir**. El
-  contexto técnico y las ocho decisiones abiertas están en un documento aparte para arquitectura.
-  La primera decisión es estructural: hoy **un estudiante no tiene ficha** (existe como `users` con
-  rol `STUDENT` y nada más).
-- **`bookings` no guarda el idioma de la clase.** Se deduce del profesor, y un profesor que enseña
-  dos idiomas hace esa deducción imposible. Bloquea cualquier métrica por idioma.
+- **Reservas anteriores a V20 sin idioma**: las que tenía un profesor de dos idiomas quedaron con
+  `language_code` en nulo a propósito, para revisión manual. La migración deja el conteo en un
+  `RAISE NOTICE`.
 - **Rotar la llave privada de Wompi**: viajó por chat. Nunca estuvo en el código ni se usa en este
   flujo, pero conviene rotarla.
 - **Política de cancelación de una clase ya pagada**: el pago se queda retenido y aparece marcado en

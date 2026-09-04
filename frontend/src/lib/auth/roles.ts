@@ -31,6 +31,7 @@ export const NAV_BY_ROLE: Record<Role, NavGroup[]> = {
       titulo: "Mi cuenta",
       items: [
         { href: "/saldo", label: "Pagos y saldo" },
+        { href: "/logros", label: "Mi cielo" },
         { href: "/cuenta", label: "Perfil" },
       ],
     },
@@ -111,6 +112,10 @@ export const TABS_BY_ROLE: Record<Role, NavItem[]> = {
 const ACCESS: { prefix: string; roles: Role[] }[] = [
   { prefix: "/profesores", roles: ["STUDENT"] },
   { prefix: "/cuenta", roles: ["STUDENT"] },
+  { prefix: "/logros", roles: ["STUDENT"] },
+  // El perfil público de un estudiante lo abre quien tenga derecho a verlo; el servidor decide
+  // cuál de las tres capas aplica y responde 404 cuando no, así que aquí solo se deja pasar.
+  { prefix: "/estudiantes", roles: ["STUDENT", "PROFESSOR", "ADMIN"] },
   // Dinero: el saldo y el historial son del estudiante; las ganancias, de quien da la clase.
   { prefix: "/saldo", roles: ["STUDENT"] },
   { prefix: "/pago", roles: ["STUDENT"] },

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { CambiarClave } from "@/components/CambiarClave";
 import { CambiarFoto } from "@/components/CambiarFoto";
+import { MiFicha } from "@/components/gamificacion/MiFicha";
 import { PanelProgreso } from "@/components/PanelProgreso";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
 import { PhoneInput } from "@/components/PhoneInput";
@@ -82,6 +83,8 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
       {/* El panel va primero: es lo que se viene a mirar. Editar el teléfono es algo que se hace
           una vez al año, y tenerlo arriba convertía esta pantalla en un formulario y nada más. */}
       <PanelProgreso />
+
+      <MiFicha />
 
       <h2 className="mt-8 font-display text-[19px] font-bold">Tus datos</h2>
 

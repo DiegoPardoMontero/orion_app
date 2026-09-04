@@ -14,6 +14,7 @@ import {
   KeyRound,
   LogOut,
   MessageCircle,
+  Sparkles,
   User,
   Star,
   Users,
@@ -27,6 +28,7 @@ import { Avatar } from "@/components/Avatar";
 import { CambiarClave } from "@/components/CambiarClave";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import { Vacio } from "@/components/estados";
+import { Encendido } from "@/components/gamificacion/Encendido";
 import { Wordmark } from "@/components/marca";
 import { Boton } from "@/components/ui";
 import { useMiAplicacion } from "@/lib/aplicacion";
@@ -55,6 +57,7 @@ const ICONO: Record<string, LucideIcon> = {
   "/mis-clases": CalendarDays,
   "/mensajes": MessageCircle,
   "/cuenta": User,
+  "/logros": Sparkles,
   "/disponibilidad": CalendarClock,
   "/perfil": User,
   "/aplicacion/estado": GraduationCap,
@@ -133,6 +136,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </div>
         <TabBar nav={TABS_BY_ROLE[me.role]} pathname={pathname} noLeidosMensajes={noLeidosMensajes} />
       </div>
+
+      {/* La celebración vive en el armazón y no en una pantalla: una estrella se enciende cuando
+          termina una clase, que casi nunca es mientras se mira el tablero de logros. */}
+      <Encendido />
     </div>
   );
 }

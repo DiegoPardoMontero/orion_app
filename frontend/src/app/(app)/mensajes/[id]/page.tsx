@@ -101,7 +101,18 @@ function Hilo({ id }: { id: string }) {
         </Link>
         <Avatar nombre={nombre} fotoUrl={conv?.counterpart?.photoUrl} size="sm" />
         <div className="min-w-0">
-          <p className="truncate text-[14.5px] font-bold text-text">{nombre}</p>
+          {/* Desde el hilo se llega a la ficha del estudiante. Solo cuando la contraparte es un
+              estudiante: el perfil del profesor ya tiene el suyo, en el directorio. */}
+          {conv?.counterpart?.role === "STUDENT" && conv.counterpart.id ? (
+            <Link
+              href={`/estudiantes/${conv.counterpart.id}`}
+              className="block truncate text-[14.5px] font-bold text-text underline decoration-border underline-offset-4 transition-colors hover:decoration-primary focus-visible:shadow-focus"
+            >
+              {nombre}
+            </Link>
+          ) : (
+            <p className="truncate text-[14.5px] font-bold text-text">{nombre}</p>
+          )}
           <p className="text-[11.5px] text-text-muted">
             {conv?.counterpart?.role === "PROFESSOR" ? "Profesor" : "Estudiante"}
           </p>

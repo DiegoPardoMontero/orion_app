@@ -3,11 +3,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, CalendarDays, Clock, Flame, Trophy, Video } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef } from "react";
 import { Avatar } from "@/components/Avatar";
 import { Constelacion } from "@/components/marca";
 import { Rigel, type RigelPose } from "@/components/Rigel";
 import { apiFetch } from "@/lib/api/fetch";
+import type { MapaRacha, SemanaRacha } from "@/lib/gamificacion";
 import { diaBogota, fechaCorta, horaBogota } from "@/lib/format";
 
 type ProximaClase = {
@@ -36,8 +36,6 @@ type Progreso = {
   bestStreakWeeks: number;
   nextLesson: ProximaClase | null;
   professors: ProfesorPracticado[];
-  lessonsByDay: Record<string, number>;
-  mapFrom: string;
   today: string;
 };
 
@@ -224,7 +222,7 @@ export function PanelProgreso() {
 
       {data.nextLesson && <ProximaClaseTarjeta clase={data.nextLesson} hoy={data.today} />}
 
-      <MapaDelAnio porDia={data.lessonsByDay} desde={data.mapFrom} hasta={data.today} />
+      <MapaDeConstancia />
 
       {data.professors.length > 0 && <Profesores lista={data.professors} />}
     </section>
@@ -309,118 +307,105 @@ function ProximaClaseTarjeta({ clase, hoy }: { clase: ProximaClase; hoy: string 
 }
 
 /**
- * Un año de clases en una cuadrícula: cada columna es una semana, cada casilla un día. Contesta de
- * un vistazo algo que una lista no puede —si las clases se reparten o se apelotonan— y hace visible
- * el hueco de un mes sin practicar mejor que cualquier número.
+ * El mapa de constancia: doce semanas, una celda por semana.
+ *
+ * Doce y no un año. Con una o dos clases por semana, una cuadrícula anual está vacía en un 98 % y
+ * comunica abandono en vez de progreso — el mismo dato, contado en la ventana equivocada, dice lo
+ * contrario de lo que es verdad.
+ *
+ * Los cuatro estados salen del servidor: cumplida, en curso, protegida y vacía. La protegida es la
+ * semana que la racha no perdió, y se marca aparte justamente para que no se lea como un fallo.
  */
-function MapaDelAnio({
-  porDia,
-  desde,
-  hasta,
-}: {
-  porDia: Record<string, number>;
-  desde: string;
-  hasta: string;
-}) {
-  const inicio = new Date(`${desde}T00:00:00Z`);
-  // La cuadrícula arranca en lunes para que cada columna sea una semana entera.
-  const offset = (inicio.getUTCDay() + 6) % 7;
-  inicio.setUTCDate(inicio.getUTCDate() - offset);
+function MapaDeConstancia() {
+  const { data } = useQuery({
+    queryKey: ["me", "streak"],
+    queryFn: () => apiFetch<MapaRacha>("/api/v1/me/streak?weeks=12"),
+    staleTime: 60_000,
+  });
 
-  const fin = new Date(`${hasta}T00:00:00Z`);
-  const semanas: { fecha: string; clases: number; futuro: boolean }[][] = [];
+  if (!data) return null;
 
-  for (let cursor = new Date(inicio); cursor <= fin; ) {
-    const semana: { fecha: string; clases: number; futuro: boolean }[] = [];
-    for (let d = 0; d < 7; d++) {
-      const fecha = cursor.toISOString().slice(0, 10);
-      semana.push({ fecha, clases: porDia[fecha] ?? 0, futuro: cursor > fin });
-      cursor.setUTCDate(cursor.getUTCDate() + 1);
-    }
-    semanas.push(semana);
-  }
-
-  const total = Object.values(porDia).reduce((suma, n) => suma + n, 0);
-
-  const carril = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (carril.current) carril.current.scrollLeft = carril.current.scrollWidth;
-  }, []);
+  const cumplidas = data.weeks.filter((s) => s.status === "CUMPLIDA").length;
 
   return (
     <div className="mt-3 rounded-card border border-border bg-surface-raised p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted">
-          Tu último año
+          Tus últimas 12 semanas
         </p>
         <p className="text-[12px] text-text-secondary">
-          {total === 0
-            ? "Todavía sin clases"
-            : `${total} ${total === 1 ? "clase" : "clases"} en 12 meses`}
+          {cumplidas === 0
+            ? "Aquí se marcan las semanas con clase"
+            : `${cumplidas} ${cumplidas === 1 ? "semana" : "semanas"} con clase`}
         </p>
       </div>
 
-      {/*
-        Si un año no cabe, se ve el final y no el principio: lo que importa son las últimas semanas.
-        Arrancar por la izquierda dejaba fuera de pantalla justo la racha en curso.
-      */}
-      <div ref={carril} className="mt-3 overflow-x-auto">
-        <div className="flex gap-[2px]">
-          {semanas.map((semana, i) => (
-            <div key={i} className="flex flex-col gap-[2px]">
-              {/* El rótulo del mes va sobre la primera semana que lo estrena. */}
-              <span className="h-[13px] text-[9.5px] font-bold uppercase leading-none text-text-muted">
-                {etiquetaMes(semana, semanas[i - 1])}
-              </span>
-              {semana.map((dia) => (
-                <span
-                  key={dia.fecha}
-                  title={
-                    dia.futuro
-                      ? undefined
-                      : `${dia.fecha}: ${dia.clases === 0 ? "sin clases" : `${dia.clases} ${dia.clases === 1 ? "clase" : "clases"}`}`
-                  }
-                  className={`h-[10px] w-[10px] rounded-[2.5px] ${
-                    dia.futuro
-                      ? "bg-transparent"
-                      : dia.clases === 0
-                        ? "bg-surface-sunken"
-                        : dia.clases === 1
-                          ? "bg-primary/45"
-                          : "bg-primary"
-                  }`}
-                />
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
+      <ul className="mt-3 flex flex-wrap gap-2">
+        {data.weeks.map((semana) => (
+          <li key={semana.weekStart}>
+            <SemanaEstrella semana={semana} />
+          </li>
+        ))}
+      </ul>
 
-      <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-text-muted">
-        <span>Menos</span>
-        <span className="h-[10px] w-[10px] rounded-[3px] bg-surface-sunken" />
-        <span className="h-[10px] w-[10px] rounded-[3px] bg-primary/45" />
-        <span className="h-[10px] w-[10px] rounded-[3px] bg-primary" />
-        <span>Más</span>
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-text-muted">
+        <Leyenda color="var(--color-streak-week)" texto="con clase" />
+        <Leyenda color="var(--color-streak-protected)" texto="protegida" />
+        <Leyenda color="var(--color-border-strong)" texto="en curso" borde />
       </div>
     </div>
   );
 }
 
-const MESES_CORTOS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+/** Una semana, como estrella de cuatro puntas (§2g). El estado se lee por relleno, no por color. */
+function SemanaEstrella({ semana }: { semana: SemanaRacha }) {
+  const titulo = {
+    CUMPLIDA: "Semana con clase",
+    PROTEGIDA: "Semana protegida: tu racha siguió",
+    EN_CURSO: "Semana en curso",
+    VACIA: "Sin clase",
+  }[semana.status];
 
-type Casilla = { fecha: string; clases: number; futuro: boolean };
+  const relleno = {
+    CUMPLIDA: "var(--color-streak-week)",
+    PROTEGIDA: "var(--color-streak-protected)",
+    EN_CURSO: "none",
+    VACIA: "none",
+  }[semana.status];
 
-/**
- * El mes de una columna, solo cuando lo estrena. Se compara con la columna anterior en vez de
- * mirar el día del mes: una semana puede empezar el 29 y contener ya el día 1 del mes siguiente,
- * y con la regla ingenua ese mes se quedaría sin rótulo.
- */
-function etiquetaMes(semana: Casilla[], anterior: Casilla[] | undefined): string {
-  const mes = new Date(`${semana[0].fecha}T00:00:00Z`).getUTCMonth();
-  if (!anterior) return MESES_CORTOS[mes];
-  const mesAnterior = new Date(`${anterior[0].fecha}T00:00:00Z`).getUTCMonth();
-  return mes === mesAnterior ? "" : MESES_CORTOS[mes];
+  const borde = {
+    CUMPLIDA: "var(--color-streak-week)",
+    PROTEGIDA: "var(--color-streak-protected)",
+    EN_CURSO: "var(--color-border-strong)",
+    VACIA: "var(--color-border)",
+  }[semana.status];
+
+  return (
+    <svg viewBox="0 0 100 100" width={26} height={26} role="img" aria-label={`${titulo} (${semana.weekStart})`}>
+      <title>{`${titulo} · ${semana.weekStart}`}</title>
+      <polygon
+        points="50,6 62,38 94,50 62,62 50,94 38,62 6,50 38,38"
+        fill={relleno}
+        stroke={borde}
+        strokeWidth={semana.status === "VACIA" ? 5 : 8}
+        strokeLinejoin="round"
+        strokeDasharray={semana.status === "VACIA" ? "8 8" : undefined}
+        paintOrder="stroke fill"
+      />
+    </svg>
+  );
+}
+
+function Leyenda({ color, texto, borde = false }: { color: string; texto: string; borde?: boolean }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span
+        className="h-[10px] w-[10px] rounded-[2px]"
+        style={borde ? { border: `2px solid ${color}` } : { background: color }}
+      />
+      {texto}
+    </span>
+  );
 }
 
 function Profesores({ lista }: { lista: ProfesorPracticado[] }) {

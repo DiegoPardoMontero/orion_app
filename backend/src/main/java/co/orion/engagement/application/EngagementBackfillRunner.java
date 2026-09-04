@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import co.orion.identity.domain.UserRole;
@@ -26,7 +28,11 @@ import co.orion.identity.persistence.UserRepository;
  * <p>Se puede apagar con {@code orion.engagement.backfill-on-start=false} — útil si algún día la
  * base crece lo bastante como para que arrancar sea lento.
  */
+// El último de todos los runners: tiene que ver lo que hayan sembrado los demás, incluido el
+// historial de desarrollo. Sin este orden, en local el backfill podía correr antes de que
+// existieran las clases que debía contar.
 @Component
+@Order(Ordered.LOWEST_PRECEDENCE)
 public class EngagementBackfillRunner implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(EngagementBackfillRunner.class);

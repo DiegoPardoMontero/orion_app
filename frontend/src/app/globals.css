@@ -542,3 +542,10 @@ body {
     background: #f4eae0;
   }
 }
+
+/* Rigel celebra solo cuando hay movimiento; en la versión reducida el cuadro final va solo. */
+@media (prefers-reduced-motion: reduce) {
+  .encendido-rigel {
+    display: none;
+  }
+}

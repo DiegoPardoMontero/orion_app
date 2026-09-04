@@ -46,6 +46,8 @@ public interface BookingRepository extends JpaRepository<Booking, UUID>,
      */
     boolean existsByProfessorIdAndStudentId(UUID professorId, UUID studentId);
 
+    boolean existsByStudentIdAndStatus(UUID studentId, BookingStatus status);
+
     /** Próximas: activas y que aún no empiezan, de la más cercana a la más lejana. */
     List<Booking> findByStudentIdAndStatusInAndStartsAtAfterOrderByStartsAtAsc(
             UUID studentId, Collection<BookingStatus> statuses, Instant now);
