@@ -26,5 +26,8 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
     int countUnread(@Param("conversationId") UUID conversationId, @Param("userId") UUID userId);
 
     /** Los mensajes marcados por la política de contacto, para la cola de moderación del admin. */
+    /** ¿Ha escrito alguna vez? Lo usa el logro «Primer mensaje». */
+    boolean existsBySenderId(UUID senderId);
+
     List<Message> findByFlaggedReasonIsNotNullOrderByCreatedAtDesc();
 }

@@ -10,11 +10,13 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import co.orion.billing.application.PaymentLifecycleService;
 import co.orion.catalog.application.PlatformSettingsService;
+import co.orion.lifecycle.domain.LessonCompletedEvent;
 import co.orion.lifecycle.persistence.DisputeRepository;
 import co.orion.scheduling.domain.Booking;
 import co.orion.scheduling.domain.BookingStatus;
@@ -40,6 +42,7 @@ public class LessonAutoCompleteJob {
     private final BookingRepository bookings;
     private final DisputeRepository disputes;
     private final PaymentLifecycleService payments;
+    private final ApplicationEventPublisher events;
     private final PlatformSettingsService settings;
     private final JobRunRegistry runs;
     private final Clock clock;
@@ -47,12 +50,14 @@ public class LessonAutoCompleteJob {
     public LessonAutoCompleteJob(BookingRepository bookings,
                                  DisputeRepository disputes,
                                  PaymentLifecycleService payments,
+                                 ApplicationEventPublisher events,
                                  PlatformSettingsService settings,
                                  JobRunRegistry runs,
                                  Clock clock) {
         this.bookings = bookings;
         this.disputes = disputes;
         this.payments = payments;
+        this.events = events;
         this.settings = settings;
         this.runs = runs;
         this.clock = clock;
@@ -116,6 +121,10 @@ public class LessonAutoCompleteJob {
         }
         bookings.save(booking);
         payments.release(bookingId);
+        // Quien escuche esto no es asunto de lifecycle: `engagement` concede puntos, y aquí no se
+        // sabe qué es un punto. Si la gamificación desapareciera, este publish se queda sin oyentes
+        // y no pasa nada.
+        events.publishEvent(new LessonCompletedEvent(bookingId, booking.getStudentId(), now));
         return true;
     }
 }

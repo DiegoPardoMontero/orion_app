@@ -40,12 +40,16 @@ public final class LearningProgress {
     /** Una clase ya tomada, reducida a lo que necesitan los cálculos. */
     public record Tomada(UUID professorId, Instant startsAt, Instant endsAt) {
 
-        LocalDate dia() {
+        public LocalDate dia() {
             return startsAt.atZone(BusinessZone.BOGOTA).toLocalDate();
         }
 
-        /** El lunes de su semana: la clave con la que se agrupan las rachas. */
-        LocalDate semana() {
+        /**
+         * El lunes de su semana. Es público porque {@code engagement} construye la racha con
+         * protección sobre esta misma definición: dos definiciones de semana en el mismo producto
+         * es un bug esperando.
+         */
+        public LocalDate semana() {
             LocalDate d = dia();
             return d.minusDays(d.getDayOfWeek().getValue() - 1L);
         }

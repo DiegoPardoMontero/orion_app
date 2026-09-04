@@ -15,6 +15,9 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
 
     boolean existsByBookingId(UUID bookingId);
 
+    /** ¿Ha reseñado alguna vez? Lo usa el logro «Tu primera reseña». */
+    boolean existsByStudentId(UUID studentId);
+
     /** Las reseñas visibles de un profesor, de la más nueva a la más vieja (listado público). */
     Page<Review> findByProfessorIdAndVisibleTrueOrderByCreatedAtDesc(UUID professorId, Pageable pageable);
 
