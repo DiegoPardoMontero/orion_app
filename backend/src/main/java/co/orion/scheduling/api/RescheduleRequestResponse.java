@@ -3,8 +3,8 @@ package co.orion.scheduling.api;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
-import co.orion.scheduling.domain.BusinessZone;
 import co.orion.scheduling.domain.RescheduleRequest;
+import co.orion.shared.time.BusinessZone;
 
 /**
  * Una propuesta de cambio de horario. {@code mine} le dice al frontend si quien mira es quien la

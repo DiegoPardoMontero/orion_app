@@ -4,7 +4,7 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 
 import co.orion.lifecycle.domain.Dispute;
-import co.orion.scheduling.domain.BusinessZone;
+import co.orion.shared.time.BusinessZone;
 
 public record DisputeResponse(UUID id,
                               UUID bookingId,

@@ -18,10 +18,10 @@ import co.orion.identity.persistence.ProfessorProfileRepository;
 import co.orion.identity.persistence.UserRepository;
 import co.orion.scheduling.domain.Booking;
 import co.orion.scheduling.domain.BookingStatus;
-import co.orion.scheduling.domain.BusinessZone;
 import co.orion.scheduling.domain.LearningProgress;
 import co.orion.scheduling.domain.LearningProgress.Tomada;
 import co.orion.scheduling.persistence.BookingRepository;
+import co.orion.shared.time.BusinessZone;
 
 /**
  * El recorrido del estudiante, para su panel. Todo sale de reservas que ya existen: no hay ninguna

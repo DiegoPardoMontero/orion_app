@@ -21,7 +21,7 @@ import co.orion.TestcontainersConfiguration;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.scheduling.domain.AvailabilityException;
-import co.orion.scheduling.domain.BusinessZone;
+import co.orion.shared.time.BusinessZone;
 import co.orion.scheduling.persistence.AvailabilityExceptionRepository;
 import co.orion.support.ApiIntegrationSupport;
 

@@ -22,7 +22,6 @@ import co.orion.scheduling.domain.BookingCancelledEvent;
 import co.orion.scheduling.domain.BookingCreatedEvent;
 import co.orion.scheduling.domain.BookingModality;
 import co.orion.scheduling.domain.BookingStatus;
-import co.orion.scheduling.domain.BusinessZone;
 import co.orion.scheduling.domain.Slot;
 import co.orion.scheduling.persistence.BookingRepository;
 import co.orion.shared.error.BusinessRuleViolationException;
@@ -30,6 +29,7 @@ import co.orion.shared.error.ConflictException;
 import co.orion.shared.error.ForbiddenException;
 import co.orion.shared.error.ResourceNotFoundException;
 import co.orion.shared.error.UnprocessableException;
+import co.orion.shared.time.BusinessZone;
 
 @Service
 public class BookingService {

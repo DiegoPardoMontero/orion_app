@@ -87,6 +87,12 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/me/bookings").hasAnyRole("STUDENT", "PROFESSOR")
                 // El panel de progreso es del estudiante: mide clases tomadas, no clases dictadas.
                 .requestMatchers("/api/v1/me/progress").hasRole("STUDENT")
+                // La ficha propia del estudiante. La vista de OTRO estudiante vive en /students/**
+                // y la abren los dos roles, porque las capas de visibilidad las aplica el servicio.
+                .requestMatchers("/api/v1/me/student-profile", "/api/v1/me/student-profile/**")
+                        .hasRole("STUDENT")
+                .requestMatchers("/api/v1/students/*/profile")
+                        .hasAnyRole("STUDENT", "PROFESSOR", "ADMIN")
                 // La asistencia la registra quien dio la clase.
                 .requestMatchers(HttpMethod.POST, "/api/v1/bookings/*/attendance").hasRole("PROFESSOR")
                 // Reseñar una clase es del estudiante; reportar una reseña, del profesor reseñado.

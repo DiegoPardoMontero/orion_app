@@ -20,10 +20,10 @@ import co.orion.billing.persistence.PaymentRepository;
 import co.orion.identity.domain.User;
 import co.orion.identity.persistence.UserRepository;
 import co.orion.scheduling.domain.Booking;
-import co.orion.scheduling.domain.BusinessZone;
 import co.orion.scheduling.persistence.BookingRepository;
 import co.orion.shared.error.BusinessRuleViolationException;
 import co.orion.shared.error.ResourceNotFoundException;
+import co.orion.shared.time.BusinessZone;
 
 /** Lecturas del libro contable: el estudiante ve lo suyo, el admin lo ve todo. */
 @Service

@@ -16,9 +16,9 @@ import co.orion.billing.domain.PayoutItem;
 import co.orion.billing.persistence.PaymentRepository;
 import co.orion.billing.persistence.PayoutItemRepository;
 import co.orion.billing.persistence.PayoutRepository;
-import co.orion.scheduling.domain.BusinessZone;
 import co.orion.shared.error.BusinessRuleViolationException;
 import co.orion.shared.error.ResourceNotFoundException;
+import co.orion.shared.time.BusinessZone;
 
 /**
  * La liquidación a profesores: el sistema calcula, una persona transfiere.

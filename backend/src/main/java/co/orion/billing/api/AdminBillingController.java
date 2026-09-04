@@ -32,9 +32,9 @@ import co.orion.billing.domain.CreditReason;
 import co.orion.billing.domain.Payout;
 import co.orion.identity.domain.User;
 import co.orion.identity.persistence.UserRepository;
-import co.orion.scheduling.domain.BusinessZone;
 import co.orion.shared.error.BusinessRuleViolationException;
 import co.orion.shared.security.OrionUserDetails;
+import co.orion.shared.time.BusinessZone;
 import jakarta.validation.Valid;
 
 /**

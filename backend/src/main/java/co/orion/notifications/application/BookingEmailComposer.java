@@ -11,7 +11,7 @@ import co.orion.catalog.persistence.LanguageRepository;
 import co.orion.identity.domain.User;
 import co.orion.scheduling.domain.Booking;
 import co.orion.scheduling.domain.BookingModality;
-import co.orion.scheduling.domain.BusinessZone;
+import co.orion.shared.time.BusinessZone;
 
 /**
  * Redacta los correos con la voz de marca: cercana, clara y positiva. Nada de lenguaje de miedo

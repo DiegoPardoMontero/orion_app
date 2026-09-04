@@ -26,12 +26,14 @@ import co.orion.scheduling.persistence.ProfessorAbsenceRepository;
 import co.orion.scheduling.persistence.RescheduleRequestRepository;
 import co.orion.identity.domain.ApplicationStatus;
 import co.orion.identity.domain.TeacherApplication;
+import co.orion.identity.domain.StudentProfile;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.identity.persistence.AdminAuditLogRepository;
 import co.orion.identity.persistence.AgreementAcceptanceRepository;
 import co.orion.identity.persistence.TeacherApplicationRepository;
 import co.orion.identity.persistence.TeacherDocumentRepository;
+import co.orion.identity.persistence.StudentProfileRepository;
 import co.orion.identity.persistence.UserRepository;
 
 /**
@@ -158,8 +160,20 @@ public abstract class ApiIntegrationSupport {
     protected record Session(String cookie, String csrfToken) {
     }
 
+    /**
+     * Crea un usuario como lo haría el registro. Para los estudiantes eso incluye su ficha: en
+     * producción nace con la cuenta (RegistrationService) o la creó la V21, así que un estudiante
+     * sin ficha es un estado que no existe y los tests no deben fabricarlo.
+     */
+    @Autowired
+    protected StudentProfileRepository studentProfiles;
+
     protected User createUser(String email, String fullName, UserRole role) {
-        return users.save(new User(email, passwordEncoder.encode(PASSWORD), fullName, role));
+        User user = users.save(new User(email, passwordEncoder.encode(PASSWORD), fullName, role));
+        if (role == UserRole.STUDENT) {
+            studentProfiles.save(new StudentProfile(user));
+        }
+        return user;
     }
 
     /** Da al profesor una postulación APPROVED: sin ella el gate de visibilidad lo ocultaría. */

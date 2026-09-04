@@ -4,7 +4,7 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 
 import co.orion.scheduling.application.AdminBookingService.AdminBookingView;
-import co.orion.scheduling.domain.BusinessZone;
+import co.orion.shared.time.BusinessZone;
 
 public record AdminBookingResponse(UUID id,
                                    ZonedDateTime startsAt,

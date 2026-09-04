@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import co.orion.scheduling.domain.AttendanceRecord;
 import co.orion.scheduling.domain.Booking;
-import co.orion.scheduling.domain.BusinessZone;
+import co.orion.shared.time.BusinessZone;
 
 public record AttendanceResponse(UUID id,
                                  UUID bookingId,

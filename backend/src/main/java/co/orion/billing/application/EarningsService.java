@@ -18,8 +18,8 @@ import co.orion.billing.persistence.PaymentRepository;
 import co.orion.identity.domain.User;
 import co.orion.identity.persistence.UserRepository;
 import co.orion.scheduling.domain.Booking;
-import co.orion.scheduling.domain.BusinessZone;
 import co.orion.scheduling.persistence.BookingRepository;
+import co.orion.shared.time.BusinessZone;
 
 /** "Mis ganancias" del profesor: cuánto lleva ganado, en qué estado y por qué clase. */
 @Service

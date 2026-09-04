@@ -10,10 +10,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import co.orion.scheduling.domain.AvailabilityException;
-import co.orion.scheduling.domain.BusinessZone;
 import co.orion.scheduling.persistence.AvailabilityExceptionRepository;
 import co.orion.shared.error.BusinessRuleViolationException;
 import co.orion.shared.error.ResourceNotFoundException;
+import co.orion.shared.time.BusinessZone;
 
 @Service
 public class AvailabilityExceptionService {

@@ -24,10 +24,10 @@ import co.orion.reputation.persistence.ProfessorSanctionRepository;
 import co.orion.reputation.persistence.ReviewRepository;
 import co.orion.reputation.domain.SanctionState;
 import co.orion.scheduling.domain.BookingStatus;
-import co.orion.scheduling.domain.BusinessZone;
 import co.orion.scheduling.persistence.BookingRepository;
 import co.orion.scheduling.persistence.RescheduleRequestRepository;
 import co.orion.identity.domain.ApplicationStatus;
+import co.orion.shared.time.BusinessZone;
 
 /**
  * Arma el tablero del admin. Una consulta por cifra y ninguna cacheada: a este volumen es barato, y

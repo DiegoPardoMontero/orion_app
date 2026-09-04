@@ -44,7 +44,7 @@ import co.orion.scheduling.api.BookingResponse;
 import co.orion.scheduling.api.CancelBookingRequest;
 import co.orion.scheduling.api.CreateBookingRequest;
 import co.orion.scheduling.domain.AvailabilityRule;
-import co.orion.scheduling.domain.BusinessZone;
+import co.orion.shared.time.BusinessZone;
 import co.orion.scheduling.persistence.AvailabilityRuleRepository;
 import co.orion.scheduling.persistence.BookingRepository;
 import co.orion.support.ApiIntegrationSupport;

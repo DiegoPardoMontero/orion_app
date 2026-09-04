@@ -17,12 +17,12 @@ import co.orion.lifecycle.application.DisputeOpened;
 import co.orion.lifecycle.application.DisputeResolved;
 import co.orion.lifecycle.persistence.DisputeRepository;
 import co.orion.scheduling.domain.Booking;
-import co.orion.scheduling.domain.BusinessZone;
 import co.orion.scheduling.domain.RescheduleRequest;
 import co.orion.scheduling.domain.RescheduleRequested;
 import co.orion.scheduling.domain.RescheduleResolved;
 import co.orion.scheduling.persistence.BookingRepository;
 import co.orion.scheduling.persistence.RescheduleRequestRepository;
+import co.orion.shared.time.BusinessZone;
 
 /**
  * Avisos in-app del ciclo de vida de una clase.

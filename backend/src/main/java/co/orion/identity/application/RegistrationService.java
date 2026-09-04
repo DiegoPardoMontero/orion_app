@@ -23,10 +23,14 @@ public class RegistrationService {
     private static final int MIN_PASSWORD_LENGTH = 8;
 
     private final UserRepository users;
+    private final StudentProfileService studentProfiles;
     private final PasswordEncoder passwordEncoder;
 
-    public RegistrationService(UserRepository users, PasswordEncoder passwordEncoder) {
+    public RegistrationService(UserRepository users,
+                               StudentProfileService studentProfiles,
+                               PasswordEncoder passwordEncoder) {
         this.users = users;
+        this.studentProfiles = studentProfiles;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -45,7 +49,11 @@ public class RegistrationService {
         user.changeWhatsappPhone(PhoneNumbers.toE164(whatsappPhone));
 
         try {
-            return users.saveAndFlush(user);
+            User creado = users.saveAndFlush(user);
+            // La ficha nace con la cuenta: así ningún código tiene que manejar el caso
+            // "estudiante sin ficha", y el perfil nace privado, que es lo que debe ser.
+            studentProfiles.createFor(creado);
+            return creado;
         } catch (DataIntegrityViolationException ex) {
             // Cierra la ventana entre el chequeo y el INSERT: dos altas del mismo correo a la vez.
             throw new ConflictException("Ya existe una cuenta con ese correo");

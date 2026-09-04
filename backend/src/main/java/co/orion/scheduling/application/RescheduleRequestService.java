@@ -17,7 +17,6 @@ import co.orion.catalog.application.PlatformSettingsService;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.scheduling.domain.Booking;
-import co.orion.scheduling.domain.BusinessZone;
 import co.orion.scheduling.domain.RescheduleRequest;
 import co.orion.scheduling.domain.RescheduleRequested;
 import co.orion.scheduling.domain.RescheduleResolved;
@@ -30,6 +29,7 @@ import co.orion.shared.error.ConflictException;
 import co.orion.shared.error.ForbiddenException;
 import co.orion.shared.error.ResourceNotFoundException;
 import co.orion.shared.error.UnprocessableException;
+import co.orion.shared.time.BusinessZone;
 
 import org.springframework.context.ApplicationEventPublisher;
 

@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import co.orion.billing.domain.Payment;
 import co.orion.scheduling.domain.Booking;
-import co.orion.scheduling.domain.BusinessZone;
+import co.orion.shared.time.BusinessZone;
 
 /**
  * La vista del admin: todo, incluida la comisión y el estado de la clase. {@code needsReview} marca

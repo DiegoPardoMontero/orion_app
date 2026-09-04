@@ -31,7 +31,7 @@ import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.identity.persistence.ProfessorProfileRepository;
 import co.orion.scheduling.domain.AvailabilityRule;
-import co.orion.scheduling.domain.BusinessZone;
+import co.orion.shared.time.BusinessZone;
 import co.orion.scheduling.persistence.AvailabilityRuleRepository;
 import co.orion.scheduling.persistence.BookingRepository;
 import co.orion.support.ApiIntegrationSupport;

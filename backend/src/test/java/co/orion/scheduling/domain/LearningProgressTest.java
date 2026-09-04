@@ -13,6 +13,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 import co.orion.scheduling.domain.LearningProgress.Tomada;
+import co.orion.shared.time.BusinessZone;
 
 /**
  * Las rachas son la única aritmética real del panel del estudiante, y la que más fácil se rompe:

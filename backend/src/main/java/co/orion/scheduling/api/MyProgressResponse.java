@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import co.orion.scheduling.application.StudentProgressService;
-import co.orion.scheduling.domain.BusinessZone;
+import co.orion.shared.time.BusinessZone;
 
 /**
  * El panel del estudiante. Los instantes salen en hora de Bogotá, como en el resto de la API.

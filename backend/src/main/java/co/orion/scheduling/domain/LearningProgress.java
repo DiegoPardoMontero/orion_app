@@ -1,5 +1,6 @@
 package co.orion.scheduling.domain;
 
+import co.orion.shared.time.BusinessZone;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;

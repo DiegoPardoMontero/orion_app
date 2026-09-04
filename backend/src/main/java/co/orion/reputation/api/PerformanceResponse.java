@@ -7,7 +7,7 @@ import java.util.UUID;
 
 import co.orion.reputation.domain.ProfessorMetrics;
 import co.orion.reputation.domain.ProfessorSanction;
-import co.orion.scheduling.domain.BusinessZone;
+import co.orion.shared.time.BusinessZone;
 
 /**
  * El desempeño que ve el profesor. Incluye sus sanciones activas con su motivo y su fecha de fin:

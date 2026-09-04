@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import co.orion.identity.application.ProfessorAccessService;
 import co.orion.identity.application.ProfessorProfileService;
 import co.orion.scheduling.domain.BookingStatus;
-import co.orion.scheduling.domain.BusinessZone;
 import co.orion.scheduling.domain.OccupiedInterval;
 import co.orion.scheduling.domain.Slot;
 import co.orion.scheduling.domain.SlotCalculator;
@@ -22,6 +21,7 @@ import co.orion.scheduling.persistence.AvailabilityExceptionRepository;
 import co.orion.scheduling.persistence.AvailabilityRuleRepository;
 import co.orion.scheduling.persistence.BookingRepository;
 import co.orion.shared.error.BusinessRuleViolationException;
+import co.orion.shared.time.BusinessZone;
 
 @Service
 public class SlotQueryService {

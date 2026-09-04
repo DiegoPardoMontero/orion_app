@@ -7,7 +7,7 @@ import java.util.UUID;
 
 import co.orion.identity.domain.User;
 import co.orion.scheduling.domain.Booking;
-import co.orion.scheduling.domain.BusinessZone;
+import co.orion.shared.time.BusinessZone;
 
 /**
  * canCancel lo decide el servidor, con la ventana que corresponde a QUIEN mira (el estudiante y el

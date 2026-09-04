@@ -4,8 +4,8 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 
-import co.orion.scheduling.domain.BusinessZone;
 import co.orion.scheduling.domain.Slot;
+import co.orion.shared.time.BusinessZone;
 
 public record SlotsResponse(UUID professorId, String timezone, List<SlotView> slots) {
 
