@@ -25,6 +25,7 @@ import co.orion.shared.error.ConflictException;
 import co.orion.shared.error.ForbiddenException;
 import co.orion.shared.error.ResourceNotFoundException;
 import co.orion.shared.error.ServiceUnavailableException;
+import co.orion.shared.error.TooManyRequestsException;
 import co.orion.shared.error.UnprocessableException;
 
 @RestControllerAdvice
@@ -73,6 +74,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(UnprocessableException.class)
     public ResponseEntity<Map<String, Object>> handleUnprocessable(UnprocessableException ex) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of("error", ex.getMessage()));
+    }
+
+    /**
+     * Demasiados intentos: 429 con {@code Retry-After} en segundos, como manda el estándar. Un
+     * cliente decente lo respeta solo; el nuestro además lo enseña.
+     */
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<Map<String, Object>> handleTooManyRequests(TooManyRequestsException ex) {
+        long segundos = Math.max(1, ex.getRetryAfter().toSeconds());
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", String.valueOf(segundos))
+                .body(Map.of("error", ex.getMessage(), "retryAfterSeconds", segundos));
     }
 
     @ExceptionHandler(ConflictException.class)

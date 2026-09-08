@@ -35,6 +35,7 @@ import co.orion.identity.persistence.TeacherApplicationRepository;
 import co.orion.identity.persistence.TeacherDocumentRepository;
 import co.orion.identity.persistence.StudentProfileRepository;
 import co.orion.identity.persistence.UserRepository;
+import co.orion.shared.security.IntentosDeAcceso;
 
 /**
  * Soporte para los tests de integración de la API: login, cookies de sesión y header CSRF.
@@ -49,6 +50,9 @@ public abstract class ApiIntegrationSupport {
 
     @Autowired
     protected UserRepository users;
+
+    @Autowired
+    protected IntentosDeAcceso intentosDeAcceso;
 
     @Autowired
     protected PasswordEncoder passwordEncoder;
@@ -105,6 +109,10 @@ public abstract class ApiIntegrationSupport {
      */
     @BeforeEach
     void cleanDependentTables() {
+        // Los frenos de acceso viven en memoria y el contexto de Spring se comparte entre casos.
+        // Sin esto, a partir del sexto login de la suite el limitador —pensado para un humano
+        // tecleando mal su contraseña— empezaría a devolver 429 a tests que no van de eso.
+        intentosDeAcceso.olvidarTodo();
         adminAuditLogs.deleteAll();
         teacherDocuments.deleteAll();
         agreementAcceptances.deleteAll();

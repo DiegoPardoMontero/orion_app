@@ -27,6 +27,7 @@ import co.orion.identity.application.RegistrationService;
 import co.orion.identity.domain.User;
 import co.orion.legal.application.LegalDocumentService;
 import co.orion.legal.domain.LegalDocumentCode;
+import co.orion.shared.security.IntentosDeAcceso;
 import co.orion.shared.security.OrionUserDetails;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -42,6 +43,7 @@ public class AuthController {
     private final ProfessorInviteService professorInviteService;
     private final LegalDocumentService legal;
     private final EmailVerificationService emailVerification;
+    private final IntentosDeAcceso intentos;
     private final SecurityContextRepository contextRepository = new HttpSessionSecurityContextRepository();
 
     public AuthController(AuthenticationManager authenticationManager,
@@ -49,20 +51,28 @@ public class AuthController {
                           PasswordResetService passwordResetService,
                           ProfessorInviteService professorInviteService,
                           LegalDocumentService legal,
-                          EmailVerificationService emailVerification) {
+                          EmailVerificationService emailVerification,
+                          IntentosDeAcceso intentos) {
         this.authenticationManager = authenticationManager;
         this.registrationService = registrationService;
         this.passwordResetService = passwordResetService;
         this.professorInviteService = professorInviteService;
         this.legal = legal;
         this.emailVerification = emailVerification;
+        this.intentos = intentos;
     }
 
     @PostMapping("/login")
     public UserResponse login(@Valid @RequestBody LoginRequest body,
                               HttpServletRequest request,
                               HttpServletResponse response) {
-        return authenticateAndOpenSession(body.email(), body.password(), request, response);
+        intentos.antesDeLogin(request, body.email());
+        UserResponse me = authenticateAndOpenSession(body.email(), body.password(), request, response);
+        // Solo si acertó: quien entra bien no debe arrastrar los fallos de antes. Va después de
+        // authenticate(...) a propósito — si las credenciales fallan, la excepción sale antes y el
+        // intento se queda contado.
+        intentos.loginCorrecto(request, body.email());
+        return me;
     }
 
     /**
@@ -75,6 +85,7 @@ public class AuthController {
     public UserResponse register(@Valid @RequestBody RegisterRequest body,
                                  HttpServletRequest request,
                                  HttpServletResponse response) {
+        intentos.antesDeRegistro(request);
         User creado = registrationService.register(body.fullName(), body.email(), body.password(),
                 body.whatsappPhone(), body.wantsToTeach(), body.adult());
 
@@ -100,6 +111,7 @@ public class AuthController {
     @PostMapping("/forgot-password")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void forgotPassword(@Valid @RequestBody ForgotPasswordRequest body) {
+        intentos.antesDeRecuperar(body.email());
         passwordResetService.request(body.email());
     }
 
