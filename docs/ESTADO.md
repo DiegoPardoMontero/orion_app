@@ -6,10 +6,10 @@ Resumen vivo de qué hay construido y desplegado. Se actualiza al cerrar cada pa
 
 **Backend** (Spring Boot 4.1, `co.orion`): identidad + sesión, disponibilidad + `SlotCalculator`,
 reservas, asistencia, notificaciones por correo (con `.ics` + link a Google Calendar), panel admin
-(usuarios, reservas, métricas). **Migraciones Flyway V1–V23.**
+(usuarios, reservas, métricas). **Migraciones Flyway V1–V28.**
 
 Módulos: `identity`, `scheduling`, `catalog`, `billing`, `messaging`, `notifications`, `reputation`,
-`lifecycle`, `admin`, `engagement`, `shared`. La dependencia que sorprende es `identity → reputation`
+`lifecycle`, `admin`, `engagement`, `legal`, `support`, `shared`. La dependencia que sorprende es `identity → reputation`
 (el perfil público muestra la calificación), y por eso existe `lifecycle`: es el único sitio que
 necesita reserva, pago e historial a la vez. `engagement` es el contrario: depende de casi todos y
 nadie depende de él, así que se puede borrar entero sin tocar el marketplace.
@@ -29,8 +29,8 @@ dentro de `/cuenta`).
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots), con Rigel de protagonista.
 
 ## Verificación
-Al 04/09/2026, sobre `1f9bcd4`:
-- Backend: `./mvnw verify` (Testcontainers) — **117 unitarios + 340 de integración**, verde.
+Al 08/09/2026, sobre `0a62345`:
+- Backend: `./mvnw verify` (Testcontainers) — **161 unitarios + 365 de integración**, verde.
 - Frontend: `next build` + `tsc` + `lint` verdes; **39 tests de Vitest**.
 - **E2E Playwright: 15 de 16.** El que falta —el paso por la pasarela— exige llaves de *sandbox* de
   Wompi en el entorno; su propio comentario lo advierte. La suite muta estado y asume semilla
@@ -220,6 +220,41 @@ sigue siendo estudiante, con todo lo suyo.
 estudiante, su saldo a favor deja de ser alcanzable (`/me/credits` es de estudiantes). A la escala
 actual es raro y se resuelve a mano; si se vuelve frecuente, hay que decidir qué pasa con ese saldo.
 
+## Cumplimiento legal y operación · Bloque 9 (08/09/2026)
+
+Orión estaba construido y no se podía lanzar: cobraba sin contrato con el cliente y guardaba fecha
+de nacimiento sin autorización de tratamiento. El brief está en
+[`orion-bloque-9-cumplimiento-y-operacion.md`](./briefs/orion-bloque-9-cumplimiento-y-operacion.md).
+
+**Solo mayores de 18 (V24).** El art. 7 de la Ley 1581 de 2012 prohíbe tratar datos de menores
+salvo con autorización del representante legal, y ese flujo no existe. Se cierra en el registro, se
+revalida al reservar y las cuentas anteriores lo declaran en un diálogo al entrar. Con eso
+`student_profiles.birth_date` se queda sin finalidad y **se borra** por minimización.
+
+**Términos y Política de tratamiento (V25), módulo `legal`.** Versionados en base, no en el código:
+cuando alguien pregunte qué aceptó en marzo, la respuesta tiene que ser el texto de marzo. El cuerpo
+guarda marcadores `{{...}}` que se rellenan al leerlo, así cambiar de domicilio no obliga a publicar
+una versión nueva. Las aceptaciones reutilizan `agreement_acceptances` (V12), que ya tenía la forma
+de la constancia del art. 9; la entidad se mudó de `identity` a `legal` para romper el ciclo.
+
+Tres casillas separadas en el registro: empaquetar la autorización de datos con los términos la
+viciaría. `PoliticaDeTratamientoTest` comprueba las seis secciones del art. 13 del Decreto 1377.
+
+**Verificación de correo (V26)** con reenvío frenado a tres por hora, **límites de intentos** en
+login/alta/recuperación, **tickets de soporte (V27)** con los plazos legales de habeas data y
+retracto, **pantalla de ajustes (V28)** con validación en servidor, historial y confirmación escrita
+en lo sensible, **alertas por correo** de errores y de procesos caídos, y **filtro del buscador por
+día y franja** (el `schedule=` que el hero llevaba tiempo mandando sin que nadie lo recogiera).
+
+> **El retracto está escrito pero no automatizado.** Pardo aplazó el paso 5 el 08/09 («no toques
+> dinero por ahora»). El derecho rige desde los Términos —5 días hábiles, con su excepción, y
+> devolución al medio de pago en 15 días calendario— y se ejerce abriendo un ticket de categoría
+> `RETRACTO`, que vence visiblemente en la bandeja. La devolución la hace una persona en Wompi.
+> Cumplimiento manual y trazable, no automático.
+
+**Config nueva en Railway:** `ORION_LEGAL_*` (nombre, documento, domicilio, ciudad, correo,
+whatsapp, horario) — **sin ellas el perfil `prod` no arranca**, a propósito — y `ORION_ALERTS_TO`.
+
 ## Pendiente / bloqueos conocidos
 - **Reservas anteriores a V20 sin idioma**: las que tenía un profesor de dos idiomas quedaron con
   `language_code` en nulo a propósito, para revisión manual. La migración deja el conteo en un
@@ -228,11 +263,16 @@ actual es raro y se resuelve a mano; si se vuelve frecuente, hay que decidir qu�
   flujo, pero conviene rotarla.
 - **Política de cancelación de una clase ya pagada**: el pago se queda retenido y aparece marcado en
   la conciliación. Decidir entre abonar saldo o devolver desde Wompi es política comercial.
+- **Los textos legales no los ha revisado un abogado.** Siguen la ley artículo por artículo y las
+  secciones obligatorias están cubiertas por test, pero eso no certifica que la redacción proteja.
+  Antes del primer cliente que paga, que los lea alguien habilitado para firmarlos.
+- **Retracto sin flujo propio**: ver el Bloque 9. Se atiende por ticket, a mano.
 - **Subida de fotos y documentos en local**: exige `CLOUDINARY_URL` en el entorno. Sin ella la API
   responde 503 con un mensaje legible (antes era un 500 sin explicación), pero el wizard de
   postulación no se puede terminar en local: le faltarán siempre la foto y el CV.
 - **Config de producción**: `ORION_APP_BASE_URL`, `WOMPI_*`, `RESEND_API_KEY`,
-  `NEXT_PUBLIC_SUPPORT_WHATSAPP`, `NEXT_PUBLIC_SITE_URL` en Railway.
+  `NEXT_PUBLIC_SUPPORT_WHATSAPP`, `NEXT_PUBLIC_SITE_URL`, `ORION_LEGAL_*` y `ORION_ALERTS_TO`
+  en Railway.
 - Testimonios de la landing: ocultos hasta tener citas reales de Sofía.
 
 ## Repaso de flujos (04/09/2026)

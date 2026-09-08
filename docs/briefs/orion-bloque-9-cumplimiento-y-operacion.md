@@ -474,21 +474,30 @@ cuenta.
 Un commit por paso, mensaje convencional en inglés, `./mvnw verify` en verde antes de cerrar
 cada uno.
 
-| # | Paso | Migración | Depende de |
+| # | Paso | Migración | Estado |
 |---|---|---|---|
-| 0 | Identidad del responsable | — | — |
-| 1 | Mayoría de edad y minimización | V24 | 0 |
-| 2 | Documentos legales y aceptación | V25 | 0, 1 |
-| 3 | Verificación de correo | V26 | — |
-| 4 | Límite de intentos | — | 3 |
-| 5 | Retracto y devoluciones | V27 | 2 |
-| 6 | Soporte: tickets y WhatsApp | V28 | 0 |
-| 7 | Pantalla de ajustes | V29 | — |
-| 8 | Observabilidad y alertas | — | 5, 6 |
-| 9 | Filtro por disponibilidad | — | — |
+| 0 | Identidad del responsable | — | **Hecho** (`3f958c1`) |
+| 1 | Mayoría de edad y minimización | V24 | **Hecho** (`3f958c1`) |
+| 2 | Documentos legales y aceptación | V25 | **Hecho** (`3f958c1`) |
+| 3 | Verificación de correo | V26 | **Hecho** (`dcc0174`) |
+| 4 | Límite de intentos | — | **Hecho** (`037b22d`) |
+| 5 | Retracto y devoluciones | — | **Aplazado por Pardo** (08/09): no tocar dinero por ahora |
+| 6 | Soporte: tickets y WhatsApp | V27 | **Hecho** (`2343f72`) |
+| 7 | Pantalla de ajustes | V28 | **Hecho** (`3a362f1`) |
+| 8 | Observabilidad y alertas | — | **Hecho** (`0a62345`) |
+| 9 | Filtro por disponibilidad | — | **Hecho** (`cf3d950`) |
 
-Los pasos 0-2 son los que desbloquean el lanzamiento. Del 3 en adelante se puede reordenar
-según convenga, salvo las dependencias de la tabla.
+> **El paso 5 se aplazó y las migraciones se corrieron.** Soporte tomó la V27 y el historial de
+> ajustes la V28, que el plan reservaba para el retracto y para soporte. Flyway numera por orden
+> de escritura, no por orden de brief; cuando el paso 5 se retome, le tocará la V29.
+
+**Lo que el aplazamiento del paso 5 deja abierto:** el derecho de retracto está **escrito en los
+Términos** con su plazo, su excepción y su medio de devolución —eso ya rige y no depende de
+código—, pero **no hay flujo en la aplicación**. Quien quiera ejercerlo abre un ticket de la
+categoría `RETRACTO`, que lleva su plazo legal de 15 días calendario y aparece en la bandeja
+ordenado por vencimiento; la devolución la hace una persona en el panel de Wompi. Es un
+cumplimiento manual y trazable, no automático. Mientras siga así, el riesgo real es que un plazo
+venza sin que nadie lo mire, y por eso el ticket vence visiblemente en rojo.
 
 ---
 
