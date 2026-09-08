@@ -263,6 +263,9 @@ public class DevDataSeeder implements ApplicationRunner {
             return Optional.empty();
         }
         User user = new User(email, passwordEncoder.encode(rawPassword), fullName, role);
+        // Sin esto la semilla nace sin declarar mayoría de edad y Ana no puede reservar en local:
+        // el gate del Bloque 9 la trataría como una cuenta anterior a la regla.
+        user.confirmAdulthood(clock.instant());
         User saved = users.save(user);
         log.info("Semilla: usuario {} creado con rol {}", saved.getEmail(), role);
         return Optional.of(saved);

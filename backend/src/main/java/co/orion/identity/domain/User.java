@@ -58,6 +58,14 @@ public class User {
     @Column(name = "signup_intent", nullable = false, length = 10)
     private SignupIntent signupIntent;
 
+    /**
+     * Cuándo declaró ser mayor de 18. Orión no acepta menores: el art. 7 de la Ley 1581 de 2012
+     * prohíbe tratar sus datos salvo con autorización del representante legal, y ese flujo no
+     * existe aquí. Es nulo en las cuentas anteriores a esta regla, que la declaran al entrar.
+     */
+    @Column(name = "age_confirmed_at")
+    private Instant ageConfirmedAt;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -102,6 +110,21 @@ public class User {
 
     public void changeFullName(String fullName) {
         this.fullName = Objects.requireNonNull(fullName, "fullName");
+    }
+
+    /** Deja constancia de la declaración de mayoría de edad. Una sola vez: no se puede retirar. */
+    public void confirmAdulthood(Instant when) {
+        if (ageConfirmedAt == null) {
+            this.ageConfirmedAt = Objects.requireNonNull(when, "when");
+        }
+    }
+
+    public Instant getAgeConfirmedAt() {
+        return ageConfirmedAt;
+    }
+
+    public boolean hasConfirmedAdulthood() {
+        return ageConfirmedAt != null;
     }
 
     public SignupIntent getSignupIntent() {

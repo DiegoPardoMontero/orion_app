@@ -28,6 +28,7 @@ import { Avatar } from "@/components/Avatar";
 import { CambiarClave } from "@/components/CambiarClave";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import { Vacio } from "@/components/estados";
+import { AvisoMayoriaDeEdad } from "@/components/AvisoMayoriaDeEdad";
 import { Encendido } from "@/components/gamificacion/Encendido";
 import { Wordmark } from "@/components/marca";
 import { Boton } from "@/components/ui";
@@ -145,6 +146,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       {/* La celebración vive en el armazón y no en una pantalla: una estrella se enciende cuando
           termina una clase, que casi nunca es mientras se mira el tablero de logros. */}
       <Encendido />
+
+      {/* Las cuentas anteriores a la regla de mayoría de edad nunca la declararon. Va aquí y no en
+          una pantalla porque hay que pedirla entren por donde entren. */}
+      {!me.adultConfirmed && <AvisoMayoriaDeEdad />}
     </div>
   );
 }

@@ -18,10 +18,17 @@ import { createPortal } from "react-dom";
 export function Modal({
   titulo,
   onCerrar,
+  bloqueante = false,
   children,
 }: {
   titulo: string;
   onCerrar: () => void;
+  /**
+   * Un diálogo que no se descarta: ni con Escape ni pulsando fuera. Solo para lo que se responde
+   * en vez de leerse — hoy, la declaración de mayoría de edad. Un aviso que se cierra sin querer
+   * es un aviso que nadie contestó, y aquí lo que se pide es una declaración.
+   */
+  bloqueante?: boolean;
   children: ReactNode;
 }) {
   const panel = useRef<HTMLDivElement>(null);
@@ -29,7 +36,7 @@ export function Modal({
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onCerrar();
+      if (event.key === "Escape" && !bloqueante) onCerrar();
     };
     document.addEventListener("keydown", onKey);
     panel.current?.focus();
@@ -41,7 +48,7 @@ export function Modal({
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = desbordeAnterior;
     };
-  }, [onCerrar]);
+  }, [onCerrar, bloqueante]);
 
   // En el render del servidor no hay `document`. Todos los diálogos de la app se abren por una
   // interacción, así que esto nunca se renderiza allí; la guarda está por si algún día alguien
@@ -52,7 +59,7 @@ export function Modal({
     <div
       className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-5"
       style={{ background: "rgba(51,32,59,0.45)" }}
-      onClick={onCerrar}
+      onClick={bloqueante ? undefined : onCerrar}
     >
       <div
         ref={panel}

@@ -102,6 +102,7 @@ public class BookingService {
                              String requestedLanguage,
                              UUID requestedStudentId) {
         UUID studentId = resolveStudent(actor, requestedStudentId);
+        requireAdulthood(actor);
         BookingModality modality = parseModality(modalityName);
         Instant endsAt = startsAt.plus(CLASS_LENGTH);
 
@@ -329,6 +330,21 @@ public class BookingService {
     }
 
     /** Un STUDENT solo reserva para sí mismo; un ADMIN reserva en nombre de otro; un PROFESSOR no reserva. */
+    /**
+     * Nadie reserva sin haber declarado ser mayor de edad.
+     *
+     * <p>Orión no acepta menores (art. 7 de la Ley 1581 de 2012), y desde el Bloque 9 el registro
+     * lo exige. Quedan las cuentas anteriores, que nunca lo declararon: el frontend les pide la
+     * declaración al entrar, pero la puerta que de verdad importa es esta — reservar mueve dinero.
+     * Un admin reservando en nombre de alguien no la cruza: el actor es él, no el estudiante.
+     */
+    private void requireAdulthood(User actor) {
+        if (actor.getRole() == UserRole.STUDENT && !actor.hasConfirmedAdulthood()) {
+            throw new UnprocessableException(
+                    "Antes de reservar necesitamos que confirmes que eres mayor de 18 años.");
+        }
+    }
+
     private UUID resolveStudent(User actor, UUID requestedStudentId) {
         if (actor.getRole() == UserRole.ADMIN) {
             if (requestedStudentId == null) {

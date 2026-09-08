@@ -31,7 +31,8 @@ import co.orion.identity.domain.TeacherApplication;
 import co.orion.identity.domain.TeacherApplicationEvent;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
-import co.orion.identity.persistence.AgreementAcceptanceRepository;
+import co.orion.legal.domain.AgreementAcceptance;
+import co.orion.legal.persistence.AgreementAcceptanceRepository;
 import co.orion.identity.persistence.ProfessorGoalRepository;
 import co.orion.identity.persistence.ProfessorLanguageLevelRepository;
 import co.orion.identity.persistence.ProfessorLanguageRepository;
@@ -130,7 +131,7 @@ public class TeacherApplicationService {
         if (agreements.existsByUserIdAndDocumentCode(userId, documentCode)) {
             return; // ya aceptado: idempotente (el índice único lo respalda)
         }
-        agreements.save(new co.orion.identity.domain.AgreementAcceptance(
+        agreements.save(new AgreementAcceptance(
                 userId, documentCode, AGREEMENT_VERSION, ip, userAgent));
     }
 

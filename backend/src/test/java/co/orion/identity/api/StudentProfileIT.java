@@ -156,50 +156,30 @@ class StudentProfileIT extends ApiIntegrationSupport {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
     }
 
-    /* ---- El perfil público y los menores ---- */
+    /* ---- El perfil público ---- */
 
+    /**
+     * Desde el Bloque 9 activarlo no pide fecha de nacimiento: Orión solo acepta mayores de 18 y
+     * eso se comprueba en el registro. Volver a pedir la fecha aquí sería cobrar un dato personal
+     * por una regla que ya se cumplió antes — lo que prohíbe el principio de minimización.
+     */
     @Test
-    void activarElPerfilPublicoExigeSerMayorDeEdad() {
+    void activarElPerfilPublicoNoPideNadaMas() {
         ResponseEntity<StudentProfileResponse> response = put(MIA + "/visibility", anaSession,
-                new StudentVisibilityRequest(true, LocalDate.of(1995, 3, 10)),
-                StudentProfileResponse.class);
+                new StudentVisibilityRequest(true), StudentProfileResponse.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody().isPublic()).isTrue();
-    }
-
-    /**
-     * El switch deshabilitado en el frontend es cortesía; esta es la comprobación que manda. Un
-     * menor no puede activarlo ni llamando al endpoint directamente.
-     */
-    @SuppressWarnings("rawtypes")
-    @Test
-    void unMenorNoPuedeActivarloNiPorApiDirecta() {
-        ResponseEntity<Map> response = put(MIA + "/visibility", anaSession,
-                new StudentVisibilityRequest(true, LocalDate.of(2012, 1, 1)), Map.class);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
-        assertThat(profiles.findById(ana.getId()).orElseThrow().isPublicProfile()).isFalse();
-    }
-
-    @SuppressWarnings("rawtypes")
-    @Test
-    void activarloSinFechaDeNacimientoEs422() {
-        ResponseEntity<Map> response = put(MIA + "/visibility", anaSession,
-                new StudentVisibilityRequest(true, null), Map.class);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
     }
 
     /** Retirar el consentimiento tiene que ser más fácil que darlo: no pide nada. */
     @Test
     void desactivarloNoPideNada() {
         put(MIA + "/visibility", anaSession,
-                new StudentVisibilityRequest(true, LocalDate.of(1995, 3, 10)),
-                StudentProfileResponse.class);
+                new StudentVisibilityRequest(true), StudentProfileResponse.class);
 
         ResponseEntity<StudentProfileResponse> response = put(MIA + "/visibility", anaSession,
-                new StudentVisibilityRequest(false, null), StudentProfileResponse.class);
+                new StudentVisibilityRequest(false), StudentProfileResponse.class);
 
         assertThat(response.getBody().isPublic()).isFalse();
     }
@@ -233,7 +213,7 @@ class StudentProfileIT extends ApiIntegrationSupport {
         assertThat(privado.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 
         put(MIA + "/visibility", anaSession,
-                new StudentVisibilityRequest(true, LocalDate.of(1995, 3, 10)),
+                new StudentVisibilityRequest(true),
                 StudentProfileResponse.class);
 
         ResponseEntity<StudentProfileResponse> publico =
@@ -266,8 +246,9 @@ class StudentProfileIT extends ApiIntegrationSupport {
         Map<String, Object> cuerpo = response.getBody();
         assertThat(cuerpo).doesNotContainKeys("email", "whatsappPhone", "balanceCop", "payments",
                 "professors");
-        // Ni siquiera en null: el ajuste de visibilidad y la fecha de nacimiento son suyos.
+        // Ni siquiera en null: el ajuste de visibilidad es suyo. Y birthDate ya no existe:
+        // el Bloque 9 lo borró por minimización, así que tampoco puede filtrarse.
         assertThat(cuerpo.get("isPublic")).isNull();
-        assertThat(cuerpo.get("birthDate")).isNull();
+        assertThat(cuerpo).doesNotContainKey("birthDate");
     }
 }

@@ -70,6 +70,21 @@ orion:
       # Cada 5 minutos: el plazo para pagar son 20 (platform_settings.payment_hold_minutes), así que
       # un cupo nunca queda bloqueado más de 25.
       interval-ms: ${ORION_PAYMENT_EXPIRY_INTERVAL_MS:300000}
+  # Quién responde por Orión. Aparece en los términos, en la política de tratamiento y en la
+  # pantalla de ayuda.
+  #
+  # No son secretos: la ley EXIGE publicarlos (art. 50 de la Ley 1480 de 2011 para la identidad del
+  # proveedor, art. 13 del Decreto 1377 de 2013 para la del responsable del tratamiento). Por eso
+  # llevan valor por defecto y no se comportan como los WOMPI_*. Aun así, el perfil prod los pide
+  # por variable de entorno: cambiar de domicilio no debería exigir un despliegue.
+  legal:
+    responsable: ${ORION_LEGAL_NOMBRE:Diego Alejandro Pardo Montero}
+    documento:   ${ORION_LEGAL_DOCUMENTO:C.C. 1.013.576.324}
+    domicilio:   ${ORION_LEGAL_DOMICILIO:Carrera 32 #28-08}
+    ciudad:      ${ORION_LEGAL_CIUDAD:Bogotá D.C.}
+    correo:      ${ORION_LEGAL_CORREO:diegopardomontero@gmail.com}
+    whatsapp:    ${ORION_LEGAL_WHATSAPP:+573023063447}
+    horario:     ${ORION_LEGAL_HORARIO:Lunes a viernes de 8:00 a. m. a 6:00 p. m.}
   mail:
     from: ${ORION_MAIL_FROM:no-reply@orion.local}
     # Transporte del correo: 'smtp' (Mailpit en local) o 'resend' (API HTTP en prod, porque Railway

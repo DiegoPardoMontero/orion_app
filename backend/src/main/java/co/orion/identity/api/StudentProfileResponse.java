@@ -1,6 +1,5 @@
 package co.orion.identity.api;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,13 +30,12 @@ public record StudentProfileResponse(UUID id,
                                      String skyCode,
                                      List<Accessory> accessories,
                                      @JsonProperty("isPublic") Boolean isPublic,
-                                     LocalDate birthDate,
                                      boolean ownView) {
 
     public record Accessory(String zone, String accessoryCode) {
     }
 
-    /** La vista del dueño: lo lleva todo, incluido si su perfil es público y su fecha. */
+    /** La vista del dueño: lo lleva todo, incluido si su perfil es público. */
     public static StudentProfileResponse own(StudentProfileService.Ficha ficha) {
         StudentProfile p = ficha.profile();
         return new StudentProfileResponse(
@@ -53,14 +51,10 @@ public record StudentProfileResponse(UUID id,
                 p.getSkyCode(),
                 accesorios(ficha),
                 p.isPublicProfile(),
-                p.getBirthDate(),
                 true);
     }
 
-    /**
-     * La vista de otra persona. `isPublic` y `birthDate` van en null a propósito: la primera es un
-     * ajuste suyo y la segunda es un dato personal que nadie más necesita.
-     */
+    /** La vista de otra persona. `isPublic` va en null a propósito: es un ajuste suyo. */
     public static StudentProfileResponse publicView(StudentProfileService.Ficha ficha) {
         StudentProfile p = ficha.profile();
         return new StudentProfileResponse(
@@ -75,7 +69,6 @@ public record StudentProfileResponse(UUID id,
                 p.getPaletteCode(),
                 p.getSkyCode(),
                 accesorios(ficha),
-                null,
                 null,
                 false);
     }

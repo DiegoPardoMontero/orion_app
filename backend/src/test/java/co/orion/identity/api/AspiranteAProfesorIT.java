@@ -90,7 +90,7 @@ class AspiranteAProfesorIT extends ApiIntegrationSupport {
     /** Se registra por la puerta de enseñar, como quien pulsa «Postúlate para dar clases». */
     private Session registrarAspirante(String email) {
         ResponseEntity<Map> alta = rest.postForEntity(REGISTRO,
-                new RegisterRequest("Aspi Rante", email, CLAVE, null, true), Map.class);
+                new RegisterRequest("Aspi Rante", email, CLAVE, null, true, true, true, true), Map.class);
         assertThat(alta.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         return login(email);
     }
@@ -207,7 +207,7 @@ class AspiranteAProfesorIT extends ApiIntegrationSupport {
     @SuppressWarnings("rawtypes")
     void unEstudianteQuePostulaSigueSiendoEstudiante() {
         ResponseEntity<Map> alta = rest.postForEntity(REGISTRO,
-                new RegisterRequest("Ana Ramírez", "ana@orion.test", CLAVE, null, false), Map.class);
+                new RegisterRequest("Ana Ramírez", "ana@orion.test", CLAVE, null, false, true, true, true), Map.class);
         assertThat(alta.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         Session sesion = login("ana@orion.test");
 

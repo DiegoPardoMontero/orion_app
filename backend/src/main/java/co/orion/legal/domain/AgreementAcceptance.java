@@ -1,4 +1,4 @@
-package co.orion.identity.domain;
+package co.orion.legal.domain;
 
 import java.time.Instant;
 import java.util.UUID;

@@ -76,8 +76,21 @@ function Registro() {
   const [whatsapp, setWhatsapp] = useState("");
   const [verClave, setVerClave] = useState(false);
 
+  // Tres casillas y no una. La autorización de tratamiento de datos tiene que ser específica
+  // (Decreto 1377 de 2013): empaquetarla junto a los términos la viciaría. Y la mayoría de edad
+  // es una declaración aparte, porque Orión no acepta menores.
+  const [mayorDeEdad, setMayorDeEdad] = useState(false);
+  const [aceptaTerminos, setAceptaTerminos] = useState(false);
+  const [aceptaDatos, setAceptaDatos] = useState(false);
+
   const fuerza = fuerzaClave(password);
-  const listo = nombre.trim().length > 0 && /.+@.+\..+/.test(email) && password.length >= 8;
+  const listo =
+    nombre.trim().length > 0 &&
+    /.+@.+\..+/.test(email) &&
+    password.length >= 8 &&
+    mayorDeEdad &&
+    aceptaTerminos &&
+    aceptaDatos;
 
   function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -91,6 +104,9 @@ function Registro() {
         // La intención viaja al backend y no se queda en esta pantalla: es lo que decide que la
         // cuenta nazca como aspirante y no como estudiante que además postuló.
         wantsToTeach: intencion === "ensenar",
+        adult: mayorDeEdad,
+        acceptsTerms: aceptaTerminos,
+        acceptsDataPolicy: aceptaDatos,
       },
       {
         // Quien viene a enseñar entra directo a su postulación; quien viene a aprender, al
@@ -255,6 +271,34 @@ function Registro() {
           <PhoneInput id="whatsapp" value={whatsapp} onChange={setWhatsapp} className="mt-1.5" />
           <p className="mt-1.5 text-[12px] text-text-muted">{copy.whatsapp}</p>
 
+          <div className="mt-6 grid gap-3 rounded-base border border-border bg-surface-sunken p-4">
+            <Consentimiento
+              id="mayor-de-edad"
+              marcado={mayorDeEdad}
+              onCambio={setMayorDeEdad}
+            >
+              Declaro que soy <strong>mayor de 18 años</strong>.
+            </Consentimiento>
+            <Consentimiento
+              id="acepta-terminos"
+              marcado={aceptaTerminos}
+              onCambio={setAceptaTerminos}
+            >
+              Acepto los{" "}
+              <Link href="/terminos" target="_blank" className="font-bold text-primary-strong hover:underline">
+                Términos y condiciones
+              </Link>
+              .
+            </Consentimiento>
+            <Consentimiento id="acepta-datos" marcado={aceptaDatos} onCambio={setAceptaDatos}>
+              Autorizo el tratamiento de mis datos personales conforme a la{" "}
+              <Link href="/privacidad" target="_blank" className="font-bold text-primary-strong hover:underline">
+                Política de tratamiento
+              </Link>
+              .
+            </Consentimiento>
+          </div>
+
           {error && (
             <div className="mt-4">
               <AvisoError mensaje={error} />
@@ -284,5 +328,35 @@ function Registro() {
         </form>
       </div>
     </main>
+  );
+}
+
+/**
+ * Una casilla de consentimiento. Área de toque completa —la etiqueta también activa— y el foco
+ * visible: es el único punto del registro donde marcar por error tiene consecuencias legales,
+ * así que tiene que ser deliberado y tiene que verse.
+ */
+function Consentimiento({
+  id,
+  marcado,
+  onCambio,
+  children,
+}: {
+  id: string;
+  marcado: boolean;
+  onCambio: (valor: boolean) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <label htmlFor={id} className="flex cursor-pointer items-start gap-3 text-[13px] leading-relaxed text-text-secondary">
+      <input
+        id={id}
+        type="checkbox"
+        checked={marcado}
+        onChange={(event) => onCambio(event.target.checked)}
+        className="mt-[3px] h-[18px] w-[18px] shrink-0 cursor-pointer accent-primary focus-visible:shadow-focus"
+      />
+      <span>{children}</span>
+    </label>
   );
 }

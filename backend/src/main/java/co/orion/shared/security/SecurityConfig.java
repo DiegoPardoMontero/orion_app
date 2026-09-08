@@ -60,6 +60,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/reset-password").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/auth/invite").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/accept-invite").permitAll()
+                // Términos, política de datos y contacto del responsable: abiertos porque el
+                // art. 50 de la Ley 1480 de 2011 exige que estén disponibles ANTES de contratar.
+                // Un documento que solo se ve tras iniciar sesión llega tarde.
+                .requestMatchers(HttpMethod.GET, "/api/v1/legal/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // Marketplace público: el catálogo y el directorio/búsqueda de profesores se ven sin
                 // sesión (un visitante anónimo explora antes de registrarse; reservar sí exige login).
@@ -74,7 +78,7 @@ public class SecurityConfig {
                 // El aspirante a profesor no tiene experiencia de estudiante: lo que puede hacer es
                 // llevar su postulación, mantener su cuenta y leer sus avisos. Todo lo demás cuelga
                 // de ROLE_STUDENT, que no tiene, así que se cierra solo.
-                .requestMatchers("/api/v1/me/account").authenticated()
+                .requestMatchers("/api/v1/me/account", "/api/v1/me/account/**").authenticated()
                 // Postulación a profesor: cualquier usuario autenticado puede aspirar y llevar su wizard.
                 .requestMatchers("/api/v1/teacher-applications").authenticated()
                 .requestMatchers("/api/v1/me/teacher-application", "/api/v1/me/teacher-application/**").authenticated()

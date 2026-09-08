@@ -164,7 +164,7 @@ class AuthFlowIT {
 
     @Test
     void aNewStudentCanRegisterAndLandsLoggedIn() {
-        RegisterRequest body = new RegisterRequest("Camila Ortiz", "camila@orion.test", "orion123*", "+573001112233", false);
+        RegisterRequest body = new RegisterRequest("Camila Ortiz", "camila@orion.test", "orion123*", "+573001112233", false, true, true, true);
 
         ResponseEntity<UserResponse> response = rest.postForEntity("/api/v1/auth/register", body, UserResponse.class);
 
@@ -183,7 +183,7 @@ class AuthFlowIT {
 
     @Test
     void registeringWithAnExistingEmailIsRejected() {
-        RegisterRequest body = new RegisterRequest("Ana Otra", STUDENT_EMAIL, "orion123*", null, false);
+        RegisterRequest body = new RegisterRequest("Ana Otra", STUDENT_EMAIL, "orion123*", null, false, true, true, true);
 
         ResponseEntity<Map> response = rest.postForEntity("/api/v1/auth/register", body, Map.class);
 
@@ -191,9 +191,59 @@ class AuthFlowIT {
         assertThat(response.getBody()).containsEntry("error", "Ya existe una cuenta con ese correo");
     }
 
+    /* ---- Mayoría de edad y consentimientos (Bloque 9) ---- */
+
+    /**
+     * Orión no acepta menores. El art. 7 de la Ley 1581 de 2012 prohíbe tratar sus datos salvo con
+     * autorización del representante legal, y ese flujo no existe: la puerta se cierra en el alta.
+     */
+    @SuppressWarnings("rawtypes")
+    @Test
+    void registeringWithoutDeclaringAdulthoodIsRejected() {
+        RegisterRequest body = new RegisterRequest(
+                "Menor Deedad", "menor@orion.test", "orion123*", null, false, false, true, true);
+
+        ResponseEntity<Map> response = rest.postForEntity("/api/v1/auth/register", body, Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(users.existsByEmailIgnoreCase("menor@orion.test")).isFalse();
+    }
+
+    /**
+     * Las tres casillas van por separado y las tres son obligatorias. Empaquetar la autorización de
+     * datos con la aceptación de los términos la viciaría: el Decreto 1377 de 2013 la exige previa,
+     * expresa e informada, y por tanto específica.
+     */
+    @SuppressWarnings("rawtypes")
+    @Test
+    void registeringWithoutTheDataAuthorizationIsRejected() {
+        RegisterRequest body = new RegisterRequest(
+                "Sin Autorizar", "sinauth@orion.test", "orion123*", null, false, true, true, false);
+
+        ResponseEntity<Map> response = rest.postForEntity("/api/v1/auth/register", body, Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(users.existsByEmailIgnoreCase("sinauth@orion.test")).isFalse();
+    }
+
+    /** Quien se registra hoy deja constancia con fecha: sin fecha no hay prueba (art. 9). */
+    @Test
+    void registeringStampsTheAdulthoodDeclaration() {
+        RegisterRequest body = new RegisterRequest(
+                "Mayor Deedad", "mayor@orion.test", "orion123*", null, false, true, true, true);
+
+        ResponseEntity<UserResponse> response =
+                rest.postForEntity("/api/v1/auth/register", body, UserResponse.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(response.getBody().adultConfirmed()).isTrue();
+        assertThat(users.findByEmailIgnoreCase("mayor@orion.test").orElseThrow()
+                .getAgeConfirmedAt()).isNotNull();
+    }
+
     @Test
     void registeringWithAShortPasswordIsRejected() {
-        RegisterRequest body = new RegisterRequest("Clave Corta", "corta@orion.test", "1234567", null, false);
+        RegisterRequest body = new RegisterRequest("Clave Corta", "corta@orion.test", "1234567", null, false, true, true, true);
 
         ResponseEntity<Map> response = rest.postForEntity("/api/v1/auth/register", body, Map.class);
 

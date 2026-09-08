@@ -30,7 +30,7 @@ import co.orion.identity.domain.StudentProfile;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.identity.persistence.AdminAuditLogRepository;
-import co.orion.identity.persistence.AgreementAcceptanceRepository;
+import co.orion.legal.persistence.AgreementAcceptanceRepository;
 import co.orion.identity.persistence.TeacherApplicationRepository;
 import co.orion.identity.persistence.TeacherDocumentRepository;
 import co.orion.identity.persistence.StudentProfileRepository;
@@ -169,7 +169,12 @@ public abstract class ApiIntegrationSupport {
     protected StudentProfileRepository studentProfiles;
 
     protected User createUser(String email, String fullName, UserRole role) {
-        User user = users.save(new User(email, passwordEncoder.encode(PASSWORD), fullName, role));
+        User nuevo = new User(email, passwordEncoder.encode(PASSWORD), fullName, role);
+        // Como lo haría el registro desde el Bloque 9: sin la declaración de mayoría de edad, el
+        // gate de BookingService trataría a este estudiante como una cuenta antigua y no podría
+        // reservar. Un usuario de prueba tiene que nacer en el mismo estado que uno real.
+        nuevo.confirmAdulthood(Instant.now());
+        User user = users.save(nuevo);
         if (role == UserRole.STUDENT) {
             studentProfiles.save(new StudentProfile(user));
         }

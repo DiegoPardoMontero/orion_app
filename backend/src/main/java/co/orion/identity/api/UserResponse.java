@@ -13,8 +13,13 @@ import co.orion.shared.security.OrionUserDetails;
  * con la que el backend lo autoriza. Devolver aquí {@code STUDENT} y autorizar como aspirante haría
  * que el frontend dibujara un menú de estudiante contra una API que responde 403 a todo — dos
  * versiones de la verdad, y la peor de las dos es la que ve la persona.
+ *
+ * <p>{@code adultConfirmed} es falso solo en las cuentas anteriores a la regla de mayoría de edad.
+ * El frontend lo usa para pedir la declaración al entrar; el backend no se fía de eso y vuelve a
+ * comprobarlo donde importa, que es al reservar.
  */
-public record UserResponse(UUID id, String email, String fullName, String role, String photoUrl) {
+public record UserResponse(UUID id, String email, String fullName, String role, String photoUrl,
+                           boolean adultConfirmed) {
 
     public static UserResponse from(OrionUserDetails principal) {
         User user = principal.user();
@@ -23,6 +28,7 @@ public record UserResponse(UUID id, String email, String fullName, String role, 
                 user.getEmail(),
                 user.getFullName(),
                 principal.rolEfectivo(),
-                user.getPhotoUrl());
+                user.getPhotoUrl(),
+                user.hasConfirmedAdulthood());
     }
 }
