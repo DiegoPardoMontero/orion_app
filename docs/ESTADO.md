@@ -31,11 +31,11 @@ dentro de `/cuenta`).
 ## Verificación
 Al 08/09/2026, sobre `0a62345`:
 - Backend: `./mvnw verify` (Testcontainers) — **161 unitarios + 365 de integración**, verde.
-- Frontend: `next build` + `tsc` + `lint` verdes; **39 tests de Vitest**.
-- **E2E Playwright: 15 de 16.** El que falta —el paso por la pasarela— exige llaves de *sandbox* de
-  Wompi en el entorno; su propio comentario lo advierte. La suite muta estado y asume semilla
-  fresca: `docker compose down -v` entre corridas completas.
-- El build de producción, además, servido y recorrido en navegador (escritorio y móvil).
+- Frontend: `next build` + `tsc` + `lint` verdes; **50 tests de Vitest**.
+- **E2E Playwright: sin correr desde el Bloque 9.** Estaba en 15 de 16 al 04/09, pero el Bloque 9
+  tocó el registro (tres casillas nuevas), la navegación y el buscador, así que esa cifra ya no
+  vale como verificación: hay specs que casi con seguridad hay que actualizar. Pendiente.
+- El build de producción **no** se ha vuelto a recorrer en navegador tras el Bloque 9.
 
 ## Pagos (Bloque 4, 02/09/2026)
 Reservar ya no confirma: la reserva nace `PENDING_PAYMENT` con el cupo bloqueado y solo pasa a
