@@ -1,5 +1,6 @@
 package co.orion.catalog.api;
 
+import java.util.Comparator;
 import java.util.List;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -27,7 +28,13 @@ public class AdminSettingsController {
 
     @GetMapping
     public List<SettingResponse> list() {
-        return settings.all().stream().map(SettingResponse::from).toList();
+        return settings.all().stream()
+                .map(SettingResponse::from)
+                // Por grupo y, dentro, por etiqueta: la pantalla los pinta en el orden en que
+                // llegan y así no tiene que saberse el catálogo.
+                .sorted(Comparator.comparing(SettingResponse::group)
+                        .thenComparing(SettingResponse::label))
+                .toList();
     }
 
     @PutMapping("/{key}")

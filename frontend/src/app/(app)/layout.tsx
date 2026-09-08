@@ -15,6 +15,7 @@ import {
   LifeBuoy,
   LogOut,
   MessageCircle,
+  SlidersHorizontal,
   Sparkles,
   User,
   Star,
@@ -71,6 +72,7 @@ const ICONO: Record<string, LucideIcon> = {
   "/admin/reservas": CalendarRange,
   "/ayuda": LifeBuoy,
   "/admin/soporte": LifeBuoy,
+  "/admin/ajustes": SlidersHorizontal,
 };
 
 /** Rutas del profesor que exigen postulación APPROVED; si no, se muestra un aviso en vez de la UI. */

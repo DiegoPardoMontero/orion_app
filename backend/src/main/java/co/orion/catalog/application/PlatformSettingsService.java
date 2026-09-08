@@ -8,6 +8,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import co.orion.catalog.domain.PlatformSetting;
+import co.orion.catalog.domain.PlatformSettingChange;
+import co.orion.catalog.domain.SettingDefinition;
+import co.orion.catalog.persistence.PlatformSettingChangeRepository;
 import co.orion.catalog.persistence.PlatformSettingRepository;
 import co.orion.shared.error.ResourceNotFoundException;
 
@@ -19,10 +22,14 @@ import co.orion.shared.error.ResourceNotFoundException;
 public class PlatformSettingsService {
 
     private final PlatformSettingRepository settings;
+    private final PlatformSettingChangeRepository changes;
     private final Clock clock;
 
-    public PlatformSettingsService(PlatformSettingRepository settings, Clock clock) {
+    public PlatformSettingsService(PlatformSettingRepository settings,
+                                   PlatformSettingChangeRepository changes,
+                                   Clock clock) {
         this.settings = settings;
+        this.changes = changes;
         this.clock = clock;
     }
 
@@ -46,11 +53,36 @@ public class PlatformSettingsService {
         return settings.findAll();
     }
 
+    /**
+     * Cambia un ajuste, validando contra su definición y dejando el cambio en el historial.
+     *
+     * <p>La validación va aquí y no en el formulario porque el formulario no es la única puerta:
+     * el endpoint sigue existiendo y un cero de más en la comisión cambia lo que cobra cada
+     * reserva desde ese instante. Un ajuste que no está en el catálogo se rechaza como
+     * desconocido — no se acepta a ciegas «por si acaso».
+     */
     @Transactional
     public PlatformSetting update(String key, String value, UUID actorId) {
         PlatformSetting setting = get(key);
-        setting.changeValue(value, actorId, clock.instant());
-        return settings.save(setting);
+        SettingDefinition definition = SettingDefinition.forKey(key)
+                .orElseThrow(() -> new ResourceNotFoundException("Ajuste desconocido: " + key));
+
+        String limpio = definition.validate(value);
+        String anterior = setting.getValue();
+        if (limpio.equals(anterior)) {
+            return setting; // guardar lo mismo no es un cambio y no ensucia el historial
+        }
+
+        setting.changeValue(limpio, actorId, clock.instant());
+        PlatformSetting guardado = settings.save(setting);
+        changes.save(new PlatformSettingChange(key, anterior, limpio, actorId));
+        return guardado;
+    }
+
+    /** Los últimos cambios, para la pantalla de ajustes. */
+    @Transactional(readOnly = true)
+    public List<PlatformSettingChange> recentChanges() {
+        return changes.findTop50ByOrderByChangedAtDesc();
     }
 
     private PlatformSetting get(String key) {
