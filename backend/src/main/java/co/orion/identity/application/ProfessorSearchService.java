@@ -41,6 +41,7 @@ public class ProfessorSearchService {
     private final LanguageRepository languageCatalog;
     private final ProfessorRatingService ratings;
     private final SanctionService sanctions;
+    private final ProfessorAvailabilityLookup availability;
 
     public ProfessorSearchService(ProfessorProfileRepository profiles,
                                   ProfessorLanguageRepository languagesOf,
@@ -48,7 +49,8 @@ public class ProfessorSearchService {
                                   ProfessorGoalRepository goalsOf,
                                   LanguageRepository languageCatalog,
                                   ProfessorRatingService ratings,
-                                  SanctionService sanctions) {
+                                  SanctionService sanctions,
+                                  ProfessorAvailabilityLookup availability) {
         this.profiles = profiles;
         this.languagesOf = languagesOf;
         this.levelsOf = levelsOf;
@@ -56,6 +58,7 @@ public class ProfessorSearchService {
         this.languageCatalog = languageCatalog;
         this.ratings = ratings;
         this.sanctions = sanctions;
+        this.availability = availability;
     }
 
     @Transactional(readOnly = true)
@@ -63,6 +66,12 @@ public class ProfessorSearchService {
         Pageable pageable = PageRequest.of(Math.max(page, 0), clampSize(size), sortOf(sort));
         // Los sancionados con perfil oculto se resuelven aquí y entran ya como una lista de ids.
         ProfessorSearchCriteria effective = criteria.hiding(sanctions.hiddenProfessorIds());
+        // Y lo mismo con la disponibilidad: la resuelve scheduling a través del puerto, para que
+        // el buscador no tenga que saber qué es una regla de disponibilidad.
+        if (criteria.filtraPorDisponibilidad()) {
+            effective = effective.availableOnly(availability.professorsAvailable(
+                    criteria.days(), criteria.from(), criteria.to()));
+        }
         Page<ProfessorProfile> found = profiles.findAll(ProfessorSpecifications.matching(effective), pageable);
 
         List<UUID> ids = found.getContent().stream().map(ProfessorProfile::getUserId).toList();

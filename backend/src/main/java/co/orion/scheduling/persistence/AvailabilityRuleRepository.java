@@ -2,6 +2,8 @@ package co.orion.scheduling.persistence;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
+import java.time.DayOfWeek;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,6 +18,15 @@ public interface AvailabilityRuleRepository extends JpaRepository<AvailabilityRu
     List<AvailabilityRule> findByProfessorIdAndActiveTrue(UUID professorId);
 
     List<AvailabilityRule> findByProfessorIdOrderByWeekdayAscStartTimeAsc(UUID professorId);
+
+    /**
+     * Todas las franjas activas de unos días. El filtro fino —que quepa una clase entera— se hace
+     * en memoria: a la escala de Orión son decenas de filas, y expresar «que la intersección dure
+     * al menos 60 minutos» en SQL cuesta un CASE que nadie va a poder leer dentro de un año.
+     */
+    List<AvailabilityRule> findByWeekdayInAndActiveTrue(Collection<DayOfWeek> weekdays);
+
+    List<AvailabilityRule> findByActiveTrue();
 
     /**
      * Semántica semiabierta [inicio, fin): dos franjas se solapan si y solo si
