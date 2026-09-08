@@ -85,6 +85,22 @@ orion:
     correo:      ${ORION_LEGAL_CORREO:diegopardomontero@gmail.com}
     whatsapp:    ${ORION_LEGAL_WHATSAPP:+573023063447}
     horario:     ${ORION_LEGAL_HORARIO:Lunes a viernes de 8:00 a. m. a 6:00 p. m.}
+  # Alertas de operación al correo de quien lleva Orión. Sin servicio externo: el correo ya
+  # funciona, ya lleva marca y ya llega; un Sentry para decir lo que un correo puede decir sería
+  # una dependencia más que mantener y una cuenta más que alguien tendría que acordarse de mirar.
+  #
+  # El freno no es una optimización: un error en bucle mandaría seiscientos correos, la bandeja se
+  # saturaría y a la semana nadie los abriría — y una bandeja que nadie abre es igual de ciega que
+  # no tener alertas.
+  alerts:
+    to: ${ORION_ALERTS_TO:diegopardomontero@gmail.com}
+    enabled: ${ORION_ALERTS_ENABLED:true}
+    per-signature-minutes: ${ORION_ALERTS_PER_SIGNATURE_MINUTES:60}
+    daily-cap: ${ORION_ALERTS_DAILY_CAP:50}
+    watchdog:
+      interval-ms: ${ORION_ALERTS_WATCHDOG_INTERVAL_MS:900000}
+      # Un retraso al arrancar evita avisar de procesos que todavía no han tenido su turno.
+      initial-delay-ms: ${ORION_ALERTS_WATCHDOG_INITIAL_DELAY_MS:900000}
   mail:
     from: ${ORION_MAIL_FROM:no-reply@orion.local}
     # Transporte del correo: 'smtp' (Mailpit en local) o 'resend' (API HTTP en prod, porque Railway

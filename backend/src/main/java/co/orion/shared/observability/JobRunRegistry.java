@@ -1,4 +1,4 @@
-package co.orion.lifecycle.application;
+package co.orion.shared.observability;
 
 import java.time.Instant;
 import java.util.List;

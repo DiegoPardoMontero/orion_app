@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
+
+import co.orion.shared.observability.JobRunRegistry;
 import org.springframework.transaction.annotation.Transactional;
 
 import co.orion.billing.application.PaymentLifecycleService;

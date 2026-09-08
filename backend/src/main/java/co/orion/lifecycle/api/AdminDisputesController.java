@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import co.orion.lifecycle.application.DisputeQueryService;
 import co.orion.lifecycle.application.DisputeService;
 import co.orion.lifecycle.application.DisputeView;
-import co.orion.lifecycle.application.JobRunRegistry;
+import co.orion.shared.observability.JobRunRegistry;
 import co.orion.shared.security.OrionUserDetails;
 import jakarta.validation.Valid;
 
