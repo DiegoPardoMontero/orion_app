@@ -28,6 +28,7 @@ import { Avatar } from "@/components/Avatar";
 import { CambiarClave } from "@/components/CambiarClave";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import { Vacio } from "@/components/estados";
+import { AvisoCorreoSinVerificar } from "@/components/AvisoCorreoSinVerificar";
 import { AvisoMayoriaDeEdad } from "@/components/AvisoMayoriaDeEdad";
 import { Encendido } from "@/components/gamificacion/Encendido";
 import { Wordmark } from "@/components/marca";
@@ -137,6 +138,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
       <div className="flex min-h-dvh flex-1 flex-col">
         <MobileHeader me={me} />
+        {/* Barra y no diálogo: la tarea está a medias en el buzón, y bloquear la app no la acerca.
+            Quien de verdad la necesita es quien va a reservar, y ahí el backend responde 422. */}
+        {!me.emailVerified && <AvisoCorreoSinVerificar correo={me.email} />}
         <div className="flex-1 pb-24 lg:pb-0">
           {rutaProtegida ? <GateProfesor aplic={aplic}>{children}</GateProfesor> : children}
         </div>

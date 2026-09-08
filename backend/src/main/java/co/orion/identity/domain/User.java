@@ -66,6 +66,13 @@ public class User {
     @Column(name = "age_confirmed_at")
     private Instant ageConfirmedAt;
 
+    /**
+     * Cuándo se comprobó que el correo existe y es suyo. Nulo mientras no se verifique; en las
+     * cuentas anteriores a la regla lo puso la V26 con su fecha de alta.
+     */
+    @Column(name = "email_verified_at")
+    private Instant emailVerifiedAt;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -92,8 +99,18 @@ public class User {
         return Objects.requireNonNull(email, "email").trim().toLowerCase();
     }
 
+    /**
+     * Cambiar el correo lo deja SIN verificar, salvo que sea el mismo de antes.
+     *
+     * <p>Conservar la marca sería peor que no tenerla: diría que comprobamos una dirección que
+     * nadie ha comprobado, y bastaría con editarse el correo para saltarse la verificación entera.
+     */
     public void changeEmail(String email) {
-        this.email = normalizeEmail(email);
+        String nuevo = normalizeEmail(email);
+        if (!nuevo.equals(this.email)) {
+            this.emailVerifiedAt = null;
+        }
+        this.email = nuevo;
     }
 
     public void changePasswordHash(String passwordHash) {
@@ -110,6 +127,18 @@ public class User {
 
     public void changeFullName(String fullName) {
         this.fullName = Objects.requireNonNull(fullName, "fullName");
+    }
+
+    public void markEmailVerified(Instant when) {
+        this.emailVerifiedAt = Objects.requireNonNull(when, "when");
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerifiedAt != null;
+    }
+
+    public Instant getEmailVerifiedAt() {
+        return emailVerifiedAt;
     }
 
     /** Deja constancia de la declaración de mayoría de edad. Una sola vez: no se puede retirar. */

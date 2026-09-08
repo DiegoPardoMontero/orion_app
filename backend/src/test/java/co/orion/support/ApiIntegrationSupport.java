@@ -174,6 +174,7 @@ public abstract class ApiIntegrationSupport {
         // gate de BookingService trataría a este estudiante como una cuenta antigua y no podría
         // reservar. Un usuario de prueba tiene que nacer en el mismo estado que uno real.
         nuevo.confirmAdulthood(Instant.now());
+        nuevo.markEmailVerified(Instant.now());
         User user = users.save(nuevo);
         if (role == UserRole.STUDENT) {
             studentProfiles.save(new StudentProfile(user));

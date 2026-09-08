@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import co.orion.identity.application.PasswordResetService;
 import co.orion.identity.application.ProfessorInviteService;
+import co.orion.identity.application.EmailVerificationService;
 import co.orion.identity.application.RegistrationService;
 import co.orion.identity.domain.User;
 import co.orion.legal.application.LegalDocumentService;
@@ -40,18 +41,21 @@ public class AuthController {
     private final PasswordResetService passwordResetService;
     private final ProfessorInviteService professorInviteService;
     private final LegalDocumentService legal;
+    private final EmailVerificationService emailVerification;
     private final SecurityContextRepository contextRepository = new HttpSessionSecurityContextRepository();
 
     public AuthController(AuthenticationManager authenticationManager,
                           RegistrationService registrationService,
                           PasswordResetService passwordResetService,
                           ProfessorInviteService professorInviteService,
-                          LegalDocumentService legal) {
+                          LegalDocumentService legal,
+                          EmailVerificationService emailVerification) {
         this.authenticationManager = authenticationManager;
         this.registrationService = registrationService;
         this.passwordResetService = passwordResetService;
         this.professorInviteService = professorInviteService;
         this.legal = legal;
+        this.emailVerification = emailVerification;
     }
 
     @PostMapping("/login")
@@ -82,6 +86,10 @@ public class AuthController {
         legal.record(creado.getId(), LegalDocumentCode.PRIVACY,
                 request.getRemoteAddr(), request.getHeader("User-Agent"));
 
+        // El correo de confirmación sale ya. Su fallo no deshace el alta: la cuenta existe y hay
+        // un botón de reenviar; perder la cuenta por un SMTP caído sería mucho peor.
+        emailVerification.send(creado.getId());
+
         return authenticateAndOpenSession(body.email(), body.password(), request, response);
     }
 
@@ -93,6 +101,17 @@ public class AuthController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void forgotPassword(@Valid @RequestBody ForgotPasswordRequest body) {
         passwordResetService.request(body.email());
+    }
+
+    /**
+     * Confirma una dirección de correo con el token del enlace. Público: quien llega desde su
+     * buzón puede no tener sesión abierta —o tenerla en otro navegador—, y exigirle iniciar sesión
+     * para confirmar un correo es pedirle que resuelva el problema antes de resolverlo.
+     */
+    @PostMapping("/verify-email")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void verifyEmail(@Valid @RequestBody VerifyEmailRequest body) {
+        emailVerification.verify(body.token());
     }
 
     /** Restablece la contraseña con el token del enlace. Token inválido o vencido → 422. */

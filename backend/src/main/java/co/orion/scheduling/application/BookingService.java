@@ -103,6 +103,7 @@ public class BookingService {
                              UUID requestedStudentId) {
         UUID studentId = resolveStudent(actor, requestedStudentId);
         requireAdulthood(actor);
+        requireVerifiedEmail(actor);
         BookingModality modality = parseModality(modalityName);
         Instant endsAt = startsAt.plus(CLASS_LENGTH);
 
@@ -338,6 +339,22 @@ public class BookingService {
      * declaración al entrar, pero la puerta que de verdad importa es esta — reservar mueve dinero.
      * Un admin reservando en nombre de alguien no la cruza: el actor es él, no el estudiante.
      */
+    /**
+     * Nadie reserva desde un correo sin comprobar.
+     *
+     * <p>La confirmación, el .ics y el enlace de la sala viajan por correo: una reserva contra un
+     * buzón que no existe es una clase que nadie va a recordar, y contra el buzón de otra persona
+     * es peor. Es la única puerta que la verificación cierra — buscar y mirar perfiles siguen
+     * abiertos, porque exigir verificar para poder mirar precios espanta a quien solo miraba.
+     */
+    private void requireVerifiedEmail(User actor) {
+        if (actor.getRole() == UserRole.STUDENT && !actor.isEmailVerified()) {
+            throw new UnprocessableException(
+                    "Confirma tu correo antes de reservar. Te enviamos un enlace al registrarte y "
+                            + "puedes pedir otro desde tu perfil.");
+        }
+    }
+
     private void requireAdulthood(User actor) {
         if (actor.getRole() == UserRole.STUDENT && !actor.hasConfirmedAdulthood()) {
             throw new UnprocessableException(

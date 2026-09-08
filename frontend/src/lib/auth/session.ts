@@ -24,6 +24,11 @@ export type Me = {
    * Se les pide al entrar; el backend vuelve a comprobarlo al reservar, que es donde importa.
    */
   adultConfirmed: boolean;
+  /**
+   * Si el correo está comprobado. Junto con `adultConfirmed`, son las dos condiciones que hacen
+   * falta para reservar; el backend las vuelve a comprobar en BookingService, que es donde mandan.
+   */
+  emailVerified: boolean;
 };
 
 export const meQueryKey = ["auth", "me"] as const;
@@ -100,6 +105,14 @@ export function useConfirmarMayoriaDeEdad() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: meQueryKey });
     },
+  });
+}
+
+/** Reenvía el correo de verificación. El backend corta a los tres por hora. */
+export function useReenviarVerificacion() {
+  return useMutation({
+    mutationFn: () =>
+      apiFetch<void>("/api/v1/me/account/email-verification/resend", { method: "POST" }),
   });
 }
 

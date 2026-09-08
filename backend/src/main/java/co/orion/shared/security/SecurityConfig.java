@@ -43,6 +43,10 @@ public class SecurityConfig {
                 .ignoringRequestMatchers("/api/v1/auth/login", "/api/v1/auth/register",
                         "/api/v1/auth/forgot-password", "/api/v1/auth/reset-password",
                         "/api/v1/auth/accept-invite",
+                        // Se llega desde el enlace del correo, a veces en otro navegador: no hay
+                        // cookie CSRF que presentar. Lo que autoriza es el token del enlace, que
+                        // es de un solo uso y caduca.
+                        "/api/v1/auth/verify-email",
                         // El webhook lo llama Wompi, no un navegador: no hay cookie que proteger y
                         // exigir CSRF solo garantizaría que ningún evento entre nunca. Lo que lo
                         // protege es la firma del propio evento, verificada antes de tocar la base.
@@ -58,6 +62,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/register").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/forgot-password").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/reset-password").permitAll()
+                // Quien llega desde su buzón puede no tener sesión abierta, o tenerla en otro
+                // navegador. Exigirle entrar para confirmar su correo es pedirle que resuelva el
+                // problema antes de resolverlo.
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/verify-email").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/auth/invite").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/accept-invite").permitAll()
                 // Términos, política de datos y contacto del responsable: abiertos porque el
