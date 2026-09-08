@@ -132,6 +132,9 @@ public class SecurityConfig {
                 // Las notificaciones in-app son de cualquier usuario autenticado (cae en anyRequest,
                 // pero se deja explícito por claridad junto al resto del Bloque 3).
                 .requestMatchers("/api/v1/me/notifications", "/api/v1/me/notifications/**").authenticated()
+                // Soporte: cualquiera que esté dentro. Un profesor que no puede reclamar
+                // formalmente su pago es un problema que vuelve por otro lado, y peor.
+                .requestMatchers("/api/v1/me/support", "/api/v1/me/support/**").authenticated()
                 // Dinero: el saldo y el historial son del estudiante; las ganancias, del profesor.
                 // El admin llega a lo mismo por /api/v1/admin/payments, que ya exige rol ADMIN.
                 .requestMatchers("/api/v1/me/credits", "/api/v1/me/payments").hasAnyRole("STUDENT", "ADMIN")

@@ -16,9 +16,14 @@ export const metadata: Metadata = {
  * disponibles ANTES de contratar, y un documento detrás de un fetch de cliente o de un login llega
  * tarde. El texto viene de la base, no del código: así, cuando alguien pregunte qué aceptó en su
  * momento, la respuesta puede ser el texto de su momento y no el que esté desplegado hoy.
+ *
+ * <p>Se pide con revalidación 0 —es decir, en cada petición y nunca en el build— a propósito. Con
+ * ISR, un despliegue hecho sin el backend arriba (que es lo normal en Railway) prerenderizaría un
+ * 404 y lo serviría durante los primeros minutos. Una página que la ley obliga a tener disponible
+ * no puede empezar rota y curarse sola.
  */
 export default async function TerminosPage() {
-  const doc = await serverFetch<DocumentoLegalData>("/api/v1/legal/TERMS");
+  const doc = await serverFetch<DocumentoLegalData>("/api/v1/legal/TERMS", 0);
   if (!doc) notFound();
 
   return (

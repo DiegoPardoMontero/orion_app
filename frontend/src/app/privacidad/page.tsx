@@ -15,9 +15,12 @@ export const metadata: Metadata = {
  * La Política de tratamiento de la información, con las seis secciones que exige el art. 13 del
  * Decreto 1377 de 2013. Pública y server component por lo mismo que los términos: la autorización
  * de tratamiento tiene que ser INFORMADA, y no lo es si el texto no se puede leer antes de darla.
+ *
+ * <p>Revalidación 0, como los términos: nunca se prerenderiza en el build, donde el backend puede
+ * no estar arriba y el resultado sería un 404 servido durante los primeros minutos tras desplegar.
  */
 export default async function PrivacidadPage() {
-  const doc = await serverFetch<DocumentoLegalData>("/api/v1/legal/PRIVACY");
+  const doc = await serverFetch<DocumentoLegalData>("/api/v1/legal/PRIVACY", 0);
   if (!doc) notFound();
 
   return (

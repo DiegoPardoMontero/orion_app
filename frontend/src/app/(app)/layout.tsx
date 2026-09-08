@@ -12,6 +12,7 @@ import {
   GraduationCap,
   LayoutDashboard,
   KeyRound,
+  LifeBuoy,
   LogOut,
   MessageCircle,
   Sparkles,
@@ -68,6 +69,8 @@ const ICONO: Record<string, LucideIcon> = {
   "/admin/usuarios": Users,
   "/admin/aplicaciones": ClipboardList,
   "/admin/reservas": CalendarRange,
+  "/ayuda": LifeBuoy,
+  "/admin/soporte": LifeBuoy,
 };
 
 /** Rutas del profesor que exigen postulación APPROVED; si no, se muestra un aviso en vez de la UI. */
@@ -448,6 +451,16 @@ function MenuUsuario({
               <p className="truncate text-[13px] font-bold text-text">{me.fullName}</p>
               <p className="truncate text-[11.5px] text-text-muted">{me.email}</p>
             </div>
+            {/* La barra inferior de móvil está topada en cinco entradas y ya está llena, así que
+                Ayuda cuelga de aquí: sin esto solo sería alcanzable escribiendo la URL. */}
+            <Link
+              href="/ayuda"
+              onClick={() => setAbierto(false)}
+              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-[13px] font-semibold text-text hover:bg-surface-sunken"
+            >
+              <LifeBuoy size={15} strokeWidth={1.75} />
+              Ayuda
+            </Link>
             <button
               type="button"
               onClick={() => {
