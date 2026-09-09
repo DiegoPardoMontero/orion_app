@@ -58,7 +58,7 @@ const REQUISITOS = [
   "Dominio comprobable del idioma que enseñas (nativo o certificado).",
   "Hoja de vida. Los certificados de enseñanza son opcionales.",
   "Compromiso de puntualidad, respeto y profesionalismo en cada clase.",
-  "Conexión estable para las clases virtuales (o un espacio para las presenciales).",
+  "Conexión a internet estable: todas las clases de Orión son virtuales.",
 ];
 
 const PASOS = [

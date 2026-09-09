@@ -114,8 +114,10 @@ public class BookingService {
             throw new UnprocessableException("El estudiante ya tiene una clase reservada a esa hora");
         }
 
+        // locationNote describía dónde verse en persona. Sin presencial no tiene sentido, y
+        // guardarlo pondría una dirección en una clase a la que se entra por un enlace.
         Booking booking = new Booking(studentId, professorId, startsAt, endsAt, modality,
-                locationNote, resolveLanguage(professorId, requestedLanguage), actor.getId(),
+                null, resolveLanguage(professorId, requestedLanguage), actor.getId(),
                 payments.holdExpiry(clock.instant()));
 
         Booking saved = saveOrLoseTheRace(booking);
@@ -413,11 +415,21 @@ public class BookingService {
         return actor.getId();
     }
 
+    /**
+     * Orión solo da clases virtuales, así que la modalidad ya no es una elección. Se sigue
+     * aceptando en la petición —clientes viejos la mandan— pero solo si dice VIRTUAL; no llega,
+     * se asume. Cualquier otra cosa se rechaza en vez de convertirse en silencio a virtual: quien
+     * pidió una clase presencial merece enterarse de que no existe.
+     */
     private BookingModality parseModality(String modalityName) {
+        if (modalityName == null || modalityName.isBlank()) {
+            return BookingModality.VIRTUAL;
+        }
         try {
             return BookingModality.valueOf(modalityName.trim().toUpperCase());
         } catch (IllegalArgumentException ex) {
-            throw new BusinessRuleViolationException("modality debe ser VIRTUAL o IN_PERSON");
+            throw new BusinessRuleViolationException(
+                    "Orión solo ofrece clases virtuales: modality debe ser VIRTUAL");
         }
     }
 

@@ -276,15 +276,6 @@ class MotorDeLogrosIT extends ApiIntegrationSupport {
     }
 
     @Test
-    void unaClasePresencialEnciendeCaraACara() {
-        claseTomada(maria, LocalDate.of(2026, 7, 20), BookingModality.IN_PERSON, "EN");
-
-        motor.onSomethingHappened(ana.getId());
-
-        assertThat(estadoDe(ana.getId()).get("amplitud-presencial").isUnlocked()).isTrue();
-    }
-
-    @Test
     void elProgresoSeGuardaAunqueNoSeAlcanceLaMeta() {
         claseTomada(maria, LocalDate.of(2026, 7, 13));
         claseTomada(maria, LocalDate.of(2026, 7, 20));
@@ -350,7 +341,7 @@ class MotorDeLogrosIT extends ApiIntegrationSupport {
                 claseTomada(juan, LocalDate.of(2026, 6, 15)),
                 // hueco: semana del 22 de junio → protegida
                 claseTomada(maria, LocalDate.of(2026, 6, 29)),
-                claseTomada(pedro, LocalDate.of(2026, 7, 6), BookingModality.IN_PERSON, "FR"),
+                claseTomada(pedro, LocalDate.of(2026, 7, 6), BookingModality.VIRTUAL, "FR"),
                 claseTomada(maria, LocalDate.of(2026, 7, 13)),
                 claseTomada(maria, LocalDate.of(2026, 7, 20)));
 

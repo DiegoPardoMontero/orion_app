@@ -68,7 +68,8 @@ export type AdminApplicationDetail = Schemas["AdminApplicationDetail"];
 export type ApplicationEventView = Schemas["ApplicationEventView"];
 export type ReviewDecisionRequest = Schemas["ReviewDecisionRequest"];
 
-export type Modality = "VIRTUAL" | "IN_PERSON";
+/** Orión solo da clases virtuales (V30). El tipo se queda por el histórico ya escrito. */
+export type Modality = "VIRTUAL";
 
 /* --------------------------------------------------------------------------------------------
  * Pagos, créditos y liquidación (Bloque 4)

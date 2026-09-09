@@ -31,6 +31,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import co.orion.TestcontainersConfiguration;
+import co.orion.scheduling.domain.BookingModality;
 import co.orion.identity.domain.ProfessorProfile;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
@@ -180,15 +181,30 @@ class CreateBookingIT extends ApiIntegrationSupport {
         assertThat(paid.getMeetingLink()).startsWith("https://meet.jit.si/OrionIdiomas-");
     }
 
+    /** Orión es virtual: pedir una clase presencial se rechaza, no se convierte en silencio. */
+    @SuppressWarnings("rawtypes")
     @Test
-    void anInPersonBookingHasNoMeetingLink() {
-        ResponseEntity<BookingResponse> response = post(
+    void anInPersonBookingIsRejected() {
+        ResponseEntity<Map> response = post(
                 BOOKINGS, anaSession,
                 new CreateBookingRequest(maria.getId(), wednesdayAt(9), "IN_PERSON", "Café del centro", null, null),
+                Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().get("error").toString()).contains("virtuales");
+    }
+
+    /** Y sin decir nada, la clase nace virtual y con su sala. */
+    @Test
+    void aBookingWithoutModalityIsVirtual() {
+        ResponseEntity<BookingResponse> response = post(
+                BOOKINGS, anaSession,
+                new CreateBookingRequest(maria.getId(), wednesdayAt(9), null, null, null, null),
                 BookingResponse.class);
 
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         var saved = bookings.findById(response.getBody().id()).orElseThrow();
-        assertThat(saved.getMeetingLink()).isNull();
+        assertThat(saved.getModality()).isEqualTo(BookingModality.VIRTUAL);
     }
 
     @Test

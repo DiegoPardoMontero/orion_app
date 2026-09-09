@@ -10,7 +10,6 @@ import {
   MapPin,
   MessageCircle,
   Star,
-  Undo2,
   Video,
   X,
 } from "lucide-react";
@@ -23,7 +22,7 @@ import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Modal } from "@/components/Modal";
 import { SelectorEstrellas } from "@/components/Rating";
 import { Rigel } from "@/components/Rigel";
-import { Badge, Bloque, Boton, BotonPrincipal, Chip, Segmento, Spinner, Tarjeta } from "@/components/ui";
+import { Badge, Bloque, Boton, BotonPrincipal, Chip, Segmento, Tarjeta } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type {
   ConversationSummary,
@@ -441,12 +440,12 @@ function TarjetaClase({
           <div className="mt-3.5 rounded-base bg-warning-bg px-4 py-3">
             <p className="flex items-center gap-1.5 text-[13px] font-bold text-warning">
               <Clock size={15} strokeWidth={2.2} />
-              {esProfesor ? "Reservada, a la espera del pago" : "Te guardamos el cupo mientras pagas"}
+              {esProfesor ? "Reservada, a la espera del pago" : "Te guardamos el horario mientras pagas"}
             </p>
             <p className="mt-1 text-[12.5px] text-warning">
               {esProfesor
-                ? "Tu horario está apartado. Te confirmamos la clase en cuanto entre el pago; si no entra, el cupo se libera solo."
-                : "Si no completas el pago a tiempo, el horario vuelve a quedar libre."}
+                ? "Tu horario está apartado. Te confirmamos la clase en cuanto entre el pago; si no entra, el horario se libera solo."
+                : "Tienes 20 minutos para pagar. Si no lo haces, la reserva se cancela sola y el horario queda libre para otra persona; no se te cobra nada."}
             </p>
             {!esProfesor && (
               <div className="mt-3 flex flex-wrap gap-2 sm:justify-end">
@@ -454,13 +453,14 @@ function TarjetaClase({
                   <Boton className="h-10 w-full">Completar el pago</Boton>
                 </Link>
                 {/* Arrepentirse antes de pagar se puede siempre: no hay clase que proteger, y
-                    esperar 20 minutos a que venza no es una respuesta. */}
+                    esperar 20 minutos a que venza no es una respuesta. Se llama «cancelar» como
+                    todo lo demás: «soltar el cupo» era vocabulario nuestro, no del estudiante. */}
                 <Boton
                   variante="contorno"
                   onClick={() => setCancelando(true)}
                   className="h-10 min-w-[120px] flex-1 sm:flex-none"
                 >
-                  Soltar el cupo
+                  Cancelar reserva
                 </Boton>
               </div>
             )}
@@ -527,10 +527,6 @@ function TarjetaClase({
               >
                 Cancelar
               </Boton>
-              {/* El retracto solo aparece cuando de verdad aplica: es un derecho con condiciones
-                  (5 días hábiles y clase sin empezar), no una segunda forma de cancelar. Enseñarlo
-                  siempre lo convertiría en una promesa que la mayoría de las veces no se cumple. */}
-              <BotonRetracto clase={clase} />
             </>
           )}
 
@@ -694,6 +690,28 @@ function ModalCancelar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
   const esProfesor = me?.role === "PROFESSOR";
   const [motivo, setMotivo] = useState("");
 
+  // Cancelar una reserva que nadie pagó no es lo mismo que cancelar una clase comprada: no hay
+  // dinero de por medio ni nadie contaba todavía con esa hora.
+  const sinPagar = esperaPago(clase.status);
+  const bookingId = clase.id ?? "";
+
+  /*
+   * Un solo botón, y el destino del dinero como pregunta.
+   *
+   * Antes había dos: «Cancelar» y «Retractarme». Para el estudiante hacían lo mismo —deshacer la
+   * compra— y la diferencia real, adónde va el dinero, quedaba enterrada en dos textos que se
+   * contradecían. El retracto no desaparece: es un derecho del art. 47 de la Ley 1480 y no se
+   * puede quitar. Lo que cambia es que se ofrece donde se decide, con su consecuencia al lado, en
+   * vez de como un segundo camino que hay que adivinar.
+   */
+  const retracto = useElegibilidadRetracto(
+    bookingId,
+    bookingId !== "" && !esProfesor && clase.status === "CONFIRMED",
+  );
+  const puedeElegirDestino = !esProfesor && !sinPagar && retracto.data?.eligible === true;
+  const [destino, setDestino] = useState<"saldo" | "medio-de-pago">("saldo");
+
+  const retractarse = useRetractarse(bookingId);
   const cancelar = useMutation({
     mutationFn: () =>
       apiFetch(`/api/v1/bookings/${clase.id}/cancel`, {
@@ -708,25 +726,63 @@ function ModalCancelar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
     },
   });
 
-  const error = cancelar.error instanceof ApiError ? cancelar.error.message : null;
+  const alMedioDePago = puedeElegirDestino && destino === "medio-de-pago";
+  const trabajando = cancelar.isPending || retractarse.isPending;
+  const fallo = alMedioDePago ? retractarse.error : cancelar.error;
+  const error = fallo instanceof ApiError ? fallo.message : null;
 
-  // Soltar un cupo sin pagar no es lo mismo que cancelar una clase: nadie contaba con esa hora
-  // todavía, y el saldo que se hubiera aplicado vuelve intacto.
-  const sinPagar = esperaPago(clase.status);
+  function confirmar() {
+    if (alMedioDePago) {
+      retractarse.mutate(undefined, {
+        onSuccess: () => {
+          void queryClient.invalidateQueries({ queryKey: ["me", "bookings"] });
+          void queryClient.invalidateQueries({ queryKey: ["slots"] });
+        },
+      });
+      return;
+    }
+    cancelar.mutate();
+  }
+
+  if (retractarse.isSuccess) {
+    return (
+      <Modal titulo="Cancelada" onCerrar={onCerrar}>
+        <p className="text-[14px] leading-relaxed text-text-secondary">
+          Cancelamos la clase y te devolvemos{" "}
+          <strong className="text-text">{precioCop(retractarse.data.amountCop)}</strong> al mismo
+          medio de pago que usaste.
+        </p>
+        <p className="mt-3 text-[13px] leading-relaxed text-text-muted">
+          Puede tardar hasta 15 días calendario, aunque casi siempre es antes. Te escribimos cuando
+          salga.
+        </p>
+        <BotonPrincipal type="button" onClick={onCerrar} className="mt-5">
+          Entendido
+        </BotonPrincipal>
+      </Modal>
+    );
+  }
 
   return (
-    <Modal titulo={sinPagar ? "¿Soltar este cupo?" : "¿Cancelar esta clase?"} onCerrar={onCerrar}>
+    <Modal titulo={sinPagar ? "¿Cancelar esta reserva?" : "¿Cancelar esta clase?"} onCerrar={onCerrar}>
       <p className="text-[13px] text-text-secondary">
         {fechaYRango(clase.startsAt!, clase.endsAt!)} con {clase.counterpart?.fullName}.{" "}
         {sinPagar
-          ? "No se te ha cobrado nada y el horario vuelve a quedar libre."
+          ? "Todavía no has pagado, así que no se te cobra nada."
           : "Puedes agendar otra cuando quieras."}
       </p>
+
+      {sinPagar && (
+        <p className="mt-3 rounded-base bg-surface-sunken px-4 py-3 text-[13px] leading-relaxed text-text-secondary">
+          El horario queda libre para otra persona. Si habías aplicado saldo a favor, vuelve entero
+          a tu cuenta, con su misma fecha de vencimiento.
+        </p>
+      )}
 
       {/* Lo que de verdad hay que saber antes de pulsar es qué pasa con el dinero, y depende de
           quién cancela y de cuándo. Decirlo aquí es lo que convierte una regla del contrato en
           algo que la persona conoce en el momento de decidir. */}
-      {!sinPagar && (
+      {!sinPagar && !puedeElegirDestino && (
         <p
           className={`mt-3 rounded-base px-4 py-3 text-[13px] leading-relaxed ${
             esProfesor
@@ -739,9 +795,31 @@ function ModalCancelar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
           {esProfesor
             ? "El estudiante recuperará el valor completo como saldo a favor, y tú no cobrarás esta clase."
             : clase.lateCancel
-              ? "Faltan menos de 12 horas: la clase se considera prestada, así que el profesor la cobra y no hay devolución."
-              : "Recuperarás el valor completo como saldo a favor, disponible enseguida."}
+              ? "Faltan menos de 12 horas para la clase. Tu profesor ya apartó esa hora, así que la cobra igual y no hay devolución."
+              : "Faltan más de 12 horas, así que recuperas el valor completo como saldo a favor, disponible enseguida."}
         </p>
+      )}
+
+      {puedeElegirDestino && (
+        <fieldset className="mt-4">
+          <legend className="text-[12.5px] font-bold text-text-secondary">
+            ¿Adónde quieres que vaya el dinero?
+          </legend>
+          <div className="mt-2 grid gap-2">
+            <OpcionDestino
+              seleccionada={destino === "saldo"}
+              onSeleccionar={() => setDestino("saldo")}
+              titulo="A mi saldo en Orión"
+              detalle="Disponible enseguida para tu próxima clase."
+            />
+            <OpcionDestino
+              seleccionada={destino === "medio-de-pago"}
+              onSeleccionar={() => setDestino("medio-de-pago")}
+              titulo="Al medio de pago que usé"
+              detalle="Devolución al mismo sitio del que salió. Puede tardar hasta 15 días calendario."
+            />
+          </div>
+        </fieldset>
       )}
 
       <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="motivo">
@@ -764,18 +842,51 @@ function ModalCancelar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
 
       <div className="mt-5 flex gap-2.5">
         <Boton variante="contorno" onClick={onCerrar} className="h-11 flex-1">
-          {sinPagar ? "Conservar cupo" : "Mantener clase"}
+          {sinPagar ? "Conservar reserva" : "Mantener clase"}
         </Boton>
         <Boton
           variante="peligro"
-          disabled={cancelar.isPending}
-          onClick={() => cancelar.mutate()}
+          disabled={trabajando}
+          onClick={confirmar}
           className="h-11 flex-1"
         >
-          {cancelar.isPending ? "Cancelando…" : sinPagar ? "Sí, soltarlo" : "Sí, cancelar"}
+          {trabajando ? "Cancelando…" : "Sí, cancelar"}
         </Boton>
       </div>
     </Modal>
+  );
+}
+
+/** Una opción de destino del dinero. Radio de verdad, para que el teclado y el lector la entiendan. */
+function OpcionDestino({
+  seleccionada,
+  onSeleccionar,
+  titulo,
+  detalle,
+}: {
+  seleccionada: boolean;
+  onSeleccionar: () => void;
+  titulo: string;
+  detalle: string;
+}) {
+  return (
+    <label
+      className={`flex cursor-pointer items-start gap-3 rounded-base border-[1.5px] p-3.5 transition-colors ${
+        seleccionada ? "border-primary bg-primary-soft" : "border-border bg-surface-raised"
+      }`}
+    >
+      <input
+        type="radio"
+        name="destino-del-dinero"
+        checked={seleccionada}
+        onChange={onSeleccionar}
+        className="mt-[3px] h-[17px] w-[17px] shrink-0 cursor-pointer accent-primary focus-visible:shadow-focus"
+      />
+      <span className="min-w-0">
+        <span className="block text-[13.5px] font-bold text-text">{titulo}</span>
+        <span className="block text-[12.5px] leading-relaxed text-text-secondary">{detalle}</span>
+      </span>
+    </label>
   );
 }
 
@@ -1090,88 +1201,3 @@ function BannerReserva() {
 
 /** El logo de WhatsApp: SVG inline, como todo en este diseño. */
 
-/**
- * El botón de retracto. Solo se dibuja cuando el servidor dice que aplica.
- *
- * <p>Es un derecho con condiciones —5 días hábiles desde la reserva y clase sin empezar—, no una
- * segunda forma de cancelar. Enseñarlo siempre lo convertiría en una promesa que la mayoría de las
- * veces no se cumple, y quien lo pulsara se llevaría un error en vez de su dinero.
- */
-function BotonRetracto({ clase }: { clase: MyBookingResponse }) {
-  const bookingId = clase.id ?? "";
-  const [abierto, setAbierto] = useState(false);
-  const elegibilidad = useElegibilidadRetracto(bookingId, bookingId !== "" && clase.status === "CONFIRMED");
-  const retractarse = useRetractarse(bookingId);
-
-  if (!elegibilidad.data?.eligible) return null;
-
-  const error = retractarse.error instanceof ApiError ? retractarse.error.message : null;
-
-  return (
-    <>
-      <Boton
-        variante="fantasma"
-        onClick={() => setAbierto(true)}
-        className="h-10 flex-1 basis-[150px] sm:flex-none sm:basis-auto"
-      >
-        <Undo2 size={15} strokeWidth={1.9} />
-        Retractarme
-      </Boton>
-
-      {abierto && (
-        <Modal titulo="¿Retractarte de esta compra?" onCerrar={() => setAbierto(false)}>
-          {retractarse.isSuccess ? (
-            <>
-              <p className="text-[14px] leading-relaxed text-text-secondary">
-                Listo. Cancelamos la clase y te devolvemos{" "}
-                <strong className="text-text">
-                  {precioCop(retractarse.data.amountCop)}
-                </strong>{" "}
-                al mismo medio de pago que usaste.
-              </p>
-              <p className="mt-3 text-[13px] leading-relaxed text-text-muted">
-                El plazo legal para hacerlo es de 15 días calendario, aunque normalmente es antes.
-                Te avisamos por correo cuando salga.
-              </p>
-              <BotonPrincipal type="button" onClick={() => setAbierto(false)} className="mt-5">
-                Entendido
-              </BotonPrincipal>
-            </>
-          ) : (
-            <>
-              <p className="text-[14px] leading-relaxed text-text-secondary">
-                Estás en el plazo de retracto, así que puedes deshacer esta compra sin dar
-                explicaciones. Cancelamos la clase y te devolvemos el valor completo{" "}
-                <strong className="text-text">al mismo medio de pago</strong> —no como saldo—
-                dentro de los 15 días calendario siguientes.
-              </p>
-              <p className="mt-3 text-[13px] leading-relaxed text-text-muted">
-                Si prefieres el dinero como saldo para usarlo enseguida, cancela en vez de
-                retractarte: eso es inmediato.
-              </p>
-
-              {error && (
-                <div className="mt-4">
-                  <AvisoError mensaje={error} />
-                </div>
-              )}
-
-              <div className="mt-5 flex gap-2">
-                <Boton
-                  variante="primario"
-                  disabled={retractarse.isPending}
-                  onClick={() => retractarse.mutate()}
-                >
-                  {retractarse.isPending ? <Spinner /> : "Sí, retractarme"}
-                </Boton>
-                <Boton variante="fantasma" onClick={() => setAbierto(false)}>
-                  Volver
-                </Boton>
-              </div>
-            </>
-          )}
-        </Modal>
-      )}
-    </>
-  );
-}

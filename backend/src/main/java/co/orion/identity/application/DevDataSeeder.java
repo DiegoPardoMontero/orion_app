@@ -150,7 +150,7 @@ public class DevDataSeeder implements ApplicationRunner {
         List<ClasePasada> historial = List.of(
                 new ClasePasada(maria.get().getId(), 4, BookingModality.VIRTUAL, "EN"),
                 new ClasePasada(maria.get().getId(), 3, BookingModality.VIRTUAL, "EN"),
-                new ClasePasada(juan.get().getId(), 2, BookingModality.IN_PERSON, "FR"),
+                new ClasePasada(juan.get().getId(), 2, BookingModality.VIRTUAL, "FR"),
                 new ClasePasada(maria.get().getId(), 1, BookingModality.VIRTUAL, "EN"));
 
         for (ClasePasada clase : historial) {

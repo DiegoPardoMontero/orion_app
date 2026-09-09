@@ -395,7 +395,6 @@ function PerfilPublico({
 
       <div className="mt-3 flex flex-wrap gap-2">
         <Badge tono="lavanda"><Video size={12} strokeWidth={2.4} /> Virtual</Badge>
-        <Badge tono="melocoton"><MapPin size={12} strokeWidth={2.4} /> Presencial</Badge>
         {perfil.certified && <Badge tono="menta"><BadgeCheck size={12} strokeWidth={2.4} /> Certificado</Badge>}
         {perfil.acceptsTrial && <Badge tono="coral"><Sparkles size={12} strokeWidth={2.4} /> Clase de prueba</Badge>}
       </div>
