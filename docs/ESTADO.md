@@ -32,10 +32,13 @@ dentro de `/cuenta`).
 Al 08/09/2026, sobre `0a62345`:
 - Backend: `./mvnw verify` (Testcontainers) — **161 unitarios + 365 de integración**, verde.
 - Frontend: `next build` + `tsc` + `lint` verdes; **50 tests de Vitest**.
-- **E2E Playwright: sin correr desde el Bloque 9.** Estaba en 15 de 16 al 04/09, pero el Bloque 9
-  tocó el registro (tres casillas nuevas), la navegación y el buscador, así que esa cifra ya no
-  vale como verificación: hay specs que casi con seguridad hay que actualizar. Pendiente.
-- El build de producción **no** se ha vuelto a recorrer en navegador tras el Bloque 9.
+- **E2E Playwright: 15 de 16**, sobre base recreada (`docker compose down -v`). El que falta sigue
+  siendo el paso por la pasarela: exige llaves de *sandbox* de Wompi en el entorno.
+  Actualizados en el Bloque 9: las tres casillas del registro, y la verificación de correo —que
+  ahora se hace por el camino real, leyendo el enlace del buzón de Mailpit, y no marcando la
+  cuenta por SQL. El `timeout` por test subió a 60 s: estos tests manejan un `next dev` que
+  compila cada ruta la primera vez, y fallar por eso solo enseña a volver a correrlos.
+- El build de producción **no** se ha vuelto a recorrer a mano en navegador tras el Bloque 9.
 
 ## Pagos (Bloque 4, 02/09/2026)
 Reservar ya no confirma: la reserva nace `PENDING_PAYMENT` con el cupo bloqueado y solo pasa a

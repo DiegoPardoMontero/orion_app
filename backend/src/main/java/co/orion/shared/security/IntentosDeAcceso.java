@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import co.orion.shared.error.TooManyRequestsException;
@@ -26,27 +27,44 @@ import jakarta.servlet.http.HttpServletRequest;
 public class IntentosDeAcceso {
 
     private static final Duration VENTANA_LOGIN = Duration.ofMinutes(15);
-    private static final int MAX_LOGIN_POR_IP_Y_CORREO = 5;
-    private static final int MAX_LOGIN_POR_IP = 30;
-
     private static final Duration VENTANA_HORA = Duration.ofHours(1);
-    private static final int MAX_ALTAS_POR_IP = 3;
-    private static final int MAX_RECUPERACIONES_POR_CORREO = 3;
 
     private final RateLimiter limiter = new RateLimiter();
     private final Clock clock;
+    private final int maxLoginPorIpYCorreo;
+    private final int maxLoginPorIp;
+    private final int maxAltasPorIp;
+    private final int maxRecuperacionesPorCorreo;
 
-    public IntentosDeAcceso(Clock clock) {
+    /**
+     * Los topes son configurables porque el valor correcto depende de por dónde entra la gente.
+     *
+     * <p>El de altas empezó en 3 por hora y era demasiado estricto: <strong>varias personas
+     * comparten una IP</strong> —una oficina, un colegio, un café—, y la cuarta que se registrara
+     * en una hora se habría quedado fuera sin entender por qué. Diez sigue cortando la creación
+     * automatizada de cuentas, que es de lo que hay que protegerse, sin castigar a una sala llena
+     * de gente detrás del mismo router.
+     */
+    public IntentosDeAcceso(
+            Clock clock,
+            @Value("${orion.security.rate-limit.login-per-ip-and-email:5}") int maxLoginPorIpYCorreo,
+            @Value("${orion.security.rate-limit.login-per-ip:60}") int maxLoginPorIp,
+            @Value("${orion.security.rate-limit.signups-per-ip:10}") int maxAltasPorIp,
+            @Value("${orion.security.rate-limit.password-resets:3}") int maxRecuperacionesPorCorreo) {
         this.clock = clock;
+        this.maxLoginPorIpYCorreo = maxLoginPorIpYCorreo;
+        this.maxLoginPorIp = maxLoginPorIp;
+        this.maxAltasPorIp = maxAltasPorIp;
+        this.maxRecuperacionesPorCorreo = maxRecuperacionesPorCorreo;
     }
 
     public void antesDeLogin(HttpServletRequest request, String email) {
         Instant now = clock.instant();
         String ip = ipDe(request);
 
-        exigir("login:ip:" + ip, MAX_LOGIN_POR_IP, VENTANA_LOGIN, now,
+        exigir("login:ip:" + ip, maxLoginPorIp, VENTANA_LOGIN, now,
                 "Demasiados intentos desde esta conexión. Espera unos minutos.");
-        exigir("login:" + ip + ":" + normalizar(email), MAX_LOGIN_POR_IP_Y_CORREO, VENTANA_LOGIN,
+        exigir("login:" + ip + ":" + normalizar(email), maxLoginPorIpYCorreo, VENTANA_LOGIN,
                 now, "Demasiados intentos con este correo. Espera unos minutos o "
                         + "recupera tu contraseña.");
     }
@@ -57,12 +75,12 @@ public class IntentosDeAcceso {
     }
 
     public void antesDeRegistro(HttpServletRequest request) {
-        exigir("registro:" + ipDe(request), MAX_ALTAS_POR_IP, VENTANA_HORA, clock.instant(),
+        exigir("registro:" + ipDe(request), maxAltasPorIp, VENTANA_HORA, clock.instant(),
                 "Ya creaste varias cuentas desde aquí. Intenta de nuevo en una hora.");
     }
 
     public void antesDeRecuperar(String email) {
-        exigir("recuperar:" + normalizar(email), MAX_RECUPERACIONES_POR_CORREO, VENTANA_HORA,
+        exigir("recuperar:" + normalizar(email), maxRecuperacionesPorCorreo, VENTANA_HORA,
                 clock.instant(),
                 "Ya te enviamos varios enlaces. Revisa tu correo y la carpeta de spam.");
     }
