@@ -5,6 +5,14 @@ import { defineConfig, devices } from "@playwright/test";
  * están arriba con los datos de la semilla. Un solo worker: los tests reservan y cancelan sobre
  * la misma base, así que corren en serie para no pisarse.
  */
+/**
+ * El puerto se puede mover con E2E_PORT. Estaba fijo en el 3000 y con `reuseExistingServer`, lo
+ * que significa que si algo más escuchaba ahí —otro proyecto en la misma máquina— la suite corría
+ * contra ESE servidor y fallaba con un timeout que no dice por qué.
+ */
+const PORT = process.env.E2E_PORT ?? "3000";
+const BASE = `http://localhost:${PORT}`;
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
@@ -20,13 +28,13 @@ export default defineConfig({
   timeout: 60_000,
   reporter: [["list"]],
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: BASE,
     trace: "on-first-retry",
   },
   projects: [{ name: "movil", use: { ...devices["Pixel 7"] } }],
   webServer: {
-    command: "npm run dev",
-    url: "http://localhost:3000/login",
+    command: `npm run dev -- --port ${PORT}`,
+    url: `${BASE}/login`,
     reuseExistingServer: true,
     timeout: 60_000,
   },

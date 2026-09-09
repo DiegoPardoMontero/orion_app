@@ -289,9 +289,31 @@ npm run e2e          # levanta next dev solo; requiere backend + docker con la s
 Ana cancela y el cupo vuelve, el registro con sus tres casillas y la verificación de correo leyendo
 el enlace real del buzón de Mailpit. Corre en viewport móvil.
 
-Dos cosas que hay que saber antes de correrla: **muta estado compartido**, así que una corrida
-completa pide `docker compose down -v` antes; y el que pasa por la pasarela **falla sin llaves de
-sandbox de Wompi** en el entorno — sin ellas son 15 de 16.
+Tres cosas que hay que saber antes de correrla:
+
+- **Muta estado compartido.** Una corrida completa pide `docker compose down -v` y arrancar el
+  backend de nuevo. Si no, la segunda corrida se encuentra los cupos de María ya reservados y falla
+  en un sitio que no tiene nada que ver.
+- **El test de la pasarela falla sin llaves de *sandbox* de Wompi** (prefijo `_test_`): sin ellas
+  reservar responde 422 y nunca se sale hacia el checkout. Y como el archivo corre en **modo serie**
+  (`test.describe.configure({ mode: "serial" })`), ese fallo **salta los cuatro siguientes**: el
+  informe dice «11 passed, 1 failed, 4 did not run», no «15 de 16». Los cuatro pasan si se corren
+  aparte: `npx playwright test humo.spec.ts:256 humo.spec.ts:276 humo.spec.ts:294 humo.spec.ts:305`.
+- **El puerto se puede mover**, si el 3000 está ocupado por otra cosa:
+
+  ```bash
+  E2E_PORT=3001 npm run e2e
+  ```
+
+  Pero entonces **el backend tiene que arrancar sabiéndolo**, o falla de dos maneras que no se
+  parecen entre sí: un `403 Invalid CORS request` en el login, y un enlace de verificación de correo
+  que apunta al puerto viejo.
+
+  ```bash
+  ORION_CORS_ALLOWED_ORIGINS=http://localhost:3001 \
+  ORION_APP_BASE_URL=http://localhost:3001 \
+    ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+  ```
 
 ## 4. Tests
 

@@ -12,6 +12,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import co.orion.engagement.domain.Achievement;
 import co.orion.engagement.domain.AchievementUnlockedEvent;
+import co.orion.engagement.domain.StreakProtectedEvent;
 import co.orion.engagement.persistence.AchievementRepository;
 import co.orion.identity.persistence.UserRepository;
 import co.orion.messaging.application.NotificationService;
@@ -38,6 +39,9 @@ public class AchievementNotifier {
 
     private static final String TIPO = "ACHIEVEMENT_UNLOCKED";
     private static final String RUTA = "/logros";
+    private static final String TIPO_PROTECCION = "STREAK_PROTECTED";
+    /** El mapa de semanas vive en el panel de progreso, no en el cielo de logros. */
+    private static final String RUTA_PROGRESO = "/cuenta";
 
     private final AchievementRepository achievements;
     private final NotificationService notifications;
@@ -71,6 +75,27 @@ public class AchievementNotifier {
         encendidos.stream()
                 .filter(a -> a.getGlow() == 3)
                 .forEach(logro -> correoDeHito(event.studentId(), logro));
+    }
+
+    /**
+     * La protección de racha, contada en el momento en que ocurre.
+     *
+     * <p>Lleva al panel de progreso, que es donde está el mapa de semanas: el aviso explica el
+     * dibujo raro y el dibujo confirma el aviso. Y dice lo que la protección NO hace —no cuenta
+     * como clase— porque si no, la siguiente pregunta es por qué la racha no subió.
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void on(StreakProtectedEvent event) {
+        try {
+            notifications.create(event.studentId(), TIPO_PROTECCION,
+                    "Protegimos tu racha",
+                    "Esta semana no tuviste clase y tu racha sigue en pie. Es una protección al mes "
+                            + "y no cuenta como clase: la racha se queda donde estaba, no baja.",
+                    RUTA_PROGRESO);
+        } catch (RuntimeException ex) {
+            log.error("No se pudo avisar de la protección de racha de {}", event.studentId(), ex);
+        }
     }
 
     private String titulo(List<Achievement> encendidos) {

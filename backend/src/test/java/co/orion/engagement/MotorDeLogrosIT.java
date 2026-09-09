@@ -105,6 +105,9 @@ class MotorDeLogrosIT extends ApiIntegrationSupport {
     private StreakProtectionRepository protections;
 
     @Autowired
+    private co.orion.messaging.persistence.NotificationRepository notifications;
+
+    @Autowired
     private AttendanceService asistencia;
 
     private User ana;
@@ -117,6 +120,7 @@ class MotorDeLogrosIT extends ApiIntegrationSupport {
         pointEvents.deleteAll();
         userAchievements.deleteAll();
         protections.deleteAll();
+        notifications.deleteAll();
         bookings.deleteAll();
         profiles.deleteAll();
         users.deleteAll();
@@ -312,6 +316,41 @@ class MotorDeLogrosIT extends ApiIntegrationSupport {
                 .singleElement()
                 .satisfies(p -> assertThat(p.getWeekStart()).isEqualTo(LocalDate.of(2026, 7, 13)));
         assertThat(estadoDe(ana.getId()).get("constancia-2-semanas").isUnlocked()).isTrue();
+    }
+
+    /**
+     * Y se lo cuenta. Una protección que se aplica sola y en silencio deja al estudiante mirando
+     * una estrella encendida en una semana sin clase, sin saber por qué: eso desconcierta en vez
+     * de animar, que es justo lo contrario de para lo que existe.
+     */
+    @Test
+    void laProteccionSeLeAvisaAlEstudiante() {
+        claseTomada(maria, LocalDate.of(2026, 7, 6));
+        claseTomada(maria, LocalDate.of(2026, 7, 20));
+
+        motor.onSomethingHappened(ana.getId());
+
+        assertThat(notifications.findByUserIdOrderByCreatedAtDesc(ana.getId()))
+                .filteredOn(n -> "STREAK_PROTECTED".equals(n.getType()))
+                .singleElement()
+                .satisfies(n -> {
+                    assertThat(n.getTitle()).isEqualTo("Protegimos tu racha");
+                    // Lleva al mapa de semanas, que es el dibujo que el aviso explica.
+                    assertThat(n.getLinkPath()).isEqualTo("/cuenta");
+                });
+    }
+
+    /** El recálculo masivo no anuncia: contaría hoy una protección de hace meses. */
+    @Test
+    void elRecalculoNoAvisaDeProteccionesViejas() {
+        claseTomada(maria, LocalDate.of(2026, 7, 6));
+        claseTomada(maria, LocalDate.of(2026, 7, 20));
+        motor.onSomethingHappened(ana.getId());
+        notifications.deleteAll();
+
+        motor.recompute(ana.getId());
+
+        assertThat(notifications.findByUserIdOrderByCreatedAtDesc(ana.getId())).isEmpty();
     }
 
     /** Reevaluar dos veces no concede dos protecciones para la misma semana. */

@@ -22,6 +22,7 @@ import co.orion.engagement.domain.AchievementEvaluators;
 import co.orion.engagement.domain.AchievementInput;
 import co.orion.engagement.domain.AchievementUnlockedEvent;
 import co.orion.engagement.domain.StreakCalculator;
+import co.orion.engagement.domain.StreakProtectedEvent;
 import co.orion.engagement.domain.StreakProtection;
 import co.orion.engagement.domain.UserAchievement;
 import co.orion.engagement.persistence.AchievementRepository;
@@ -224,10 +225,18 @@ public class AchievementService {
         // no escribe nada, y así recompute llega al mismo sitio que el camino incremental.
         StreakCalculator.Racha racha = StreakCalculator.calcular(
                 input.clasesTomadas(), input.mesesYaProtegidos(), ahora);
+        List<LocalDate> protegidasAhora = new ArrayList<>();
         for (LocalDate semana : racha.semanasProtegidas()) {
             if (!protections.existsByUserIdAndGrantedFor(studentId, semana.withDayOfMonth(1))) {
                 protections.save(new StreakProtection(studentId, semana));
+                protegidasAhora.add(semana);
             }
+        }
+        // Solo por el camino que anuncia: el recálculo masivo no puede contarle a nadie una
+        // protección de hace tres meses como si acabara de pasar.
+        if (anunciar) {
+            protegidasAhora.forEach(semana ->
+                    events.publishEvent(new StreakProtectedEvent(studentId, semana)));
         }
 
         Map<String, UserAchievement> actuales = userAchievements.findByUserId(studentId).stream()
