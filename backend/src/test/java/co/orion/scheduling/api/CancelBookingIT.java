@@ -160,33 +160,34 @@ class CancelBookingIT extends ApiIntegrationSupport {
         assertThat(after.getBody().slots()).hasSize(3);
     }
 
-    /** La ventana son 12 h para los dos (decisión Q3), y se lee de platform_settings. */
+    /**
+     * Cancelar dentro de la ventana YA SE PUEDE. Lo que la ventana decide es el dinero, no el
+     * permiso: bloquearlo obligaba a quien ya sabía que no iba a ir a dejar la clase en pie, y el
+     * profesor se enteraba esperando delante de una sala vacía. La consecuencia económica la
+     * comprueba `LessonLifecycleIT`, que es donde vive el pago.
+     */
     @Test
-    void aStudentCannotCancelInsideTheCancellationWindow() {
+    void aStudentCanCancelInsideTheWindowAndTheClassStillCounts() {
         Booking booking = bookingAt(SOON);
 
         ResponseEntity<Map> response = post(
                 cancelUrl(booking), anaSession, new CancelBookingRequest(null), Map.class);
 
-        assertThat(response.getStatusCode().value()).isEqualTo(422);
-        assertThat(response.getBody().get("error").toString())
-                .isEqualTo("Faltan menos de 12 horas — la clase se considera impartida (política Orión)");
-        assertThat(bookings.findById(booking.getId()).orElseThrow().isConfirmed()).isTrue();
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        assertThat(bookings.findById(booking.getId()).orElseThrow().isConfirmed()).isFalse();
     }
 
-    /**
-     * El profesor tampoco cancela dentro de la ventana, pero a él no se le deja sin salida: el
-     * mensaje le ofrece proponer otro horario, que es la vía que sí tiene abierta.
-     */
+    /** Y el profesor también: si le surge un imprevisto real, avisar es mejor que no aparecer. */
     @Test
-    void aProfessorInsideTheWindowIsOfferedRescheduling() {
+    void aProfessorCanAlsoCancelInsideTheWindow() {
         Booking booking = bookingAt(SOON);
 
         ResponseEntity<Map> response = post(
                 cancelUrl(booking), mariaSession, new CancelBookingRequest(null), Map.class);
 
-        assertThat(response.getStatusCode().value()).isEqualTo(422);
-        assertThat(response.getBody().get("error").toString()).contains("proponerle");
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus())
+                .isEqualTo(co.orion.scheduling.domain.BookingStatus.CANCELLED_BY_PROFESSOR);
     }
 
     @Test

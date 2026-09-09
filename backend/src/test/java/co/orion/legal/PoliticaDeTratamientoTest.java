@@ -89,6 +89,23 @@ class PoliticaDeTratamientoTest {
         assertThat(terminos).contains("sin perjuicio de tu derecho de retracto");
     }
 
+    /**
+     * La política de cancelación es de Pardo, no de la ley — pero una vez escrita en el contrato
+     * obliga, y el código tiene que hacer lo que dice. Este test fija el texto; `LessonLifecycleIT`
+     * fija el comportamiento. Si alguien cambia uno sin el otro, algo falla.
+     */
+    @Test
+    @DisplayName("Los Términos describen la política de cancelación tal como la ejecuta el código")
+    void losTerminosDescribenLaPoliticaDeCancelacion() {
+        String terminos = leer("legal/terms-1.0.md");
+
+        assertThat(terminos).contains("**Cancelar se puede siempre**");
+        assertThat(terminos).contains("Cancelas con más de 12 horas");
+        assertThat(terminos).contains("Cancelas con menos de 12 horas");
+        assertThat(terminos).contains("el profesor recibe su pago y no hay devolución");
+        assertThat(terminos).contains("**El profesor cancela**, con el tiempo que sea");
+    }
+
     @Test
     @DisplayName("Los Términos dicen que Orión es un portal de contacto y qué implica")
     void losTerminosDicenQueEsUnPortalDeContacto() {

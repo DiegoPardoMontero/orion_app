@@ -516,9 +516,12 @@ function TarjetaClase({
                 <CalendarClock size={15} strokeWidth={1.9} />
                 Otro horario
               </Boton>
+              {/* Sin `disabled`: cancelar se puede siempre. Deshabilitarlo dentro de la ventana
+                  obligaba a quien ya sabía que no iba a ir a dejar la clase en pie, y el profesor
+                  se enteraba esperando delante de una sala vacía. La consecuencia se explica en el
+                  diálogo, antes de confirmar. */}
               <Boton
                 variante="contorno"
-                disabled={!clase.canCancel}
                 onClick={() => setCancelando(true)}
                 className="h-10 min-w-[110px] flex-1 sm:flex-none"
               >
@@ -687,6 +690,8 @@ function ModalCalificar({
 
 function ModalCancelar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar: () => void }) {
   const queryClient = useQueryClient();
+  const { data: me } = useMe();
+  const esProfesor = me?.role === "PROFESSOR";
   const [motivo, setMotivo] = useState("");
 
   const cancelar = useMutation({
@@ -717,6 +722,27 @@ function ModalCancelar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
           ? "No se te ha cobrado nada y el horario vuelve a quedar libre."
           : "Puedes agendar otra cuando quieras."}
       </p>
+
+      {/* Lo que de verdad hay que saber antes de pulsar es qué pasa con el dinero, y depende de
+          quién cancela y de cuándo. Decirlo aquí es lo que convierte una regla del contrato en
+          algo que la persona conoce en el momento de decidir. */}
+      {!sinPagar && (
+        <p
+          className={`mt-3 rounded-base px-4 py-3 text-[13px] leading-relaxed ${
+            esProfesor
+              ? "bg-surface-sunken text-text-secondary"
+              : clase.lateCancel
+                ? "bg-warning-bg text-warning"
+                : "bg-success-bg text-success"
+          }`}
+        >
+          {esProfesor
+            ? "El estudiante recuperará el valor completo como saldo a favor, y tú no cobrarás esta clase."
+            : clase.lateCancel
+              ? "Faltan menos de 12 horas: la clase se considera prestada, así que el profesor la cobra y no hay devolución."
+              : "Recuperarás el valor completo como saldo a favor, disponible enseguida."}
+        </p>
+      )}
 
       <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="motivo">
         Motivo (opcional)

@@ -232,12 +232,14 @@ public class BookingService {
         boolean isAdmin = actor.getRole() == UserRole.ADMIN;
         Duration window = cancellationWindowFor(actor.getRole());
 
-        // La ventana de anticipación protege una clase que ya existe. Una reserva sin pagar todavía
-        // no lo es: abandonar el checkout se puede hacer siempre, y billing devuelve el crédito.
-        if (booking.isConfirmed() && !isAdmin && !booking.isCancellableAt(now, window)) {
-            throw new UnprocessableException(lateCancellationMessage(actor.getRole(), window));
-        }
-
+        // Cancelar SIEMPRE se puede. La ventana ya no bloquea: decide qué pasa con el dinero, y
+        // eso lo resuelve billing al recibir el evento.
+        //
+        // Antes se bloqueaba dentro de las 12 h, y era peor para todos. Al estudiante que ya sabe
+        // que no va a ir se le obligaba a dejar la clase en pie, así que el profesor se enteraba
+        // esperando delante de una sala vacía; y al profesor con un imprevisto real se le empujaba
+        // a no aparecer, que es justo lo que la ventana pretendía castigar. Ahora quien cancela
+        // tarde lo dice, el otro se entera a tiempo, y el precio de hacerlo lo pone el dinero.
         booking.cancel(cancellationStatusFor(actor), actor.getId(), now, reason);
         Booking cancelled = bookings.save(booking);
         events.publishEvent(new BookingCancelledEvent(cancelled.getId()));
