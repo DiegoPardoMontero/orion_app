@@ -34,7 +34,7 @@ export default function AdminAplicacionesPage() {
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-6">
-      <h1 className="font-display text-h1 font-bold">Solicitudes</h1>
+      <h1 className="font-display text-h1 font-bold">Postulaciones</h1>
       <p className="mt-1 text-[13px] text-text-secondary">Postulaciones de profesores para revisar.</p>
 
       <div className="mt-4 flex flex-wrap gap-2">
