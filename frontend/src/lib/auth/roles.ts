@@ -35,6 +35,7 @@ export const NAV_BY_ROLE: Record<Role, NavGroup[]> = {
         { href: "/saldo", label: "Pagos y saldo" },
         { href: "/logros", label: "Mi cielo" },
         { href: "/cuenta", label: "Perfil" },
+        { href: "/ayuda", label: "Ayuda" },
       ],
     },
   ],
@@ -54,12 +55,21 @@ export const NAV_BY_ROLE: Record<Role, NavGroup[]> = {
         { href: "/desempeno", label: "Desempeño" },
       ],
     },
-    { titulo: "Mi cuenta", items: [{ href: "/perfil", label: "Perfil público" }] },
+    {
+      titulo: "Mi cuenta",
+      items: [
+        { href: "/perfil", label: "Perfil público" },
+        { href: "/ayuda", label: "Ayuda" },
+      ],
+    },
   ],
   // El aspirante no tiene menú de estudiante porque no tiene experiencia de estudiante: mientras
   // su postulación espera, lo único que puede hacer en Orión es llevarla y cuidar su cuenta.
   TEACHER_APPLICANT: [
     { items: [{ href: "/aplicacion/estado", label: "Mi postulación" }] },
+    // El aspirante es quien más dudas tiene y el único que no puede resolverlas por su cuenta:
+    // no tiene clases, ni saldo, ni mensajería. Dejarlo sin canal sería dejarlo sin nadie.
+    { items: [{ href: "/ayuda", label: "Ayuda" }] },
   ],
   ADMIN: [
     { items: [{ href: "/admin/panel", label: "Panel" }] },
@@ -68,6 +78,7 @@ export const NAV_BY_ROLE: Record<Role, NavGroup[]> = {
       items: [
         { href: "/admin/reservas", label: "Clases" },
         { href: "/admin/pagos", label: "Pagos" },
+        { href: "/admin/devoluciones", label: "Devoluciones" },
       ],
     },
     {
@@ -81,9 +92,11 @@ export const NAV_BY_ROLE: Record<Role, NavGroup[]> = {
       titulo: "Por resolver",
       items: [
         { href: "/admin/reclamos", label: "Reclamos" },
+        { href: "/admin/soporte", label: "Soporte" },
         { href: "/admin/resenas", label: "Reseñas" },
       ],
     },
+    { titulo: "Configuración", items: [{ href: "/admin/ajustes", label: "Ajustes" }] },
   ],
 };
 
@@ -136,6 +149,9 @@ const ACCESS: { prefix: string; roles: Role[] }[] = [
   // La postulación a profesor: la abre un estudiante que quiere enseñar o un profesor recién
   // creado por el admin que aún no completa su perfil. El admin revisa desde /admin/aplicaciones.
   { prefix: "/aplicacion", roles: ["STUDENT", "PROFESSOR", "TEACHER_APPLICANT"] },
+  // Ayuda: todos los que estén dentro, incluido el aspirante. Va explícito y no por el "todo lo
+  // no listado se permite" para que se lea como una decisión y no como un olvido.
+  { prefix: "/ayuda", roles: ["STUDENT", "PROFESSOR", "TEACHER_APPLICANT", "ADMIN"] },
   { prefix: "/admin", roles: ["ADMIN"] },
 ];
 

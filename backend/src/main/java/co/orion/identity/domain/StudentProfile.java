@@ -1,8 +1,6 @@
 package co.orion.identity.domain;
 
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.Period;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -40,7 +38,6 @@ import jakarta.persistence.Table;
 public class StudentProfile {
 
     /** Edad mínima para tener perfil público. Ver {@link #enablePublicProfile}. */
-    public static final int EDAD_MINIMA_PERFIL_PUBLICO = 18;
 
     public static final int MAX_MOTIVACION = 280;
 
@@ -70,13 +67,6 @@ public class StudentProfile {
 
     @Column(name = "is_public", nullable = false)
     private boolean publicProfile;
-
-    /**
-     * Solo se pide cuando alguien intenta activar el perfil público. Pedirla en el registro sería
-     * cobrarle el dato a todo el mundo por una función que casi nadie usará.
-     */
-    @Column(name = "birth_date")
-    private LocalDate birthDate;
 
     @Column(name = "frame_code", nullable = false, length = 40)
     private String frameCode = FRAME_INICIAL;
@@ -117,27 +107,14 @@ public class StudentProfile {
     }
 
     /**
-     * Activa el perfil público. Exige la fecha de nacimiento y que sea mayor de edad.
+     * Activa el perfil público.
      *
-     * <p>El público de Orión es 16+, y un perfil público con foto, nombre y metas de un menor exige
-     * tratamiento reforzado bajo la Ley 1581 de 2012. La solución más simple y más defendible es no
-     * ofrecerlo. Esta comprobación es la que manda: el switch deshabilitado en el frontend es
-     * cortesía, no seguridad.
+     * <p>Antes exigía fecha de nacimiento y mayoría de edad. Ya no: Orión solo acepta mayores de
+     * 18 y lo comprueba en el registro ({@code users.age_confirmed_at}), así que pedir la fecha
+     * otra vez aquí sería cobrar un dato personal por una regla que ya se cumplió antes — justo
+     * lo que prohíbe el principio de minimización (art. 4.c de la Ley 1581 de 2012).
      */
-    public void enablePublicProfile(LocalDate birthDate, LocalDate today) {
-        if (birthDate == null) {
-            throw new UnprocessableException(
-                    "Necesitamos tu fecha de nacimiento para activar tu perfil público.");
-        }
-        if (birthDate.isAfter(today)) {
-            throw new UnprocessableException("Esa fecha de nacimiento está en el futuro.");
-        }
-        if (Period.between(birthDate, today).getYears() < EDAD_MINIMA_PERFIL_PUBLICO) {
-            throw new UnprocessableException(
-                    "El perfil público está disponible desde los " + EDAD_MINIMA_PERFIL_PUBLICO
-                            + " años. Todo lo demás de Orión sigue igual para ti.");
-        }
-        this.birthDate = birthDate;
+    public void enablePublicProfile() {
         this.publicProfile = true;
     }
 
@@ -175,10 +152,6 @@ public class StudentProfile {
 
     public boolean isPublicProfile() {
         return publicProfile;
-    }
-
-    public LocalDate getBirthDate() {
-        return birthDate;
     }
 
     public String getFrameCode() {

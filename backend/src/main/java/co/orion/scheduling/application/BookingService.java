@@ -102,6 +102,8 @@ public class BookingService {
                              String requestedLanguage,
                              UUID requestedStudentId) {
         UUID studentId = resolveStudent(actor, requestedStudentId);
+        requireAdulthood(actor);
+        requireVerifiedEmail(actor);
         BookingModality modality = parseModality(modalityName);
         Instant endsAt = startsAt.plus(CLASS_LENGTH);
 
@@ -230,16 +232,48 @@ public class BookingService {
         boolean isAdmin = actor.getRole() == UserRole.ADMIN;
         Duration window = cancellationWindowFor(actor.getRole());
 
-        // La ventana de anticipación protege una clase que ya existe. Una reserva sin pagar todavía
-        // no lo es: abandonar el checkout se puede hacer siempre, y billing devuelve el crédito.
-        if (booking.isConfirmed() && !isAdmin && !booking.isCancellableAt(now, window)) {
-            throw new UnprocessableException(lateCancellationMessage(actor.getRole(), window));
-        }
-
+        // Cancelar SIEMPRE se puede. La ventana ya no bloquea: decide qué pasa con el dinero, y
+        // eso lo resuelve billing al recibir el evento.
+        //
+        // Antes se bloqueaba dentro de las 12 h, y era peor para todos. Al estudiante que ya sabe
+        // que no va a ir se le obligaba a dejar la clase en pie, así que el profesor se enteraba
+        // esperando delante de una sala vacía; y al profesor con un imprevisto real se le empujaba
+        // a no aparecer, que es justo lo que la ventana pretendía castigar. Ahora quien cancela
+        // tarde lo dice, el otro se entera a tiempo, y el precio de hacerlo lo pone el dinero.
         booking.cancel(cancellationStatusFor(actor), actor.getId(), now, reason);
         Booking cancelled = bookings.save(booking);
         events.publishEvent(new BookingCancelledEvent(cancelled.getId()));
         return cancelled;
+    }
+
+    /**
+     * Cancela por retracto, saltándose la ventana de anticipación.
+     *
+     * <p>Es un método aparte y no un parámetro de {@link #cancel} a propósito: son dos cosas
+     * distintas y conviene que se lean distintas. La ventana de 12 h es <strong>política
+     * comercial</strong>; el retracto es un <strong>derecho</strong> del art. 47 de la Ley 1480 de
+     * 2011, y un derecho no se somete a una política. Una clase que empieza en tres horas, reservada
+     * ayer, todavía admite retracto: lo que lo cierra es que la prestación haya comenzado, no que
+     * falte poco.
+     *
+     * <p>No decide nada sobre el dinero. De eso se encarga quien la llama, que es el único sitio
+     * donde reserva y pago se miran a la vez.
+     */
+    @Transactional
+    public Booking cancelForRetraction(UUID bookingId, UUID studentId, Instant now) {
+        Booking booking = bookings.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada"));
+        if (!booking.getStudentId().equals(studentId)) {
+            throw new ResourceNotFoundException("Reserva no encontrada");
+        }
+        if (booking.getStatus().isTerminal()) {
+            throw new ConflictException("La reserva ya no está activa");
+        }
+        booking.cancel(BookingStatus.CANCELLED_BY_STUDENT, studentId, now,
+                "Retracto (art. 47 Ley 1480 de 2011)");
+        Booking cancelada = bookings.save(booking);
+        events.publishEvent(new BookingCancelledEvent(cancelada.getId()));
+        return cancelada;
     }
 
     /**
@@ -329,6 +363,37 @@ public class BookingService {
     }
 
     /** Un STUDENT solo reserva para sí mismo; un ADMIN reserva en nombre de otro; un PROFESSOR no reserva. */
+    /**
+     * Nadie reserva sin haber declarado ser mayor de edad.
+     *
+     * <p>Orión no acepta menores (art. 7 de la Ley 1581 de 2012), y desde el Bloque 9 el registro
+     * lo exige. Quedan las cuentas anteriores, que nunca lo declararon: el frontend les pide la
+     * declaración al entrar, pero la puerta que de verdad importa es esta — reservar mueve dinero.
+     * Un admin reservando en nombre de alguien no la cruza: el actor es él, no el estudiante.
+     */
+    /**
+     * Nadie reserva desde un correo sin comprobar.
+     *
+     * <p>La confirmación, el .ics y el enlace de la sala viajan por correo: una reserva contra un
+     * buzón que no existe es una clase que nadie va a recordar, y contra el buzón de otra persona
+     * es peor. Es la única puerta que la verificación cierra — buscar y mirar perfiles siguen
+     * abiertos, porque exigir verificar para poder mirar precios espanta a quien solo miraba.
+     */
+    private void requireVerifiedEmail(User actor) {
+        if (actor.getRole() == UserRole.STUDENT && !actor.isEmailVerified()) {
+            throw new UnprocessableException(
+                    "Confirma tu correo antes de reservar. Te enviamos un enlace al registrarte y "
+                            + "puedes pedir otro desde tu perfil.");
+        }
+    }
+
+    private void requireAdulthood(User actor) {
+        if (actor.getRole() == UserRole.STUDENT && !actor.hasConfirmedAdulthood()) {
+            throw new UnprocessableException(
+                    "Antes de reservar necesitamos que confirmes que eres mayor de 18 años.");
+        }
+    }
+
     private UUID resolveStudent(User actor, UUID requestedStudentId) {
         if (actor.getRole() == UserRole.ADMIN) {
             if (requestedStudentId == null) {

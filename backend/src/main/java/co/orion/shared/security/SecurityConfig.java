@@ -43,6 +43,10 @@ public class SecurityConfig {
                 .ignoringRequestMatchers("/api/v1/auth/login", "/api/v1/auth/register",
                         "/api/v1/auth/forgot-password", "/api/v1/auth/reset-password",
                         "/api/v1/auth/accept-invite",
+                        // Se llega desde el enlace del correo, a veces en otro navegador: no hay
+                        // cookie CSRF que presentar. Lo que autoriza es el token del enlace, que
+                        // es de un solo uso y caduca.
+                        "/api/v1/auth/verify-email",
                         // El webhook lo llama Wompi, no un navegador: no hay cookie que proteger y
                         // exigir CSRF solo garantizaría que ningún evento entre nunca. Lo que lo
                         // protege es la firma del propio evento, verificada antes de tocar la base.
@@ -58,8 +62,16 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/register").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/forgot-password").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/reset-password").permitAll()
+                // Quien llega desde su buzón puede no tener sesión abierta, o tenerla en otro
+                // navegador. Exigirle entrar para confirmar su correo es pedirle que resuelva el
+                // problema antes de resolverlo.
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/verify-email").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/auth/invite").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/accept-invite").permitAll()
+                // Términos, política de datos y contacto del responsable: abiertos porque el
+                // art. 50 de la Ley 1480 de 2011 exige que estén disponibles ANTES de contratar.
+                // Un documento que solo se ve tras iniciar sesión llega tarde.
+                .requestMatchers(HttpMethod.GET, "/api/v1/legal/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // Marketplace público: el catálogo y el directorio/búsqueda de profesores se ven sin
                 // sesión (un visitante anónimo explora antes de registrarse; reservar sí exige login).
@@ -74,7 +86,7 @@ public class SecurityConfig {
                 // El aspirante a profesor no tiene experiencia de estudiante: lo que puede hacer es
                 // llevar su postulación, mantener su cuenta y leer sus avisos. Todo lo demás cuelga
                 // de ROLE_STUDENT, que no tiene, así que se cierra solo.
-                .requestMatchers("/api/v1/me/account").authenticated()
+                .requestMatchers("/api/v1/me/account", "/api/v1/me/account/**").authenticated()
                 // Postulación a profesor: cualquier usuario autenticado puede aspirar y llevar su wizard.
                 .requestMatchers("/api/v1/teacher-applications").authenticated()
                 .requestMatchers("/api/v1/me/teacher-application", "/api/v1/me/teacher-application/**").authenticated()
@@ -94,6 +106,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/bookings/*/report-problem").hasRole("STUDENT")
                 // "Mis clases" solo tiene sentido para quien asiste o imparte.
                 .requestMatchers("/api/v1/me/bookings").hasAnyRole("STUDENT", "PROFESSOR")
+                // El retracto es del estudiante y solo sobre sus propias clases; el servicio
+                // vuelve a comprobar la propiedad y responde 404 si la reserva no es suya.
+                .requestMatchers("/api/v1/me/bookings/*/retraction").hasRole("STUDENT")
                 // El panel de progreso es del estudiante: mide clases tomadas, no clases dictadas.
                 .requestMatchers("/api/v1/me/progress").hasRole("STUDENT")
                 // La ficha propia del estudiante. La vista de OTRO estudiante vive en /students/**
@@ -120,6 +135,9 @@ public class SecurityConfig {
                 // Las notificaciones in-app son de cualquier usuario autenticado (cae en anyRequest,
                 // pero se deja explícito por claridad junto al resto del Bloque 3).
                 .requestMatchers("/api/v1/me/notifications", "/api/v1/me/notifications/**").authenticated()
+                // Soporte: cualquiera que esté dentro. Un profesor que no puede reclamar
+                // formalmente su pago es un problema que vuelve por otro lado, y peor.
+                .requestMatchers("/api/v1/me/support", "/api/v1/me/support/**").authenticated()
                 // Dinero: el saldo y el historial son del estudiante; las ganancias, del profesor.
                 // El admin llega a lo mismo por /api/v1/admin/payments, que ya exige rol ADMIN.
                 .requestMatchers("/api/v1/me/credits", "/api/v1/me/payments").hasAnyRole("STUDENT", "ADMIN")

@@ -30,11 +30,12 @@ import co.orion.identity.domain.StudentProfile;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.identity.persistence.AdminAuditLogRepository;
-import co.orion.identity.persistence.AgreementAcceptanceRepository;
+import co.orion.legal.persistence.AgreementAcceptanceRepository;
 import co.orion.identity.persistence.TeacherApplicationRepository;
 import co.orion.identity.persistence.TeacherDocumentRepository;
 import co.orion.identity.persistence.StudentProfileRepository;
 import co.orion.identity.persistence.UserRepository;
+import co.orion.shared.security.IntentosDeAcceso;
 
 /**
  * Soporte para los tests de integración de la API: login, cookies de sesión y header CSRF.
@@ -49,6 +50,9 @@ public abstract class ApiIntegrationSupport {
 
     @Autowired
     protected UserRepository users;
+
+    @Autowired
+    protected IntentosDeAcceso intentosDeAcceso;
 
     @Autowired
     protected PasswordEncoder passwordEncoder;
@@ -105,6 +109,10 @@ public abstract class ApiIntegrationSupport {
      */
     @BeforeEach
     void cleanDependentTables() {
+        // Los frenos de acceso viven en memoria y el contexto de Spring se comparte entre casos.
+        // Sin esto, a partir del sexto login de la suite el limitador —pensado para un humano
+        // tecleando mal su contraseña— empezaría a devolver 429 a tests que no van de eso.
+        intentosDeAcceso.olvidarTodo();
         adminAuditLogs.deleteAll();
         teacherDocuments.deleteAll();
         agreementAcceptances.deleteAll();
@@ -169,7 +177,13 @@ public abstract class ApiIntegrationSupport {
     protected StudentProfileRepository studentProfiles;
 
     protected User createUser(String email, String fullName, UserRole role) {
-        User user = users.save(new User(email, passwordEncoder.encode(PASSWORD), fullName, role));
+        User nuevo = new User(email, passwordEncoder.encode(PASSWORD), fullName, role);
+        // Como lo haría el registro desde el Bloque 9: sin la declaración de mayoría de edad, el
+        // gate de BookingService trataría a este estudiante como una cuenta antigua y no podría
+        // reservar. Un usuario de prueba tiene que nacer en el mismo estado que uno real.
+        nuevo.confirmAdulthood(Instant.now());
+        nuevo.markEmailVerified(Instant.now());
+        User user = users.save(nuevo);
         if (role == UserRole.STUDENT) {
             studentProfiles.save(new StudentProfile(user));
         }

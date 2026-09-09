@@ -266,7 +266,14 @@ export default function EnsenaConOrionPage() {
           </div>
         </div>
         <p className="pb-8 text-center text-[12px] text-text-muted">
-          © 2026 Orión Idiomas · Términos y privacidad, próximamente.
+          © 2026 Orión Idiomas ·{" "}
+          <Link href="/terminos" className="underline underline-offset-2 hover:text-text">
+            Términos y condiciones
+          </Link>{" "}
+          ·{" "}
+          <Link href="/privacidad" className="underline underline-offset-2 hover:text-text">
+            Política de tratamiento de datos
+          </Link>
         </p>
       </footer>
     </div>

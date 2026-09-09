@@ -8,3 +8,12 @@ orion:
   admin:
     email: ${ORION_ADMIN_EMAIL:admin@orion.local}
     password: ${ORION_ADMIN_PASSWORD:admin123*}
+
+  # En local la suite E2E crea varias cuentas y entra decenas de veces desde la MISMA IP
+  # (localhost), así que los topes de producción la cortarían por la mitad. Se relajan solo aquí;
+  # el perfil prod conserva los valores reales, que es donde importan.
+  security:
+    rate-limit:
+      login-per-ip: 500
+      login-per-ip-and-email: 50
+      signups-per-ip: 100

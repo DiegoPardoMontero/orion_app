@@ -45,7 +45,7 @@ public class MyStudentProfileController {
     public StudentProfileResponse visibility(@AuthenticationPrincipal OrionUserDetails principal,
                                              @Valid @RequestBody StudentVisibilityRequest body) {
         return StudentProfileResponse.own(profiles.setVisibility(
-                principal.user().getId(), body.isPublic(), body.birthDate()));
+                principal.user().getId(), body.isPublic()));
     }
 
     /** Un nivel desconocido es un 422 con nombres, no un 500 con un stack trace. */

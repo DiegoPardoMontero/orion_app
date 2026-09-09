@@ -10,9 +10,18 @@ import co.orion.scheduling.domain.Booking;
 import co.orion.shared.time.BusinessZone;
 
 /**
- * canCancel lo decide el servidor, con la ventana que corresponde a QUIEN mira (el estudiante y el
- * profesor tienen la suya, configurables en platform_settings). El frontend solo pinta el botón —
- * jamás reimplementa la política.
+ * Lo que ve cada parte de su propia clase.
+ *
+ * <p>{@code canCancel} y {@code lateCancel} son dos cosas distintas y hay que leerlas juntas.
+ * <strong>Cancelar siempre se puede</strong> mientras la clase siga activa; lo que decide la
+ * ventana de anticipación —la que corresponde a QUIEN mira, configurable en platform_settings— es
+ * si la cancelación es «tardía», y con eso, qué pasa con el dinero.
+ *
+ * <p>Antes {@code canCancel} se ponía en falso dentro de la ventana y el botón se deshabilitaba.
+ * Era peor para todos: al estudiante que ya sabía que no iba a ir se le obligaba a dejar la clase
+ * en pie, y el profesor se enteraba esperando delante de una sala vacía.
+ *
+ * <p>El frontend solo pinta y avisa — jamás reimplementa la política.
  */
 public record MyBookingResponse(UUID id,
                                 ZonedDateTime startsAt,
@@ -22,6 +31,8 @@ public record MyBookingResponse(UUID id,
                                 String locationNote,
                                 String meetingLink,
                                 boolean canCancel,
+                                /** Dentro de la ventana: se puede cancelar, pero con consecuencia. */
+                                boolean lateCancel,
                                 Counterpart counterpart) {
 
     /**
@@ -52,7 +63,8 @@ public record MyBookingResponse(UUID id,
                 booking.getStatus().name(),
                 booking.getLocationNote(),
                 booking.getMeetingLink(),
-                booking.isCancellableAt(now, cancellationWindow),
+                !booking.getStatus().isTerminal(),
+                booking.isConfirmed() && !booking.isCancellableAt(now, cancellationWindow),
                 Counterpart.of(counterpart, counterpartPhotoUrl, counterpartHeadline));
     }
 }

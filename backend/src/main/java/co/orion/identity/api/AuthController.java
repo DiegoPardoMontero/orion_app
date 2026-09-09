@@ -22,8 +22,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import co.orion.identity.application.PasswordResetService;
 import co.orion.identity.application.ProfessorInviteService;
+import co.orion.identity.application.EmailVerificationService;
 import co.orion.identity.application.RegistrationService;
 import co.orion.identity.domain.User;
+import co.orion.legal.application.LegalDocumentService;
+import co.orion.legal.domain.LegalDocumentCode;
+import co.orion.shared.security.IntentosDeAcceso;
 import co.orion.shared.security.OrionUserDetails;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -37,23 +41,38 @@ public class AuthController {
     private final RegistrationService registrationService;
     private final PasswordResetService passwordResetService;
     private final ProfessorInviteService professorInviteService;
+    private final LegalDocumentService legal;
+    private final EmailVerificationService emailVerification;
+    private final IntentosDeAcceso intentos;
     private final SecurityContextRepository contextRepository = new HttpSessionSecurityContextRepository();
 
     public AuthController(AuthenticationManager authenticationManager,
                           RegistrationService registrationService,
                           PasswordResetService passwordResetService,
-                          ProfessorInviteService professorInviteService) {
+                          ProfessorInviteService professorInviteService,
+                          LegalDocumentService legal,
+                          EmailVerificationService emailVerification,
+                          IntentosDeAcceso intentos) {
         this.authenticationManager = authenticationManager;
         this.registrationService = registrationService;
         this.passwordResetService = passwordResetService;
         this.professorInviteService = professorInviteService;
+        this.legal = legal;
+        this.emailVerification = emailVerification;
+        this.intentos = intentos;
     }
 
     @PostMapping("/login")
     public UserResponse login(@Valid @RequestBody LoginRequest body,
                               HttpServletRequest request,
                               HttpServletResponse response) {
-        return authenticateAndOpenSession(body.email(), body.password(), request, response);
+        intentos.antesDeLogin(request, body.email());
+        UserResponse me = authenticateAndOpenSession(body.email(), body.password(), request, response);
+        // Solo si acertó: quien entra bien no debe arrastrar los fallos de antes. Va después de
+        // authenticate(...) a propósito — si las credenciales fallan, la excepción sale antes y el
+        // intento se queda contado.
+        intentos.loginCorrecto(request, body.email());
+        return me;
     }
 
     /**
@@ -66,8 +85,22 @@ public class AuthController {
     public UserResponse register(@Valid @RequestBody RegisterRequest body,
                                  HttpServletRequest request,
                                  HttpServletResponse response) {
-        registrationService.register(body.fullName(), body.email(), body.password(),
-                body.whatsappPhone(), body.wantsToTeach());
+        intentos.antesDeRegistro(request);
+        User creado = registrationService.register(body.fullName(), body.email(), body.password(),
+                body.whatsappPhone(), body.wantsToTeach(), body.adult());
+
+        // La constancia, con IP y user-agent, en la misma petición en que se dio. El art. 9 de la
+        // Ley 1581 de 2012 exige poder PROBAR la autorización: una casilla marcada que no deja
+        // rastro no es una autorización, es una afirmación nuestra.
+        legal.record(creado.getId(), LegalDocumentCode.TERMS,
+                request.getRemoteAddr(), request.getHeader("User-Agent"));
+        legal.record(creado.getId(), LegalDocumentCode.PRIVACY,
+                request.getRemoteAddr(), request.getHeader("User-Agent"));
+
+        // El correo de confirmación sale ya. Su fallo no deshace el alta: la cuenta existe y hay
+        // un botón de reenviar; perder la cuenta por un SMTP caído sería mucho peor.
+        emailVerification.send(creado.getId());
+
         return authenticateAndOpenSession(body.email(), body.password(), request, response);
     }
 
@@ -78,7 +111,19 @@ public class AuthController {
     @PostMapping("/forgot-password")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void forgotPassword(@Valid @RequestBody ForgotPasswordRequest body) {
+        intentos.antesDeRecuperar(body.email());
         passwordResetService.request(body.email());
+    }
+
+    /**
+     * Confirma una dirección de correo con el token del enlace. Público: quien llega desde su
+     * buzón puede no tener sesión abierta —o tenerla en otro navegador—, y exigirle iniciar sesión
+     * para confirmar un correo es pedirle que resuelva el problema antes de resolverlo.
+     */
+    @PostMapping("/verify-email")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void verifyEmail(@Valid @RequestBody VerifyEmailRequest body) {
+        emailVerification.verify(body.token());
     }
 
     /** Restablece la contraseña con el token del enlace. Token inválido o vencido → 422. */

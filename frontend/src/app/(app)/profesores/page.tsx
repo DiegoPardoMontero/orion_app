@@ -31,8 +31,40 @@ type Filtros = {
   maxPrice: string;
   native: boolean;
   certified: boolean;
+  /** Días de la semana, como los nombra java.time: MONDAY, TUESDAY… */
+  days: string[];
+  /** Franja del día. Es la que el hero ya mandaba como `schedule=` y nadie recogía. */
+  schedule: Franja;
   sort: Orden;
 };
+
+type Franja = "" | "MORNING" | "AFTERNOON" | "EVENING";
+
+/**
+ * Las tres franjas, en hora de Bogotá. El backend filtra por horas y no por etiquetas: una etiqueta
+ * es una decisión de producto y cambiarla no debería ser un despliegue del backend.
+ */
+const HORAS_DE_FRANJA: Record<Exclude<Franja, "">, { from: string; to: string }> = {
+  MORNING: { from: "06:00", to: "12:00" },
+  AFTERNOON: { from: "12:00", to: "18:00" },
+  EVENING: { from: "18:00", to: "22:00" },
+};
+
+const ETIQUETA_FRANJA: Record<Exclude<Franja, "">, string> = {
+  MORNING: "Mañana",
+  AFTERNOON: "Tarde",
+  EVENING: "Noche",
+};
+
+const DIAS: { valor: string; corta: string }[] = [
+  { valor: "MONDAY", corta: "L" },
+  { valor: "TUESDAY", corta: "M" },
+  { valor: "WEDNESDAY", corta: "X" },
+  { valor: "THURSDAY", corta: "J" },
+  { valor: "FRIDAY", corta: "V" },
+  { valor: "SATURDAY", corta: "S" },
+  { valor: "SUNDAY", corta: "D" },
+];
 
 const FILTROS_INICIALES: Filtros = {
   language: null,
@@ -42,6 +74,8 @@ const FILTROS_INICIALES: Filtros = {
   maxPrice: "",
   native: false,
   certified: false,
+  days: [],
+  schedule: "",
   sort: "RELEVANCE",
 };
 
@@ -56,7 +90,9 @@ function contarActivos(f: Filtros): number {
     (f.minPrice ? 1 : 0) +
     (f.maxPrice ? 1 : 0) +
     (f.native ? 1 : 0) +
-    (f.certified ? 1 : 0)
+    (f.certified ? 1 : 0) +
+    f.days.length +
+    (f.schedule ? 1 : 0)
   );
 }
 
@@ -70,6 +106,11 @@ function construirQs(f: Filtros, page: number): string {
   if (f.maxPrice) p.set("maxPrice", f.maxPrice);
   if (f.native) p.set("native", "true");
   if (f.certified) p.set("certified", "true");
+  for (const day of f.days) p.append("day", day);
+  if (f.schedule) {
+    p.set("from", HORAS_DE_FRANJA[f.schedule].from);
+    p.set("to", HORAS_DE_FRANJA[f.schedule].to);
+  }
   if (f.sort !== "RELEVANCE") p.set("sort", f.sort);
   p.set("page", String(page));
   p.set("size", String(TAM_PAGINA));
@@ -82,15 +123,18 @@ export default function ProfesoresPage() {
   const [hojaAbierta, setHojaAbierta] = useState(false);
 
   // Filtros iniciales desde la URL (el buscador del hero y las landings por idioma enlazan aquí con
-  // ?language=&goal=&level=). Se lee una sola vez al montar, en cliente, para no chocar con la
-  // hidratación. El parámetro `schedule` (MORNING/AFTERNOON/EVENING) del hero se ignora a propósito:
-  // el backend aún no filtra por franja horaria; se conserva en la URL para conectarlo más adelante.
+  // ?language=&goal=&level=&schedule=). Se lee una sola vez al montar, en cliente, para no chocar
+  // con la hidratación. `schedule` llevaba tiempo viajando sin que nadie lo recogiera, porque el
+  // backend no filtraba por franja horaria; ahora sí, y por fin significa algo.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const language = params.get("language");
     const goals = params.getAll("goal").filter(Boolean);
     const levels = params.getAll("level").filter(Boolean);
-    if (!language && goals.length === 0 && levels.length === 0) return;
+    const schedule = params.get("schedule");
+    const franja: Franja =
+      schedule === "MORNING" || schedule === "AFTERNOON" || schedule === "EVENING" ? schedule : "";
+    if (!language && goals.length === 0 && levels.length === 0 && !franja) return;
     // Siembra única desde la URL al montar; a partir de aquí manda el usuario. El setState en el
     // efecto es deliberado (sincronizar con un sistema externo: la query string) y solo corre una vez.
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -99,6 +143,7 @@ export default function ProfesoresPage() {
       language: language ?? prev.language,
       goals: goals.length > 0 ? goals : prev.goals,
       levels: levels.length > 0 ? levels : prev.levels,
+      schedule: franja || prev.schedule,
     }));
   }, []);
 
@@ -495,9 +540,51 @@ function PanelFiltros({
     </div>
   );
 
+  /**
+   * Cuándo. Es la pregunta que de verdad se hace quien busca clase —«¿quién puede los martes por la
+   * noche?»— y hasta ahora no se podía contestar.
+   *
+   * <p>Filtra sobre los horarios que el profesor publicó, no sobre cupos libres calculados: un cupo
+   * libre depende del instante y de las reservas vivas, así que cambiaría entre la búsqueda y el
+   * clic. Esto contesta «suele tener martes por la noche», que es lo que se está preguntando.
+   */
+  const cuando = (
+    <div>
+      <Titulo>Cuándo</Titulo>
+      <div className="flex flex-wrap gap-1.5">
+        {DIAS.map((d) => (
+          <ChipFiltro
+            key={d.valor}
+            activo={filtros.days.includes(d.valor)}
+            onClick={() => onCambio({ ...filtros, days: toggleEn(filtros.days, d.valor) })}
+          >
+            <span className="w-3 text-center">{d.corta}</span>
+          </ChipFiltro>
+        ))}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {(Object.keys(ETIQUETA_FRANJA) as Exclude<Franja, "">[]).map((franja) => (
+          <ChipFiltro
+            key={franja}
+            activo={filtros.schedule === franja}
+            onClick={() =>
+              onCambio({ ...filtros, schedule: filtros.schedule === franja ? "" : franja })
+            }
+          >
+            {ETIQUETA_FRANJA[franja]}
+          </ChipFiltro>
+        ))}
+      </div>
+      <p className="mt-2 text-[12px] leading-relaxed text-text-muted">
+        Son los horarios que cada profesor publicó. La disponibilidad exacta se ve en su perfil.
+      </p>
+    </div>
+  );
+
   const avanzados = (
     <>
       {interruptores}
+      {cuando}
       {idioma}
       {nivel}
       {objetivos}

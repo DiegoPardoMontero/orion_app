@@ -70,6 +70,15 @@ final class ProfessorSpecifications {
                 predicates.add(cb.isTrue(root.get("certified")));
             }
 
+            // Disponibilidad. Nulo es "no se pidió"; vacía es "se pidió y no lo cumple nadie", y
+            // ahí el resultado tiene que ser vacío — devolver el catálogo entero justo cuando
+            // alguien acaba de pedir algo muy concreto sería lo contrario de un filtro.
+            if (c.availableProfessorIds() != null) {
+                predicates.add(c.availableProfessorIds().isEmpty()
+                        ? cb.disjunction()
+                        : root.get("userId").in(c.availableProfessorIds()));
+            }
+
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }

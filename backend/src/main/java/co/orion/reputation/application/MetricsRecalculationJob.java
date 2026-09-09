@@ -13,6 +13,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+
+import co.orion.shared.observability.JobRunRegistry;
 import org.springframework.transaction.annotation.Transactional;
 
 import co.orion.catalog.application.PlatformSettingsService;
@@ -52,6 +54,7 @@ public class MetricsRecalculationJob {
     private final SanctionService sanctions;
     private final PlatformSettingsService settings;
     private final Clock clock;
+    private final JobRunRegistry runs;
 
     public MetricsRecalculationJob(ProfessorProfileRepository profiles,
                                    ProfessorMetricsRepository metrics,
@@ -60,7 +63,8 @@ public class MetricsRecalculationJob {
                                    RescheduleRequestRepository reschedules,
                                    SanctionService sanctions,
                                    PlatformSettingsService settings,
-                                   Clock clock) {
+                                   Clock clock,
+                                   JobRunRegistry runs) {
         this.profiles = profiles;
         this.metrics = metrics;
         this.bookings = bookings;
@@ -69,12 +73,19 @@ public class MetricsRecalculationJob {
         this.sanctions = sanctions;
         this.settings = settings;
         this.clock = clock;
+        this.runs = runs;
     }
 
     /** 03:00 de Bogotá: nadie reservando, nadie mirando el buscador. */
     @Scheduled(cron = "${orion.jobs.metrics.cron:0 0 3 * * *}", zone = "America/Bogota")
     public void nightly() {
-        recalculateAll();
+        try {
+            int recalculados = recalculateAll();
+            runs.recordSuccess(JOB_NAME, clock.instant(), recalculados + " profesor(es)");
+        } catch (RuntimeException ex) {
+            runs.recordFailure(JOB_NAME, clock.instant(), ex.getMessage());
+            throw ex;
+        }
     }
 
     @Transactional

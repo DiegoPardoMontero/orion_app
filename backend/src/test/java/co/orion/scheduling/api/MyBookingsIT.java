@@ -125,15 +125,20 @@ class MyBookingsIT extends ApiIntegrationSupport {
         assertThat(response.getBody()).doesNotContain("+573009998877", "3009998877", "whatsapp");
     }
 
+    /**
+     * Dentro de la ventana la clase SIGUE siendo cancelable; lo que cambia es que la cancelación es
+     * tardía y eso decide el dinero. Son dos campos porque son dos cosas: mezclarlos en uno solo
+     * fue lo que hizo que el botón se deshabilitara y que nadie pudiera avisar de que no iba a ir.
+     */
     @Test
-    void aClassLessThanTwentyFourHoursAwayCannotBeCancelled() {
+    void aClassInsideTheWindowIsStillCancellableButLate() {
         booking(SOON);
 
         ResponseEntity<MyBookingResponse[]> response = get(MY_BOOKINGS, anaSession, MyBookingResponse[].class);
 
-        // Sigue siendo una clase próxima (aparece en el listado), pero ya no es cancelable.
         assertThat(response.getBody()).hasSize(1);
-        assertThat(response.getBody()[0].canCancel()).isFalse();
+        assertThat(response.getBody()[0].canCancel()).isTrue();
+        assertThat(response.getBody()[0].lateCancel()).isTrue();
     }
 
     @Test
@@ -142,8 +147,9 @@ class MyBookingsIT extends ApiIntegrationSupport {
 
         ResponseEntity<MyBookingResponse[]> response = get(MY_BOOKINGS, anaSession, MyBookingResponse[].class);
 
-        // La frontera es inclusiva: "24 horas o más" sí se puede cancelar.
+        // La frontera es inclusiva: a "24 horas o más" la cancelación ya no es tardía.
         assertThat(response.getBody()[0].canCancel()).isTrue();
+        assertThat(response.getBody()[0].lateCancel()).isFalse();
     }
 
     @Test

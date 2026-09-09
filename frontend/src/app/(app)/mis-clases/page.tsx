@@ -10,6 +10,7 @@ import {
   MapPin,
   MessageCircle,
   Star,
+  Undo2,
   Video,
   X,
 } from "lucide-react";
@@ -22,7 +23,7 @@ import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Modal } from "@/components/Modal";
 import { SelectorEstrellas } from "@/components/Rating";
 import { Rigel } from "@/components/Rigel";
-import { Badge, Bloque, Boton, Chip, Segmento, Tarjeta } from "@/components/ui";
+import { Badge, Bloque, Boton, BotonPrincipal, Chip, Segmento, Spinner, Tarjeta } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type {
   ConversationSummary,
@@ -32,7 +33,8 @@ import type {
 } from "@/lib/api/types";
 import { useMe } from "@/lib/auth/session";
 import { esperaPago, etiquetaEstado } from "@/lib/estados-clase";
-import { diaBogota, fechaCorta, fechaYRango, horaBogota, rangoHoras } from "@/lib/format";
+import { diaBogota, fechaCorta, fechaYRango, horaBogota, precioCop, rangoHoras } from "@/lib/format";
+import { useElegibilidadRetracto, useRetractarse } from "@/lib/retracto";
 
 type Scope = "upcoming" | "past";
 type Vista = "agenda" | "calendario";
@@ -514,14 +516,21 @@ function TarjetaClase({
                 <CalendarClock size={15} strokeWidth={1.9} />
                 Otro horario
               </Boton>
+              {/* Sin `disabled`: cancelar se puede siempre. Deshabilitarlo dentro de la ventana
+                  obligaba a quien ya sabía que no iba a ir a dejar la clase en pie, y el profesor
+                  se enteraba esperando delante de una sala vacía. La consecuencia se explica en el
+                  diálogo, antes de confirmar. */}
               <Boton
                 variante="contorno"
-                disabled={!clase.canCancel}
                 onClick={() => setCancelando(true)}
                 className="h-10 min-w-[110px] flex-1 sm:flex-none"
               >
                 Cancelar
               </Boton>
+              {/* El retracto solo aparece cuando de verdad aplica: es un derecho con condiciones
+                  (5 días hábiles y clase sin empezar), no una segunda forma de cancelar. Enseñarlo
+                  siempre lo convertiría en una promesa que la mayoría de las veces no se cumple. */}
+              <BotonRetracto clase={clase} />
             </>
           )}
 
@@ -681,6 +690,8 @@ function ModalCalificar({
 
 function ModalCancelar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar: () => void }) {
   const queryClient = useQueryClient();
+  const { data: me } = useMe();
+  const esProfesor = me?.role === "PROFESSOR";
   const [motivo, setMotivo] = useState("");
 
   const cancelar = useMutation({
@@ -711,6 +722,27 @@ function ModalCancelar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
           ? "No se te ha cobrado nada y el horario vuelve a quedar libre."
           : "Puedes agendar otra cuando quieras."}
       </p>
+
+      {/* Lo que de verdad hay que saber antes de pulsar es qué pasa con el dinero, y depende de
+          quién cancela y de cuándo. Decirlo aquí es lo que convierte una regla del contrato en
+          algo que la persona conoce en el momento de decidir. */}
+      {!sinPagar && (
+        <p
+          className={`mt-3 rounded-base px-4 py-3 text-[13px] leading-relaxed ${
+            esProfesor
+              ? "bg-surface-sunken text-text-secondary"
+              : clase.lateCancel
+                ? "bg-warning-bg text-warning"
+                : "bg-success-bg text-success"
+          }`}
+        >
+          {esProfesor
+            ? "El estudiante recuperará el valor completo como saldo a favor, y tú no cobrarás esta clase."
+            : clase.lateCancel
+              ? "Faltan menos de 12 horas: la clase se considera prestada, así que el profesor la cobra y no hay devolución."
+              : "Recuperarás el valor completo como saldo a favor, disponible enseguida."}
+        </p>
+      )}
 
       <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="motivo">
         Motivo (opcional)
@@ -1057,3 +1089,89 @@ function BannerReserva() {
 }
 
 /** El logo de WhatsApp: SVG inline, como todo en este diseño. */
+
+/**
+ * El botón de retracto. Solo se dibuja cuando el servidor dice que aplica.
+ *
+ * <p>Es un derecho con condiciones —5 días hábiles desde la reserva y clase sin empezar—, no una
+ * segunda forma de cancelar. Enseñarlo siempre lo convertiría en una promesa que la mayoría de las
+ * veces no se cumple, y quien lo pulsara se llevaría un error en vez de su dinero.
+ */
+function BotonRetracto({ clase }: { clase: MyBookingResponse }) {
+  const bookingId = clase.id ?? "";
+  const [abierto, setAbierto] = useState(false);
+  const elegibilidad = useElegibilidadRetracto(bookingId, bookingId !== "" && clase.status === "CONFIRMED");
+  const retractarse = useRetractarse(bookingId);
+
+  if (!elegibilidad.data?.eligible) return null;
+
+  const error = retractarse.error instanceof ApiError ? retractarse.error.message : null;
+
+  return (
+    <>
+      <Boton
+        variante="fantasma"
+        onClick={() => setAbierto(true)}
+        className="h-10 flex-1 basis-[150px] sm:flex-none sm:basis-auto"
+      >
+        <Undo2 size={15} strokeWidth={1.9} />
+        Retractarme
+      </Boton>
+
+      {abierto && (
+        <Modal titulo="¿Retractarte de esta compra?" onCerrar={() => setAbierto(false)}>
+          {retractarse.isSuccess ? (
+            <>
+              <p className="text-[14px] leading-relaxed text-text-secondary">
+                Listo. Cancelamos la clase y te devolvemos{" "}
+                <strong className="text-text">
+                  {precioCop(retractarse.data.amountCop)}
+                </strong>{" "}
+                al mismo medio de pago que usaste.
+              </p>
+              <p className="mt-3 text-[13px] leading-relaxed text-text-muted">
+                El plazo legal para hacerlo es de 15 días calendario, aunque normalmente es antes.
+                Te avisamos por correo cuando salga.
+              </p>
+              <BotonPrincipal type="button" onClick={() => setAbierto(false)} className="mt-5">
+                Entendido
+              </BotonPrincipal>
+            </>
+          ) : (
+            <>
+              <p className="text-[14px] leading-relaxed text-text-secondary">
+                Estás en el plazo de retracto, así que puedes deshacer esta compra sin dar
+                explicaciones. Cancelamos la clase y te devolvemos el valor completo{" "}
+                <strong className="text-text">al mismo medio de pago</strong> —no como saldo—
+                dentro de los 15 días calendario siguientes.
+              </p>
+              <p className="mt-3 text-[13px] leading-relaxed text-text-muted">
+                Si prefieres el dinero como saldo para usarlo enseguida, cancela en vez de
+                retractarte: eso es inmediato.
+              </p>
+
+              {error && (
+                <div className="mt-4">
+                  <AvisoError mensaje={error} />
+                </div>
+              )}
+
+              <div className="mt-5 flex gap-2">
+                <Boton
+                  variante="primario"
+                  disabled={retractarse.isPending}
+                  onClick={() => retractarse.mutate()}
+                >
+                  {retractarse.isPending ? <Spinner /> : "Sí, retractarme"}
+                </Boton>
+                <Boton variante="fantasma" onClick={() => setAbierto(false)}>
+                  Volver
+                </Boton>
+              </div>
+            </>
+          )}
+        </Modal>
+      )}
+    </>
+  );
+}

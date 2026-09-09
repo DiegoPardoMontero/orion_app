@@ -126,9 +126,9 @@ class LessonLifecycleIT extends ApiIntegrationSupport {
 
     /** La ventana es de 12 h para ambos (decisión Q3), leída de platform_settings. */
     @Test
-    void dentroDeLaVentanaYaNoSeCancela() {
+    void dentroDeLaVentanaSeCancelaPeroElProfesorCobra() {
         UUID id = bookAndPay(9);
-        // La clase pasa a estar a 6 horas del reloj congelado.
+        // La clase pasa a estar a 6 horas del reloj congelado: dentro de la ventana.
         jdbc.update("update bookings set starts_at = ?, ends_at = ? where id = ?",
                 java.sql.Timestamp.from(FROZEN_NOW.plusSeconds(6 * 3600)),
                 java.sql.Timestamp.from(FROZEN_NOW.plusSeconds(7 * 3600)), id);
@@ -136,13 +136,23 @@ class LessonLifecycleIT extends ApiIntegrationSupport {
         ResponseEntity<Map> response = post(
                 BOOKINGS + "/" + id + "/cancel", anaSession, null, Map.class);
 
-        assertThat(response.getStatusCode().value()).isEqualTo(422);
-        assertThat(response.getBody().get("error").toString()).contains("12 horas");
+        // Cancelar se puede: bloquearlo obligaba al estudiante a dejar la clase en pie y el
+        // profesor se enteraba esperando delante de una sala vacía.
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        assertThat(bookings.findById(id).orElseThrow().getStatus())
+                .isEqualTo(BookingStatus.CANCELLED_BY_STUDENT);
+        // Lo que cambia es el dinero: la clase se considera prestada y el pago se le libera.
+        assertThat(payments.findByBookingId(id).orElseThrow().getStatus())
+                .isEqualTo(PaymentStatus.RELEASED);
+        assertThat(credits.findAll()).isEmpty();
     }
 
-    /** Al profesor no se le deja sin salida: se le ofrece proponer otro horario. */
+    /**
+     * Del lado del profesor no hay ventana que valga: si la clase se cae por su lado, el estudiante
+     * recupera su dinero sea cuando sea. No hay razón para que pierda plata por algo que no decidió.
+     */
     @Test
-    void alProfesorDentroDeLaVentanaSeLeOfreceReprogramar() {
+    void elProfesorCancelaTardeYElEstudianteRecuperaIgual() {
         UUID id = bookAndPay(9);
         jdbc.update("update bookings set starts_at = ?, ends_at = ? where id = ?",
                 java.sql.Timestamp.from(FROZEN_NOW.plusSeconds(6 * 3600)),
@@ -151,8 +161,11 @@ class LessonLifecycleIT extends ApiIntegrationSupport {
         ResponseEntity<Map> response = post(
                 BOOKINGS + "/" + id + "/cancel", mariaSession, null, Map.class);
 
-        assertThat(response.getStatusCode().value()).isEqualTo(422);
-        assertThat(response.getBody().get("error").toString()).contains("proponerle");
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        assertThat(credits.findAll()).hasSize(1);
+        assertThat(credits.findAll().getFirst().getAmountCop()).isEqualTo(RATE_COP);
+        assertThat(payments.findByBookingId(id).orElseThrow().getStatus())
+                .isEqualTo(PaymentStatus.REFUNDED);
     }
 
     /* ------------------------------------------------------------ no-show y reclamo */

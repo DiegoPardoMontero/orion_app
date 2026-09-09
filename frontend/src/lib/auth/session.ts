@@ -19,6 +19,16 @@ export type Me = {
   fullName: string;
   role: Role;
   photoUrl?: string | null;
+  /**
+   * Falso solo en las cuentas anteriores a la regla de mayoría de edad, que nunca la declararon.
+   * Se les pide al entrar; el backend vuelve a comprobarlo al reservar, que es donde importa.
+   */
+  adultConfirmed: boolean;
+  /**
+   * Si el correo está comprobado. Junto con `adultConfirmed`, son las dos condiciones que hacen
+   * falta para reservar; el backend las vuelve a comprobar en BookingService, que es donde mandan.
+   */
+  emailVerified: boolean;
 };
 
 export const meQueryKey = ["auth", "me"] as const;
@@ -56,6 +66,14 @@ export type RegisterInput = {
   whatsappPhone?: string;
   /** Se registró desde «Postúlate para dar clases»: la cuenta nace como aspirante, no estudiante. */
   wantsToTeach?: boolean;
+  /**
+   * Las tres van por separado y las tres son obligatorias. Empaquetar la autorización de datos
+   * con la aceptación de los términos la viciaría: el Decreto 1377 de 2013 la exige previa,
+   * expresa e informada — y por tanto específica.
+   */
+  adult: boolean;
+  acceptsTerms: boolean;
+  acceptsDataPolicy: boolean;
 };
 
 /**
@@ -71,6 +89,30 @@ export function useRegister() {
     onSuccess: (me) => {
       queryClient.setQueryData(meQueryKey, me);
     },
+  });
+}
+
+/**
+ * La declaración de mayoría de edad de las cuentas anteriores al Bloque 9. Al confirmarla,
+ * refrescamos /me para que el aviso desaparezca sin recargar.
+ */
+export function useConfirmarMayoriaDeEdad() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () =>
+      apiFetch<void>("/api/v1/me/account/adulthood", { method: "POST" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: meQueryKey });
+    },
+  });
+}
+
+/** Reenvía el correo de verificación. El backend corta a los tres por hora. */
+export function useReenviarVerificacion() {
+  return useMutation({
+    mutationFn: () =>
+      apiFetch<void>("/api/v1/me/account/email-verification/resend", { method: "POST" }),
   });
 }
 

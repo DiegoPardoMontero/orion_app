@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { aceptarCondiciones, verificarCorreo } from "./apoyo";
 
 /**
  * Humo del MVP: los caminos que no pueden romperse nunca. Asume backend + docker con la semilla.
@@ -137,6 +138,7 @@ test("un estudiante nuevo se registra desde el login y aterriza dentro", async (
   await page.locator("#nombre").fill("Nueva Estudiante");
   await page.locator("#email").fill(email);
   await page.locator("#password").fill("orion123*");
+  await aceptarCondiciones(page);
   await page.getByRole("button", { name: "Crear cuenta" }).click();
 
   // El backend crea la cuenta y abre sesión de una vez: el estudiante cae en su home, ya dentro.
@@ -207,9 +209,16 @@ test("una estudiante sin saldo sale hacia Wompi y su cupo queda apartado", async
   await page.locator("#nombre").fill("Paula Pagadora");
   await page.locator("#email").fill(email);
   await page.locator("#password").fill("orion123*");
+  await aceptarCondiciones(page);
   await page.getByRole("button", { name: "Crear cuenta" }).click();
   await expect(page).toHaveURL(/\/profesores/);
 
+  // Desde el Bloque 9 una cuenta sin correo verificado puede mirar pero no reservar. Se verifica
+  // por el camino real —el enlace que llegó al buzón— y no por SQL: ese camino cruza el correo,
+  // que es justo lo que más fácil se rompe sin que nadie se entere.
+  await verificarCorreo(page, email);
+
+  await page.goto("/profesores");
   await page.getByRole("link", { name: /Ver agenda/ }).first().click();
   await expect(page.getByText("Cupos disponibles")).toBeVisible();
   const cupos = page.locator("main .grid-cols-3 button");
@@ -257,6 +266,7 @@ test("un profesor se postula desde el login y aterriza en su postulación", asyn
   await page.locator("#nombre").fill("Profe Nuevo");
   await page.locator("#email").fill(email);
   await page.locator("#password").fill("orion123*");
+  await aceptarCondiciones(page);
   await page.getByRole("button", { name: "Crear cuenta y postularme" }).click();
 
   // No al buscador de profesores: a su propia postulación.

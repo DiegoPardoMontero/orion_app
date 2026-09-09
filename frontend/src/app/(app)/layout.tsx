@@ -12,8 +12,11 @@ import {
   GraduationCap,
   LayoutDashboard,
   KeyRound,
+  LifeBuoy,
   LogOut,
   MessageCircle,
+  SlidersHorizontal,
+  Undo2,
   Sparkles,
   User,
   Star,
@@ -28,6 +31,8 @@ import { Avatar } from "@/components/Avatar";
 import { CambiarClave } from "@/components/CambiarClave";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import { Vacio } from "@/components/estados";
+import { AvisoCorreoSinVerificar } from "@/components/AvisoCorreoSinVerificar";
+import { AvisoMayoriaDeEdad } from "@/components/AvisoMayoriaDeEdad";
 import { Encendido } from "@/components/gamificacion/Encendido";
 import { Wordmark } from "@/components/marca";
 import { Boton } from "@/components/ui";
@@ -66,6 +71,10 @@ const ICONO: Record<string, LucideIcon> = {
   "/admin/usuarios": Users,
   "/admin/aplicaciones": ClipboardList,
   "/admin/reservas": CalendarRange,
+  "/ayuda": LifeBuoy,
+  "/admin/soporte": LifeBuoy,
+  "/admin/ajustes": SlidersHorizontal,
+  "/admin/devoluciones": Undo2,
 };
 
 /** Rutas del profesor que exigen postulación APPROVED; si no, se muestra un aviso en vez de la UI. */
@@ -136,6 +145,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
       <div className="flex min-h-dvh flex-1 flex-col">
         <MobileHeader me={me} />
+        {/* Barra y no diálogo: la tarea está a medias en el buzón, y bloquear la app no la acerca.
+            Quien de verdad la necesita es quien va a reservar, y ahí el backend responde 422. */}
+        {!me.emailVerified && <AvisoCorreoSinVerificar correo={me.email} />}
         <div className="flex-1 pb-24 lg:pb-0">
           {rutaProtegida ? <GateProfesor aplic={aplic}>{children}</GateProfesor> : children}
         </div>
@@ -145,6 +157,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       {/* La celebración vive en el armazón y no en una pantalla: una estrella se enciende cuando
           termina una clase, que casi nunca es mientras se mira el tablero de logros. */}
       <Encendido />
+
+      {/* Las cuentas anteriores a la regla de mayoría de edad nunca la declararon. Va aquí y no en
+          una pantalla porque hay que pedirla entren por donde entren. */}
+      {!me.adultConfirmed && <AvisoMayoriaDeEdad />}
     </div>
   );
 }
@@ -439,6 +455,16 @@ function MenuUsuario({
               <p className="truncate text-[13px] font-bold text-text">{me.fullName}</p>
               <p className="truncate text-[11.5px] text-text-muted">{me.email}</p>
             </div>
+            {/* La barra inferior de móvil está topada en cinco entradas y ya está llena, así que
+                Ayuda cuelga de aquí: sin esto solo sería alcanzable escribiendo la URL. */}
+            <Link
+              href="/ayuda"
+              onClick={() => setAbierto(false)}
+              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-[13px] font-semibold text-text hover:bg-surface-sunken"
+            >
+              <LifeBuoy size={15} strokeWidth={1.75} />
+              Ayuda
+            </Link>
             <button
               type="button"
               onClick={() => {

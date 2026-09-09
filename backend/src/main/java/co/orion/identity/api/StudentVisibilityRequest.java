@@ -1,13 +1,10 @@
 package co.orion.identity.api;
 
-import java.time.LocalDate;
-
 import jakarta.validation.constraints.NotNull;
 
 /**
- * El switch del perfil público. La fecha de nacimiento solo hace falta para activarlo, y solo la
- * primera vez: pedirla en el registro sería cobrarle el dato a todo el mundo por una función que
- * casi nadie va a usar.
+ * El switch del perfil público. No pide nada más: la mayoría de edad se declara en el registro y
+ * Orión no guarda la fecha de nacimiento de nadie.
  */
-public record StudentVisibilityRequest(@NotNull Boolean isPublic, LocalDate birthDate) {
+public record StudentVisibilityRequest(@NotNull Boolean isPublic) {
 }

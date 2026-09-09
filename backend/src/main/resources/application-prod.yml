@@ -38,6 +38,16 @@ server:
 orion:
   app:
     base-url: ${ORION_APP_BASE_URL}
+  # Sin valor por defecto a propósito: publicar Orion sin domicilio de notificaciones incumple
+  # el art. 50 de la Ley 1480, así que preferimos que no arranque a que arranque mintiendo.
+  legal:
+    responsable: ${ORION_LEGAL_NOMBRE}
+    documento:   ${ORION_LEGAL_DOCUMENTO}
+    domicilio:   ${ORION_LEGAL_DOMICILIO}
+    ciudad:      ${ORION_LEGAL_CIUDAD}
+    correo:      ${ORION_LEGAL_CORREO}
+    whatsapp:    ${ORION_LEGAL_WHATSAPP}
+    horario:     ${ORION_LEGAL_HORARIO}
   mail:
     from: ${ORION_MAIL_FROM}
     # Producción envía por la API HTTP de Resend (443), no por SMTP: Railway bloquea el puerto 587.

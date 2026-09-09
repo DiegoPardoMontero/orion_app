@@ -128,16 +128,14 @@ public class StudentProfileService {
     }
 
     /**
-     * El switch del perfil público. Activarlo exige fecha de nacimiento y mayoría de edad;
-     * desactivarlo no pide nada, porque retirar el consentimiento tiene que ser más fácil que darlo.
+     * El switch del perfil público. Ya no pide fecha de nacimiento: la mayoría de edad se declara
+     * en el registro y no hace falta volver a cobrarla aquí.
      */
     @Transactional
-    public Ficha setVisibility(UUID userId, boolean isPublic, LocalDate birthDate) {
+    public Ficha setVisibility(UUID userId, boolean isPublic) {
         StudentProfile profile = ensureProfile(userId);
         if (isPublic) {
-            LocalDate hoy = LocalDate.ofInstant(clock.instant(), BusinessZone.BOGOTA);
-            profile.enablePublicProfile(
-                    birthDate != null ? birthDate : profile.getBirthDate(), hoy);
+            profile.enablePublicProfile();
         } else {
             profile.disablePublicProfile();
         }

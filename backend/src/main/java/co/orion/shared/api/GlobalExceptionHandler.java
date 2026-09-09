@@ -20,17 +20,30 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import org.springframework.http.converter.HttpMessageNotReadableException;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+
 import co.orion.shared.error.BusinessRuleViolationException;
 import co.orion.shared.error.ConflictException;
 import co.orion.shared.error.ForbiddenException;
 import co.orion.shared.error.ResourceNotFoundException;
 import co.orion.shared.error.ServiceUnavailableException;
+import co.orion.shared.error.TooManyRequestsException;
 import co.orion.shared.error.UnprocessableException;
+import co.orion.shared.observability.AlertService;
+import co.orion.shared.security.OrionUserDetails;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    private final AlertService alerts;
+
+    public GlobalExceptionHandler(AlertService alerts) {
+        this.alerts = alerts;
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
@@ -73,6 +86,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(UnprocessableException.class)
     public ResponseEntity<Map<String, Object>> handleUnprocessable(UnprocessableException ex) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of("error", ex.getMessage()));
+    }
+
+    /**
+     * Demasiados intentos: 429 con {@code Retry-After} en segundos, como manda el estándar. Un
+     * cliente decente lo respeta solo; el nuestro además lo enseña.
+     */
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<Map<String, Object>> handleTooManyRequests(TooManyRequestsException ex) {
+        long segundos = Math.max(1, ex.getRetryAfter().toSeconds());
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", String.valueOf(segundos))
+                .body(Map.of("error", ex.getMessage(), "retryAfterSeconds", segundos));
     }
 
     @ExceptionHandler(ConflictException.class)
@@ -130,10 +155,37 @@ public class GlobalExceptionHandler {
                 .body(Map.of("error", ex.getMessage()));
     }
 
+    /**
+     * Lo que llegó a 500. Se registra y, además, se avisa por correo.
+     *
+     * <p>El aviso lleva ruta, método, id de usuario si lo hay y la traza recortada. NUNCA el cuerpo
+     * de la petición, ni cookies, ni cabeceras de autorización: una alerta que arrastra el cuerpo
+     * de un POST acaba llevando una contraseña a una bandeja de Gmail, y entonces el sistema de
+     * alertas es el incidente.
+     */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleUnexpected(Exception ex) {
+    public ResponseEntity<Map<String, Object>> handleUnexpected(Exception ex,
+                                                                HttpServletRequest request) {
         log.error("Unhandled exception", ex);
+        alerts.alert(AlertService.firmaDe(ex),
+                "Error no controlado en " + request.getRequestURI(),
+                "Método: " + request.getMethod()
+                        + "\nRuta: " + request.getRequestURI()
+                        + "\nUsuario: " + usuarioDe()
+                        + "\n\n" + AlertService.trazaCorta(ex, 8));
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Unexpected error"));
+    }
+
+    /** Solo el id: el nombre y el correo de una persona no tienen por qué viajar a una alerta. */
+    private String usuarioDe() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()
+                || auth.getPrincipal() instanceof String) {
+            return "anónimo";
+        }
+        return auth.getPrincipal() instanceof OrionUserDetails details
+                ? String.valueOf(details.user().getId())
+                : "autenticado";
     }
 }

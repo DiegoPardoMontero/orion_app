@@ -17,6 +17,19 @@ public enum PaymentStatus {
     PENDING,
     PAID,
     RELEASED,
+
+    /**
+     * Se le debe al estudiante y todavía no se le ha transferido.
+     *
+     * <p>Estado propio y no {@link #DISPUTED} a propósito: un pago en retracto no está en disputa
+     * —no hay nada que decidir, la ley ya decidió— sino esperando una transferencia que Wompi no
+     * deja hacer por API. Mezclarlos habría puesto en «requiere decisión» algo que solo requiere
+     * ejecutarse, y habría escondido lo único que hay que vigilar aquí: cuántos días quedan.
+     *
+     * <p>De aquí NO se sale hacia {@link #RELEASED}: este dinero nunca es del profesor.
+     */
+    REFUND_PENDING,
+
     REFUNDED,
     DISPUTED,
     CANCELLED;
@@ -24,5 +37,10 @@ public enum PaymentStatus {
     /** Un pago que ya no espera nada de la pasarela. */
     public boolean isSettled() {
         return this != PENDING;
+    }
+
+    /** El dinero está congelado: ni del profesor ni devuelto todavía. */
+    public boolean isFrozen() {
+        return this == DISPUTED || this == REFUND_PENDING;
     }
 }

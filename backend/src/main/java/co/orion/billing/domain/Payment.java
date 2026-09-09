@@ -146,6 +146,8 @@ public class Payment {
      * También desde DISPUTED, cuando un reclamo se resuelve a favor del profesor: la clase contó.
      */
     public void release(Instant releasedAt) {
+        // REFUND_PENDING no está en la lista y eso es lo importante: ese dinero está debido al
+        // estudiante y no puede acabar en una liquidación por un camino descuidado.
         if (status != PaymentStatus.PAID && status != PaymentStatus.DISPUTED) {
             throw new IllegalStateException("Un pago en " + status + " no se puede liberar");
         }
@@ -159,11 +161,25 @@ public class Payment {
      * transición ES el candado contra compensar dos veces: un REFUNDED ya no admite otra.
      */
     public void refund(Instant refundedAt) {
-        if (status != PaymentStatus.PAID && status != PaymentStatus.DISPUTED) {
+        if (status != PaymentStatus.PAID && status != PaymentStatus.DISPUTED
+                && status != PaymentStatus.REFUND_PENDING) {
             throw new IllegalStateException("Un pago en " + status + " no se puede devolver");
         }
         this.status = PaymentStatus.REFUNDED;
         this.refundedAt = Objects.requireNonNull(refundedAt, "refundedAt");
+    }
+
+    /**
+     * El estudiante ejerció su derecho de retracto: el dinero queda congelado y debido a él, no al
+     * profesor. Sale de aquí solo hacia {@link PaymentStatus#REFUNDED}, cuando alguien confirme la
+     * devolución hecha en el panel de Wompi.
+     */
+    public void startRefund() {
+        if (status != PaymentStatus.PAID) {
+            throw new IllegalStateException(
+                    "Un pago en " + status + " no admite retracto");
+        }
+        this.status = PaymentStatus.REFUND_PENDING;
     }
 
     /**

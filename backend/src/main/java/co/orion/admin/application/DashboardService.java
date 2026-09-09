@@ -18,7 +18,7 @@ import co.orion.identity.domain.UserRole;
 import co.orion.identity.persistence.ProfessorProfileRepository;
 import co.orion.identity.persistence.TeacherApplicationRepository;
 import co.orion.identity.persistence.UserRepository;
-import co.orion.lifecycle.application.JobRunRegistry;
+import co.orion.shared.observability.JobRunRegistry;
 import co.orion.lifecycle.persistence.DisputeRepository;
 import co.orion.reputation.persistence.ProfessorSanctionRepository;
 import co.orion.reputation.persistence.ReviewRepository;

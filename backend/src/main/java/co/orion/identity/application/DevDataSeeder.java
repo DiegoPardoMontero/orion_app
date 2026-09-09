@@ -263,6 +263,11 @@ public class DevDataSeeder implements ApplicationRunner {
             return Optional.empty();
         }
         User user = new User(email, passwordEncoder.encode(rawPassword), fullName, role);
+        // Sin esto la semilla nace sin declarar mayoría de edad y sin correo verificado, y Ana no
+        // puede reservar en local: los dos gates del Bloque 9 la tratarían como cuenta a medias.
+        // Un correo @orion.local no existe, así que verificarlo de verdad es imposible.
+        user.confirmAdulthood(clock.instant());
+        user.markEmailVerified(clock.instant());
         User saved = users.save(user);
         log.info("Semilla: usuario {} creado con rol {}", saved.getEmail(), role);
         return Optional.of(saved);
