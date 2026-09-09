@@ -2,11 +2,15 @@ package co.orion.admin.application;
 
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +47,12 @@ public class PurgeService {
 
     /** El texto que hay que escribir para confirmar. Corto, pero no accidental. */
     public static final String CONFIRMATION = "BORRAR";
+
+    /**
+     * Se instancia aquí en vez de inyectarse: en Boot 4 no hay un bean de {@code ObjectMapper} que
+     * pedir. Es apátrida y solo serializa tres claves, así que no hay nada que compartir.
+     */
+    private static final ObjectMapper JSON = new ObjectMapper();
 
     private final JdbcTemplate jdbc;
     private final UserRepository users;
@@ -113,7 +123,7 @@ public class PurgeService {
         jdbc.update("delete from bookings where id = ?", bookingId);
 
         audit.record(admin.getId(), "PURGE_BOOKING", "BOOKING", bookingId,
-                summaryOf(preview) + (reason != null ? " · " + reason : ""));
+                detalle(preview.label(), summaryOf(preview), reason));
         log.warn("PURGA de la reserva {} por el admin {}", bookingId, admin.getEmail());
         return preview;
     }
@@ -198,22 +208,92 @@ public class PurgeService {
         jdbc.update("delete from teacher_application_events where application_id in (select id from teacher_applications where user_id = ?)", userId);
         jdbc.update("delete from teacher_applications where user_id = ?", userId);
         jdbc.update("delete from agreement_acceptances where user_id = ?", userId);
-        jdbc.update("delete from professor_invites where created_by = ?", userId);
+        // `user_id`, que es el invitado. NUNCA existió una columna `created_by` aquí: esta línea
+        // llevaba tiempo lanzando «column does not exist», y como es la misma transacción, tumbaba
+        // la purga ENTERA — de cualquier usuario, tuviera historia o no. El admin veía «Unexpected
+        // error» y nada más. No había un solo test de la purga; ahora sí.
+        jdbc.update("delete from professor_invites where user_id = ?", userId);
+
+        // --- Lo que los bloques 8 y 9 fueron colgando de `users` y esta lista no sabía ---
+        //
+        // La purga borra a mano, tabla por tabla. Eso significa que cada tabla nueva que apunte a
+        // una cuenta hay que añadirla aquí, y las que faltaban solo se notaban al intentar borrar
+        // a alguien que las hubiera tocado.
+
+        // Soporte (V27). El ticket propio cae por ON DELETE CASCADE, pero un mensaje suyo dentro
+        // del hilo de OTRA persona no: ese hilo sigue vivo y no puede quedarse con un autor que ya
+        // no existe.
+        jdbc.update("delete from support_messages where author_id = ?", userId);
+
+        // Ajustes (V28). El valor actual solo pierde la firma de quién lo puso; el historial de
+        // cambios no puede: `changed_by` es NOT NULL, así que esas filas se van, igual que se va la
+        // bitácora de este admin unas líneas más abajo.
+        jdbc.update("update platform_settings set updated_by = null where updated_by = ?", userId);
+        jdbc.update("delete from platform_setting_changes where changed_by = ?", userId);
+
+        // Retracto (V29). Las devoluciones del estudiante son suyas y se van con él; la firma de
+        // quien las resolvió, no — esa devolución puede ser de otra persona.
+        jdbc.update("delete from refund_requests where student_id = ?", userId);
+        jdbc.update("update refund_requests set resolved_by = null where resolved_by = ?", userId);
+
+        // Las firmas ajenas: lo que este usuario decidió SOBRE otras cuentas. La decisión se
+        // conserva —es historia de esa otra persona— y solo pierde el nombre de quien la tomó.
+        jdbc.update("update disputes set resolved_by = null where resolved_by = ?", userId);
+        jdbc.update("update professor_sanctions set created_by = null where created_by = ?", userId);
+        jdbc.update("update professor_sanctions set revoked_by = null where revoked_by = ?", userId);
+        jdbc.update("update teacher_applications set reviewed_by = null where reviewed_by = ?", userId);
+        jdbc.update("update teacher_application_events set actor_id = null where actor_id = ?", userId);
+        jdbc.update("update bookings set cancelled_by = null where cancelled_by = ?", userId);
+        // `created_by` es la reserva que este admin hizo en nombre de un estudiante que NO se está
+        // borrando. Se queda sin firma (V32) en vez de llevarse por delante la clase de un tercero.
+        jdbc.update("update bookings set created_by = null where created_by = ?", userId);
         jdbc.update("delete from password_reset_tokens where user_id = ?", userId);
         jdbc.update("delete from professor_profiles where user_id = ?", userId);
-        // La auditoría se conserva: es el registro de lo que OTROS hicieron, y perderlo sería
-        // borrar la historia además de la cuenta. Solo se desliga.
-        jdbc.update("update admin_audit_log set target_id = null where target_id = ?", userId);
+        // La bitácora del admin. La columna se llama `entity_id` —`target_id` nunca existió, y era
+        // la segunda de las dos consultas escritas contra un esquema imaginado— y no tiene FK, así
+        // que no bloquea nada: se desliga igual, porque un id que ya no apunta a nadie es ruido.
+        //
+        // Las líneas donde este usuario fue el ACTOR sí se van: `actor_id` es NOT NULL y tiene FK.
+        // Se pierde el registro de lo que hizo, que es el precio de borrar definitivamente a quien
+        // lo hizo.
+        jdbc.update("update admin_audit_log set entity_id = null "
+                + "where entity_type = 'USER' and entity_id = ?", userId);
         jdbc.update("delete from admin_audit_log where actor_id = ?", userId);
         jdbc.update("delete from users where id = ?", userId);
 
         audit.record(admin.getId(), "PURGE_USER", "USER", null,
-                preview.label() + " · " + summaryOf(preview) + (reason != null ? " · " + reason : ""));
+                detalle(preview.label(), summaryOf(preview), reason));
         log.warn("PURGA del usuario {} por el admin {}", preview.label(), admin.getEmail());
         return preview;
     }
 
     /* -------------------------------------------------------------------- apoyo */
+
+    /**
+     * El detalle de la bitácora, como JSON.
+     *
+     * <p>`admin_audit_log.detail` es JSONB y las dos purgas le pasaban una frase en castellano
+     * («Ana Ramírez · 3 clases, 1 pago…»). Postgres la rechazaba, y como la auditoría es la
+     * ÚLTIMA línea de las dos, la transacción entera reventaba después de haber borrado todo: nadie
+     * llegó nunca a ver el commit. Se serializa con Jackson y no a mano, porque escapar comillas a
+     * mano es exactamente cómo vuelve este bug.
+     */
+    private String detalle(String label, String resumen, String reason) {
+        Map<String, String> campos = new LinkedHashMap<>();
+        campos.put("objetivo", label);
+        campos.put("resumen", resumen);
+        if (reason != null && !reason.isBlank()) {
+            campos.put("motivo", reason.trim());
+        }
+        try {
+            return JSON.writeValueAsString(campos);
+        } catch (JsonProcessingException ex) {
+            // Que la auditoría no pueda serializarse no puede impedir la purga; queda constancia
+            // mínima y el porqué en el log.
+            log.error("No se pudo serializar el detalle de la purga de {}", label, ex);
+            return "{}";
+        }
+    }
 
     private void deleteBookingCascade(UUID bookingId) {
         jdbc.update("delete from payout_items where payment_id in (select id from payments where booking_id = ?)", bookingId);

@@ -83,8 +83,13 @@ public class Booking {
     @Column(name = "expires_at")
     private Instant expiresAt;
 
-    /** Quién ejecutó la acción. Si coincide con student_id, la reserva fue autoservicio. */
-    @Column(name = "created_by", nullable = false, updatable = false)
+    /**
+     * Quién ejecutó la acción. Si coincide con student_id, la reserva fue autoservicio.
+     *
+     * <p>Nulo solo si esa cuenta se borró definitivamente (V32): una reserva de un estudiante no
+     * puede desaparecer porque se borre el admin que la creó en su nombre.
+     */
+    @Column(name = "created_by", updatable = false)
     private UUID createdBy;
 
     @Column(name = "cancelled_by")
@@ -198,7 +203,7 @@ public class Booking {
 
     /** Autoservicio: la reservó el propio estudiante, no un admin en su nombre. */
     public boolean isSelfService() {
-        return createdBy.equals(studentId);
+        return studentId.equals(createdBy);
     }
 
     /** ¿Ya terminó la clase? Comparación entre instantes: la zona horaria no interviene. */
