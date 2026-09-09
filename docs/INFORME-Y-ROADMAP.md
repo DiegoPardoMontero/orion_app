@@ -16,17 +16,44 @@
   **subir foto** (bloqueado por Cloudinary). El backend sí los cubre con ITs.
 - **Lighthouse de la landing** (DoD del minibrief: ≥95 en Perf/SEO/A11y) no se ha corrido — hazlo
   desde Chrome DevTools sobre la URL de producción.
-- **Tests de componentes frontend**: hay **Vitest** con 36 tests de lógica pura (`lib/phone`,
+- **Tests de componentes frontend**: hay **Vitest** con 50 tests de lógica pura (`lib/phone`,
   `fuerzaClave`, formato de fechas y horas, límites de la ficha del profesor). Falta cobertura de
   *componentes* con render (Testing Library) — p. ej. `PhoneInput`, `CambiarFoto`, los modales.
+- **La suite e2e no se ha corrido desde la revisión del portal del estudiante (08/09/2026).** Se
+  revisaron a mano los selectores que se tocaron (`Cancelar`, `¿Cancelar esta clase?`,
+  `Sí, cancelar`, `Confirmar reserva`) y siguen coincidiendo, pero eso es leer, no ejecutar — y los
+  cambios tocaron justo la pantalla de reservar y la de mis clases, que es lo que esa suite recorre.
+  **Es lo primero que hay que correr.**
+
+### Sin verificar contra el servicio real
+- **La URL firmada de los documentos de Cloudinary.** El 401 del admin al abrir un PDF se arregló
+  el 08/09 usando el endpoint de descarga privada, y la construcción está fijada con tests
+  unitarios — pero **nunca ha hecho una llamada real**: el secreto solo vive en Railway. Si sigue
+  fallando, el siguiente sospechoso es el ajuste *PDF and ZIP files delivery* en Settings →
+  Security de Cloudinary, que viene desactivado por defecto y bloquea la entrega de PDF.
+- **El polling de la pantalla de retorno de Wompi** está implementado y consulta cada 3 s mientras
+  el pago siga pendiente. Si en producción no ocurre, la hipótesis es `ORION_APP_BASE_URL` mal
+  puesta en Railway — hipótesis **sin confirmar**, porque desde aquí no se ve ese panel.
+- **La triplicación del historial de pagos.** Se filtraron los intentos anulados, pero la captura
+  original no llegó a verse: si lo que se vio eran pagos genuinamente `PENDING`, esos **siguen
+  apareciendo** hasta que el job de expiración los anule. Nadie ha comprobado que ese job corra en
+  producción.
+
+### Riesgos de operación
+- **`meet.jit.si` pide no usarse con fines comerciales** y topa el uso agregado en unos 25 usuarios
+  activos al mes. Orión da clases cobradas encima de ese servicio. Es la dependencia más frágil que
+  tiene el producto hoy; las salidas y su costo están en
+  [`videollamada-opciones.md`](./videollamada-opciones.md).
+- **El estudiante puede ser anfitrión de la videollamada.** Mitigado (sala de 32 caracteres,
+  antesala, sin invitar) pero no resuelto: el control de moderador exige un token firmado, que es
+  de pago.
+- **Las sanciones siguen en modo observación** (`sanctions_mode = OBSERVE`). La escalera se propone
+  y la confirma una persona; la suspensión automática que pide producto **no ocurre sola**.
 
 ### Accesibilidad
 - Repaso formal con lector de pantalla y teclado de las pantallas nuevas (registro, /cuenta,
   reprogramar, recuperar). Los tokens ya garantizan foco visible y contraste AA, pero conviene
   auditar `aria-live` en toasts/errores y el orden de tabulación en los modales.
-- Las **banderas emoji** no renderizan en Windows: ni en el `PhoneInput` (ahí basta el prefijo
-  `+57`) ni en los chips de idioma del marketplace, donde sí se nota. Cambiar a códigos («EN»,
-  «FR») o a SVG inline.
 
 ### UX / producto
 - **Animación de deleite** de la confirmación de reserva (check dibujado + estrellas) del handoff
@@ -39,6 +66,10 @@
 ### Backend / arquitectura
 - `professor_profiles.photo_url` quedó **deprecada** (se lee de `users.photo_url`): eliminarla en
   una migración futura cuando estemos seguros.
+- **Código muerto en `BookingService.cancel`**: `isAdmin` y `window` quedaron sin uso al quitar el
+  bloqueo por ventana, y `lateCancellationMessage` puede haberse quedado sin llamadores.
+- **El cielo de logros quedó en 19 estrellas.** «Cara a cara» pedía una clase presencial y se retiró
+  con la V30; AMPLITUD tiene dos. Falta decidir si se diseña un reemplazo.
 - **Rate limiting** del endpoint de fotos: el brief pedía uno ligero; hoy solo validamos
   tipo/tamaño. Añadir un throttle por usuario (p. ej. en memoria o con la caché) para proteger la
   cuota de Cloudinary.
@@ -49,8 +80,8 @@
 
 ## Ideas para futuros briefs
 
-Ninguna implementada — son propuestas para futuros briefs, alineadas con el negocio (confianza al
-hablar, adultos, curaduría de academia).
+Propuestas para futuros briefs, alineadas con el negocio (confianza al hablar, adultos, curaduría
+de academia). Las tachadas ya se hicieron.
 
 1. **Confidence Score® de verdad** (MVP 2). Ya lo teaseamos en la landing. Un score simple por
    estudiante que sube con clases completadas + una micro-encuesta post-clase ("¿qué tan cómodo te
@@ -75,38 +106,42 @@ hablar, adultos, curaduría de academia).
    una a una.
 10. **i18n-ready**: el copy está en español hardcodeado; extraerlo facilitaría una versión en
     inglés para el mercado que "aprende inglés en inglés".
+11. **Un logro que reemplace a «Cara a cara»** en la familia AMPLITUD, que se quedó con dos al
+    desaparecer las clases presenciales.
+12. **Prórroga de los plazos de habeas data.** La ley permite ampliar 5 días una consulta y 8 un
+    reclamo, avisando y motivando. Hoy no hay botón: si hace falta, se responde a mano dentro del
+    plazo original.
 
 ---
 
 ## Notas de operación y despliegue
 
-Variables de entorno que deben estar en Railway (producción):
-- `WOMPI_PUBLIC_KEY` / `WOMPI_INTEGRITY_SECRET` / `WOMPI_EVENTS_SECRET` — pasarela de pagos. **Las
-  tres son obligatorias**: sin ellas reservar responde 422. La **llave privada NO se usa** y por eso
-  no está en la configuración: el Web Checkout se firma con el secreto de integridad, el webhook se
-  verifica con el de eventos y la consulta de transacciones va con la llave pública. Un secreto de
-  producción que no se usa es superficie de ataque gratis.
-- `WOMPI_API_BASE_URL` — `https://production.wompi.co/v1` en producción. **El default es el sandbox
-  a propósito**: apuntar a producción tiene que ser un acto deliberado.
-- `CLOUDINARY_URL` — ✅ secreto correcto ya verificado (sección 0); asegúrate de que esté puesta en Railway.
-- `MAIL_HOST` / `MAIL_PORT` / `MAIL_USERNAME` / `MAIL_PASSWORD` / `ORION_MAIL_FROM` — SMTP real para
-  que salgan los correos (confirmación, recuperación).
-- `ORION_APP_BASE_URL` — origen del frontend (para los enlaces de los correos, p. ej. recuperación).
-- `NEXT_PUBLIC_SUPPORT_WHATSAPP` — `573023063447` (ya cableado con default).
-- `NEXT_PUBLIC_SITE_URL` — dominio público (para sitemap/OG absolutos), p. ej. `https://orionidiomas.com`.
-- `ORION_ADMIN_EMAIL` / `ORION_ADMIN_PASSWORD` — bootstrap del admin.
+> **La lista de variables de entorno vive en [`../README.md`](../README.md#5-variables-de-entorno)**,
+> con cuáles son obligatorias en producción y qué pasa si faltan. Aquí solo lo que no es una
+> variable.
 
-Recordatorios:
-- **Producción no corre el `DevDataSeeder`** (perfil `local`): la base arranca solo con el admin.
-  Para el piloto: admin crea profesor → profesor publica perfil + disponibilidad → estudiante se
-  registra y reserva.
-- Flyway va por **V19**. Cada cambio de esquema es una migración nueva; nunca editar una aplicada.
-- **Configurar el webhook en el panel de Wompi.** Sin eso ningún pago confirma una clase: la
-  redirección del navegador NO es la fuente de verdad, el webhook sí. La URL correcta es la del
-  **dominio público del frontend** —`https://<dominio>/api/v1/webhooks/payments/wompi`—, no la del
-  backend: en Railway el backend vive en la red interna y Wompi no lo alcanza. El `rewrite` de Next
-  reenvía `/api/*` al backend tal cual, así que el evento llega íntegro.
+- **Producción no corre el `DevDataSeeder`** (perfil `local`): la base arranca solo con el
+  administrador. Para el piloto: admin crea profesor → profesor publica perfil + disponibilidad →
+  estudiante se registra y reserva.
+- **Flyway va por V31.** Cada cambio de esquema es una migración nueva; nunca editar una aplicada.
+  Las dos últimas mueven datos, no solo esquema: la **V30** reescribe las reservas presenciales como
+  virtuales y estrecha el CHECK a un solo valor, y la **V31** añade el tipo de falta del profesor.
+- **Configurar el webhook en el panel de Wompi** apuntando al **dominio público del frontend**
+  —`https://<dominio>/api/v1/webhooks/payments/wompi`—, no al del backend: en Railway el backend
+  vive en la red interna y Wompi no lo alcanza. Sin esto ningún pago confirma una clase.
 - **Desarrollo local necesita claves de SANDBOX de Wompi** (prefijo `_test_`) o no se puede
-  reservar. La excepción es la estudiante sembrada `ana@orion.local`, que arranca con saldo a favor
-  (`BillingDevSeeder`) y por eso puede reservar sin pasarela.
-- La suite de humo asume semilla fresca por corrida completa.
+  reservar. La excepción es Ana, que arranca con saldo a favor y por eso puede reservar sin pasarela.
+- **La suite de humo asume semilla fresca** por corrida completa (`docker compose down -v`).
+- **Rotar la llave privada de Wompi**: viajó por chat. Nunca estuvo en el código ni se usa en este
+  flujo —el checkout se firma con el secreto de integridad y el webhook se verifica con el de
+  eventos—, pero un secreto de producción que no se usa es superficie de ataque gratis.
+- **Cómo comprobar un despliegue desde fuera**, sin entrar a Railway:
+
+  ```bash
+  curl -s https://orionidiomas.com/actuator/health     # {"status":"UP"} → arrancó, y Flyway pasó
+  curl -so /dev/null -w '%{http_code}\n' \
+       https://orionidiomas.com/api/v1/auth/me          # 401 en JSON → el backend responde
+  ```
+
+  Que el backend arranque **es** la prueba de que las migraciones corrieron: con Flyway roto o con
+  una variable obligatoria ausente, no levanta.
