@@ -49,7 +49,7 @@ class TeacherDocumentIT extends ApiIntegrationSupport {
                 }
 
                 @Override
-                public String signedUrl(String storageKey, Duration ttl) {
+                public String signedUrl(String storageKey, String contentType, Duration ttl) {
                     return "https://res.cloudinary.test/" + storageKey + "?firmada";
                 }
             };

@@ -1,6 +1,7 @@
 package co.orion.identity.application;
 
 import java.net.URI;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -97,20 +98,67 @@ public class CloudinaryDocumentStorage implements DocumentStorage {
     }
 
     /**
-     * URL de descarga firmada y temporal para un recurso {@code authenticated}. Cloudinary firma
-     * {@code public_id + expira} con SHA-1; la URL caduca en {@code expira}. (La entrega temporal
-     * real exige el add-on de tokens; aquí se construye la firma correctamente aunque no se pueda
-     * verificar en vivo sin credenciales.)
+     * Enlace de descarga firmado y temporal para un recurso {@code authenticated}.
+     *
+     * <p>Usa el endpoint de <em>descarga privada</em> de Cloudinary, que es el que existe para esto:
+     * firma los parámetros con el mismo esquema que la subida —orden alfabético, {@code api_secret}
+     * al final, SHA-1 en hexadecimal— y caduca en {@code expires_at}. No necesita complementos.
+     *
+     * <p>Lo que había antes construía una URL de entrega con un prefijo {@code s--firma--} calculado
+     * como {@code exp=...~acl=...}. Eso mezclaba dos mecanismos distintos: la firma de entrega se
+     * codifica en base64url sobre el {@code public_id}, y el {@code exp~acl} pertenece a los tokens
+     * de CDN privado, que exigen el complemento de <em>token-based authentication</em> y otra llave.
+     * Cloudinary rechazaba la mezcla con <strong>401</strong>, que es el error que veía el admin.
      */
     @Override
-    public String signedUrl(String storageKey, Duration ttl) {
+    public String signedUrl(String storageKey, String contentType, Duration ttl) {
+        if (cloudName.isBlank() || apiKey.isBlank() || apiSecret.isBlank()) {
+            throw new ServiceUnavailableException(
+                    "No podemos abrir documentos en este momento. Inténtalo más tarde.");
+        }
+
+        long timestamp = clock.instant().getEpochSecond();
         long expiresAt = clock.instant().plus(ttl).getEpochSecond();
-        String toSign = "exp=" + expiresAt + "~acl=" + storageKey + apiSecret;
+        String format = formatoDe(contentType);
+
+        // Se firma el valor crudo y se transporta el valor codificado: el public_id lleva barras.
+        String toSign = "expires_at=" + expiresAt
+                + "&format=" + format
+                + "&public_id=" + storageKey
+                + "&timestamp=" + timestamp
+                + "&type=authenticated"
+                + apiSecret;
         String signature = sha1Hex(toSign);
-        String cloud = cloudName.isBlank() ? "orion" : cloudName;
-        return "https://res.cloudinary.com/" + cloud + "/image/authenticated"
-                + "/s--" + signature.substring(0, 8) + "--"
-                + "/" + storageKey + "?_exp=" + expiresAt;
+
+        return "https://api.cloudinary.com/v1_1/" + cloudName + "/image/download"
+                + "?api_key=" + enc(apiKey)
+                + "&expires_at=" + expiresAt
+                + "&format=" + enc(format)
+                + "&public_id=" + enc(storageKey)
+                + "&signature=" + signature
+                + "&timestamp=" + timestamp
+                + "&type=authenticated";
+    }
+
+    /**
+     * El formato que Cloudinary espera, deducido del tipo real del archivo. La subida solo admite
+     * PDF o imagen, así que el abanico es corto; el subtipo sirve de red para el resto.
+     */
+    static String formatoDe(String contentType) {
+        String tipo = contentType == null ? "" : contentType.toLowerCase().trim();
+        return switch (tipo) {
+            case "application/pdf" -> "pdf";
+            case "image/jpeg", "image/jpg" -> "jpg";
+            case "image/png" -> "png";
+            case "image/webp" -> "webp";
+            case "image/gif" -> "gif";
+            case "image/heic" -> "heic";
+            default -> tipo.startsWith("image/") ? tipo.substring("image/".length()) : "pdf";
+        };
+    }
+
+    private static String enc(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 
     private static String sha1Hex(String value) {

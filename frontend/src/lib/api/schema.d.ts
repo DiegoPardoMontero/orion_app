@@ -1921,6 +1921,7 @@ export interface components {
             agreementAccepted?: boolean;
             missing?: string[];
             documents?: components["schemas"]["DocumentView"][];
+            answers?: components["schemas"]["ProfileResponse"];
         };
         StudentProfileRequest: {
             selfDeclaredLevel?: string;

@@ -9,6 +9,7 @@ import {
   Circle,
   FileText,
   GraduationCap,
+  Pencil,
   Plus,
   Send,
   ShieldCheck,
@@ -18,7 +19,8 @@ import {
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Avatar } from "@/components/Avatar";
 import { CambiarFoto } from "@/components/CambiarFoto";
 import { bordeSegun, ContadorPalabras } from "@/components/ContadorPalabras";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
@@ -33,9 +35,9 @@ import type {
   ProfileResponse,
   TeacherApplicationView,
 } from "@/lib/api/types";
-import { DOC_TIPOS, etiquetaFaltante, MI_APLICACION_KEY } from "@/lib/aplicacion";
+import { DOC_TIPOS, etiquetaDocumento, etiquetaFaltante, MI_APLICACION_KEY } from "@/lib/aplicacion";
 import { useMe } from "@/lib/auth/session";
-import { etiquetaNivel, NIVELES } from "@/lib/i18n";
+import { etiquetaNivel, etiquetaObjetivo, NIVELES } from "@/lib/i18n";
 import { estadoBio, estadoTitular } from "@/lib/perfil-profesor";
 
 type LangEdit = { code: string; isNative: boolean; levels: string[] };
@@ -74,15 +76,6 @@ export default function AplicacionPage() {
     status === "APPROVED" || status === "PENDING_REVIEW" || status === "UNDER_REVIEW";
   const debeCrear = noAplico || status === "REJECTED";
 
-  // El perfil solo se puede leer con rol PROFESSOR; un estudiante que postula arranca en blanco y
-  // el borrador guarda su avance en el servidor de todos modos.
-  const perfil = useQuery({
-    queryKey: ["me", "profile"],
-    queryFn: () => apiFetch<ProfileResponse>("/api/v1/me/profile"),
-    enabled: me?.role === "PROFESSOR",
-    retry: false,
-  });
-
   const crear = useMutation({
     mutationFn: () =>
       apiFetch<TeacherApplicationView>("/api/v1/teacher-applications", { method: "POST" }),
@@ -102,7 +95,6 @@ export default function AplicacionPage() {
     }
   }, [debeRedirigir, debeCrear, status, router, crear]);
 
-  const cargandoPerfil = me?.role === "PROFESSOR" && perfil.isPending;
   const vista = app.data && editable ? app.data : crear.data;
 
   if (app.isError && !noAplico) {
@@ -113,7 +105,7 @@ export default function AplicacionPage() {
     );
   }
 
-  if (app.isPending || debeRedirigir || cargandoPerfil || !vista) {
+  if (app.isPending || debeRedirigir || !vista) {
     return (
       <main className="mx-auto w-full max-w-lg px-5 py-6">
         <Cargando filas={4} />
@@ -121,7 +113,18 @@ export default function AplicacionPage() {
     );
   }
 
-  return <Wizard key={vista.id} vista={vista} seed={perfil.data ?? null} nombre={me?.fullName ?? ""} foto={me?.photoUrl} />;
+  // La semilla viaja DENTRO de la postulación. Antes venía de /me/profile, que exige rol
+  // PROFESSOR: un aspirante nunca la recibía, así que el wizard se dibujaba vacío y al avanzar de
+  // paso mandaba ese vacío al servidor.
+  return (
+    <Wizard
+      key={vista.id}
+      vista={vista}
+      seed={vista.answers ?? null}
+      nombre={me?.fullName ?? ""}
+      foto={me?.photoUrl}
+    />
+  );
 }
 
 function Wizard({
@@ -138,6 +141,9 @@ function Wizard({
   const router = useRouter();
   const queryClient = useQueryClient();
 
+  // Quien vuelve porque le pidieron cambios no debería tener que recorrer los seis pasos otra
+  // vez: entra por el resumen, ve la nota de la revisión, y abre solo la sección que va a tocar.
+  const [resumen, setResumen] = useState(vista.status === "CHANGES_REQUESTED");
   const [paso, setPaso] = useState(0);
 
   const [headline, setHeadline] = useState(seed?.headline ?? "");
@@ -244,6 +250,35 @@ function Wizard({
     setGoals((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]));
 
   const progreso = Math.round(((paso + 1) / PASOS.length) * 100);
+
+  async function volverAlResumen() {
+    if (paso <= 2) {
+      try {
+        await guardar.mutateAsync();
+      } catch {
+        return; // el error queda visible; no salimos con un guardado fallido
+      }
+    }
+    setResumen(true);
+    if (typeof window !== "undefined") window.scrollTo({ top: 0 });
+  }
+
+  if (resumen) {
+    return (
+      <Resumen
+        vista={vista}
+        respuestas={seed}
+        nombre={nombre}
+        foto={foto}
+        onEditar={(destino) => {
+          setPaso(destino);
+          setResumen(false);
+          if (typeof window !== "undefined") window.scrollTo({ top: 0 });
+        }}
+        onEnviado={() => router.replace("/aplicacion/estado")}
+      />
+    );
+  }
 
   return (
     <main className="mx-auto w-full max-w-lg px-5 py-6 lg:max-w-2xl lg:py-8">
@@ -483,6 +518,14 @@ function Wizard({
           <span className="text-[12px] text-text-muted">Revisa y envía abajo</span>
         )}
       </nav>
+
+      {vista.status === "CHANGES_REQUESTED" && (
+        <div className="mt-4 flex justify-center">
+          <Boton variante="fantasma" disabled={guardar.isPending} onClick={() => void volverAlResumen()}>
+            Guardar y volver al resumen
+          </Boton>
+        </div>
+      )}
     </main>
   );
 }
@@ -648,6 +691,199 @@ function PasoAcuerdo({ aceptado }: { aceptado: boolean }) {
 
       {error && <AvisoError mensaje={error} />}
     </section>
+  );
+}
+
+/* ---------------- Resumen de la postulación ---------------- */
+
+/**
+ * Todo lo que el aspirante ya entregó, en una sola pantalla, con la nota de la revisión arriba.
+ *
+ * <p>Es la respuesta a lo que costaba más caro: cuando la revisión pedía un cambio, volver
+ * significaba recorrer los seis pasos del wizard otra vez. Aquí ve lo que tiene, entra a la
+ * sección que le señalaron, y vuelve.
+ */
+function Resumen({
+  vista,
+  respuestas,
+  nombre,
+  foto,
+  onEditar,
+  onEnviado,
+}: {
+  vista: TeacherApplicationView;
+  respuestas: ProfileResponse | null;
+  nombre: string;
+  foto?: string | null;
+  onEditar: (paso: number) => void;
+  onEnviado: () => void;
+}) {
+  const goalsCat = useQuery({
+    queryKey: ["catalog", "goals"],
+    queryFn: () => apiFetch<GoalResponse[]>("/api/v1/catalog/goals"),
+    staleTime: 5 * 60_000,
+  });
+
+  const r = respuestas;
+  const documentos = vista.documents ?? [];
+  const lugar = [r?.city, r?.countryCode].filter(Boolean).join(", ");
+
+  return (
+    <main className="mx-auto w-full max-w-lg px-5 py-6 lg:max-w-2xl lg:py-8">
+      <header>
+        <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-primary-strong">
+          Postulación a profesor
+        </p>
+        <h1 className="mt-2 font-display text-h1 font-bold">Tu postulación</h1>
+        <p className="mt-1 text-[13.5px] leading-relaxed text-text-secondary">
+          Esto es lo que tienes guardado. Cambia solo lo que haga falta y vuelve a enviarla.
+        </p>
+      </header>
+
+      {vista.decisionNote && (
+        <section className="mt-5 rounded-card border-l-[3px] border-primary bg-primary-soft p-4">
+          <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-primary-strong">
+            Lo que pide la revisión
+          </p>
+          <p className="mt-1.5 whitespace-pre-line text-[13.5px] leading-relaxed text-text">
+            {vista.decisionNote}
+          </p>
+        </section>
+      )}
+
+      <div className="mt-5 grid gap-3">
+        <BloqueResumen titulo="Datos personales" onEditar={() => onEditar(0)}>
+          <div className="flex items-center gap-3">
+            <Avatar nombre={nombre} fotoUrl={foto} size="md" />
+            <div className="min-w-0">
+              <p className="truncate text-[14px] font-bold text-text">{nombre}</p>
+              <p className="truncate text-[12.5px] text-text-muted">{lugar || "Sin ciudad"}</p>
+            </div>
+          </div>
+          <DatoResumen etiqueta="Titular" valor={r?.headline} />
+        </BloqueResumen>
+
+        <BloqueResumen titulo="Enseñanza" onEditar={() => onEditar(1)}>
+          <DatoResumen etiqueta="Sobre ti" valor={r?.bio} />
+          <div>
+            <p className="text-[12px] font-bold text-text-secondary">Idiomas</p>
+            {r?.languages?.length ? (
+              <ul className="mt-1.5 grid gap-1.5">
+                {r.languages.map((l) => (
+                  <li key={l.code} className="flex flex-wrap items-center gap-2">
+                    <DiscoIdioma code={l.code ?? ""} size={18} />
+                    <span className="text-[13px] font-semibold text-text">{l.nameEs ?? l.code}</span>
+                    {l.isNative && <Badge tono="menta">Nativo</Badge>}
+                    <span className="text-[12px] text-text-muted">
+                      {(l.levels ?? []).map(etiquetaNivel).join(" · ") || "Sin niveles"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-1 text-[13px] text-text-muted">Todavía no agregaste ninguno.</p>
+            )}
+          </div>
+          <div>
+            <p className="text-[12px] font-bold text-text-secondary">Objetivos</p>
+            {r?.goals?.length ? (
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {r.goals.map((code) => (
+                  <Badge key={code} tono="lavanda">
+                    {etiquetaObjetivo(code, goalsCat.data)}
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-1 text-[13px] text-text-muted">Todavía no elegiste ninguno.</p>
+            )}
+          </div>
+        </BloqueResumen>
+
+        <BloqueResumen titulo="Experiencia" onEditar={() => onEditar(2)}>
+          <DatoResumen
+            etiqueta="Años enseñando"
+            valor={r?.yearsExperience != null ? String(r.yearsExperience) : null}
+          />
+          <DatoResumen etiqueta="Estudios" valor={r?.education} />
+          <div className="flex flex-wrap gap-1.5">
+            {r?.certified && <Badge tono="menta">Certificado</Badge>}
+            {r?.acceptsTrial && <Badge tono="melocoton">Acepta clase de prueba</Badge>}
+          </div>
+        </BloqueResumen>
+
+        <BloqueResumen titulo="Documentos" onEditar={() => onEditar(3)}>
+          {documentos.length ? (
+            <ul className="grid gap-1.5">
+              {documentos.map((d) => (
+                <li key={d.id} className="flex items-center gap-2 text-[13px]">
+                  <FileText size={15} strokeWidth={1.9} className="shrink-0 text-text-muted" />
+                  <span className="min-w-0 flex-1 truncate font-semibold text-text">{d.fileName}</span>
+                  <span className="shrink-0 text-[11.5px] text-text-muted">
+                    {etiquetaDocumento(d.docType)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-[13px] text-text-muted">Todavía no subiste ninguno.</p>
+          )}
+        </BloqueResumen>
+
+        <BloqueResumen titulo="Acuerdo del profesor" onEditar={() => onEditar(4)}>
+          {vista.agreementAccepted ? (
+            <p className="flex items-center gap-2 text-[13px] font-semibold text-success">
+              <CheckCircle2 size={16} strokeWidth={2.2} />
+              Aceptado
+            </p>
+          ) : (
+            <p className="flex items-center gap-2 text-[13px] font-semibold text-warning">
+              <Circle size={16} strokeWidth={2} />
+              Todavía sin aceptar
+            </p>
+          )}
+        </BloqueResumen>
+      </div>
+
+      <div className="mt-6">
+        <PasoRevisar faltantes={vista.missing ?? []} onEnviado={onEnviado} />
+      </div>
+    </main>
+  );
+}
+
+/** Una sección del resumen, con su acceso directo al paso que la edita. */
+function BloqueResumen({
+  titulo,
+  onEditar,
+  children,
+}: {
+  titulo: string;
+  onEditar: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-card bg-surface-raised p-4 shadow-sm">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="font-display text-[15px] font-bold text-text">{titulo}</h2>
+        <Boton variante="fantasma" onClick={onEditar} className="h-8 shrink-0 px-2.5 text-[12.5px]">
+          <Pencil size={13} strokeWidth={2} />
+          Editar
+        </Boton>
+      </div>
+      <div className="mt-3 grid gap-3">{children}</div>
+    </section>
+  );
+}
+
+function DatoResumen({ etiqueta, valor }: { etiqueta: string; valor?: string | null }) {
+  return (
+    <div>
+      <p className="text-[12px] font-bold text-text-secondary">{etiqueta}</p>
+      <p className={`mt-0.5 text-[13px] leading-relaxed ${valor ? "text-text" : "text-text-muted"}`}>
+        {valor || "Sin completar"}
+      </p>
+    </div>
   );
 }
 

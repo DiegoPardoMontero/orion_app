@@ -13,6 +13,11 @@ public interface DocumentStorage {
     /** Sube el archivo y devuelve el storage_key (public_id de Cloudinary). */
     String upload(byte[] bytes, String contentType, UUID userId, String fileName);
 
-    /** URL firmada y temporal para descargar el documento. */
-    String signedUrl(String storageKey, Duration ttl);
+    /**
+     * URL firmada y temporal para descargar el documento.
+     *
+     * <p>El {@code contentType} entra porque Cloudinary necesita el formato del archivo: el
+     * {@code public_id} que guardamos no lleva extensión, y sin ella el enlace no resuelve.
+     */
+    String signedUrl(String storageKey, String contentType, Duration ttl);
 }

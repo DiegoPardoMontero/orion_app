@@ -89,9 +89,10 @@ public class ProfessorProfileService {
 
         profile.describe(req.headline(), req.bio());
         profile.enrich(req.countryCode(), req.city(), req.nativeLanguage(),
-                req.yearsExperience(), req.education(), req.certified(), req.acceptsTrial());
+                req.yearsExperience(), req.education(),
+                Boolean.TRUE.equals(req.certified()), Boolean.TRUE.equals(req.acceptsTrial()));
 
-        if (req.isPublished()) {
+        if (Boolean.TRUE.equals(req.isPublished())) {
             // El gate: un profesor sin postulación APPROVED no puede publicarse (403), antes de la tarifa.
             access.assertCanTeach(professorId);
             if (!profile.canPublish()) {
@@ -119,13 +120,30 @@ public class ProfessorProfileService {
         ProfessorProfile profile = profiles.findByIdWithUser(professorId)
                 .orElseGet(() -> createEmptyProfileFor(professorId));
 
-        profile.describe(req.headline(), req.bio());
-        profile.enrich(req.countryCode(), req.city(), req.nativeLanguage(),
-                req.yearsExperience(), req.education(), req.certified(), req.acceptsTrial());
+        // Fusiona, no reemplaza. El wizard guarda al pasar de paso y solo manda lo del paso que
+        // acaba de tocar; con semántica de reemplazo, abrir la postulación en el paso 1 y avanzar
+        // borraba idiomas, objetivos, ciudad y estudios — todo lo que vivía en los pasos de más
+        // allá. Un campo ausente significa "no lo tocó", y solo una lista vacía EXPLÍCITA vacía.
+        profile.describe(
+                primeroNoNulo(req.headline(), profile.getHeadline()),
+                primeroNoNulo(req.bio(), profile.getBio()));
+        profile.enrich(
+                primeroNoNulo(req.countryCode(), profile.getCountryCode()),
+                primeroNoNulo(req.city(), profile.getCity()),
+                primeroNoNulo(req.nativeLanguage(), profile.getNativeLanguage()),
+                primeroNoNulo(req.yearsExperience(), profile.getYearsExperience()),
+                primeroNoNulo(req.education(), profile.getEducation()),
+                req.certified() != null ? req.certified() : profile.isCertified(),
+                req.acceptsTrial() != null ? req.acceptsTrial() : profile.acceptsTrial());
         profiles.saveAndFlush(profile);
 
         replaceSelections(professorId, req);
         return toOwnResponse(profile);
+    }
+
+    /** El valor que llega, si llega; si no, el que ya estaba. */
+    private static <T> T primeroNoNulo(T entrante, T actual) {
+        return entrante != null ? entrante : actual;
     }
 
     @Transactional
@@ -228,11 +246,22 @@ public class ProfessorProfileService {
         }
     }
 
+    /**
+     * Reemplaza las selecciones que vengan en el cuerpo. Una lista nula significa "no la tocó" y su
+     * tabla se queda como estaba; una lista vacía sí vacía, porque eso sí lo pidió alguien.
+     *
+     * <p>Antes borraba las tres tablas de entrada, así que un cuerpo parcial —el que manda el wizard
+     * de postulación al pasar de paso— se llevaba por delante lo que no venía en él.
+     */
     private void replaceSelections(UUID professorId, UpdateProfileRequest req) {
         validarCatalogos(req);
-        levelsOf.deleteByProfessorId(professorId);
-        languagesOf.deleteByProfessorId(professorId);
-        goalsOf.deleteByProfessorId(professorId);
+        if (req.languages() != null) {
+            levelsOf.deleteByProfessorId(professorId);
+            languagesOf.deleteByProfessorId(professorId);
+        }
+        if (req.goals() != null) {
+            goalsOf.deleteByProfessorId(professorId);
+        }
 
         List<ProfessorLanguage> newLanguages = new ArrayList<>();
         List<ProfessorLanguageLevel> newLevels = new ArrayList<>();
