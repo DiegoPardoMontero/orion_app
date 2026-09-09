@@ -4,8 +4,11 @@ import { MessageCircle, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
+import { PoliticaCancelacion } from "@/components/PoliticaCancelacion";
+import { PreguntasFrecuentes } from "@/components/PreguntasFrecuentes";
 import { Badge, Boton, BotonPrincipal, Campo, Spinner, Tarjeta } from "@/components/ui";
 import { ApiError } from "@/lib/api/fetch";
+import { useMe } from "@/lib/auth/session";
 import { fechaRelativa } from "@/lib/format";
 import {
   ETIQUETA_ESTADO,
@@ -27,6 +30,21 @@ import {
  * quien hablar sería cumplir la letra y fallar en lo que importa para una academia pequeña.
  */
 export default function AyudaPage() {
+  const { data: me } = useMe();
+  // El aspirante todavía no enseña, pero sus dudas son las del profesor: por eso postula.
+  const faq =
+    me?.role === "STUDENT"
+      ? ("estudiante" as const)
+      : me?.role === "PROFESSOR" || me?.role === "TEACHER_APPLICANT"
+        ? ("profesor" as const)
+        : null;
+  const politica =
+    me?.role === "STUDENT"
+      ? ("estudiante" as const)
+      : me?.role === "PROFESSOR"
+        ? ("profesor" as const)
+        : null;
+
   const solicitudes = useMisSolicitudes();
   const contacto = useContacto();
   const [abriendo, setAbriendo] = useState(false);
@@ -94,6 +112,13 @@ export default function AyudaPage() {
           </Link>
         ))}
       </div>
+
+      {/* Las preguntas frecuentes y la política de cancelación viven también en la cuenta de cada
+          rol, pero /perfil está cerrado para el profesor no aprobado y el aspirante ni lo tiene en
+          el menú — y son justo quienes más dudas tienen. Ayuda es la única pantalla a la que
+          llegan todos, así que aquí no pueden faltar. */}
+      {faq && <PreguntasFrecuentes rol={faq} />}
+      {politica && <PoliticaCancelacion rol={politica} />}
     </main>
   );
 }
