@@ -78,6 +78,7 @@ export const NAV_BY_ROLE: Record<Role, NavGroup[]> = {
       items: [
         { href: "/admin/reservas", label: "Clases" },
         { href: "/admin/pagos", label: "Pagos" },
+        { href: "/admin/devoluciones", label: "Devoluciones" },
       ],
     },
     {

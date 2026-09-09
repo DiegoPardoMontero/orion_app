@@ -1,6 +1,8 @@
 package co.orion.support.domain;
 
 import java.time.Instant;
+
+import co.orion.shared.time.PlazoLegal;
 import java.util.Optional;
 
 /**

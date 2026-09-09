@@ -1,4 +1,4 @@
-package co.orion.support.domain;
+package co.orion.shared.time;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -9,7 +9,7 @@ import java.time.ZonedDateTime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import co.orion.shared.time.BusinessZone;
+import co.orion.support.domain.TicketCategory;
 
 /**
  * Los plazos que fija la ley, comprobados contra fechas reales de un calendario.

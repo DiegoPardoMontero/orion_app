@@ -56,11 +56,12 @@ public class BookingBillingListener {
      *       recupera el valor completo como saldo, automáticamente.</li>
      *   <li><b>El estudiante, sin haber pagado</b>: no hay nada que devolver salvo el crédito que
      *       hubiera gastado, que vuelve a su sitio.</li>
-     *   <li><b>El estudiante, habiendo pagado</b>: el pago se queda en PAID y NUNCA se libera —una
-     *       reserva cancelada no llega a COMPLETED, así que jamás entra en una liquidación. Queda
-     *       visible en la conciliación del admin para que decida entre saldo o devolución por el
-     *       panel de Wompi. Es una decisión de política comercial, no técnica, y automatizarla
-     *       aquí sería inventarla.</li>
+     *   <li><b>El estudiante, habiendo pagado</b>: <b>saldo a favor, automático</b>. Un estudiante
+     *       solo puede cancelar con más de 12 h por delante —dentro de la ventana el servicio ni
+     *       siquiera se lo permite—, así que toda cancelación suya que llegue aquí está dentro de
+     *       plazo y los Términos ya le prometen el valor completo como saldo. Antes esto quedaba
+     *       esperando una decisión del admin; la decisión se tomó y escribirla en el contrato es
+     *       lo que permite automatizarla sin inventar nada.</li>
      * </ul>
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -74,7 +75,11 @@ public class BookingBillingListener {
             switch (booking.getStatus()) {
                 case CANCELLED_BY_PROFESSOR, CANCELLED_BY_ADMIN -> payments.refundToCredit(
                         booking.getId(), CreditReason.CANCELLED_BY_PROFESSOR, booking.getCancelledBy());
-                case CANCELLED_BY_STUDENT -> payments.cancelUnpaidOnly(booking.getId());
+                // Un retracto ya dejó el pago en REFUND_PENDING antes de llegar aquí, y
+                // refundToCredit no toca lo que no está en PAID: el dinero de un retracto sigue
+                // su propio camino (medio de pago) y no acaba convertido en saldo por descuido.
+                case CANCELLED_BY_STUDENT -> payments.refundToCredit(
+                        booking.getId(), CreditReason.CANCELLED_BY_STUDENT, booking.getCancelledBy());
                 default -> log.warn("Reserva {} cancelada en estado inesperado {}",
                         booking.getId(), booking.getStatus());
             }

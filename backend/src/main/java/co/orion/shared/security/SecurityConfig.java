@@ -106,6 +106,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/bookings/*/report-problem").hasRole("STUDENT")
                 // "Mis clases" solo tiene sentido para quien asiste o imparte.
                 .requestMatchers("/api/v1/me/bookings").hasAnyRole("STUDENT", "PROFESSOR")
+                // El retracto es del estudiante y solo sobre sus propias clases; el servicio
+                // vuelve a comprobar la propiedad y responde 404 si la reserva no es suya.
+                .requestMatchers("/api/v1/me/bookings/*/retraction").hasRole("STUDENT")
                 // El panel de progreso es del estudiante: mide clases tomadas, no clases dictadas.
                 .requestMatchers("/api/v1/me/progress").hasRole("STUDENT")
                 // La ficha propia del estudiante. La vista de OTRO estudiante vive en /students/**

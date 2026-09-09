@@ -59,7 +59,7 @@ Cuando pagas, el dinero queda **retenido** hasta que la clase se dicte. Solo ent
 | Situación | Qué pasa |
 |---|---|
 | **Cancelas con más de 12 horas** de antelación | Recibes el valor completo como **saldo a favor** |
-| **Cancelas con menos de 12 horas** | La clase se considera prestada: el profesor recibe su pago y no hay devolución |
+| **Quedan menos de 12 horas** | Ya no puedes cancelar. La clase se mantiene y, si no asistes, se considera prestada: el profesor recibe su pago y no hay devolución. Sí puedes proponer otro horario |
 | **El profesor cancela con más de 12 horas** | Recibes el valor completo como saldo a favor |
 | **El profesor no se presenta** | Puedes reportarlo (sección 9) y, si se resuelve a tu favor, recibes el valor completo |
 | **No te presentas tú** | La clase se considera prestada: el profesor apartó su hora y estuvo ahí |

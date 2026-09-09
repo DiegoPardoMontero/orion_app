@@ -1,4 +1,4 @@
-package co.orion.support.domain;
+package co.orion.shared.time;
 
 import java.time.DayOfWeek;
 import java.time.Instant;
@@ -6,7 +6,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 
-import co.orion.shared.time.BusinessZone;
 
 /**
  * Cuándo vence una solicitud. Clase pura: sin Spring, sin repositorios, con el «ahora» por

@@ -245,6 +245,36 @@ public class BookingService {
     }
 
     /**
+     * Cancela por retracto, saltándose la ventana de anticipación.
+     *
+     * <p>Es un método aparte y no un parámetro de {@link #cancel} a propósito: son dos cosas
+     * distintas y conviene que se lean distintas. La ventana de 12 h es <strong>política
+     * comercial</strong>; el retracto es un <strong>derecho</strong> del art. 47 de la Ley 1480 de
+     * 2011, y un derecho no se somete a una política. Una clase que empieza en tres horas, reservada
+     * ayer, todavía admite retracto: lo que lo cierra es que la prestación haya comenzado, no que
+     * falte poco.
+     *
+     * <p>No decide nada sobre el dinero. De eso se encarga quien la llama, que es el único sitio
+     * donde reserva y pago se miran a la vez.
+     */
+    @Transactional
+    public Booking cancelForRetraction(UUID bookingId, UUID studentId, Instant now) {
+        Booking booking = bookings.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada"));
+        if (!booking.getStudentId().equals(studentId)) {
+            throw new ResourceNotFoundException("Reserva no encontrada");
+        }
+        if (booking.getStatus().isTerminal()) {
+            throw new ConflictException("La reserva ya no está activa");
+        }
+        booking.cancel(BookingStatus.CANCELLED_BY_STUDENT, studentId, now,
+                "Retracto (art. 47 Ley 1480 de 2011)");
+        Booking cancelada = bookings.save(booking);
+        events.publishEvent(new BookingCancelledEvent(cancelada.getId()));
+        return cancelada;
+    }
+
+    /**
      * Mueve una reserva CONFIRMED a otro cupo del mismo profesor. Ya no es una acción directa de
      * nadie: la dispara {@code RescheduleRequestService} cuando la contraparte ACEPTA una propuesta.
      *
