@@ -34,6 +34,15 @@ services:
       MAIL_PASSWORD: dummy
       ORION_MAIL_FROM: no-reply@orion.local
       ORION_CORS_ALLOWED_ORIGINS: http://localhost:3000
+      # El perfil prod las exige sin valor por defecto (art. 50 de la Ley 1480): sin ellas el
+      # backend no arranca — ni aquí ni en Railway. Estas son de ensayo, no las reales.
+      ORION_LEGAL_NOMBRE: Orión Ensayo
+      ORION_LEGAL_DOCUMENTO: C.C. 0.000.000
+      ORION_LEGAL_DOMICILIO: Calle Falsa 123
+      ORION_LEGAL_CIUDAD: Bogotá D.C.
+      ORION_LEGAL_CORREO: ensayo@orion.local
+      ORION_LEGAL_WHATSAPP: "+570000000000"
+      ORION_LEGAL_HORARIO: Lunes a viernes de 8:00 a. m. a 6:00 p. m.
     depends_on:
       postgres:
         condition: service_healthy
