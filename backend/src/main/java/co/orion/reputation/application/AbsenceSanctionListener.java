@@ -9,6 +9,7 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import co.orion.lifecycle.application.DisputeResolved;
+import co.orion.lifecycle.application.ProfessorAbsenceRecorded;
 
 /**
  * Una ausencia confirmada dispara la evaluación de sanciones. Por evento y AFTER_COMMIT, como el
@@ -24,6 +25,20 @@ public class AbsenceSanctionListener {
 
     public AbsenceSanctionListener(SanctionService sanctions) {
         this.sanctions = sanctions;
+    }
+
+    /**
+     * La otra puerta a la misma escalera: el profesor que canceló con la clase encima. No hay
+     * reclamo que resolver —nadie discute lo que pasó—, pero la falta cuenta igual.
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void onAbsenceRecorded(ProfessorAbsenceRecorded event) {
+        try {
+            sanctions.evaluateAfterAbsence(event.professorId());
+        } catch (RuntimeException ex) {
+            log.error("No se pudo evaluar la sanción del profesor {}", event.professorId(), ex);
+        }
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

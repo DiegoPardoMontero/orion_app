@@ -266,6 +266,51 @@ día y franja** (el `schedule=` que el hero llevaba tiempo mandando sin que nadi
 **Config nueva en Railway:** `ORION_LEGAL_*` (nombre, documento, domicilio, ciudad, correo,
 whatsapp, horario) — **sin ellas el perfil `prod` no arranca**, a propósito — y `ORION_ALERTS_TO`.
 
+## Portal del estudiante — revisión de Sofía (08/09/2026)
+
+Doce puntos revisados por producto. Lo que se hizo, y lo que no.
+
+**Hecho.** Orión es **solo virtual**: fuera el selector de modalidad, fuera los distintivos que
+anunciaban presencial, y la **V30** reescribe las reservas presenciales como virtuales y estrecha el
+CHECK. Pedir `IN_PERSON` ahora es un 400. Con ello se retiró el logro «Cara a cara» —el cielo queda
+en **19 estrellas** y AMPLITUD en dos—, porque una estrella imposible es peor que ninguna.
+
+El **historial de pagos** ya no repite la misma clase: los intentos de cobro abandonados no son
+pagos y dejaron de listarse. Cada tarjeta muestra **dos fechas rotuladas** (la clase y el cobro) en
+vez de una sin nombre, y `REFUND_PENDING` —que faltaba en el mapa de estados— ya no le enseña a
+nadie el nombre crudo de un enum.
+
+**Cancelar y retractarse son un solo botón.** La diferencia que importa —adónde va el dinero— es
+ahora la pregunta del diálogo: al saldo, enseguida; o al medio de pago, hasta 15 días. El derecho de
+retracto no se fue: se ofrece donde se decide. La **política de cancelación** está visible en la
+cuenta del estudiante y en la del profesor, y «soltar el cupo» pasó a llamarse cancelar, como todo
+lo demás.
+
+**Preguntas frecuentes** separadas por rol, en la cuenta del estudiante, en el perfil del profesor y
+en la portada, cada una con salida a WhatsApp. La **semana protegida** por fin se explica donde se
+ve la racha. Y **Rigel dejó de hacer ese gesto**: la tiza cruza el puño en horizontal en vez de
+salir hacia arriba.
+
+**Strikes al profesor (V31):** cancelar dentro de las 12 h ya no sale gratis. Queda una falta con su
+tipo —`LATE_CANCELLATION`, distinta de `NO_SHOW`— que alimenta la misma escalera de sanciones, en
+modo observación como el resto.
+
+**Videollamada:** apretado lo que se podía sin cuenta nueva (sala de 32 caracteres en vez de 8,
+antesala obligatoria, sin botón de invitar). Lo que no se puede sin pagar es impedir que el
+estudiante sea moderador. Comparación y recomendación en
+[docs/videollamada-opciones.md](videollamada-opciones.md).
+
+**Ya existía, no hacía falta construirlo.** El **polling de Wompi** en la pantalla de retorno está
+implementado y consulta cada 3 s mientras el pago siga pendiente; si en producción no ocurre, el
+sospechoso es `ORION_APP_BASE_URL` en Railway, no el código. La **calificación al profesor** también
+existe: botón «Calificar» en Mis clases → Pasadas. Y el flujo de **«Reportar un problema»** está
+probado de punta a punta en `LessonLifecycleIT`, con sus dos ventanas (15 min y 24 h), el estado «en
+revisión» y el pago congelado.
+
+**No se hizo, y por qué.** El flujo de **menores de edad** con el padre como responsable choca con
+el Bloque 9 —Orión es 18+ por el art. 7 de la Ley 1581— y exige autorización del representante
+legal, textos legales nuevos y datos de un tercero: es un bloque entero y necesita abogado antes.
+
 ## Pendiente / bloqueos conocidos
 - **Reservas anteriores a V20 sin idioma**: las que tenía un profesor de dos idiomas quedaron con
   `language_code` en nulo a propósito, para revisión manual. La migración deja el conteo en un

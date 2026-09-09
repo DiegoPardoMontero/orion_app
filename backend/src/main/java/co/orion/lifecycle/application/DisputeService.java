@@ -22,6 +22,7 @@ import co.orion.lifecycle.domain.DisputeStatus;
 import co.orion.lifecycle.persistence.DisputeRepository;
 import co.orion.scheduling.application.BookingService;
 import co.orion.scheduling.domain.Booking;
+import co.orion.scheduling.domain.AbsenceKind;
 import co.orion.scheduling.domain.ProfessorAbsence;
 import co.orion.scheduling.persistence.BookingRepository;
 import co.orion.scheduling.persistence.ProfessorAbsenceRepository;
@@ -199,8 +200,8 @@ public class DisputeService {
         if (absences.existsByBookingId(booking.getId())) {
             return;   // una clase produce como mucho una ausencia
         }
-        absences.save(new ProfessorAbsence(
-                booking.getProfessorId(), booking.getId(), dispute.getId(), booking.getStartsAt()));
+        absences.save(new ProfessorAbsence(booking.getProfessorId(), booking.getId(),
+                dispute.getId(), AbsenceKind.NO_SHOW, booking.getStartsAt()));
         log.info("Ausencia registrada del profesor {} por la clase {}",
                 booking.getProfessorId(), booking.getId());
     }

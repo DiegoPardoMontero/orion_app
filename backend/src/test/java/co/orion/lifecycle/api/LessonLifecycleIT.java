@@ -35,6 +35,7 @@ import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.identity.persistence.ProfessorProfileRepository;
 import co.orion.lifecycle.application.LessonAutoCompleteJob;
+import co.orion.reputation.domain.SanctionState;
 import co.orion.reputation.persistence.ProfessorSanctionRepository;
 import co.orion.scheduling.api.BookingResponse;
 import co.orion.scheduling.api.CreateBookingRequest;
@@ -42,6 +43,7 @@ import co.orion.scheduling.domain.AvailabilityRule;
 import co.orion.scheduling.domain.BookingStatus;
 import co.orion.shared.time.BusinessZone;
 import co.orion.scheduling.persistence.BookingRepository;
+import co.orion.scheduling.domain.AbsenceKind;
 import co.orion.scheduling.persistence.ProfessorAbsenceRepository;
 import co.orion.support.ApiIntegrationSupport;
 
@@ -166,6 +168,41 @@ class LessonLifecycleIT extends ApiIntegrationSupport {
         assertThat(credits.findAll().getFirst().getAmountCop()).isEqualTo(RATE_COP);
         assertThat(payments.findByBookingId(id).orElseThrow().getStatus())
                 .isEqualTo(PaymentStatus.REFUNDED);
+    }
+
+    /**
+     * Cancelar tarde no le cuesta dinero al profesor —el estudiante recupera todo igual— pero sí le
+     * cuesta historial. Sin esto, avisar dos horas antes salía gratis todas las veces.
+     */
+    @Test
+    void laCancelacionTardiaDelProfesorQuedaRegistradaYProponeSancion() {
+        UUID id = bookAndPay(9);
+        jdbc.update("update bookings set starts_at = ?, ends_at = ? where id = ?",
+                java.sql.Timestamp.from(FROZEN_NOW.plusSeconds(6 * 3600)),
+                java.sql.Timestamp.from(FROZEN_NOW.plusSeconds(7 * 3600)), id);
+
+        post(BOOKINGS + "/" + id + "/cancel", mariaSession, null, Map.class);
+
+        assertThat(absences.findAll()).singleElement().satisfies(falta -> {
+            assertThat(falta.getBookingId()).isEqualTo(id);
+            // Avisó: no es lo mismo que no aparecer, y la fila tiene que poder decirlo.
+            assertThat(falta.getKind()).isEqualTo(AbsenceKind.LATE_CANCELLATION);
+            assertThat(falta.getDisputeId()).isNull();
+        });
+        // Propuesta, no aplicada: la escalera sigue en modo observación.
+        assertThat(sanctions.findAll()).singleElement().satisfies(sancion ->
+                assertThat(sancion.getState()).isEqualTo(SanctionState.PROPOSED));
+    }
+
+    /** Con margen no hay falta: la ventana es justamente la frontera. */
+    @Test
+    void elProfesorQueCancelaConMargenNoAcumulaNada() {
+        UUID id = bookAndPay(9);
+
+        post(BOOKINGS + "/" + id + "/cancel", mariaSession, null, Map.class);
+
+        assertThat(absences.findAll()).isEmpty();
+        assertThat(sanctions.findAll()).isEmpty();
     }
 
     /* ------------------------------------------------------------ no-show y reclamo */
