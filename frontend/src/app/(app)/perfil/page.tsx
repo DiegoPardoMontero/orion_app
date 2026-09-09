@@ -9,6 +9,7 @@ import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
 import { Boton, BotonPrincipal, Campo, Spinner, Toggle } from "@/components/ui";
 import { DiscoIdioma } from "@/components/DiscoIdioma";
 import { PoliticaCancelacion } from "@/components/PoliticaCancelacion";
+import { PreguntasFrecuentes } from "@/components/PreguntasFrecuentes";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type {
   GoalResponse,
@@ -423,6 +424,8 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
       </BotonPrincipal>
 
       <PoliticaCancelacion rol="profesor" />
+
+      <PreguntasFrecuentes rol="profesor" />
     </main>
   );
 }

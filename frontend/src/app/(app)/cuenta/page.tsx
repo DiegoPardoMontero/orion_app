@@ -9,6 +9,7 @@ import { CambiarFoto } from "@/components/CambiarFoto";
 import { MiFicha } from "@/components/gamificacion/MiFicha";
 import { PanelProgreso } from "@/components/PanelProgreso";
 import { PoliticaCancelacion } from "@/components/PoliticaCancelacion";
+import { PreguntasFrecuentes } from "@/components/PreguntasFrecuentes";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
 import { PhoneInput } from "@/components/PhoneInput";
 import { BotonPrincipal, Campo } from "@/components/ui";
@@ -149,6 +150,8 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
       </BotonPrincipal>
 
       <PoliticaCancelacion rol="estudiante" />
+
+      <PreguntasFrecuentes rol="estudiante" />
 
       <EnseñarCta />
 

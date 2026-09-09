@@ -326,6 +326,7 @@ function MapaDeConstancia() {
   if (!data) return null;
 
   const cumplidas = data.weeks.filter((s) => s.status === "CUMPLIDA").length;
+  const protegidas = data.weeks.filter((s) => s.status === "PROTEGIDA").length;
 
   return (
     <div className="mt-3 rounded-card border border-border bg-surface-raised p-4">
@@ -353,6 +354,18 @@ function MapaDeConstancia() {
         <Leyenda color="var(--color-streak-protected)" texto="protegida" />
         <Leyenda color="var(--color-border-strong)" texto="en curso" borde />
       </div>
+
+      {/* La semana protegida se aplica sola y en silencio, así que la persona ve su racha intacta
+          después de una semana sin clase y no entiende por qué. Un color en una leyenda no
+          explica nada: hace falta decir qué es, cuándo pasa y qué no hace. */}
+      {protegidas > 0 && (
+        <p className="mt-3 border-t border-border pt-3 text-[12px] leading-relaxed text-text-secondary">
+          <strong className="text-text">¿Qué es una semana protegida?</strong> Una semana sin clase
+          que no te rompe la racha. Se aplica sola —no hay que pedirla— y solo una vez al mes.
+          Puentea el hueco, pero no cuenta como clase: una racha de cuatro semanas con una protegida
+          en medio sigue siendo de cuatro.
+        </p>
+      )}
     </div>
   );
 }

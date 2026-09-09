@@ -34,9 +34,13 @@ class CatalogoGamificacionIT {
     @Autowired
     private CosmeticRepository cosmetics;
 
+    /**
+     * Diecinueve y no los veinte del diseño: «Cara a cara» pedía tomar una clase presencial y
+     * Orión dejó de darlas (V30). Una estrella que nadie puede encender ya no es una meta.
+     */
     @Test
-    void estanLosVeinteLogrosDelDiseno() {
-        assertThat(achievements.findByActiveTrueOrderByDisplayOrderAsc()).hasSize(20);
+    void estanLosLogrosDelDisenoQueSiguenSiendoPosibles() {
+        assertThat(achievements.findByActiveTrueOrderByDisplayOrderAsc()).hasSize(19);
     }
 
     @Test
@@ -48,7 +52,8 @@ class CatalogoGamificacionIT {
                 .containsEntry(AchievementFamily.PRIMEROS, 4L)
                 .containsEntry(AchievementFamily.CONSTANCIA, 5L)
                 .containsEntry(AchievementFamily.VOLUMEN, 5L)
-                .containsEntry(AchievementFamily.AMPLITUD, 3L)
+                // AMPLITUD perdió «Cara a cara» al desaparecer las clases presenciales.
+                .containsEntry(AchievementFamily.AMPLITUD, 2L)
                 .containsEntry(AchievementFamily.COMPROMISO, 3L);
     }
 
