@@ -20,7 +20,11 @@ public record CreateBookingRequest(
         @NotNull(message = "startsAt es obligatorio")
         OffsetDateTime startsAt,
 
-        @NotBlank(message = "modality es obligatoria")
+        /**
+         * Opcional desde que Orión es solo virtual: no mandarla significa VIRTUAL. Mandar otra
+         * cosa sigue siendo un error — un cliente que pide una clase presencial tiene que
+         * enterarse de que no existe, no recibir una virtual sin avisar.
+         */
         String modality,
 
         @Size(max = 300, message = "locationNote no puede superar 300 caracteres")

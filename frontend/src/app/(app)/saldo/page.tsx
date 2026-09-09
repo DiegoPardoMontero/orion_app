@@ -23,6 +23,8 @@ const ESTADO_PAGO: Record<string, { texto: string; tono: "menta" | "melocoton" |
   PENDING: { texto: "Pendiente de pago", tono: "melocoton" },
   PAID: { texto: "Pagada", tono: "menta" },
   RELEASED: { texto: "Clase dictada", tono: "menta" },
+  // Faltaba, y sin ella la pantalla le enseñaba al estudiante el nombre crudo del estado.
+  REFUND_PENDING: { texto: "Devolución en camino", tono: "melocoton" },
   REFUNDED: { texto: "Devuelta a tu saldo", tono: "neutral" },
   DISPUTED: { texto: "En revisión", tono: "melocoton" },
   CANCELLED: { texto: "No se completó", tono: "error" },
@@ -129,9 +131,18 @@ export default function SaldoPage() {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-semibold text-text">{pago.professorName ?? "Clase"}</p>
+                        {/* Dos fechas y con su nombre delante. Antes salía una sola, sin rótulo, y
+                            nadie podía saber si era la hora de la clase o la del cobro. */}
                         {pago.classAt && (
                           <p className="text-[12.5px] text-text-secondary">
+                            <span className="text-text-muted">Clase:</span>{" "}
                             {fechaCorta(pago.classAt)} · {horaBogota(pago.classAt)}
+                          </p>
+                        )}
+                        {pago.paidAt && (
+                          <p className="text-[12.5px] text-text-secondary">
+                            <span className="text-text-muted">Pagada:</span>{" "}
+                            {fechaCorta(pago.paidAt)} · {horaBogota(pago.paidAt)}
                           </p>
                         )}
                       </div>

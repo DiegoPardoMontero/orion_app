@@ -289,10 +289,14 @@ function Brazos({ pose }: { pose: RigelPose }) {
         <BrazoIzquierdoReposo />
         <path d="M140,100 L156,86" stroke="var(--rg-arm)" strokeWidth={7} strokeLinecap="round" fill="none" />
         <Guante cx={160} cy={84} r={12} tx={152} ty={90} tr={5} />
-        {/* La tiza asoma del puño hacia arriba, no lo cruza: centrada sobre el guante parecía
-            una señal de prohibido tachando la mano. Va después para quedar por delante. */}
-        <line x1={162} y1={80} x2={173} y2={64} stroke="var(--rg-arm)" strokeWidth={11} strokeLinecap="round" />
-        <line x1={163} y1={79} x2={172} y2={65.5} stroke="var(--rg-crema)" strokeWidth={6.5} strokeLinecap="round" />
+        {/* La tiza cruza el puño casi en horizontal y asoma por los dos lados.
+            Antes salía solo hacia arriba y un puño cerrado con una sola cosa apuntando al cielo
+            se lee como lo que se lee — nos lo reportaron. Cruzarla en diagonal tampoco vale: eso
+            convierte la mano en una señal de prohibido, que es el error que este mismo dibujo ya
+            había cometido antes. Horizontal y baja, por delante de los dedos, se lee como lo que
+            es: algo que la mano sostiene. */}
+        <line x1={149} y1={95} x2={183} y2={89} stroke="var(--rg-arm)" strokeWidth={11} strokeLinecap="round" />
+        <line x1={150.4} y1={94.7} x2={181.6} y2={89.3} stroke="var(--rg-crema)" strokeWidth={6.5} strokeLinecap="round" />
       </>
     );
   }

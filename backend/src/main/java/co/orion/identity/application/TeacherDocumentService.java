@@ -91,7 +91,7 @@ public class TeacherDocumentService {
     public SignedDocument signedUrlForAdmin(UUID ownerId, UUID documentId) {
         TeacherDocument document = documents.findByIdAndUserId(documentId, ownerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Documento no encontrado"));
-        String url = storage.signedUrl(document.getStorageKey(), SIGNED_URL_TTL);
+        String url = storage.signedUrl(document.getStorageKey(), document.getContentType(), SIGNED_URL_TTL);
         return new SignedDocument(document, url);
     }
 

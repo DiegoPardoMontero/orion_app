@@ -25,6 +25,7 @@ import { HeroCta } from "@/components/HeroCta";
 import { Constelacion, Wordmark } from "@/components/marca";
 import { NavPublica } from "@/components/NavPublica";
 import { EstrellaRating } from "@/components/Rating";
+import { PreguntasFrecuentes } from "@/components/PreguntasFrecuentes";
 import { Rigel } from "@/components/Rigel";
 import { serverFetch } from "@/lib/api/server";
 import type {
@@ -414,6 +415,12 @@ export default async function PortadaPage() {
       )}
 
       {/* — Enseña en Orión — */}
+      {/* — Preguntas frecuentes — Antes del salto a profesores: quien duda es quien todavía no
+           ha reservado, y sus preguntas son las que deciden si lo hace. */}
+      <section id="preguntas" className="mx-auto max-w-3xl scroll-mt-20 px-5 pb-12 lg:px-8 lg:pb-16">
+        <PreguntasFrecuentes rol="general" className="mt-0" />
+      </section>
+
       <section className="mx-auto max-w-6xl px-5 pb-12 lg:px-8 lg:pb-16">
         <div className="grid items-center gap-8 rounded-card bg-night px-7 py-12 text-text-on-night lg:grid-cols-[1.5fr_1fr] lg:px-14 lg:py-16">
           <div>

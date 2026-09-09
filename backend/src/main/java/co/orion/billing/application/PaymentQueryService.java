@@ -57,9 +57,31 @@ public class PaymentQueryService {
         return view(payment, booking);
     }
 
+    /**
+     * El historial del estudiante, sin los intentos muertos.
+     *
+     * <p>Un cobro que se anuló sin llegar a mover un peso —el cupo que se dejó vencer, el checkout
+     * que se abandonó— no es un pago: es una reserva que no ocurrió. Listarlos hacía que una misma
+     * clase apareciera tres veces, una comprada y dos que nunca existieron, y el estudiante no
+     * tiene forma de distinguirlas de algo que todavía debe. Lo que tocó dinero se queda, aunque
+     * esté anulado; lo que no lo tocó, no aparece.
+     */
     @Transactional(readOnly = true)
     public List<PaymentView> ofStudent(UUID studentId) {
-        return decorate(payments.findByStudentIdOrderByCreatedAtDesc(studentId));
+        return decorate(payments.findByStudentIdOrderByCreatedAtDesc(studentId).stream()
+                .filter(PaymentQueryService::movioDinero)
+                .toList());
+    }
+
+    /**
+     * Si este cobro llegó a existir de verdad. {@code chargedCop} no sirve para saberlo: se fija al
+     * crear el pago, no al cobrarlo, así que vale lo mismo en uno pagado y en uno abandonado. La
+     * marca fiable es {@code paidAt}, y un pago solo se anula estando pendiente —nunca después de
+     * pagarse—, así que un anulado sin fecha de pago no movió nada y el saldo que hubiera aplicado
+     * ya volvió a su sitio.
+     */
+    private static boolean movioDinero(Payment payment) {
+        return payment.getStatus() != PaymentStatus.CANCELLED || payment.getPaidAt() != null;
     }
 
     /** Conciliación del admin. Un filtro que no llegó sencillamente no entra en la consulta. */

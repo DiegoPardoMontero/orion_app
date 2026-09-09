@@ -364,7 +364,10 @@ public class TeacherApplicationService {
                 application.getDecisionNote(),
                 agreementAccepted,
                 missing,
-                docs);
+                docs,
+                // Lo que el aspirante ya respondió, para que el wizard se dibuje con ello. Es una
+                // lectura: si todavía no hay fila de perfil, devuelve una vacía sin crearla.
+                profileService.getOwnProfile(userId));
     }
 
     private AdminApplicationSummary summary(TeacherApplication a, User user) {

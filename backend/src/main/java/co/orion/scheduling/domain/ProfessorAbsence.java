@@ -11,6 +11,8 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Id;
@@ -46,6 +48,10 @@ public class ProfessorAbsence {
     @Column(name = "dispute_id", updatable = false)
     private UUID disputeId;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "kind", nullable = false, updatable = false, length = 20)
+    private AbsenceKind kind;
+
     @Column(name = "occurred_at", nullable = false, updatable = false)
     private Instant occurredAt;
 
@@ -57,11 +63,17 @@ public class ProfessorAbsence {
         // exigido por JPA
     }
 
-    public ProfessorAbsence(UUID professorId, UUID bookingId, UUID disputeId, Instant occurredAt) {
+    public ProfessorAbsence(UUID professorId, UUID bookingId, UUID disputeId,
+                            AbsenceKind kind, Instant occurredAt) {
         this.professorId = Objects.requireNonNull(professorId, "professorId");
         this.bookingId = Objects.requireNonNull(bookingId, "bookingId");
         this.disputeId = disputeId;
+        this.kind = Objects.requireNonNull(kind, "kind");
         this.occurredAt = Objects.requireNonNull(occurredAt, "occurredAt");
+    }
+
+    public AbsenceKind getKind() {
+        return kind;
     }
 
     public UUID getId() {

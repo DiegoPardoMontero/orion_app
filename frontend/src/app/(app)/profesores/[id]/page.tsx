@@ -28,14 +28,13 @@ import { DiscoIdioma } from "@/components/DiscoIdioma";
 import { LineaImporte } from "@/components/dinero";
 import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { EstrellaRating, EstrellasFijas } from "@/components/Rating";
-import { Badge, Bloque, Boton, BotonPrincipal, Campo, Chip, Segmento, Spinner } from "@/components/ui";
+import { Badge, Bloque, Boton, BotonPrincipal, Chip, Spinner } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type {
   BookingResponse,
   ConversationSummary,
   CreditBalanceResponse,
   GoalResponse,
-  Modality,
   PagedReviews,
   ProfessorDetail,
   SlotView,
@@ -80,9 +79,7 @@ export default function AgendaProfesorPage() {
 
   const [diaElegido, setDiaElegido] = useState<string | null>(null);
   const [cupoElegido, setCupoElegido] = useState<string | null>(null);
-  const [modalidad, setModalidad] = useState<Modality>("VIRTUAL");
   const [idioma, setIdioma] = useState<string | null>(null);
-  const [nota, setNota] = useState("");
 
   const profesor = useQuery({
     queryKey: ["professor", id],
@@ -123,9 +120,8 @@ export default function AgendaProfesorPage() {
         body: {
           professorId: id,
           startsAt,
-          modality: modalidad,
+          modality: "VIRTUAL",
           languageCode: idiomaDeLaClase ?? undefined,
-          locationNote: modalidad === "IN_PERSON" ? nota.trim() || undefined : undefined,
         },
       }),
     onSuccess: (reserva) => {
@@ -174,7 +170,7 @@ export default function AgendaProfesorPage() {
 
   const resumen =
     cupoElegido
-      ? `${fechaCorta(cupoElegido)} · ${horaBogota(cupoElegido)} · ${modalidad === "VIRTUAL" ? "Virtual" : "Presencial"}`
+      ? `${fechaCorta(cupoElegido)} · ${horaBogota(cupoElegido)} · Virtual`
       : null;
 
   const idiomasQueEnsena = detalle.languages ?? [];
@@ -191,7 +187,7 @@ export default function AgendaProfesorPage() {
     saldo.data?.balanceCop ?? 0,
   );
 
-  // Controles compartidos entre móvil y desktop: idioma, modalidad, nota, confirmación.
+  // Controles compartidos entre móvil y desktop: idioma y confirmación.
   const controles: ReactNode = (
     <>
       {/* El selector solo aparece cuando hay algo que elegir. Con un idioma el backend lo asigna
@@ -227,32 +223,12 @@ export default function AgendaProfesorPage() {
         </Bloque>
       )}
 
-      <Bloque tono="menta" titulo="Modalidad" icono={<Video size={16} strokeWidth={1.75} />}>
-        <Segmento<Modality>
-          valor={modalidad}
-          onCambio={setModalidad}
-          opciones={[
-            { valor: "VIRTUAL", etiqueta: (<><Video size={15} strokeWidth={1.75} /> Virtual</>) },
-            { valor: "IN_PERSON", etiqueta: (<><MapPin size={15} strokeWidth={1.75} /> Presencial</>) },
-          ]}
-        />
-      </Bloque>
-
-      {modalidad === "IN_PERSON" ? (
-        <Campo
-          type="text"
-          value={nota}
-          onChange={(event) => setNota(event.target.value)}
-          maxLength={300}
-          icono={<MapPin size={16} strokeWidth={1.75} />}
-          placeholder="¿Dónde se encontrarán? (opcional)"
-        />
-      ) : (
-        <p className="flex items-center gap-2 rounded-base bg-accent-lavender-soft px-4 py-3 text-[12.5px] text-[#5e4a8a]">
-          <Video size={16} strokeWidth={1.75} className="shrink-0" />
-          Al confirmar creamos una sala de videollamada; el enlace llega a tu correo y a Mis clases.
-        </p>
-      )}
+      {/* Ya no se elige modalidad: todas las clases de Orión son virtuales. Un selector con una
+          sola opción no es una elección, es un paso de más. */}
+      <p className="flex items-center gap-2 rounded-base bg-accent-lavender-soft px-4 py-3 text-[12.5px] text-[#5e4a8a]">
+        <Video size={16} strokeWidth={1.75} className="shrink-0" />
+        Al confirmar creamos una sala de videollamada; el enlace llega a tu correo y a Mis clases.
+      </p>
 
       {errorReserva && <AvisoError mensaje={errorReserva} />}
       {resumen && <p className="text-center text-[13px] font-semibold text-text">{resumen}</p>}
@@ -366,9 +342,6 @@ export default function AgendaProfesorPage() {
           <div className="mt-3 flex flex-wrap gap-2">
             <Badge tono="lavanda">
               <Video size={12} strokeWidth={2.4} /> Virtual
-            </Badge>
-            <Badge tono="melocoton">
-              <MapPin size={12} strokeWidth={2.4} /> Presencial
             </Badge>
             {detalle.certified && (
               <Badge tono="menta">

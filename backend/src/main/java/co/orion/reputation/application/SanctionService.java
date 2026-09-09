@@ -71,7 +71,9 @@ public class SanctionService {
         boolean enforce = ENFORCE.equalsIgnoreCase(settings.getString(MODE).trim());
         SanctionState state = enforce ? SanctionState.ACTIVE : SanctionState.PROPOSED;
 
-        String reason = count + (count == 1 ? " ausencia confirmada" : " ausencias confirmadas")
+        // «Falta» y no «ausencia»: desde la política de cancelación, la cuenta incluye también las
+        // cancelaciones del profesor dentro de la ventana. Llamarlas ausencias diría que no apareció.
+        String reason = count + (count == 1 ? " falta registrada" : " faltas registradas")
                 + " en los últimos " + settings.getInt(WINDOW_DAYS) + " días";
 
         ProfessorSanction sanction = sanctions.save(

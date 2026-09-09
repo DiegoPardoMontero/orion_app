@@ -308,7 +308,10 @@ public class AchievementService {
 
         return new AchievementInput(
                 tomadas,
-                cuentan.stream().filter(b -> b.getModality() == BookingModality.IN_PERSON).count(),
+                // Ya no hay presenciales que contar: Orión es virtual y el CHECK de la base lo
+                // impone (V30). Se deja el hueco en cero en vez de quitarlo del registro para no
+                // reescribir la firma por un dato que podría volver.
+                0L,
                 cuentan.stream().map(Booking::getLanguageCode)
                         .filter(java.util.Objects::nonNull).collect(Collectors.toSet()),
                 cuentan.stream().map(Booking::getProfessorId).collect(Collectors.toSet()),
