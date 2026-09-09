@@ -1,8 +1,13 @@
 # Orión — Orion Language Academy
 
-Plataforma web de agendamiento de clases de inglés. Los estudiantes reservan clases
-con profesores según su disponibilidad; estudiante y profesor se contactan por WhatsApp.
-Sin pagos en el MVP 1.
+Marketplace de clases particulares de idiomas. El estudiante busca profesor, reserva una hora de
+su disponibilidad y **paga por la pasarela**; la clase se da por videollamada. Orión retiene una
+comisión y liquida al profesor cuando la clase ya se dictó.
+
+> **Ojo si vienes del MVP 1.** Aquello era agendar y hablar por WhatsApp, sin dinero. Hoy hay
+> pagos, saldo a favor, reclamos, reputación, gamificación, textos legales y soporte con plazos de
+> ley. Este archivo dice cómo levantarlo y cuál es la superficie del API; **qué hay construido y
+> por qué está en [`docs/ESTADO.md`](docs/ESTADO.md)**.
 
 ## Stack
 
@@ -18,6 +23,31 @@ backend/    Aplicación Spring Boot
 frontend/   Aplicación Next.js (App Router)
 docs/       Briefs de las tareas y documentación
 ```
+
+El backend es un **monolito modular**: trece módulos bajo `co.orion`, cada uno con `api/`
+(controladores y DTO), `application/` (servicios), `domain/` (entidades) y `persistence/`
+(repositorios).
+
+| Módulo | De qué responde |
+|---|---|
+| `identity` | Cuentas, sesión, perfiles, postulaciones de profesor |
+| `scheduling` | Disponibilidad, cálculo de cupos, reservas, reprogramación |
+| `catalog` | Idiomas, objetivos y los **ajustes de plataforma** (comisión, ventanas, umbrales) |
+| `billing` | Pagos, saldo a favor, comisión, ganancias y liquidaciones |
+| `lifecycle` | Cierre de clases, reclamos, retracto y devoluciones |
+| `reputation` | Reseñas, métricas del profesor, ranking y sanciones |
+| `messaging` | Conversaciones internas y notificaciones dentro de la app |
+| `notifications` | Correos (se acopla por eventos, nunca por llamadas) |
+| `engagement` | Gamificación: logros, puntos, rachas y avatar |
+| `legal` | Términos, política de datos y constancias de aceptación |
+| `support` | Solicitudes de soporte, con los plazos que fija la ley |
+| `admin` | Panel, purga definitiva e historial de ajustes |
+| `shared` | Reloj, seguridad, errores, tiempo y observabilidad |
+
+La dependencia que sorprende es `identity → reputation` (el perfil público muestra la
+calificación), y por eso existe `lifecycle`: es el único sitio que necesita reserva, pago e
+historial a la vez. Entre módulos **no hay relaciones JPA**: se guarda el `UUID` plano y la
+integridad la garantiza la FK de la base.
 
 **[docs/ESTADO.md](docs/ESTADO.md)** — qué hay construido y desplegado, con las reglas y sus
 valores. Empieza por ahí si vienes nuevo al proyecto.
@@ -66,6 +96,12 @@ El admin se puede sobreescribir con `ORION_ADMIN_EMAIL` y `ORION_ADMIN_PASSWORD`
 
 La semilla también crea disponibilidad: María los lunes 18:00–21:00 y los miércoles 08:00–11:00;
 Juan los martes 15:00–18:00.
+
+**Ana arranca con saldo a favor** ($500.000, vía `BillingDevSeeder`) y con cuatro clases pasadas en
+semanas distintas. Las dos cosas son a propósito: sin saldo no se puede reservar en local —haría
+falta pasar por Wompi—, y sin historial la gamificación se ve vacía. Todos los usuarios sembrados
+nacen con la mayoría de edad declarada y el correo verificado, que desde el Bloque 9 son las dos
+condiciones para reservar.
 
 ### Autenticarse contra la API
 
@@ -133,27 +169,87 @@ expresan en hora local de Bogotá; los intervalos son semiabiertos `[inicio, fin
 bloqueo de 10:00–11:00 elimina el cupo de las 10:00 pero no el de las 11:00; nunca se devuelven
 cupos que ya empezaron.
 
-Reservas:
+Reservas y ciclo de vida de la clase:
 
 | Método | Ruta | Quién | Qué hace |
 |---|---|---|---|
-| POST | `/api/v1/bookings` | STUDENT, ADMIN | Reserva un cupo (el admin, en nombre de un estudiante) |
+| POST | `/api/v1/bookings` | STUDENT, ADMIN | Reserva un cupo. Devuelve la reserva **y el ticket de pago** |
 | POST | `/api/v1/bookings/{id}/cancel` | dueño o ADMIN | Cancela (body opcional `{"reason": "..."}`) |
 | POST | `/api/v1/bookings/{id}/attendance` | PROFESSOR | Registra asistencia de una clase ya terminada |
-| GET | `/api/v1/me/bookings?scope=upcoming\|past` | STUDENT, PROFESSOR | Mis clases, con la contraparte y su WhatsApp |
+| GET | `/api/v1/me/bookings?scope=upcoming\|past` | STUDENT, PROFESSOR | Mis clases, con la contraparte |
+| POST | `/api/v1/bookings/{id}/reschedule-requests` | dueño | Propone otro horario del mismo profesor |
+| POST | `/api/v1/reschedule-requests/{id}/accept` | la otra parte | Acepta y mueve la clase |
+| POST | `/api/v1/bookings/{id}/disputes` | STUDENT | «Reportar un problema» |
+| GET / POST | `/api/v1/me/bookings/{id}/retraction` | STUDENT | Si el retracto aplica, y ejercerlo |
 
-Una reserva `CONFIRMED` oculta su cupo; al cancelarla, el cupo reaparece. **Regla de las 24
-horas:** estudiantes y profesores solo pueden cancelar con 24 h o más de anticipación (si no,
-422); el ADMIN está exento. El campo `canCancel` de "mis clases" ya trae esa decisión resuelta
-desde el servidor.
+**Reservar no confirma.** La reserva nace `PENDING_PAYMENT` con el cupo apartado 20 minutos
+(`payment_hold_minutes`) y pasa a `CONFIRMED` cuando el webhook firmado de Wompi confirma el cobro
+—o de inmediato si el saldo del estudiante cubre la clase entera—. Si nadie paga, un job libera el
+cupo. Reservar exige **correo verificado y mayoría de edad declarada**; si no, 422.
 
-Registrar asistencia (`{"present": true, "notes": "..."}`) cierra la clase: pasa a `COMPLETED`
-o a `NO_SHOW`. Solo se puede sobre clases ya terminadas (si no, 422) y una sola vez (si no, 409).
+**Cancelar siempre se puede**, a cualquier hora y por las dos partes. La ventana
+(`student_cancel_hours` / `professor_cancel_hours`, hoy **12 h**) ya no bloquea: decide el dinero.
+Fuera de ella, el estudiante recupera el valor completo como saldo; dentro, la clase se considera
+prestada y el pago se le libera al profesor. Si cancela el profesor, el estudiante recupera todo
+sea cuando sea — y hacerlo dentro de la ventana le registra una **falta** que alimenta la escalera
+de sanciones. `canCancel` y `lateCancel` vienen resueltos desde el servidor.
 
-**Correos:** cada reserva y cada cancelación envía un correo a cada participante. En desarrollo
-los captura Mailpit — ábrelos en http://localhost:8025. Los de confirmación llevan adjunto un
-`.ics` y un link para añadir la clase a Google Calendar. Un fallo del servidor de correo **no**
-afecta a la reserva: el envío ocurre después del commit y su error solo se registra en el log.
+**Todas las clases son virtuales** (V30). El campo `modality` sigue existiendo pero solo admite
+`VIRTUAL`; mandar `IN_PERSON` responde 400 en vez de degradar la clase en silencio. Al confirmarse
+se crea la sala de videollamada y su enlace viaja por correo.
+
+Registrar asistencia (`{"present": true, "notes": "..."}`) cierra la clase: pasa a `COMPLETED` o a
+`NO_SHOW`. Si nadie registra nada, un job la cierra sola a las 24 h (`auto_complete_hours`) y libera
+el pago igual.
+
+Dinero:
+
+| Método | Ruta | Quién | Qué hace |
+|---|---|---|---|
+| GET | `/api/v1/bookings/{id}/payment` | dueño | Estado del pago (acepta `?transactionId=` de Wompi) |
+| POST | `/api/v1/webhooks/payments/wompi` | Wompi (firmado) | **La fuente de verdad del cobro** |
+| GET | `/api/v1/me/payments`, `/api/v1/me/credits` | STUDENT | Historial y saldo a favor |
+| GET | `/api/v1/me/earnings` | PROFESSOR | Retenido, por transferir y transferido |
+| GET / POST | `/api/v1/admin/payments`, `/api/v1/admin/payouts` | ADMIN | Conciliación y liquidaciones |
+| GET / POST | `/api/v1/admin/refunds` | ADMIN | Devoluciones al medio de pago (retracto) |
+
+La comisión (`commission_rate_bps`, hoy 20 %) se congela en cada reserva y se calcula sobre el
+**precio**, nunca sobre lo cobrado: el saldo a favor es un pasivo de Orión y no sale del bolsillo
+del profesor. La base garantiza que comisión + ganancia = precio, que saldo + cobrado = precio, que
+una clase entre en una sola liquidación y que un webhook reenviado se procese una vez.
+
+Reputación, mensajería y gamificación:
+
+| Método | Ruta | Quién | Qué hace |
+|---|---|---|---|
+| POST | `/api/v1/bookings/{id}/reviews` | STUDENT | Califica de 1 a 5, una sola vez |
+| GET | `/api/v1/me/performance` | PROFESSOR | Métricas, cumplimiento y sanciones activas |
+| GET / POST | `/api/v1/conversations` | STUDENT, PROFESSOR | Hilos internos |
+| GET | `/api/v1/me/notifications` | autenticado | Campana |
+| GET | `/api/v1/me/achievements`, `/api/v1/me/streak` | STUDENT | Logros, racha y avatar |
+
+Legal, soporte y administración:
+
+| Método | Ruta | Quién | Qué hace |
+|---|---|---|---|
+| GET | `/api/v1/legal/**` | **público** | Términos, política de datos y datos de contacto |
+| POST | `/api/v1/auth/verify-email` | público | Confirma el correo con el token del enlace |
+| POST | `/api/v1/me/account/adulthood` | autenticado | Declara la mayoría de edad |
+| GET / POST | `/api/v1/me/support` | autenticado | Solicitudes de soporte |
+| GET / POST | `/api/v1/admin/support` | ADMIN | Bandeja, ordenada por lo que vence antes |
+| GET / PUT | `/api/v1/admin/settings` | ADMIN | Ajustes de plataforma, con historial |
+| GET / POST | `/api/v1/admin/teacher-applications` | ADMIN | Revisión de postulaciones |
+
+Tres categorías de soporte traen **plazo fijado por ley** y no por nosotros: consulta de datos
+personales (10 días hábiles), reclamo de datos personales (15 hábiles) y retracto (15 calendario).
+
+> La lista completa y siempre al día está en Swagger, con el perfil `local`:
+> http://localhost:8080/swagger-ui/index.html
+
+**Correos:** cada reserva y cada cancelación envía un correo a cada participante. En desarrollo los
+captura Mailpit — ábrelos en http://localhost:8025. Los de confirmación llevan adjunto un `.ics` y
+un link para añadir la clase a Google Calendar. Un fallo del servidor de correo **no** afecta a la
+reserva: el envío ocurre después del commit y su error solo se registra en el log.
 
 ## 3. Levantar el frontend
 
@@ -177,9 +273,9 @@ npm run types:api    # openapi-typescript contra /v3/api-docs → src/lib/api/sc
 
 Regenéralos cada vez que cambie un DTO del backend.
 
-Es una **PWA instalable** (Chrome: "Instalar aplicación"): manifest, iconos y theme-color, sin
-service worker (un caché offline es la fuente clásica de "veo una versión vieja"; no lo necesita
-el MVP).
+Es una **PWA instalable** (Chrome: "Instalar aplicación"): manifest, iconos de marca, theme-color
+y un service worker mínimo (`public/sw.js`). No cachea la aplicación —un caché offline es la fuente
+clásica de "veo una versión vieja"—; está para que el navegador la considere instalable.
 
 ### Suite de humo (Playwright)
 
@@ -188,8 +284,14 @@ cd frontend
 npm run e2e          # levanta next dev solo; requiere backend + docker con la semilla arriba
 ```
 
-Cubre los caminos que no pueden romperse: login/logout de cada rol, Ana reserva y el cupo
-desaparece, María ve la reserva, Ana cancela y el cupo vuelve. Corre en un viewport móvil.
+**16 tests** en dos archivos: los caminos que no pueden romperse (`humo.spec.ts`) y la gamificación
+(`gamificacion.spec.ts`). Login/logout de cada rol, Ana reserva y el cupo desaparece, María la ve,
+Ana cancela y el cupo vuelve, el registro con sus tres casillas y la verificación de correo leyendo
+el enlace real del buzón de Mailpit. Corre en viewport móvil.
+
+Dos cosas que hay que saber antes de correrla: **muta estado compartido**, así que una corrida
+completa pide `docker compose down -v` antes; y el que pasa por la pasarela **falla sin llaves de
+sandbox de Wompi** en el entorno — sin ellas son 15 de 16.
 
 ## 4. Tests
 
@@ -200,11 +302,16 @@ cd backend
 ./mvnw verify -Dit.test=AuthFlowIT     # un solo test de integración
 ```
 
-Los tests levantan un **PostgreSQL real** con Testcontainers (no H2), así que Docker debe
-estar corriendo. No hace falta que la infra de `docker compose` esté arriba: Testcontainers
-crea y destruye sus propios contenedores.
+Hoy son **161 unitarios + 386 de integración**. Los de integración levantan un **PostgreSQL real**
+con Testcontainers (no H2), así que Docker debe estar corriendo. No hace falta que la infra de
+`docker compose` esté arriba: Testcontainers crea y destruye sus propios contenedores.
+
+En el frontend: `npx tsc --noEmit`, `npm run lint` y `npm run test:unit` (50 tests de Vitest sobre
+lógica pura).
 
 ## 5. Variables de entorno
+
+### Para desarrollo
 
 | Variable | Default |
 |---|---|
@@ -214,3 +321,44 @@ crea y destruye sus propios contenedores.
 | `ORION_CORS_ALLOWED_ORIGINS` | `http://localhost:3000` |
 | `ORION_ADMIN_EMAIL` | `admin@orion.local` |
 | `ORION_ADMIN_PASSWORD` | `admin123*` |
+
+En local hay dos cosas que **no se pueden terminar sin credenciales**: reservar exige llaves de
+*sandbox* de Wompi (prefijo `_test_`) —la excepción es Ana, que arranca con saldo—, y el asistente
+de postulación exige `CLOUDINARY_URL` para la foto y el CV. Sin ella la API responde 503 con un
+mensaje legible, no un 500 mudo.
+
+### Obligatorias en producción
+
+El perfil `prod` **se niega a arrancar** sin estas. Es deliberado: publicar Orión sin domicilio de
+notificaciones incumple el art. 50 de la Ley 1480, y preferimos no arrancar a arrancar mintiendo.
+
+| Variable | Para qué |
+|---|---|
+| `ORION_APP_BASE_URL` | Origen del frontend. De aquí salen los enlaces de los correos **y la URL de retorno de Wompi**: si está mal, el pago no vuelve a Orión |
+| `ORION_LEGAL_NOMBRE` · `_DOCUMENTO` · `_DOMICILIO` · `_CIUDAD` · `_CORREO` · `_WHATSAPP` · `_HORARIO` | Quién responde por Orión. Sin las siete, no arranca |
+| `WOMPI_PUBLIC_KEY` · `WOMPI_INTEGRITY_SECRET` · `WOMPI_EVENTS_SECRET` | Pasarela. Sin ellas, reservar responde 422 |
+| `WOMPI_API_BASE_URL` | `https://production.wompi.co/v1`. **El default es el sandbox a propósito** |
+| `RESEND_API_KEY` | Producción envía por la API HTTP de Resend, no por SMTP: Railway bloquea el 587 |
+| `ORION_MAIL_FROM` | Remitente de todo lo que sale |
+| `CLOUDINARY_URL` | Fotos y documentos de las postulaciones |
+| `NEXT_PUBLIC_SITE_URL` | Dominio público, para sitemap y OG absolutos |
+
+Con default, pero conviene revisarlas: `ORION_ALERTS_TO` (adónde llegan las alertas de errores y de
+procesos caídos) y `NEXT_PUBLIC_SUPPORT_WHATSAPP`.
+
+**El webhook de Wompi** hay que configurarlo en su panel apuntando a
+`https://<dominio>/api/v1/webhooks/payments/wompi` — al **dominio del frontend**, no al del backend:
+en Railway el backend vive en la red interna y Wompi no lo alcanza. El `rewrite` de Next reenvía
+`/api/*` tal cual, así que el evento llega íntegro. Sin esto **ningún pago confirma una clase**: la
+redirección del navegador no es la fuente de verdad.
+
+**Producción no corre el `DevDataSeeder`**: la base arranca solo con el administrador.
+
+---
+
+## Y si vienes nuevo
+
+1. [`docs/ESTADO.md`](docs/ESTADO.md) — qué hay construido y desplegado, con las reglas y sus valores.
+2. [`CLAUDE.md`](CLAUDE.md) — las decisiones de arquitectura que no se negocian y por qué.
+3. [`docs/INFORME-Y-ROADMAP.md`](docs/INFORME-Y-ROADMAP.md) — deuda técnica conocida e ideas.
+4. [`docs/briefs/`](docs/briefs) — el alcance cerrado de cada tarea.
