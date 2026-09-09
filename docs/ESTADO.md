@@ -29,8 +29,8 @@ dentro de `/cuenta`).
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots), con Rigel de protagonista.
 
 ## Verificación
-Al 08/09/2026, sobre `0a62345`:
-- Backend: `./mvnw verify` (Testcontainers) — **161 unitarios + 365 de integración**, verde.
+Al 08/09/2026, sobre `master` ya con el Bloque 9 mezclado:
+- Backend: `./mvnw verify` (Testcontainers) — **161 unitarios + 380 de integración**, verde.
 - Frontend: `next build` + `tsc` + `lint` verdes; **50 tests de Vitest**.
 - **E2E Playwright: 15 de 16**, sobre base recreada (`docker compose down -v`). El que falta sigue
   siendo el paso por la pasarela: exige llaves de *sandbox* de Wompi en el entorno.
@@ -39,6 +39,14 @@ Al 08/09/2026, sobre `0a62345`:
   cuenta por SQL. El `timeout` por test subió a 60 s: estos tests manejan un `next dev` que
   compila cada ruta la primera vez, y fallar por eso solo enseña a volver a correrlos.
 - El build de producción **no** se ha vuelto a recorrer a mano en navegador tras el Bloque 9.
+
+> **Lo que costó ese repaso a mano.** El diálogo de mayoría de edad del Bloque 9 se quedaba puesto
+> después de confirmarlo: la sesión guarda el usuario tal como estaba al entrar y `/auth/me`
+> respondía con ese recuerdo, así que la declaración se escribía en la base y la pantalla no se
+> enteraba. Como el diálogo no tiene salida, la cuenta quedaba encerrada — el admin incluido, que
+> es anterior a la V24 y por tanto nunca la declaró. `FreshPrincipalFilter` ya releía la fila en
+> cada petición, pero solo adoptaba la nueva si cambiaba el rol o la intención de alta; ahora la
+> adopta siempre. Cubierto por `AdulthoodConfirmationIT`.
 
 ## Pagos (Bloque 4, 02/09/2026)
 Reservar ya no confirma: la reserva nace `PENDING_PAYMENT` con el cupo bloqueado y solo pasa a

@@ -25,6 +25,13 @@ import jakarta.servlet.http.HttpServletResponse;
  *
  * <p>Es una consulta por petición. A la escala de Orión eso no se nota, y compra que el estado de
  * la cuenta sea siempre el de la base y no el de un recuerdo.
+ *
+ * <p>El principal se sustituye <strong>siempre</strong>, sin comparar campos. Antes solo se
+ * sustituía si cambiaba el rol o la intención de alta, y esa lista se quedó corta en cuanto la
+ * cuenta ganó estados nuevos: quien declaraba su mayoría de edad recibía su 204, la fila quedaba
+ * escrita, y {@code /auth/me} seguía respondiendo con el recuerdo — el diálogo, que no tiene
+ * salida, no se iba nunca. Mantener una lista de "qué campos cuentan" es apostar a acordarse de
+ * ampliarla; la fila ya está leída, así que copiarla entera no cuesta nada más.
  */
 @Component
 public class FreshPrincipalFilter extends OncePerRequestFilter {
@@ -45,7 +52,7 @@ public class FreshPrincipalFilter extends OncePerRequestFilter {
                 // La cuenta ya no existe o quedó inactiva: la sesión deja de valer aquí mismo.
                 SecurityContextHolder.clearContext();
                 request.getSession(false);
-            } else if (cambió(principal.user(), fresco)) {
+            } else {
                 OrionUserDetails renovado = new OrionUserDetails(fresco);
                 SecurityContextHolder.getContext().setAuthentication(
                         UsernamePasswordAuthenticationToken.authenticated(
@@ -53,11 +60,5 @@ public class FreshPrincipalFilter extends OncePerRequestFilter {
             }
         }
         chain.doFilter(request, response);
-    }
-
-    /** Lo que hace distinto a un principal: qué es la cuenta y a qué vino. */
-    private boolean cambió(User enSesion, User enBase) {
-        return enSesion.getRole() != enBase.getRole()
-                || enSesion.getSignupIntent() != enBase.getSignupIntent();
     }
 }

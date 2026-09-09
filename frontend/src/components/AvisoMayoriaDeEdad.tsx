@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { AvisoError } from "@/components/estados";
 import { Modal } from "@/components/Modal";
+import { ApiError } from "@/lib/api/fetch";
 import { BotonPrincipal, Spinner } from "@/components/ui";
 import { useConfirmarMayoriaDeEdad } from "@/lib/auth/session";
 
@@ -20,6 +22,15 @@ import { useConfirmarMayoriaDeEdad } from "@/lib/auth/session";
 export function AvisoMayoriaDeEdad() {
   const [marcado, setMarcado] = useState(false);
   const confirmar = useConfirmarMayoriaDeEdad();
+
+  // Este diálogo no tiene salida: si el guardado falla en silencio, la persona se queda encerrada
+  // mirando un botón que no hace nada. El error se enseña aunque sea del servidor.
+  const error =
+    confirmar.error instanceof ApiError
+      ? confirmar.error.message
+      : confirmar.isError
+        ? "No pudimos guardar tu confirmación. Inténtalo de nuevo."
+        : null;
 
   return (
     <Modal
@@ -49,6 +60,12 @@ export function AvisoMayoriaDeEdad() {
           Declaro que soy <strong>mayor de 18 años</strong>.
         </span>
       </label>
+
+      {error && (
+        <div className="mt-4">
+          <AvisoError mensaje={error} />
+        </div>
+      )}
 
       <BotonPrincipal
         type="button"
