@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Orión — Resumen de negocio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;600;700&display=swap">
+<style>
+  :root{
+    --noche:#2e1e4e; --coral:#c0341f; --coral-claro:#e8503a;
+    --tinta:#33203b; --tinta-2:#5a4a66; --tinta-3:#8b7d95;
+    --crema:#fff6ee; --hundido:#f7efe6; --borde:#e6dad0;
+    --menta:#2e6b4a; --menta-bg:#eaf6ef; --ambar:#8a5a33; --ambar-bg:#fdf0e2;
+    --display:"Bricolage Grotesque",Georgia,serif;
+    --sans:"Figtree",-apple-system,"Segoe UI",sans-serif;
+  }
+  @page{ size:A4; margin:16mm 15mm 14mm; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--sans);font-size:10.2pt;line-height:1.55;color:var(--tinta);
+       -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  h1,h2,h3{font-family:var(--display);letter-spacing:-.015em;margin:0}
+  .portada{background:var(--noche);color:#fff6ee;padding:20mm 14mm 14mm;margin:-16mm -15mm 9mm;
+           border-bottom:3pt solid var(--coral-claro)}
+  .marca{font-size:8pt;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#ffc189}
+  .portada h1{font-size:27pt;font-weight:800;line-height:1.05;margin:5mm 0 0;max-width:16ch}
+  .portada p{margin:4mm 0 0;max-width:60ch;color:#e4d8e8;font-size:10.5pt}
+  h2{font-size:14pt;font-weight:800;color:var(--noche);margin:8mm 0 2.5mm;
+     padding-bottom:1.5mm;border-bottom:1.5pt solid var(--borde);break-after:avoid}
+  h3{font-size:10.8pt;font-weight:600;color:var(--coral);margin:5mm 0 1.5mm;break-after:avoid}
+  p{margin:0 0 2.5mm;max-width:68ch}
+  strong{font-weight:700;color:var(--noche)}
+  ul{margin:0 0 3mm;padding-left:4.5mm}
+  li{margin-bottom:1.6mm;max-width:66ch}
+  li::marker{color:var(--coral-claro)}
+  ol{margin:0 0 3mm;padding-left:5mm}
+  table{border-collapse:collapse;width:100%;margin:0 0 4mm;font-size:9.4pt;break-inside:avoid}
+  th{background:var(--hundido);text-align:left;padding:2mm 2.5mm;font-family:var(--display);
+     font-size:8pt;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--tinta-3);
+     border-bottom:1pt solid var(--borde)}
+  td{padding:2mm 2.5mm;border-bottom:.6pt solid var(--borde);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  td:first-child{font-weight:600;color:var(--noche);white-space:nowrap}
+  .cifras td:first-child{font-family:var(--display);font-size:11.5pt;font-weight:800;color:var(--coral)}
+  .nota{background:var(--hundido);border-left:2.5pt solid var(--coral-claro);
+        padding:3mm 4mm;margin:0 0 4mm;break-inside:avoid}
+  .nota p:last-child{margin-bottom:0}
+  .riesgo{background:var(--ambar-bg);border-left:2.5pt solid var(--ambar);padding:3mm 4mm;
+          margin:0 0 3.5mm;break-inside:avoid;color:var(--ambar)}
+  .riesgo strong{color:var(--ambar)}
+  .riesgo p:last-child{margin-bottom:0}
+  .bien{background:var(--menta-bg);border-left:2.5pt solid var(--menta);padding:3mm 4mm;
+        margin:0 0 4mm;break-inside:avoid;color:var(--menta)}
+  .bien strong{color:var(--menta)}
+  section{break-inside:auto}
+  .pie{margin-top:9mm;padding-top:3mm;border-top:1pt solid var(--borde);
+       font-size:8.5pt;color:var(--tinta-3)}
+  .rol{break-inside:avoid}
+</style></head><body>
+
+<header class="portada">
+  <p class="marca">Orión · Academia de idiomas</p>
+  <h1>Qué hay construido, y qué cuesta operarlo</h1>
+  <p>Resumen de negocio al 11 de septiembre de 2026. Qué hace hoy la plataforma, cómo gana dinero,
+     qué trabajo humano sigue exigiendo y qué decisiones esperan.</p>
+</header>
+
+<section>
+  <h2>Qué es Orión hoy</h2>
+  <p>Un <strong>marketplace de clases particulares de idiomas</strong>. El estudiante busca profesor,
+  ve su agenda, reserva la hora que le sirve y paga en el momento. La clase se da por videollamada,
+  dura 60 minutos y empieza en punto. No hay matrícula, ni paquetes obligatorios, ni permanencia: se
+  paga la clase que se reserva.</p>
+  <p>Está <strong>en producción</strong> en orionidiomas.com, con el ciclo completo funcionando de
+  punta a punta: buscar, reservar, pagar, dar la clase, calificar y liquidar al profesor.</p>
+  <p>Tres idiomas en el catálogo —inglés, español y francés— y siete objetivos de aprendizaje
+  (conversación, negocios, exámenes, viaje, académico, entrevista y general), que son los filtros con
+  los que un estudiante encuentra profesor.</p>
+</section>
+
+<section>
+  <h2>Cómo gana dinero</h2>
+  <p><strong>Orión retiene el 20 % de cada clase.</strong> La comisión se congela en el momento de la
+  reserva: si mañana se cambia el porcentaje, las clases ya vendidas conservan el suyo.</p>
+  <ol>
+    <li>El estudiante paga por <strong>Wompi</strong> (PSE, tarjeta o Nequi). Los datos de su tarjeta
+    nunca pasan por Orión.</li>
+    <li>El cobro queda <strong>retenido</strong>. El profesor todavía no tiene ese dinero.</li>
+    <li>Cuando la clase se dicta, el pago <strong>se libera</strong> y entra en la siguiente
+    liquidación.</li>
+    <li>El administrador genera la liquidación del período, <strong>transfiere por fuera</strong> y
+    la marca como pagada con la referencia.</li>
+  </ol>
+  <p>El profesor pone su tarifa, entre $20.000 y $500.000 por hora, y ve el desglose antes de
+  guardarla: cuánto retiene Orión y cuánto le queda.</p>
+  <div class="nota">
+    <p><strong>El saldo a favor es un pasivo de Orión, no un descuento al profesor.</strong> Cuando
+    un estudiante paga con saldo, el profesor cobra su tarifa completa y la comisión se calcula sobre
+    el precio de la clase. La diferencia la pone Orión.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Lo que hoy puede hacer cada persona</h2>
+  <div class="rol">
+    <h3>El estudiante</h3>
+    <p>Se registra solo, busca profesor filtrando por idioma, nivel, objetivo, precio, días y franja
+    horaria, y reserva. Ve sus clases en agenda o calendario, entra a la videollamada desde la
+    tarjeta o desde el correo, y escribe a su profesor por mensajería interna.</p>
+    <p>Si algo cambia, tiene salidas: <strong>reprogramar</strong> sin tocar el pago,
+    <strong>cancelar</strong> —siempre se puede— y <strong>reportar un problema</strong> si el
+    profesor no llegó. Ve su saldo y de dónde salió cada peso, califica a su profesor, y tiene un
+    panel de progreso con rachas y 19 logros.</p>
+  </div>
+  <div class="rol">
+    <h3>El profesor</h3>
+    <p>Se postula con un asistente: idiomas y niveles, objetivos, experiencia, estudios, tarifa y
+    documentos. Una persona revisa y decide. Mientras espera <strong>no es un estudiante</strong>: no
+    busca, no reserva y no tiene saldo — lo único que tiene es su solicitud.</p>
+    <p>Aprobado, publica su perfil, abre su disponibilidad semanal con excepciones puntuales y recibe
+    reservas. Ve sus ganancias clase por clase con la comisión exacta, su desempeño y cualquier
+    restricción activa con su motivo.</p>
+  </div>
+  <div class="rol">
+    <h3>La administración</h3>
+    <p>Entra a un panel que dice qué espera una decisión: reclamos, pagos por revisar, sanciones
+    propuestas y reseñas reportadas. Si está todo en cero, lo dice.</p>
+    <p>Desde ahí revisa postulaciones con sus documentos, concilia pagos, genera liquidaciones y las
+    exporta a CSV para la contadora, resuelve reclamos, atiende soporte, hace devoluciones, cambia
+    los ajustes de la plataforma con historial de quién cambió qué, e invita profesores por correo.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Lo que ocurre sin que nadie lo pida</h2>
+  <table>
+    <thead><tr><th>Proceso</th><th>Cada cuánto</th><th>Qué hace</th></tr></thead>
+    <tbody>
+      <tr><td>Cierre de clases</td><td>1 hora</td><td>Cierra las terminadas hace más de 24 h sin reclamo y libera su pago. <strong>Si se detiene, nadie cobra.</strong></td></tr>
+      <tr><td>Expiración de reservas</td><td>5 minutos</td><td>Libera los cupos de quien no pagó a tiempo y devuelve el saldo aplicado</td></tr>
+      <tr><td>Métricas y ranking</td><td>3:00 a. m.</td><td>Recalcula el desempeño de cada profesor y el orden del buscador</td></tr>
+      <tr><td>Vigilante</td><td>15 minutos</td><td>Comprueba que los tres anteriores sigan corriendo y avisa por correo si uno se cae <strong>y cuando vuelve</strong></td></tr>
+    </tbody>
+  </table>
+  <p>Además salen correos con marca en cada momento que importa: confirmación de clase con
+  invitación de calendario, cancelación, recuperación de contraseña, decisión sobre una postulación
+  y avisos de mensajes.</p>
+</section>
+
+<section>
+  <h2>Lo que cumple por ley</h2>
+  <p>Esto no es una funcionalidad: es la condición para poder cobrar.</p>
+  <ul>
+    <li><strong>Términos y política de tratamiento de datos</strong>, versionados, con constancia de
+    quién aceptó qué, cuándo, desde qué IP y con qué navegador.</li>
+    <li><strong>Solo mayores de 18 años.</strong> La ley exige autorización del representante legal
+    para tratar datos de menores, y ese trámite no existe en la plataforma.</li>
+    <li><strong>Derecho de retracto</strong>: 5 días hábiles desde la compra, con devolución al medio
+    de pago dentro de los 15 días calendario siguientes.</li>
+    <li><strong>Soporte con plazos legales</strong>: consulta de datos (10 días hábiles), reclamo de
+    datos (15 hábiles) y retracto (15 calendario). La bandeja se ordena por lo que vence antes, no
+    por lo más reciente.</li>
+    <li><strong>Verificación de correo</strong> antes de reservar, y límites de intentos en las
+    puertas públicas.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>De qué tamaño es lo construido</h2>
+  <table>
+    <tbody>
+      <tr><td>Pruebas automáticas</td><td>391 de integración contra base de datos real · 171 unitarias · 50 de lógica del frontend</td></tr>
+      <tr><td>Pruebas de navegador</td><td>15 de 16 (la que falta exige llaves de prueba de la pasarela)</td></tr>
+      <tr><td>Cambios de esquema</td><td>32 migraciones versionadas</td></tr>
+      <tr><td>Módulos</td><td>13</td></tr>
+    </tbody>
+  </table>
+  <div class="bien">
+    <p><strong>Cada regla de negocio con número se cambia desde el panel, no desplegando.</strong>
+    La comisión, las ventanas, los umbrales. Y queda registrado quién la cambió y desde qué valor.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Lo que todavía cuesta trabajo humano</h2>
+  <ul>
+    <li><strong>Las transferencias a profesores.</strong> Orión calcula y cuadra al peso; la
+    transferencia la hace una persona.</li>
+    <li><strong>Las devoluciones al medio de pago.</strong> Wompi no lo permite por API: se hacen en
+    su panel y aquí se deja la referencia.</li>
+    <li><strong>El retracto</strong> se detecta, se congela y se avisa solo. Lo único manual es mover
+    el dinero.</li>
+    <li><strong>Soporte y devoluciones no salen en la primera fila del panel</strong>, que es donde
+    se mira cada mañana — y son justo las dos cosas con plazo legal. Hay que entrar a sus pantallas.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Riesgos abiertos</h2>
+  <div class="riesgo">
+    <p><strong>La videollamada es la dependencia más frágil.</strong> Las salas son del servicio
+    público de Jitsi, que pide no usarse con fines comerciales y topa el uso en unos 25 usuarios
+    activos al mes. Orión da clases cobradas encima de eso. Además ahí manda quien entra primero: si
+    el estudiante se conecta antes que el profesor, puede silenciar y expulsar. La solución real
+    cuesta dinero: la opción recomendada arranca gratis hasta 25 usuarios activos al mes y son
+    99 USD/mes hasta 300.</p>
+  </div>
+  <div class="riesgo">
+    <p><strong>Los textos legales no los ha revisado un abogado.</strong> Siguen la ley artículo por
+    artículo y las secciones obligatorias están cubiertas por pruebas, pero eso no certifica que la
+    redacción proteja. Antes del primer cliente que paga en volumen, que los lea alguien habilitado
+    para firmarlos.</p>
+  </div>
+  <div class="riesgo">
+    <p><strong>Las sanciones a profesores están en modo observación.</strong> El sistema detecta
+    ausencias y cancelaciones de último momento, calcula la sanción que correspondería y la propone,
+    pero no se aplica sola. Es deliberado mientras la red de profesores sea pequeña.</p>
+  </div>
+  <div class="riesgo">
+    <p><strong>Queda una pieza sin comprobar contra el servicio real</strong>: abrir los documentos de
+    una postulación desde el panel. El arreglo está hecho y probado, pero solo se confirma abriendo
+    un PDF en producción.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Las cifras que definen el negocio</h2>
+  <table class="cifras">
+    <tbody>
+      <tr><td>20 %</td><td>Comisión de Orión, congelada en cada reserva</td></tr>
+      <tr><td>60 min</td><td>Duración de una clase, siempre en punto</td></tr>
+      <tr><td>$20k–$500k</td><td>Rango de tarifa por hora del profesor</td></tr>
+      <tr><td>20 min</td><td>Lo que se aparta un cupo esperando el pago</td></tr>
+      <tr><td>12 horas</td><td>Frontera que decide el dinero al cancelar. Cancelar se puede siempre</td></tr>
+      <tr><td>5 días hábiles</td><td>Plazo de retracto, desde la compra</td></tr>
+      <tr><td>15 días</td><td>Calendario, para devolver al medio de pago</td></tr>
+      <tr><td>24 horas</td><td>Para reclamar tras la clase, y para que se cierre sola</td></tr>
+      <tr><td>18 años</td><td>Edad mínima para tener cuenta</td></tr>
+    </tbody>
+  </table>
+  <p class="pie">Todas las de arriba, salvo las que fija una ley, se cambian desde el panel sin
+  desplegar nada. · Orión — Resumen de negocio · 11 de septiembre de 2026</p>
+</section>
+
+</body></html>
