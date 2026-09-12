@@ -64,3 +64,6 @@ playwright-report/
 
 # Guiones de un solo uso para recorrer flujos con el navegador.
 frontend/*-tmp.mjs
+
+# Guion de verificación puntual contra OpenAI: no va al repo.
+verificar-openai.sh
