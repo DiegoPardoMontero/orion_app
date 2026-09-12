@@ -18,7 +18,7 @@ import co.orion.shared.error.ServiceUnavailableException;
  *
  * <p><strong>El audio no pasa por aquí.</strong> Este servicio pide una credencial efímera
  * ({@code POST /v1/realtime/client_secrets}) y se la entrega al navegador, que se conecta directo
- * por WebRTC. La llave de la cuenta nunca sale del servidor y los siete minutos de audio no tocan
+ * por WebRTC. La llave de la cuenta nunca sale del servidor y los minutos de audio no tocan
  * nuestra infraestructura — que es exactamente lo que se quiere con un dato sensible.
  *
  * <p>El modelo va por configuración y no como constante: cambiar de {@code mini} a uno mayor

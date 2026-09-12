@@ -7,7 +7,7 @@ package co.orion.assessment.application;
  * <p>El audio <strong>no pasa por Orión</strong>. Este servicio solo emite una credencial de corta
  * vida y el navegador se conecta directo al proveedor. Es lo correcto para datos sensibles —lo que
  * no atraviesa nuestros servidores no lo podemos filtrar— y de paso ahorra el ancho de banda de
- * siete minutos de audio por diagnóstico.
+ * los minutos de audio de cada diagnóstico.
  */
 public interface VoiceConversationProvider {
 

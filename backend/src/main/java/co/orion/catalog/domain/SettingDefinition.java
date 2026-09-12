@@ -48,7 +48,8 @@ public enum SettingDefinition {
             true),
     ASSESSMENT_MAX_MINUTES("assessment_max_minutes", Grupo.PLAZOS, Tipo.ENTERO,
             "Duración máxima del diagnóstico",
-            "Minutos de conversación antes del corte duro.", 3, 15, false),
+            "Minutos de conversación antes del corte duro. Subirlo alarga la conversación y la "
+                    + "factura a la vez: se paga por minuto hablado.", 3, 15, false),
     ASSESSMENT_MIN_MINUTES("assessment_min_minutes", Grupo.PLAZOS, Tipo.ENTERO,
             "Duración mínima para puntuar",
             "Por debajo de esto no se calcula puntaje: un número sacado de noventa segundos es "
