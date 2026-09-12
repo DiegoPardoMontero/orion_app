@@ -66,6 +66,28 @@ public enum SettingDefinition {
             "Pasado el plazo se borra lo que la persona dijo y se conservan puntaje, señales y "
                     + "resumen. El audio no se guarda nunca.", 30, 1825, true),
 
+    // Los pesos del Confidence Score. Suman 100 por convención, no por obligación: el cálculo
+    // pondera sobre el total que haya. Cambiar cualquiera cambia la versión del puntaje, así que
+    // los diagnósticos de antes siguen siendo comparables entre ellos y no con los de después.
+    SCORE_WEIGHT_ARRANQUE("score_weight_arranque", Grupo.REPUTACION, Tipo.ENTERO,
+            "Peso · arranque",
+            "Cuánto pesa lo que tarda en empezar a responder. Es el marcador más directo de la "
+                    + "confianza al hablar.", 0, 100, true),
+    SCORE_WEIGHT_CONTINUIDAD("score_weight_continuidad", Grupo.REPUTACION, Tipo.ENTERO,
+            "Peso · continuidad",
+            "Cuánto pesa empezar frases y soltarlas a mitad.", 0, 100, true),
+    SCORE_WEIGHT_EXTENSION("score_weight_extension", Grupo.REPUTACION, Tipo.ENTERO,
+            "Peso · extensión",
+            "Cuánto pesa lo largo que responde.", 0, 100, true),
+    SCORE_WEIGHT_AUTONOMIA("score_weight_autonomia", Grupo.REPUTACION, Tipo.ENTERO,
+            "Peso · autonomía",
+            "Cuánto pesa devolverse al idioma propio cuando el terreno se pone difícil.",
+            0, 100, true),
+    SCORE_WEIGHT_SOLTURA("score_weight_soltura", Grupo.REPUTACION, Tipo.ENTERO,
+            "Peso · soltura",
+            "Cuánto pesan las muletillas y las autocorrecciones por cada cien palabras.",
+            0, 100, true),
+
     BOOKING_MIN_LEAD_HOURS("booking_min_lead_hours", Grupo.PLAZOS, Tipo.ENTERO,
             "Antelación mínima para reservar",
             "Con menos de estas horas por delante, el cupo ya no se ofrece ni se puede reservar. "
