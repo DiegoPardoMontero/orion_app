@@ -189,15 +189,38 @@ class SlotCalculatorTest {
                 assertThat(slot.startsAt().toLocalDate()).isEqualTo(WEDNESDAY));
     }
 
+    /**
+     * Cincuenta y cinco minutos de clase dentro de una cadencia de una hora: los cinco que sobran
+     * son el margen del profesor entre una clase y la siguiente, y salen de aquí, no de una regla
+     * aparte.
+     */
     @Test
-    void everySlotLastsExactlyOneHour() {
+    void everySlotLastsFiftyFiveMinutesAndStartsOnTheHour() {
         List<Slot> slots = calculator.calculate(
                 List.of(rule(DayOfWeek.MONDAY, 18, 21)),
                 List.of(), List.of(),
                 MONDAY, MONDAY, LONG_BEFORE);
 
-        assertThat(slots).allSatisfy(slot ->
-                assertThat(slot.endsAt()).isEqualTo(slot.startsAt().plusHours(1)));
+        assertThat(slots).allSatisfy(slot -> {
+            assertThat(slot.endsAt()).isEqualTo(slot.startsAt().plusMinutes(55));
+            assertThat(slot.startsAt().getMinute()).isZero();
+        });
+        // La cadencia no cambió: la misma franja sigue dando los mismos tres cupos.
+        assertThat(slots).hasSize(3);
+    }
+
+    /** El hueco entre el fin de una clase y el inicio de la siguiente es el margen, y son 5. */
+    @Test
+    void thereAreFiveMinutesBetweenOneClassAndTheNext() {
+        List<Slot> slots = calculator.calculate(
+                List.of(rule(DayOfWeek.MONDAY, 18, 21)),
+                List.of(), List.of(),
+                MONDAY, MONDAY, LONG_BEFORE);
+
+        for (int i = 0; i < slots.size() - 1; i++) {
+            assertThat(java.time.Duration.between(slots.get(i).endsAt(), slots.get(i + 1).startsAt()))
+                    .isEqualTo(java.time.Duration.ofMinutes(5));
+        }
     }
 
     private AvailabilityRule rule(DayOfWeek weekday, int startHour, int endHour) {

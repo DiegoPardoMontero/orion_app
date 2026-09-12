@@ -79,6 +79,12 @@ class ProfessorSlotsIT extends ApiIntegrationSupport {
     @Autowired
     private JdbcTemplate jdbc;
 
+    /** Los ajustes viven en la base y la comparten todos los tests: se fija, no se da por hecho. */
+    private void antelacionMinima(int horas) {
+        jdbc.update("update platform_settings set value = ? where key = 'booking_min_lead_hours'",
+                String.valueOf(horas));
+    }
+
     private User maria;
     private User juan;
     private Session mariaSession;
@@ -179,22 +185,44 @@ class ProfessorSlotsIT extends ApiIntegrationSupport {
         assertThat(response.getBody().get("error").toString()).contains("posterior");
     }
 
+    /**
+     * El reloj está en el lunes a las 12:00 y la antelación mínima son 6 horas, así que de una
+     * regla del lunes 08:00–22:00 solo quedan las de las 18:00 en adelante: las de la mañana ya
+     * pasaron, la de las 12:00 está en curso, y de la 13:00 a la 17:00 no llegan a la antelación.
+     */
     @Test
-    void slotsThatAlreadyStartedTodayAreNotOffered() {
-        // El reloj está en el lunes a las 12:00: una regla del lunes 08:00–15:00 solo debe
-        // ofrecer 13:00 y 14:00. Las de la mañana ya pasaron y la de las 12:00 está en curso.
+    void slotsThatAlreadyStartedOrAreTooCloseAreNotOffered() {
+        antelacionMinima(6);
         post("/api/v1/me/availability/rules", mariaSession,
-                new CreateRuleRequest(1, LocalTime.of(8, 0), LocalTime.of(15, 0)), RuleResponse.class);
+                new CreateRuleRequest(1, LocalTime.of(8, 0), LocalTime.of(22, 0)), RuleResponse.class);
 
         ResponseEntity<SlotsResponse> response = get(
                 slotsUrl(maria, "?from=2026-07-13&to=2026-07-13"), anaSession, SlotsResponse.class);
 
-        assertThat(response.getBody().slots()).hasSize(2);
+        // 18:00, 19:00, 20:00 y 21:00.
+        assertThat(response.getBody().slots()).hasSize(4);
         // Comparamos instantes, no la hora de pared: el cliente HTTP del test deserializa el
         // ZonedDateTime pasándolo a UTC, aunque el JSON del servidor viene en -05:00.
         assertThat(response.getBody().slots().getFirst().startsAt().toInstant())
                 .isEqualTo(ZonedDateTime.of(
-                        LocalDate.of(2026, 7, 13), LocalTime.of(13, 0), BusinessZone.BOGOTA).toInstant());
+                        LocalDate.of(2026, 7, 13), LocalTime.of(18, 0), BusinessZone.BOGOTA).toInstant());
+    }
+
+    /**
+     * La antelación mínima se lee del ajuste en cada consulta. Bajarla a cero devuelve los cupos
+     * de la tarde que antes no cabían: la regla es de negocio y se cambia sin desplegar.
+     */
+    @Test
+    void theMinimumLeadIsASetting() {
+        post("/api/v1/me/availability/rules", mariaSession,
+                new CreateRuleRequest(1, LocalTime.of(8, 0), LocalTime.of(22, 0)), RuleResponse.class);
+        antelacionMinima(0);
+
+        ResponseEntity<SlotsResponse> response = get(
+                slotsUrl(maria, "?from=2026-07-13&to=2026-07-13"), anaSession, SlotsResponse.class);
+
+        // De 13:00 a 21:00: nueve cupos, todos los que quedan del día.
+        assertThat(response.getBody().slots()).hasSize(9);
     }
 
     @Test

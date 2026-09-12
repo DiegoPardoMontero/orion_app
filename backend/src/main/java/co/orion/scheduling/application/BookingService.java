@@ -22,6 +22,7 @@ import co.orion.scheduling.domain.BookingCancelledEvent;
 import co.orion.scheduling.domain.BookingCreatedEvent;
 import co.orion.scheduling.domain.BookingModality;
 import co.orion.scheduling.domain.BookingStatus;
+import co.orion.scheduling.domain.SlotCalculator;
 import co.orion.scheduling.domain.Slot;
 import co.orion.scheduling.persistence.BookingRepository;
 import co.orion.shared.error.BusinessRuleViolationException;
@@ -34,7 +35,8 @@ import co.orion.shared.time.BusinessZone;
 @Service
 public class BookingService {
 
-    private static final Duration CLASS_LENGTH = Duration.ofHours(1);
+    /** Una sola fuente: la duración de la clase la define el dominio, no cada servicio. */
+    private static final Duration CLASS_LENGTH = SlotCalculator.CLASS_LENGTH;
     private static final String STUDENT_WINDOW = "student_cancel_hours";
     private static final String PROFESSOR_WINDOW = "professor_cancel_hours";
 

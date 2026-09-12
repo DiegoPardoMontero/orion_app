@@ -138,7 +138,8 @@ class CreateBookingIT extends ApiIntegrationSupport {
         // Desde el Bloque 4 una reserva nace sin pagar: es una clase apartada, no una clase.
         assertThat(response.getBody().status()).isEqualTo("PENDING_PAYMENT");
         assertThat(response.getBody().studentId()).isEqualTo(ana.getId());
-        assertThat(response.getBody().endsAt()).isEqualTo(response.getBody().startsAt().plusHours(1));
+        // 55 minutos de clase: los 5 que faltan para la hora son el margen del profesor.
+        assertThat(response.getBody().endsAt()).isEqualTo(response.getBody().startsAt().plusMinutes(55));
 
         var saved = bookings.findById(response.getBody().id()).orElseThrow();
         // created_by == student_id: es una reserva de autoservicio, la métrica estrella del MVP.

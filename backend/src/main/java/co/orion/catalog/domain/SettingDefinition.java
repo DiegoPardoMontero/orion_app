@@ -40,6 +40,12 @@ public enum SettingDefinition {
             "Horas para que el profesor cancele",
             "El mismo plazo del otro lado. Cambiar uno solo rompe la simetría que dicen los Términos.",
             0, 168, true),
+    BOOKING_MIN_LEAD_HOURS("booking_min_lead_hours", Grupo.PLAZOS, Tipo.ENTERO,
+            "Antelación mínima para reservar",
+            "Con menos de estas horas por delante, el cupo ya no se ofrece ni se puede reservar. "
+                    + "Subirlo por encima de las horas de cancelación deja al estudiante sin margen "
+                    + "para arrepentirse.",
+            0, 72, true),
     NO_SHOW_REPORT_MINUTES("no_show_report_minutes", Grupo.PLAZOS, Tipo.ENTERO,
             "Espera antes de reportar una ausencia",
             "Minutos desde la hora de inicio antes de poder reportar que el profesor no llegó.",

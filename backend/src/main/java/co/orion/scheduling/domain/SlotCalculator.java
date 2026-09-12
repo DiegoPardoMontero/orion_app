@@ -20,14 +20,41 @@ public final class SlotCalculator {
 
     public static final ZoneId BOGOTA = BusinessZone.BOGOTA;
 
-    private static final Duration SLOT_LENGTH = Duration.ofHours(1);
+    /**
+     * Cuánto dura una clase. Cincuenta y cinco minutos y no sesenta: los cinco que sobran de cada
+     * hora son el respiro del profesor entre una clase y la siguiente, y salen solos de que los
+     * cupos sigan empezando en punto. Sin ese margen, dos clases seguidas se pisan por diseño.
+     */
+    public static final Duration CLASS_LENGTH = Duration.ofMinutes(55);
 
+    /**
+     * Cada cuánto empieza un cupo. Es la hora en punto, y es independiente de lo que dure la clase:
+     * separarlas es lo que convierte «55 minutos» en «55 de clase y 5 de margen» sin tocar nada más.
+     */
+    private static final Duration SLOT_CADENCE = Duration.ofHours(1);
+
+    /** Todos los cupos libres del rango: futuro estricto, sin exigir antelación. */
     public List<Slot> calculate(List<AvailabilityRule> rules,
                                 List<AvailabilityException> exceptions,
                                 List<OccupiedInterval> occupied,
                                 LocalDate from,
                                 LocalDate to,
                                 ZonedDateTime now) {
+        return calculate(rules, exceptions, occupied, from, to, now, Duration.ZERO);
+    }
+
+    /**
+     * @param antelacionMinima cuánto tiene que faltar como MÍNIMO para que un cupo se ofrezca. Las
+     *                         seis horas justas cuentan: «mínimo seis» es seis o más, no más de
+     *                         seis. Cuánta se exige es una regla de negocio y no vive aquí.
+     */
+    public List<Slot> calculate(List<AvailabilityRule> rules,
+                                List<AvailabilityException> exceptions,
+                                List<OccupiedInterval> occupied,
+                                LocalDate from,
+                                LocalDate to,
+                                ZonedDateTime now,
+                                Duration antelacionMinima) {
         List<Slot> slots = new ArrayList<>();
 
         for (LocalDate date = from; !date.isAfter(to); date = date.plusDays(1)) {
@@ -39,7 +66,8 @@ public final class SlotCalculator {
                 if (!rule.isActive() || rule.getWeekday() != date.getDayOfWeek()) {
                     continue;
                 }
-                addSlotsOf(rule, date, dayExceptions, occupied, now, slots);
+                addSlotsOf(rule, date, dayExceptions, occupied, now,
+                        now.plus(antelacionMinima), slots);
             }
         }
 
@@ -52,19 +80,23 @@ public final class SlotCalculator {
                             List<AvailabilityException> dayExceptions,
                             List<OccupiedInterval> occupied,
                             ZonedDateTime now,
+                            ZonedDateTime noAntesDe,
                             List<Slot> slots) {
         ZonedDateTime ruleEnd = date.atTime(rule.getEndTime()).atZone(BOGOTA);
 
-        // Los cupos empiezan donde empieza la regla y avanzan de hora en hora mientras quepan
-        // enteros: una regla 18:00–21:00 da 18:00, 19:00 y 20:00, nunca un cupo a medias.
+        // Los cupos empiezan donde empieza la regla y avanzan de hora en hora mientras la CLASE
+        // quepa entera: una regla 18:00–21:00 da 18:00, 19:00 y 20:00, nunca un cupo a medias.
         for (ZonedDateTime start = date.atTime(rule.getStartTime()).atZone(BOGOTA);
-             !start.plus(SLOT_LENGTH).isAfter(ruleEnd);
-             start = start.plus(SLOT_LENGTH)) {
+             !start.plus(CLASS_LENGTH).isAfter(ruleEnd);
+             start = start.plus(SLOT_CADENCE)) {
 
-            ZonedDateTime end = start.plus(SLOT_LENGTH);
+            ZonedDateTime end = start.plus(CLASS_LENGTH);
 
-            if (!start.isAfter(now)) {
-                continue; // futuro estricto: un cupo que ya empezó no se ofrece
+            // Dos cosas distintas: un cupo que ya empezó no existe (futuro estricto), y uno
+            // demasiado cercano existe pero no se ofrece (antelación mínima, que sí admite el
+            // instante justo).
+            if (!start.isAfter(now) || start.isBefore(noAntesDe)) {
+                continue;
             }
             if (blockedByException(start, end, date, dayExceptions)) {
                 continue;

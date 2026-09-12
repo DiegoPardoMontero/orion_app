@@ -1,6 +1,7 @@
 package co.orion.scheduling.application;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
@@ -11,6 +12,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import co.orion.catalog.application.PlatformSettingsService;
 import co.orion.identity.application.ProfessorAccessService;
 import co.orion.identity.application.ProfessorProfileService;
 import co.orion.scheduling.domain.BookingStatus;
@@ -26,6 +28,8 @@ import co.orion.shared.time.BusinessZone;
 @Service
 public class SlotQueryService {
 
+    private static final String MIN_LEAD_HOURS = "booking_min_lead_hours";
+
     private static final List<BookingStatus> OCCUPYING_STATUSES =
             List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT);
 
@@ -37,6 +41,7 @@ public class SlotQueryService {
     private final BookingRepository bookings;
     private final ProfessorProfileService profiles;
     private final ProfessorAccessService access;
+    private final PlatformSettingsService settings;
     private final SlotCalculator calculator = new SlotCalculator();
     private final Clock clock;
 
@@ -45,17 +50,42 @@ public class SlotQueryService {
                             BookingRepository bookings,
                             ProfessorProfileService profiles,
                             ProfessorAccessService access,
+                            PlatformSettingsService settings,
                             Clock clock) {
         this.rules = rules;
         this.exceptions = exceptions;
         this.bookings = bookings;
         this.profiles = profiles;
         this.access = access;
+        this.settings = settings;
         this.clock = clock;
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Los cupos que un estudiante puede reservar <strong>ahora</strong>: quedan fuera los que no
+     * cumplen la antelación mínima. Es la que usan el buscador y la validación de la reserva, y por
+     * eso son la misma: ofrecer un cupo que el servidor va a rechazar es una promesa rota.
+     */
     public List<Slot> availableSlots(UUID professorId, LocalDate from, LocalDate to) {
+        return slotsDesde(professorId, from, to, minimumLead());
+    }
+
+    /**
+     * Los cupos libres de la agenda, sin la antelación mínima de reservar. Reprogramar tiene su
+     * propia regla ({@code reschedule_min_hours}) y es justamente la salida de quien ya no llega a
+     * la otra: aplicarle la antelación de reservar le cerraría las dos puertas a la vez.
+     */
+    public List<Slot> openSlots(UUID professorId, LocalDate from, LocalDate to) {
+        return slotsDesde(professorId, from, to, Duration.ZERO);
+    }
+
+    /** La antelación mínima vigente, leída en cada consulta: es un ajuste, no una constante. */
+    public Duration minimumLead() {
+        return Duration.ofHours(settings.getInt(MIN_LEAD_HOURS));
+    }
+
+    private List<Slot> slotsDesde(UUID professorId, LocalDate from, LocalDate to, Duration lead) {
         // Un profesor no visible en el marketplace no expone cupos aunque tenga reglas: lanza 404.
         profiles.ensurePublished(professorId);
         // Y un profesor no aprobado tampoco expone cupos (403): mismo gate que reservar.
@@ -71,7 +101,8 @@ public class SlotQueryService {
                 occupiedByBookings(professorId, start, end),
                 start,
                 end,
-                now());
+                now(),
+                lead);
     }
 
     /**

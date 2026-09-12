@@ -18,6 +18,7 @@ import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.scheduling.domain.Booking;
 import co.orion.scheduling.domain.RescheduleRequest;
+import co.orion.scheduling.domain.SlotCalculator;
 import co.orion.scheduling.domain.RescheduleRequested;
 import co.orion.scheduling.domain.RescheduleResolved;
 import co.orion.scheduling.domain.RescheduleStatus;
@@ -97,7 +98,7 @@ public class RescheduleRequestService {
         requireProfessorOffersSlot(booking.getProfessorId(), proposedStartsAt);
 
         RescheduleRequest request = new RescheduleRequest(bookingId, actor.getId(),
-                proposedStartsAt, proposedStartsAt.plus(Duration.ofHours(1)), reason);
+                proposedStartsAt, proposedStartsAt.plus(SlotCalculator.CLASS_LENGTH), reason);
         try {
             RescheduleRequest saved = requests.saveAndFlush(request);
             events.publishEvent(new RescheduleRequested(saved.getId()));
@@ -170,7 +171,7 @@ public class RescheduleRequestService {
 
     private void requireProfessorOffersSlot(UUID professorId, Instant startsAt) {
         LocalDate date = startsAt.atZone(BusinessZone.BOGOTA).toLocalDate();
-        boolean offered = slots.availableSlots(professorId, date, date).stream()
+        boolean offered = slots.openSlots(professorId, date, date).stream()
                 .map(Slot::startsAt)
                 .anyMatch(slot -> slot.toInstant().equals(startsAt));
         if (!offered) {

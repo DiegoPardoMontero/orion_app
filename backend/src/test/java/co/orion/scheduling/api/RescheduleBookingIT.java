@@ -138,7 +138,9 @@ class RescheduleBookingIT extends ApiIntegrationSupport {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody().id()).isEqualTo(id); // misma reserva, nuevo horario
         assertThat(response.getBody().startsAt().toInstant()).isEqualTo(at(WEDNESDAY, 10).toInstant());
-        assertThat(response.getBody().endsAt().toInstant()).isEqualTo(at(WEDNESDAY, 11).toInstant());
+        // La clase dura 55 minutos, así que termina a las 10:55 y no a las 11:00.
+        assertThat(response.getBody().endsAt().toInstant())
+                .isEqualTo(at(WEDNESDAY, 10).plusMinutes(55).toInstant());
 
         // El cupo viejo (9) vuelve a estar libre; el nuevo (10) queda tomado → siguen 2 libres (8 y 9).
         ResponseEntity<SlotsResponse> slots = get(

@@ -1,6 +1,7 @@
 package co.orion.scheduling.application;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -10,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import co.orion.identity.domain.User;
 import co.orion.scheduling.domain.AttendanceRecord;
+import co.orion.catalog.application.PlatformSettingsService;
 import co.orion.scheduling.domain.Booking;
 import co.orion.scheduling.domain.BookingCompletedEvent;
 import co.orion.scheduling.persistence.AttendanceRecordRepository;
@@ -21,18 +23,23 @@ import co.orion.shared.error.UnprocessableException;
 @Service
 public class AttendanceService {
 
+    private static final String NO_SHOW_AFTER_MINUTES = "no_show_report_minutes";
+
     private final BookingRepository bookings;
     private final AttendanceRecordRepository attendance;
     private final ApplicationEventPublisher events;
+    private final PlatformSettingsService settings;
     private final Clock clock;
 
     public AttendanceService(BookingRepository bookings,
                              AttendanceRecordRepository attendance,
                              ApplicationEventPublisher events,
+                             PlatformSettingsService settings,
                              Clock clock) {
         this.bookings = bookings;
         this.attendance = attendance;
         this.events = events;
+        this.settings = settings;
         this.clock = clock;
     }
 
@@ -48,8 +55,23 @@ public class AttendanceService {
                 .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada"));
 
         Instant now = clock.instant();
-        if (!booking.hasEndedAt(now)) {
-            throw new UnprocessableException("La clase aún no termina");
+        // Marcar que NO asistió se habilita a los 15 minutos de empezar (no_show_report_minutes),
+        // no al terminar: esperar cincuenta y cinco minutos a alguien que no va a llegar, y encima
+        // no poder decirlo, es pedirle al profesor que se quede mirando una sala vacía. Marcar que
+        // SÍ asistió sigue exigiendo que la clase termine: darla por dictada a mitad de camino
+        // liberaría el dinero antes de que ocurriera lo que se pagó.
+        if (present) {
+            if (!booking.hasEndedAt(now)) {
+                throw new UnprocessableException("La clase aún no termina");
+            }
+        } else {
+            Duration espera = Duration.ofMinutes(settings.getInt(NO_SHOW_AFTER_MINUTES));
+            Instant sePuedeDesde = booking.getStartsAt().plus(espera);
+            if (now.isBefore(sePuedeDesde)) {
+                throw new UnprocessableException(
+                        "Espera " + espera.toMinutes() + " minutos desde la hora de inicio antes de "
+                                + "marcar que tu estudiante no asistió.");
+            }
         }
         // Una clase cancelada, ya registrada o en revisión no admite registro de asistencia.
         if (!booking.isConfirmed()) {

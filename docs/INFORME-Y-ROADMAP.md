@@ -9,6 +9,16 @@
 ## Deuda técnica conocida
 
 ### Calidad / tests
+- **La suite levanta un Postgres por contexto de Spring** (~30 contenedores), porque cada test con
+  su propio `@TestConfiguration` estrena contexto. Se probó a compartir uno solo: ahorra memoria,
+  pero pone a las 46 clases a compartir base y una que no limpia rompe a otra que no tiene que ver
+  con ella. Se revirtió a propósito — el porqué está escrito en `TestcontainersConfiguration`. Si
+  alguna vez hace falta de verdad, el camino bueno es un contenedor y **una base por contexto**, no
+  una base compartida.
+- **Una suite interrumpida deja sus contenedores en pie**, y se acumulan entre corrida y corrida
+  hasta que la máquina se queda sin memoria y los siguientes intentos mueren por una razón que no
+  tiene nada que ver con el código. Antes de dar por malo un fallo raro:
+  `docker rm -f $(docker ps -aq --filter "label=org.testcontainers=true")`.
 - **La suite e2e muta estado compartido**: exige `docker compose down -v` entre corridas completas.
   *Mejora:* aislar cada test (usuarios/reservas propios con sufijo aleatorio) o un reset por test
   vía endpoint de test-only. Hoy es "una corrida por semilla".
