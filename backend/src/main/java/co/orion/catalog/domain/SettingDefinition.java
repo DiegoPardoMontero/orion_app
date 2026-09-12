@@ -40,6 +40,31 @@ public enum SettingDefinition {
             "Horas para que el profesor cancele",
             "El mismo plazo del otro lado. Cambiar uno solo rompe la simetría que dicen los Términos.",
             0, 168, true),
+    // --------------------------------------------------------------- diagnóstico de confianza
+    ASSESSMENT_ENABLED("assessment_enabled", Grupo.POLITICAS, Tipo.BOOLEANO,
+            "Diagnóstico de confianza activo",
+            "Apagarlo retira el bloque de la portada sin dejar rastro: ni mensaje de error ni "
+                    + "botón deshabilitado. Quien llegue verá el buscador de siempre.",
+            true),
+    ASSESSMENT_MAX_MINUTES("assessment_max_minutes", Grupo.PLAZOS, Tipo.ENTERO,
+            "Duración máxima del diagnóstico",
+            "Minutos de conversación antes del corte duro.", 3, 15, false),
+    ASSESSMENT_MIN_MINUTES("assessment_min_minutes", Grupo.PLAZOS, Tipo.ENTERO,
+            "Duración mínima para puntuar",
+            "Por debajo de esto no se calcula puntaje: un número sacado de noventa segundos es "
+                    + "peor que ningún número.", 1, 10, false),
+    ASSESSMENT_COOLDOWN_DAYS("assessment_cooldown_days", Grupo.PLAZOS, Tipo.ENTERO,
+            "Días entre un diagnóstico y el siguiente",
+            "Cuánto hay que esperar para repetirlo.", 1, 365, false),
+    ASSESSMENT_DAILY_BUDGET_COP("assessment_daily_budget_cop", Grupo.DINERO, Tipo.ENTERO,
+            "Presupuesto diario del diagnóstico",
+            "Pesos al día en IA. Al llegar al tope la función se apaga sola hasta mañana; al 80 % "
+                    + "sale un aviso por correo.", 0, 5_000_000, true),
+    ASSESSMENT_RETENTION_DAYS("assessment_transcript_retention_days", Grupo.PLAZOS, Tipo.ENTERO,
+            "Días que se guarda la transcripción",
+            "Pasado el plazo se borra lo que la persona dijo y se conservan puntaje, señales y "
+                    + "resumen. El audio no se guarda nunca.", 30, 1825, true),
+
     BOOKING_MIN_LEAD_HOURS("booking_min_lead_hours", Grupo.PLAZOS, Tipo.ENTERO,
             "Antelación mínima para reservar",
             "Con menos de estas horas por delante, el cupo ya no se ofrece ni se puede reservar. "
