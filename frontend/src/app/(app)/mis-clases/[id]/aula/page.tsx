@@ -38,6 +38,9 @@ export default function AulaPage() {
   const contenedor = useRef<HTMLDivElement>(null);
   const api = useRef<{ dispose: () => void } | null>(null);
   const entroAlAula = useRef<number | null>(null);
+  // `montar` no puede depender de la respuesta ni de la fase sin volver a montar en cada cambio.
+  const datosRef = useRef<ClassroomResponse | null>(null);
+  const faseRef = useRef<Fase>("antesala");
 
   const [fase, setFase] = useState<Fase>("antesala");
   const [minutos, setMinutos] = useState(0);
@@ -53,7 +56,18 @@ export default function AulaPage() {
     gcTime: 0,
     staleTime: 0,
     retry: false,
-    refetchInterval: 60_000,
+    // Solo mientras se espera en la antesala: es donde el reloj tiene que avanzar solo, para que
+    // «cerrada» pase a «abierta» sin recargar. Dentro de la sala no se sondea — cada respuesta
+    // nueva recreaba la función de montaje y acababa levantando un segundo Jitsi encima del
+    // primero. Dos frames, y el duplicado expulsaba al original de la sala.
+    refetchInterval: () => (faseRef.current === "antesala" ? 60_000 : false),
+  });
+
+  // Refleja en refs lo último renderizado. Va declarado ANTES del efecto que monta Jitsi: los
+  // efectos corren en orden, y si este fuera después, el montaje leería refs de la vuelta anterior.
+  useEffect(() => {
+    datosRef.current = aula.data ?? null;
+    faseRef.current = fase;
   });
 
   const minutosDentro = () =>
@@ -65,8 +79,10 @@ export default function AulaPage() {
   }, []);
 
   const montar = useCallback(() => {
-    const datos = aula.data;
-    if (!datos?.token || !datos.domain || !datos.room || !contenedor.current) return;
+    const datos = datosRef.current;
+    // Ya hay una instancia: no se monta otra. Es la barrera final contra el frame duplicado, por si
+    // algún día otra dependencia vuelve a disparar el efecto.
+    if (api.current || !datos?.token || !datos.domain || !datos.room || !contenedor.current) return;
 
     cargarJitsi(datos.domain, appIdDe(datos.room))
       .then(() => {
@@ -122,13 +138,19 @@ export default function AulaPage() {
         api.current = instancia;
       })
       .catch((error: Error) => setFallo(error.message));
-  }, [aula.data, camOn, micOn, soltar]);
+    // Sin dependencias reactivas a propósito: lo que necesita se lee de refs. Poner `aula.data`
+    // aquí es lo que montaba un Jitsi nuevo en cada refresco de la consulta.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
+  // Entrar monta; salir destruye. La limpieza no puede preguntar por `fase`, porque en el cierre
+  // del efecto `fase` todavía vale lo que valía cuando se montó.
   useEffect(() => {
-    if (fase === "dentro") montar();
-    return () => {
-      if (fase !== "dentro") soltar();
-    };
+    if (fase !== "dentro") {
+      soltar();
+      return;
+    }
+    montar();
   }, [fase, montar, soltar]);
 
   useEffect(() => () => soltar(), [soltar]);
