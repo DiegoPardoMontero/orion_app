@@ -27,6 +27,7 @@ const MIENTRAS_CARGA: PublicFigures = {
   disputeReportWindowHours: 24,
   autoCompleteHours: 24,
   applicationReviewBusinessDays: 3,
+  assessmentMinutes: 2,
 };
 
 export function useCifras(): PublicFigures {

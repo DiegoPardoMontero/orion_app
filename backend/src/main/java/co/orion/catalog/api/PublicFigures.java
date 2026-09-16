@@ -34,5 +34,7 @@ public record PublicFigures(
         /** Horas tras las que la clase se cierra sola si nadie registra asistencia. */
         int autoCompleteHours,
         /** Días hábiles prometidos para revisar una postulación de profesor. */
-        int applicationReviewBusinessDays) {
+        int applicationReviewBusinessDays,
+        /** Minutos que dura la conversación del diagnóstico de confianza. */
+        int assessmentMinutes) {
 }

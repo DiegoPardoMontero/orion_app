@@ -8,6 +8,7 @@ import { useState } from "react";
 import { CambiarClave } from "@/components/CambiarClave";
 import { CambiarFoto } from "@/components/CambiarFoto";
 import { MiCielo } from "@/components/gamificacion/MiCielo";
+import { TarjetaDiagnostico } from "@/components/gamificacion/TarjetaDiagnostico";
 import { MiFicha } from "@/components/gamificacion/MiFicha";
 import { PanelProgreso } from "@/components/PanelProgreso";
 import { PoliticaCancelacion } from "@/components/PoliticaCancelacion";
@@ -143,6 +144,7 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
 
       {seccion === "resumen" && (
         <>
+          <TarjetaDiagnostico />
           <PanelProgreso />
           <div className="mt-8">
             <MiCielo />

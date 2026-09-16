@@ -7,14 +7,9 @@ import { Rigel } from "@/components/Rigel";
 /**
  * El diagnóstico de confianza: la puerta a la que apunta el héroe de la portada.
  *
- * <p><strong>Esta página explica; todavía no mide.</strong> La conversación por voz, el cálculo del
- * Confidence Score y las tres recomendaciones son el Bloque 9, que está a medias: existen el
- * esquema, el proveedor de voz, el guion y la fórmula, y faltan las recomendaciones, la API y las
- * pantallas. Hasta que lleguen, esta ruta cuenta con honestidad qué es y lleva a crear la cuenta,
- * que es lo que hará falta igualmente.
- *
- * <p>Se creó ahora, y no un enlace provisional a otro sitio, porque la dirección es permanente: el
- * día que el Bloque 9 termine, lo que cambia es el contenido de esta página y ni un enlace más.
+ * <p>Pública a propósito: es el destino del héroe de la portada y tiene que abrirse sin sesión. La
+ * conversación en sí vive en {@code /diagnostico/empezar}, dentro de la aplicación, porque necesita
+ * cuenta —el resultado es de alguien— y consentimiento de voz.
  */
 export const metadata: Metadata = {
   title: "Prueba tu inglés en 2 minutos · Orión",
@@ -84,18 +79,18 @@ export default function DiagnosticoPage() {
         <div className="mt-10 rounded-card border border-border bg-surface-raised p-7 text-center">
           <p className="inline-flex items-center gap-2 rounded-pill bg-accent-peach-soft px-3.5 py-1.5 text-[12.5px] font-bold text-[#8a5a33]">
             <Clock size={14} strokeWidth={2.2} />
-            Lo estamos afinando
+            Dos minutos, y ya
           </p>
           <p className="mx-auto mt-4 max-w-[48ch] text-[15px] leading-relaxed text-text-secondary">
-            La conversación estará disponible en los próximos días. Crea tu cuenta ahora y serás de
-            los primeros en probarla — mientras tanto, ya puedes ver a los profesores y reservar.
+            Necesitas una cuenta —el resultado es tuyo y queda guardado— y tu permiso para procesar
+            la voz. Te lo pedimos justo antes de empezar, en una frase.
           </p>
           <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
             <Link
-              href="/registro"
+              href="/diagnostico/empezar"
               className="inline-flex h-[52px] items-center justify-center rounded-pill bg-primary px-7 text-[15px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus"
             >
-              Crear mi cuenta
+              Empezar mi diagnóstico
             </Link>
             <Link
               href="/profesores"

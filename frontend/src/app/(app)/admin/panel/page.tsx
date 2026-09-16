@@ -13,6 +13,7 @@ import {
   Users,
   Wallet,
   XCircle,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -146,6 +147,8 @@ export default function AdminPanelPage() {
           ayuda="Lo que Orión le debe a estudiantes"
         />
       </div>
+
+      <FilaDelDiagnostico />
 
       {/* 3. Personas y clases */}
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
@@ -330,5 +333,76 @@ function Linea({
     </Link>
   ) : (
     fila
+  );
+}
+
+/**
+ * El diagnóstico, en la fila que decide si se sostiene.
+ *
+ * <p>Cinco números, y el último es el único que importa de verdad: <strong>conversión a reserva</strong>.
+ * Una conversación preciosa que no lleva a ninguna clase es un gasto con buena prensa, y sin esta
+ * cifra no hay forma de distinguir una cosa de la otra.
+ */
+function FilaDelDiagnostico() {
+  const resumen = useQuery({
+    queryKey: ["admin", "assessments"],
+    queryFn: () =>
+      apiFetch<{
+        iniciados: number;
+        completados: number;
+        terminaronEnReserva: number;
+        gastadoHoyCop: number;
+        disponible: boolean;
+      }>("/api/v1/admin/assessments"),
+    staleTime: 60_000,
+  });
+
+  if (!resumen.data) return null;
+  const d = resumen.data;
+  const conversion = d.completados === 0
+    ? "—"
+    : `${Math.round((d.terminaronEnReserva / d.completados) * 100)} %`;
+
+  return (
+    <section className="mt-8">
+      <h2 className="text-[13px] font-bold uppercase tracking-[0.04em] text-text-secondary">
+        Diagnóstico de confianza
+        {!d.disponible && (
+          <span className="ml-2 rounded-pill bg-warning-bg px-2 py-0.5 text-[11px] normal-case text-warning">
+            apagado
+          </span>
+        )}
+      </h2>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Cifra
+          tono="lavanda"
+          icono={<Sparkles size={18} strokeWidth={2.2} />}
+          valor={String(d.iniciados)}
+          etiqueta="Iniciados"
+          ayuda="Últimos 30 días"
+        />
+        <Cifra
+          tono="menta"
+          icono={<Sparkles size={18} strokeWidth={2.2} />}
+          valor={String(d.completados)}
+          etiqueta="Completados"
+          ayuda="Los que llegaron a puntaje"
+        />
+        <Cifra
+          tono="melocoton"
+          icono={<Sparkles size={18} strokeWidth={2.2} />}
+          valor={conversion}
+          etiqueta="Terminaron en reserva"
+          ayuda="Si esta cifra no sube, la función no sirve al negocio"
+        />
+        <Cifra
+          tono="neutral"
+          icono={<Wallet size={18} strokeWidth={2.2} />}
+          valor={precioCop(d.gastadoHoyCop)}
+          etiqueta="Gasto de hoy"
+          ayuda="Contra el tope diario de Ajustes"
+        />
+      </div>
+    </section>
   );
 }

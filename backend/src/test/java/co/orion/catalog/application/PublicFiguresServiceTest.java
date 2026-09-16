@@ -41,6 +41,7 @@ class PublicFiguresServiceTest {
         when(settings.getInt("dispute_report_window_hours")).thenReturn(24);
         when(settings.getInt("auto_complete_hours")).thenReturn(24);
         when(settings.getInt("application_review_business_days")).thenReturn(3);
+        when(settings.getInt("assessment_max_minutes")).thenReturn(2);
     }
 
     @Test

@@ -40,7 +40,8 @@ public class PublicFiguresService {
                 settings.getInt("no_show_report_minutes"),
                 settings.getInt("dispute_report_window_hours"),
                 settings.getInt("auto_complete_hours"),
-                settings.getInt("application_review_business_days"));
+                settings.getInt("application_review_business_days"),
+                settings.getInt("assessment_max_minutes"));
     }
 
     /**
@@ -64,6 +65,7 @@ public class PublicFiguresService {
         m.put("ventana_reclamo", horas(f.disputeReportWindowHours()));
         m.put("cierre_automatico", horas(f.autoCompleteHours()));
         m.put("revision_postulacion", diasHabiles(f.applicationReviewBusinessDays()));
+        m.put("duracion_diagnostico", minutos(f.assessmentMinutes()));
         return m;
     }
 
