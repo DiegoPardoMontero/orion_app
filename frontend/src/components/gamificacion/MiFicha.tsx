@@ -17,7 +17,8 @@ import {
   type Logro,
 } from "@/lib/gamificacion";
 import { AvisoError } from "@/components/estados";
-import { Boton, BotonPrincipal } from "@/components/ui";
+import { Boton } from "@/components/ui";
+import { BarraDeEdicion } from "@/components/BarraDeEdicion";
 
 const NIVELES = ["BEGINNER", "INTERMEDIATE", "ADVANCED"] as const;
 
@@ -172,6 +173,17 @@ function Formulario({
   const [metas, setMetas] = useState<string[]>(ficha.goalCodes);
   const [guardado, setGuardado] = useState(false);
 
+  // Se mira, y solo después se edita. Mismo gesto que en el perfil del profesor.
+  const [editando, setEditando] = useState(false);
+
+  function descartar() {
+    setNivel(ficha.selfDeclaredLevel ?? "");
+    setIdioma(ficha.primaryLanguage ?? "");
+    setMotivacion(ficha.motivation ?? "");
+    setMetas(ficha.goalCodes);
+    setEditando(false);
+  }
+
   const guardar = useMutation({
     mutationFn: () =>
       apiFetch<FichaEstudiante>("/api/v1/me/student-profile", {
@@ -185,6 +197,7 @@ function Formulario({
       }),
     onSuccess: () => {
       setGuardado(true);
+      setEditando(false);
       onGuardado();
     },
   });
@@ -198,6 +211,8 @@ function Formulario({
 
   return (
     <div className="mt-4 rounded-card border border-border bg-surface-raised p-5">
+      {/* Un fieldset alcanza a todo lo de dentro y no se olvida del control que se añada mañana. */}
+      <fieldset disabled={!editando} className="contents">
       <fieldset>
         <legend className="text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary">
           ¿En qué nivel te sientes?
@@ -288,6 +303,8 @@ function Formulario({
         </div>
       )}
 
+      </fieldset>
+
       {guardado && !guardar.isPending && (
         <p className="mt-3 flex items-center gap-2 rounded-card bg-success-bg px-4 py-3 text-[13px] font-semibold text-success">
           <Check size={16} strokeWidth={2.4} />
@@ -295,16 +312,18 @@ function Formulario({
         </p>
       )}
 
-      <BotonPrincipal
+      <BarraDeEdicion
         className="mt-4"
-        disabled={guardar.isPending}
-        onClick={() => {
+        editando={editando}
+        guardando={guardar.isPending}
+        etiquetaEditar="Editar mi ficha"
+        onEditar={() => setEditando(true)}
+        onCancelar={descartar}
+        onGuardar={() => {
           setGuardado(false);
           guardar.mutate();
         }}
-      >
-        {guardar.isPending ? "Guardando…" : "Guardar mi ficha"}
-      </BotonPrincipal>
+      />
     </div>
   );
 }

@@ -6,7 +6,8 @@ import { useEffect, useMemo, useState } from "react";
 import { CambiarFoto } from "@/components/CambiarFoto";
 import { bordeSegun, ContadorPalabras } from "@/components/ContadorPalabras";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
-import { Boton, BotonPrincipal, Campo, Spinner, Toggle } from "@/components/ui";
+import { Boton, Campo, Spinner, Toggle } from "@/components/ui";
+import { BarraDeEdicion } from "@/components/BarraDeEdicion";
 import { DiscoIdioma } from "@/components/DiscoIdioma";
 import { PoliticaCancelacion } from "@/components/PoliticaCancelacion";
 import { PreguntasFrecuentes } from "@/components/PreguntasFrecuentes";
@@ -93,6 +94,29 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
   const [canPublish, setCanPublish] = useState(inicial.canPublish ?? false);
   const [guardado, setGuardado] = useState(false);
 
+  // Se mira, y solo después se edita. Sin esto los campos parecían escribibles siempre y no había
+  // forma de saber si estabas consultando tus datos o cambiándolos.
+  const [editando, setEditando] = useState(false);
+
+  /** Cancelar restaura: salir de edición dejando cambios sin guardar en pantalla sería peor. */
+  function descartar() {
+    setHeadline(inicial.headline ?? "");
+    setBio(inicial.bio ?? "");
+    setCity(inicial.city ?? "");
+    setCountryCode(inicial.countryCode ?? "CO");
+    setYearsExperience(inicial.yearsExperience != null ? String(inicial.yearsExperience) : "");
+    setEducation(inicial.education ?? "");
+    setCertified(inicial.certified ?? false);
+    setAcceptsTrial(inicial.acceptsTrial ?? false);
+    setLangs((inicial.languages ?? []).map((l) => ({
+      code: l.code ?? "",
+      isNative: l.isNative ?? false,
+      levels: l.levels ?? [],
+    })));
+    setGoals(inicial.goals ?? []);
+    setEditando(false);
+  }
+
   const guardar = useMutation({
     mutationFn: () =>
       apiFetch<ProfileResponse>("/api/v1/me/profile", {
@@ -121,6 +145,7 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
       // Publicarse o cambiar el perfil altera el directorio que ven los estudiantes.
       void queryClient.invalidateQueries({ queryKey: ["professors"] });
       setGuardado(true);
+      setEditando(false);
       setTimeout(() => setGuardado(false), 3000);
     },
   });
@@ -170,10 +195,20 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
       {/* — Tarifa — */}
       <WidgetTarifa inicial={inicial} onGuardada={() => setCanPublish(true)} />
 
+      {/*
+        Un fieldset y no quince `disabled` sueltos: `disabled` en el fieldset alcanza a todos los
+        controles de dentro —campos, textareas, toggles y chips— y no se olvida de ninguno cuando
+        mañana se añada otro. La tarifa queda fuera a propósito: tiene su propio guardado.
+      */}
+      <fieldset disabled={!editando} className="contents">
+
       {/* — Presentación — */}
       <label className="mt-6 block text-[12.5px] font-bold text-text-secondary" htmlFor="headline">
-        Titular
+        Título
       </label>
+      <p className="mt-0.5 text-[12px] text-text-muted">
+        Atrae estudiantes con una frase que muestre tu experiencia.
+      </p>
       <Campo
         id="headline"
         type="text"
@@ -406,6 +441,7 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
           </p>
         )}
       </section>
+      </fieldset>
 
       {error && (
         <div className="mt-4">
@@ -420,9 +456,15 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
         </p>
       )}
 
-      <BotonPrincipal disabled={guardar.isPending} onClick={() => guardar.mutate()} className="mt-5">
-        {guardar.isPending ? "Guardando…" : "Guardar cambios"}
-      </BotonPrincipal>
+      <BarraDeEdicion
+        className="mt-5"
+        editando={editando}
+        guardando={guardar.isPending}
+        etiquetaEditar="Editar mi perfil"
+        onEditar={() => setEditando(true)}
+        onCancelar={descartar}
+        onGuardar={() => guardar.mutate()}
+      />
 
       <PoliticaCancelacion rol="profesor" />
 

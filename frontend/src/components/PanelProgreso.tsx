@@ -349,7 +349,9 @@ function MapaDeConstancia() {
 
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-text-muted">
         <Leyenda color="var(--color-streak-week)" texto="con clase" />
-        <Leyenda color="var(--color-streak-protected)" texto="protegida" />
+        {/* «Protegida» no le dice nada a quien lo lee por primera vez: es jerga nuestra. La leyenda
+            tiene que decir qué pasó, no cómo lo llamamos por dentro. */}
+        <Leyenda color="var(--color-streak-protected)" texto="sin clase, racha a salvo" />
         <Leyenda color="var(--color-border-strong)" texto="en curso" borde />
       </div>
 
@@ -358,10 +360,10 @@ function MapaDeConstancia() {
           explica nada: hace falta decir qué es, cuándo pasa y qué no hace. */}
       {protegidas > 0 && (
         <p className="mt-3 border-t border-border pt-3 text-[12px] leading-relaxed text-text-secondary">
-          <strong className="text-text">¿Qué es una semana protegida?</strong> Una semana sin clase
-          que no te rompe la racha. Se aplica sola —no hay que pedirla— y solo una vez al mes.
-          Puentea el hueco, pero no cuenta como clase: una racha de cuatro semanas con una protegida
-          en medio sigue siendo de cuatro.
+          <strong className="text-text">Tuviste una semana sin clase y tu racha siguió.</strong> Se
+          llama semana protegida: se aplica sola —no hay que pedirla— y solo una vez al mes. Tapa el
+          hueco, pero no cuenta como clase, así que una racha de cuatro semanas con una protegida en
+          medio sigue siendo de cuatro.
         </p>
       )}
     </div>
@@ -372,7 +374,7 @@ function MapaDeConstancia() {
 function SemanaEstrella({ semana }: { semana: SemanaRacha }) {
   const titulo = {
     CUMPLIDA: "Semana con clase",
-    PROTEGIDA: "Semana protegida: tu racha siguió",
+    PROTEGIDA: "Semana sin clase, pero tu racha siguió",
     EN_CURSO: "Semana en curso",
     VACIA: "Sin clase",
   }[semana.status];
