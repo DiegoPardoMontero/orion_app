@@ -154,6 +154,110 @@ class DiagnosticoIT extends ApiIntegrationSupport {
 
     @SuppressWarnings("rawtypes")
     @Test
+    @DisplayName("Dentro del enfriamiento responde 409 y dice desde cuándo")
+    void elEnfriamientoDiceCuandoSiSePuede() {
+        correoVerificado(true);
+        post(CONSENTIR, anaSession, Map.of(), Map.class);
+        // Una terminada hoy: el enfriamiento de 90 días corre desde su cierre.
+        jdbc.update("insert into confidence_assessments "
+                + "(user_id, language_code, sequence, status, mode, score, completed_at) "
+                + "values (?, 'EN', 1, 'COMPLETED', 'STANDARD', 70, now())", ana.getId());
+
+        ResponseEntity<Map> r = empezar();
+
+        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        // «No puedes» sin «cuándo sí» deja a la persona sin nada que hacer con la información.
+        assertThat((String) r.getBody().get("error")).contains("Puedes repetir tu diagnóstico a partir del");
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Test
+    @DisplayName("Con el presupuesto agotado el diagnóstico no está disponible")
+    void elTopeDeGastoLoApaga() {
+        correoVerificado(true);
+        post(CONSENTIR, anaSession, Map.of(), Map.class);
+        // El tope a cero es «no hay presupuesto»: gastado (0) ya no es menor que el tope (0).
+        jdbc.update("update platform_settings set value = '0' "
+                + "where key = 'assessment_daily_budget_cop'");
+
+        ResponseEntity<Map> r = empezar();
+
+        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+        assertThat((String) r.getBody().get("error")).contains("no está disponible");
+
+        jdbc.update("update platform_settings set value = '80000' "
+                + "where key = 'assessment_daily_budget_cop'");
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Test
+    @DisplayName("Empezar dos veces devuelve la misma evaluación viva, no abre una segunda")
+    void noSeAbrenDosALaVez() {
+        correoVerificado(true);
+        post(CONSENTIR, anaSession, Map.of(), Map.class);
+
+        Object primera = empezar().getBody().get("assessmentId");
+        Object segunda = empezar().getBody().get("assessmentId");
+
+        // El índice único parcial de la V34 lo impediría igual; esto lo hace sin estrellarse.
+        assertThat(segunda).isEqualTo(primera);
+        assertThat(jdbc.queryForObject(
+                "select count(*) from confidence_assessments where user_id = ?",
+                Integer.class, ana.getId())).isEqualTo(1);
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Test
+    @DisplayName("Con menos de cuatro turnos se cierra sin número, no se inventa uno")
+    void sinTurnosSuficientesNoHayPuntaje() {
+        correoVerificado(true);
+        post(CONSENTIR, anaSession, Map.of(), Map.class);
+        String id = (String) empezar().getBody().get("assessmentId");
+
+        for (int i = 0; i < 3; i++) {
+            post("/api/v1/assessments/" + id + "/turns", anaSession,
+                    Map.of("turnIndex", i, "speaker", "USER",
+                            "transcript", "I work in logistics every day",
+                            "latencyMs", 500, "durationMs", 4000),
+                    Map.class);
+        }
+
+        ResponseEntity<Map> r = post("/api/v1/assessments/" + id + "/complete", anaSession,
+                Map.of(), Map.class);
+
+        assertThat(r.getBody()).containsEntry("status", "ABANDONED");
+        assertThat(r.getBody().get("score")).isNull();
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Test
+    @DisplayName("Dos turnos seguidos en español activan la rama FROM_ZERO y no dan número")
+    void desdeCeroNoRecibeUnNumeroBajo() {
+        correoVerificado(true);
+        post(CONSENTIR, anaSession, Map.of(), Map.class);
+        String id = (String) empezar().getBody().get("assessmentId");
+
+        String[] dichos = {
+            "I work here", "pues como que no entiendo bien",
+            "no se que decir ahora", "okay",
+        };
+        for (int i = 0; i < dichos.length; i++) {
+            post("/api/v1/assessments/" + id + "/turns", anaSession,
+                    Map.of("turnIndex", i, "speaker", "USER", "transcript", dichos[i],
+                            "latencyMs", 900, "durationMs", 3000),
+                    Map.class);
+        }
+
+        ResponseEntity<Map> r = post("/api/v1/assessments/" + id + "/complete", anaSession,
+                Map.of(), Map.class);
+
+        // Mostrarle un número bajo a quien está empezando desde cero es lo que Orión no hace.
+        assertThat(r.getBody()).containsEntry("mode", "FROM_ZERO");
+        assertThat(r.getBody().get("score")).isNull();
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Test
     @DisplayName("Un profesor no puede empezar un diagnóstico: no se autoevalúa aquí")
     void elProfesorNoEmpieza() {
         createUser("juan@orion.test", "Juan Torres", UserRole.PROFESSOR);

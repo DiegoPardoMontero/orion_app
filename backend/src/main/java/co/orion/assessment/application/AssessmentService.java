@@ -31,7 +31,6 @@ import co.orion.assessment.persistence.ConfidenceAssessmentRepository;
 import co.orion.assessment.persistence.VoiceConsentRepository;
 import co.orion.catalog.application.PlatformSettingsService;
 import co.orion.identity.domain.User;
-import co.orion.shared.error.BusinessRuleViolationException;
 import co.orion.shared.error.ConflictException;
 import co.orion.shared.error.ResourceNotFoundException;
 import co.orion.shared.error.UnprocessableException;
@@ -133,7 +132,9 @@ public class AssessmentService {
                     "Necesitamos tu autorización para procesar tu voz antes de empezar.");
         }
         if (!budget.disponible()) {
-            throw new BusinessRuleViolationException(
+            // 422 y no 400: la petición no tiene nada de malo. Somos nosotros los que hoy no
+            // podemos atenderla, y la diferencia importa para quien lee el error y para el log.
+            throw new UnprocessableException(
                     "El diagnóstico no está disponible ahora mismo. Vuelve a intentarlo más tarde.");
         }
 
