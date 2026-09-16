@@ -19,7 +19,6 @@ import {
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { Avatar } from "@/components/Avatar";
-import { BuscadorHero } from "@/components/BuscadorHero";
 import { EnsenaCta } from "@/components/EnsenaCta";
 import { HeroCta } from "@/components/HeroCta";
 import { Constelacion, Wordmark } from "@/components/marca";
@@ -30,7 +29,6 @@ import { Rigel } from "@/components/Rigel";
 import { serverFetch } from "@/lib/api/server";
 import type {
   GoalResponse,
-  LanguageResponse,
   PagedProfessors,
   ProfessorCard,
 } from "@/lib/api/types";
@@ -39,7 +37,7 @@ import { esGratis, tarifaClase } from "@/lib/format";
 
 /**
  * Portada del marketplace. Server component (SEO + rendimiento): estática salvo las islas cliente
- * —`NavPublica`, `BuscadorHero`, `HeroCta`—. Los datos de catálogo y los profesores destacados se
+ * —`NavPublica` y `HeroCta`—. Los datos de catálogo y los profesores destacados se
  * resuelven en el servidor con `serverFetch` (ISR, revalidación cada 5 min). Datos SIEMPRE honestos:
  * nada de ratings ni contadores inventados, y la sección de profesores se OCULTA si hay menos de 4.
  */
@@ -57,11 +55,96 @@ export const metadata: Metadata = {
   },
 };
 
+/**
+ * Los cuatro pasos, cada uno con su color. Antes eran cuatro círculos grises idénticos, y la única
+ * pista de que fueran etapas distintas era el número. El color va del amanecer a la noche —durazno,
+ * coral, lavanda, tinta— para que el recorrido se lea como un avance y no como una lista.
+ */
 const PASOS = [
-  { icono: UserRoundSearch, titulo: "Encuentra", texto: "Filtra por objetivo, nivel u horario. Compara perfiles reales." },
-  { icono: CalendarCheck, titulo: "Reserva", texto: "Elige un cupo disponible y confírmalo en segundos." },
-  { icono: MessageCircle, titulo: "Aprende", texto: "Toma tu clase en vivo por videollamada. Todo se coordina dentro de Orión." },
-  { icono: TrendingUp, titulo: "Avanza", texto: "Vuelve con el mismo profesor y construye una rutina." },
+  {
+    icono: UserRoundSearch,
+    titulo: "Encuentra",
+    texto: "Filtra por objetivo, nivel u horario. Compara perfiles reales.",
+    fondo: "bg-accent-peach-soft",
+    tinta: "text-[#8a5a33]",
+  },
+  {
+    icono: CalendarCheck,
+    titulo: "Reserva",
+    texto: "Elige un cupo disponible y confírmalo en segundos.",
+    fondo: "bg-primary-soft",
+    tinta: "text-primary-strong",
+  },
+  {
+    icono: MessageCircle,
+    titulo: "Aprende",
+    texto: "Toma tu clase en vivo por videollamada. Todo se coordina dentro de Orión.",
+    fondo: "bg-accent-lavender-soft",
+    tinta: "text-info",
+  },
+  {
+    icono: TrendingUp,
+    titulo: "Avanza",
+    texto: "Vuelve con el mismo profesor y construye una rutina.",
+    fondo: "bg-success-bg",
+    tinta: "text-success",
+  },
+];
+
+/**
+ * El Método ORION®: el marco de acompañamiento, no una metodología impuesta al profesor.
+ *
+ * <p>Cada profesor mantiene su libertad pedagógica. Lo que el método estructura es la capa de
+ * seguimiento y feedback: qué se observa, cómo se conecta con lo que el estudiante ya sabe, cuándo
+ * se corrige y con qué se cierra la clase. Cada letra se apoya en teoría educativa establecida, y
+ * por eso se cita — sin la cita esto sería un acrónimo bonito.
+ */
+const METODO = [
+  {
+    letra: "O",
+    palabra: "Observe",
+    promesa: "Vemos lo que todavía no oyes.",
+    texto:
+      "Identificamos lo que no estás percibiendo del idioma y te lo ponemos delante, con input que puedas entender.",
+    teoria: "Hipótesis del noticing (Schmidt) · Input comprensible (Krashen)",
+    color: "#FFC189",
+  },
+  {
+    letra: "R",
+    palabra: "Relate",
+    promesa: "Lo nuevo se engancha a lo tuyo.",
+    texto:
+      "Conectamos cada cosa nueva con lo que ya sabes y con tu contexto real: tu trabajo, tu viaje, tu vida.",
+    teoria: "Aprendizaje significativo (Ausubel)",
+    color: "#E8764F",
+  },
+  {
+    letra: "I",
+    palabra: "Interact",
+    promesa: "Se aprende hablando, no escuchando.",
+    texto:
+      "El idioma se consolida produciéndolo. Por eso la clase es conversación y no una exposición que atiendes.",
+    teoria: "Hipótesis de la interacción (Long) · Hipótesis del output (Swain)",
+    color: "#E8503A",
+  },
+  {
+    letra: "O",
+    palabra: "Optimize",
+    promesa: "Dos o tres correcciones, no cuarenta.",
+    texto:
+      "Se corrige lo que más te cambia el resultado, y se vuelve a ello con el tiempo en vez de señalarlo todo una vez.",
+    teoria: "Feedback efectivo (Hattie & Timperley) · Repetición espaciada",
+    color: "#B9A7E6",
+  },
+  {
+    letra: "N",
+    palabra: "Navigate",
+    promesa: "Sales sabiendo cuál es el siguiente paso.",
+    texto:
+      "Cada clase cierra con algo concreto y medible para la siguiente, dentro de lo que ya casi puedes hacer solo.",
+    teoria: "Feed forward y autorregulación (Zimmerman) · Zona de desarrollo próximo (Vygotsky)",
+    color: "#5E4A8A",
+  },
 ];
 
 /**
@@ -106,16 +189,14 @@ const ICONO_OBJETIVO: Record<string, typeof Target> = {
 };
 
 export default async function PortadaPage() {
-  const [paged, languages, goals] = await Promise.all([
+  const [paged, goals] = await Promise.all([
     serverFetch<PagedProfessors>("/api/v1/professors?size=4"),
-    serverFetch<LanguageResponse[]>("/api/v1/catalog/languages"),
     serverFetch<GoalResponse[]>("/api/v1/catalog/goals"),
   ]);
 
   const profesores = paged?.content ?? [];
   // Regla de honestidad del brief: mostrar la sección SOLO si hay al menos 4 profesores publicados.
   const mostrarProfesores = profesores.length >= 4;
-  const idiomas = languages ?? [];
   const objetivos = goals ?? [];
   // Seis en portada: la rejilla es de tres columnas y el séptimo dejaba una fila con una sola
   // tarjeta suelta. Los demás siguen estando en los filtros del directorio.
@@ -161,14 +242,15 @@ export default async function PortadaPage() {
           <div className="grid gap-10 lg:grid-cols-[1.35fr_1fr] lg:items-center">
             <div>
               <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-on-primary/80">
-                Find your right teacher, learn your way
+                Gratis · Dos minutos · Sin examen
               </p>
-              <h1 className="mt-3 max-w-[20ch] font-display text-[34px] font-bold leading-[1.08] text-on-primary lg:text-[52px]">
-                Encuentra al profesor indicado. Aprende a tu manera.
+              <h1 className="mt-3 max-w-[18ch] font-display text-[34px] font-bold leading-[1.08] text-on-primary lg:text-[52px]">
+                Prueba tu inglés en 2 minutos.
               </h1>
               <p className="mt-4 max-w-[52ch] text-[15px] leading-relaxed text-on-primary/85 lg:text-[17px]">
-                Profesores reales de inglés, francés y español para clases en vivo. Compara perfiles,
-                elige tu horario y reserva cuando quieras —a tu ritmo y sin miedo a equivocarte.
+                Una conversación corta, sin preguntas de examen. Al colgar recibes tu Confidence
+                Score, un diagnóstico escrito de cómo hablas y tres profesores elegidos por lo que
+                contaste. Gratis y sin compromiso.
               </p>
             </div>
             <div className="flex justify-center lg:justify-end">
@@ -176,12 +258,31 @@ export default async function PortadaPage() {
             </div>
           </div>
 
-          {/* Buscador de 3 campos */}
-          <div className="mt-10">
-            <BuscadorHero languages={idiomas} goals={objetivos} />
-            <div className="mt-5">
-              <HeroCta />
-            </div>
+          {/*
+            El buscador de IDIOMA / OBJETIVO / HORARIO se retiró de aquí. Pedía tres decisiones a
+            alguien que todavía no sabe qué necesita, y una de ellas —el idioma— ya no es una
+            decisión. El primer gesto pasa a ser la conversación de dos minutos, que es lo único que
+            Orión tiene y nadie más: se termina sabiendo tu nivel y con tres profesores elegidos por
+            lo que dijiste. Buscar a mano sigue estando, un clic más abajo, para quien ya lo tiene
+            claro.
+          */}
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Link
+              href="/diagnostico"
+              className="inline-flex h-[52px] items-center justify-center gap-2 rounded-pill bg-surface px-7 text-[15px] font-bold text-primary-strong shadow-lg transition-transform hover:-translate-y-0.5 focus-visible:shadow-focus"
+            >
+              <Sparkles size={18} strokeWidth={2.2} />
+              Empezar mi diagnóstico
+            </Link>
+            <Link
+              href="/profesores"
+              className="inline-flex h-[52px] items-center justify-center rounded-pill border-[1.5px] border-on-primary/45 px-7 text-[15px] font-bold text-on-primary transition-colors hover:bg-on-primary/10 focus-visible:shadow-focus"
+            >
+              Ver profesores
+            </Link>
+          </div>
+          <div className="mt-5">
+            <HeroCta />
           </div>
         </div>
       </header>
@@ -198,7 +299,7 @@ export default async function PortadaPage() {
                 </p>
                 <h2 className="mt-2 font-display text-h2 font-bold">Conoce a los profesores.</h2>
                 <p className="mt-2 max-w-[48ch] text-[15px] text-text-secondary">
-                  Perfiles reales con su tarifa, sus idiomas y sus horarios a la vista.
+                  Perfiles reales con su tarifa, su experiencia y sus horarios a la vista.
                 </p>
               </div>
               <Link
@@ -272,7 +373,9 @@ export default async function PortadaPage() {
                   </span>
                 )}
 
-                <span className="paso-icono relative z-10 grid h-14 w-14 place-items-center rounded-full bg-surface-sunken text-text-muted shadow-sm">
+                <span
+                  className={`paso-icono relative z-10 grid h-14 w-14 place-items-center rounded-full shadow-sm ${paso.fondo} ${paso.tinta}`}
+                >
                   <Icono size={24} strokeWidth={1.9} />
                 </span>
 
@@ -288,44 +391,108 @@ export default async function PortadaPage() {
         </ol>
       </section>
 
-      {/* — Nosotros — */}
-      <section id="nosotros" className="scroll-mt-20 bg-surface-sunken/60 py-12 lg:py-16">
-        <div className="mx-auto max-w-6xl px-5 lg:px-8">
-          <div className="text-center">
-            <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-primary-strong">
-              Nosotros
+      {/*
+        El Método ORION®: la sección con más peso de la portada, y a propósito. Es lo que distingue
+        a Orión de un catálogo de profesores — no una metodología impuesta al profesor, que mantiene
+        su libertad pedagógica, sino la capa de seguimiento que estructura el progreso del
+        estudiante sobre teoría educativa establecida.
+
+        Cada letra trae su cita. Sin ella esto sería un acrónimo bonito, y la diferencia entre un
+        método y un eslogan es exactamente esa.
+
+        La animación es CSS con retardos escalonados (`aparece`), sin estado ni temporizadores, y
+        `prefers-reduced-motion` la apaga con el reset global.
+      */}
+      <section
+        id="metodo"
+        className="relative scroll-mt-20 overflow-hidden bg-[linear-gradient(160deg,#2E1E4E_0%,#4A2E63_45%,#7A4A8C_100%)] py-14 text-text-on-night lg:py-20"
+      >
+        <Constelacion className="pointer-events-none absolute -left-16 bottom-0 h-[260px] w-[260px] opacity-25 lg:h-[420px] lg:w-[420px]" />
+
+        <div className="relative mx-auto max-w-6xl px-5 lg:px-8">
+          <div className="max-w-[58ch]">
+            <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-accent-peach">
+              El acompañamiento
             </p>
-            <h2 className="mt-2 font-display text-h2 font-bold">
-              Una academia, no un catálogo.
+            <h2 className="mt-3 font-display text-[36px] font-bold leading-[1.05] lg:text-[54px]">
+              Método ORION<span className="align-super text-[0.45em]">®</span>
             </h2>
-            <p className="mx-auto mt-2 max-w-[58ch] text-[15px] leading-relaxed text-text-secondary">
-              Orión existe para que aprender un idioma deje de depender de la suerte con la que
-              elegiste profesor. Nos ocupamos de que quien está al otro lado sepa enseñar, de que
-              reservar sea cuestión de minutos y de que todo lo demás no te robe tiempo.
+            <p className="mt-4 text-[16px] leading-relaxed text-text-on-night/85 lg:text-[18px]">
+              Tu profesor enseña como sabe hacerlo — esa libertad no se toca. Lo que Orión estructura
+              es lo que pasa alrededor: qué se observa de ti, cómo se conecta con lo que ya sabes,
+              qué se corrige y con qué sales de cada clase. Cinco pasos, cada uno apoyado en teoría
+              que existe desde antes que nosotros.
             </p>
           </div>
 
-          <ul className="mt-8 grid gap-4 sm:grid-cols-2">
-            {NOSOTROS.map((punto, i) => {
-              const Icono = punto.icono;
-              return (
-                <li
-                  key={i}
-                  className="aparece flex gap-4 rounded-card bg-surface-raised p-6 shadow-sm"
-                  style={{ "--i": i } as CSSProperties}
+          <ol className="mt-11 grid gap-px overflow-hidden rounded-card bg-text-on-night/15">
+            {METODO.map((paso, i) => (
+              <li
+                key={paso.palabra}
+                className="aparece grid gap-3 bg-[#2E1E4E] p-6 transition-colors hover:bg-[#38254f] sm:grid-cols-[auto_1fr] sm:items-start sm:gap-6 lg:grid-cols-[auto_minmax(0,18ch)_1fr] lg:p-7"
+                style={{ "--i": i } as CSSProperties}
+              >
+                <span
+                  aria-hidden="true"
+                  className="font-display text-[52px] font-bold leading-none lg:text-[64px]"
+                  style={{ color: paso.color }}
                 >
-                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-base bg-primary-soft text-primary-strong">
-                    <Icono size={20} strokeWidth={1.9} />
-                  </span>
-                  <div>
-                    <p className="font-display text-[17px] font-bold">{punto.titulo}</p>
-                    <p className="mt-1.5 text-[14px] leading-relaxed text-text-secondary">
-                      {punto.texto}
-                    </p>
-                  </div>
-                </li>
-              );
-            })}
+                  {paso.letra}
+                </span>
+
+                <div>
+                  <p className="font-display text-[20px] font-bold lg:text-[22px]">{paso.palabra}</p>
+                  <p className="mt-1 text-[14.5px] font-semibold" style={{ color: paso.color }}>
+                    {paso.promesa}
+                  </p>
+                </div>
+
+                <div className="lg:pt-1">
+                  <p className="text-[14.5px] leading-relaxed text-text-on-night/85">{paso.texto}</p>
+                  <p className="mt-2 text-[11.5px] uppercase tracking-[0.06em] text-text-on-night/45">
+                    {paso.teoria}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/*
+        Nosotros, minimalista. Antes era un titular, un párrafo y cuatro tarjetas con icono: la
+        misma forma que el resto de la página, así que no se leía como una declaración sino como
+        otro bloque de features. Ahora manda una palabra —la promesa— y todo lo demás la explica.
+      */}
+      <section id="nosotros" className="scroll-mt-20 bg-night py-14 text-text-on-night lg:py-20">
+        <div className="mx-auto max-w-6xl px-5 lg:px-8">
+          <div className="grid gap-8 lg:grid-cols-[1fr_1.25fr] lg:items-end">
+            <div>
+              <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-accent-peach">
+                Nosotros
+              </p>
+              <p className="mt-3 font-display text-[64px] font-bold leading-[0.95] lg:text-[104px]">
+                Nadie
+                <span className="block text-accent-peach">improvisa.</span>
+              </p>
+            </div>
+            <p className="max-w-[52ch] text-[16px] leading-relaxed text-text-on-night/85 lg:text-[18px]">
+              Aprender inglés no puede depender de la suerte con la que elegiste profesor. En Orión
+              cada profesor pasa por verificación de documentos, experiencia y entrevista antes de
+              publicarse, y lo que ocurre después —reservar, pagar, hablar, dar la clase— vive en un
+              solo sitio. Lo demás es tu tiempo, y no lo gastamos.
+            </p>
+          </div>
+
+          <ul className="mt-12 grid gap-x-8 gap-y-8 border-t border-text-on-night/15 pt-8 sm:grid-cols-2 lg:grid-cols-4">
+            {NOSOTROS.map((punto, i) => (
+              <li key={i} className="aparece" style={{ "--i": i } as CSSProperties}>
+                <p className="font-display text-[17px] font-bold text-accent-peach">{punto.titulo}</p>
+                <p className="mt-1.5 text-[14px] leading-relaxed text-text-on-night/75">
+                  {punto.texto}
+                </p>
+              </li>
+            ))}
           </ul>
         </div>
       </section>

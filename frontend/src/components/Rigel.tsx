@@ -188,7 +188,24 @@ function Boca({ pose }: { pose: RigelPose }) {
   );
 }
 
-/* ---- Guante reutilizable: círculo principal + pulgar + costuras + puño ---- */
+/* ---- La mano ----
+ *
+ * Tenía tres problemas, y los tres los señaló Pardo mirando el sitio entero.
+ *
+ * 1. **El dedo de más.** El pulgar era un círculo suelto fuera de la palma, y junto a las tres
+ *    líneas verticales del dorso el conjunto se leía como cuatro dedos separados. Según el ángulo
+ *    del brazo, uno de ellos quedaba más alto que los otros — y eso, en una mano de dibujo, es un
+ *    gesto que nadie quiere hacer. Ahora el pulgar se solapa con la palma: pertenece a la mano en
+ *    vez de flotar al lado.
+ * 2. **El arco de abajo.** Era la costura del puño, pero cruzaba la palma por fuera del círculo y
+ *    parecía una línea perdida. Se fue.
+ * 3. **Las costuras.** De tres líneas a dos, más cortas y dentro del dorso: se leen como costura de
+ *    guante, que es lo que son, y no como dedos.
+ *
+ * `variante="negra"` es la mano de dibujo animado que pidió aparte: negra entera, dedos delgados y
+ * sin costuras. Se usa donde la mano es la protagonista del gesto —señalar, saludar de cerca— y el
+ * guante con costuras distraía.
+ */
 
 function Guante({
   cx,
@@ -197,6 +214,7 @@ function Guante({
   tx,
   ty,
   tr = 5,
+  variante = "guante",
   children,
 }: {
   cx: number;
@@ -205,18 +223,56 @@ function Guante({
   tx: number;
   ty: number;
   tr?: number;
+  variante?: "guante" | "negra" | "puño";
   children?: ReactNode;
 }) {
+  // El pulgar se acerca al centro hasta solaparse con la palma: es lo que lo convierte en pulgar y
+  // no en un dedo suelto. Un 55 % del camino deja la silueta reconocible sin fundirse del todo.
+  const px = cx + (tx - cx) * 0.55;
+  const py = cy + (ty - cy) * 0.55;
+
+  // Puño cerrado y negro: la base de los gestos de un solo dedo. Sin costuras y sin dedos sueltos,
+  // porque el dedo que importa lo pone la pose encima. Con el guante de costuras, la palma se leía
+  // como cuatro dedos y el extendido quedaba siendo uno más — que es como el pulgar arriba del 404
+  // acababa pareciendo otra cosa.
+  if (variante === "puño") {
+    return (
+      <>
+        {children}
+        <circle cx={px} cy={py} r={tr * 1.1} fill="var(--rg-arm)" />
+        <circle cx={cx} cy={cy} r={r * 0.9} fill="var(--rg-arm)" />
+      </>
+    );
+  }
+
+  if (variante === "negra") {
+    return (
+      <>
+        {children}
+        <g fill="var(--rg-arm)" stroke="var(--rg-arm)" strokeLinejoin="round">
+          <circle cx={px} cy={py} r={tr * 1.15} />
+          <circle cx={cx} cy={cy} r={r * 0.92} />
+          {/* Los dedos: trazos redondeados y finos que nacen dentro de la palma, así que la
+              silueta sale de una pieza. Delgados a propósito — es lo que pidió el encargo. */}
+          <g strokeWidth={r * 0.42} strokeLinecap="round" fill="none">
+            <line x1={cx - r * 0.45} y1={cy - r * 0.2} x2={cx - r * 0.5} y2={cy - r * 1.25} />
+            <line x1={cx} y1={cy - r * 0.25} x2={cx} y2={cy - r * 1.4} />
+            <line x1={cx + r * 0.45} y1={cy - r * 0.2} x2={cx + r * 0.5} y2={cy - r * 1.25} />
+          </g>
+        </g>
+      </>
+    );
+  }
+
   return (
     <>
       {children}
-      <circle cx={tx} cy={ty} r={tr} fill="var(--rg-glove)" stroke="var(--rg-arm)" strokeWidth={3} />
+      <circle cx={px} cy={py} r={tr} fill="var(--rg-glove)" stroke="var(--rg-arm)" strokeWidth={3} />
       <circle cx={cx} cy={cy} r={r} fill="var(--rg-glove)" stroke="var(--rg-arm)" strokeWidth={3} />
-      <g stroke="var(--rg-arm)" strokeWidth={2} strokeLinecap="round" fill="none">
-        <line x1={cx - 4} y1={cy - 6} x2={cx - 4} y2={cy + 2} />
-        <line x1={cx} y1={cy - 7} x2={cx} y2={cy + 2} />
-        <line x1={cx + 4} y1={cy - 6} x2={cx + 4} y2={cy + 1} />
-        <path d={`M${cx - 8},${cy + 7} Q${cx},${cy + 12} ${cx + 8},${cy + 6}`} strokeWidth={2.4} />
+      {/* Dos costuras cortas y dentro del dorso. Tres largas se leían como dedos. */}
+      <g stroke="var(--rg-arm)" strokeWidth={2} strokeLinecap="round" fill="none" opacity={0.75}>
+        <line x1={cx - 3} y1={cy - 4} x2={cx - 3} y2={cy + 1} />
+        <line x1={cx + 3} y1={cy - 4} x2={cx + 3} y2={cy + 1} />
       </g>
     </>
   );
@@ -251,10 +307,9 @@ function Brazos({ pose }: { pose: RigelPose }) {
       <>
         <BrazoIzquierdoReposo />
         <path d="M148,96 L175,93" stroke="var(--rg-arm)" strokeWidth={7} strokeLinecap="round" fill="none" />
-        {/* dedo índice extendido */}
-        <line x1={185} y1={93} x2={197} y2={93} stroke="var(--rg-arm)" strokeWidth={12} strokeLinecap="round" />
-        <line x1={185} y1={93} x2={196} y2={93} stroke="var(--rg-glove)" strokeWidth={8} strokeLinecap="round" />
-        <Guante cx={180} cy={93} r={12} tx={178} ty={102} tr={5} />
+        {/* Índice extendido sobre puño cerrado: señalar es un dedo, no cuatro. */}
+        <Guante cx={180} cy={93} r={12} tx={178} ty={102} tr={5} variante="puño" />
+        <line x1={186} y1={93} x2={199} y2={93} stroke="var(--rg-arm)" strokeWidth={11} strokeLinecap="round" />
       </>
     );
   }
@@ -275,10 +330,13 @@ function Brazos({ pose }: { pose: RigelPose }) {
       <>
         <BrazoIzquierdoReposo />
         <path d="M140,100 L154,84" stroke="var(--rg-arm)" strokeWidth={7} strokeLinecap="round" fill="none" />
-        {/* pulgar extendido hacia arriba */}
-        <line x1={158} y1={74} x2={158} y2={60} stroke="var(--rg-arm)" strokeWidth={12} strokeLinecap="round" />
-        <line x1={158} y1={73} x2={158} y2={61} stroke="var(--rg-glove)" strokeWidth={8} strokeLinecap="round" />
-        <Guante cx={158} cy={82} r={12} tx={150} ty={86} tr={5} />
+        {/*
+          El pulgar sale del COSTADO del puño y va inclinado, que es por donde sale un pulgar de
+          verdad. Vertical y centrado sobre la palma —como estaba— es la misma silueta que un dedo
+          corazón, y por eso este gesto se leía mal en el 404.
+        */}
+        <Guante cx={158} cy={82} r={12} tx={150} ty={86} tr={5} variante="puño" />
+        <line x1={150} y1={74} x2={143} y2={60} stroke="var(--rg-arm)" strokeWidth={11} strokeLinecap="round" />
       </>
     );
   }
