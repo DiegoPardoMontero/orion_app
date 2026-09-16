@@ -1,9 +1,10 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Bell, CheckCheck } from "lucide-react";
+import { Bell, CheckCheck, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { apiFetch } from "@/lib/api/fetch";
 import type { NotificationResponse } from "@/lib/api/types";
 import { fechaCorta, horaBogota } from "@/lib/format";
@@ -27,7 +28,14 @@ function cuando(iso: string | undefined): string {
 /**
  * La campana del shell: un botón con badge del número de notificaciones sin leer (poll cada 30 s) y
  * un panel desplegable. Al tocar una notificación se marca leída y se navega a su `linkPath`; también
- * hay "marcar todas como leídas". Un clic fuera cierra el panel.
+ * hay "marcar todas como leídas", borrar una, y vaciar las leídas. Un clic fuera cierra el panel.
+ *
+ * <p><strong>El panel se dibuja en un portal sobre {@code document.body}.</strong> Antes era un
+ * {@code absolute} dentro del botón, y en varias pantallas se abría por detrás del contenido: un
+ * {@code z-50} solo compite dentro de su propio contexto de apilamiento, así que bastaba con que un
+ * ancestro tuviera z-index, transform u opacidad para dejarlo atrapado por muy alto que fuera el
+ * número. Sacarlo del árbol lo arregla en todas las pantallas a la vez, incluidas las que todavía
+ * no existen — que es lo que pedía el encargo.
  *
  * @param anclaje de qué lado del botón crece el panel. En la cabecera móvil crece hacia la
  * izquierda («derecha»: el borde derecho coincide con el del botón). En el lateral de escritorio
@@ -43,6 +51,35 @@ export function CampanaNotificaciones({
   const router = useRouter();
   const queryClient = useQueryClient();
   const [abierto, setAbierto] = useState(false);
+  const boton = useRef<HTMLButtonElement>(null);
+  const [caja, setCaja] = useState<{ top: number; left: number } | null>(null);
+
+  // El portal vive fuera del árbol, así que la posición hay que calcularla: se mide el botón y se
+  // coloca el panel debajo, sin salirse por ningún borde.
+  const situar = useCallback(() => {
+    const b = boton.current?.getBoundingClientRect();
+    if (!b) return;
+    const ancho = Math.min(320, window.innerWidth - 16);
+    const left = anclaje === "derecha" ? b.right - ancho : b.left;
+    setCaja({
+      top: b.bottom + 8,
+      left: Math.max(8, Math.min(left, window.innerWidth - ancho - 8)),
+    });
+  }, [anclaje]);
+
+  useLayoutEffect(() => {
+    if (abierto) situar();
+  }, [abierto, situar]);
+
+  useEffect(() => {
+    if (!abierto) return;
+    window.addEventListener("resize", situar);
+    window.addEventListener("scroll", situar, true);
+    return () => {
+      window.removeEventListener("resize", situar);
+      window.removeEventListener("scroll", situar, true);
+    };
+  }, [abierto, situar]);
 
   const noLeidas = useNotificacionesNoLeidas(true);
   useCerrarConEscape(abierto, () => setAbierto(false));
@@ -64,6 +101,17 @@ export function CampanaNotificaciones({
     onSuccess: refrescar,
   });
 
+  const borrarUna = useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<void>(`/api/v1/me/notifications/${id}`, { method: "DELETE" }),
+    onSuccess: refrescar,
+  });
+
+  const vaciarLeidas = useMutation({
+    mutationFn: () => apiFetch<void>("/api/v1/me/notifications/read", { method: "DELETE" }),
+    onSuccess: refrescar,
+  });
+
   function abrir(notif: NotificationResponse) {
     if (!notif.read && notif.id) {
       marcarUna.mutate(notif.id);
@@ -75,6 +123,7 @@ export function CampanaNotificaciones({
   return (
     <div className="relative">
       <button
+        ref={boton}
         type="button"
         aria-label={
           noLeidas > 0 ? `Notificaciones, ${noLeidas} sin leer` : "Notificaciones"
@@ -90,33 +139,48 @@ export function CampanaNotificaciones({
         )}
       </button>
 
-      {abierto && (
+      {abierto && caja && createPortal(
         <>
           <button
             type="button"
             aria-hidden="true"
             tabIndex={-1}
             onClick={() => setAbierto(false)}
-            className="fixed inset-0 z-40 cursor-default"
+            className="fixed inset-0 z-[90] cursor-default"
           />
           <div
-            className={`absolute top-full z-50 mt-2 w-[320px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-card border border-border bg-surface-raised shadow-lg ${
-              anclaje === "derecha" ? "right-0" : "left-0"
-            }`}
+            role="dialog"
+            aria-label="Notificaciones"
+            style={{ top: caja.top, left: caja.left }}
+            className="fixed z-[100] w-[320px] max-w-[calc(100vw-1rem)] overflow-hidden rounded-card border border-border bg-surface-raised shadow-lg"
           >
             <div className="flex items-center justify-between border-b border-surface-sunken px-4 py-3">
               <p className="text-[14px] font-bold text-text">Notificaciones</p>
-              {noLeidas > 0 && (
-                <button
-                  type="button"
-                  onClick={() => marcarTodas.mutate()}
-                  disabled={marcarTodas.isPending}
-                  className="flex items-center gap-1 text-[12px] font-semibold text-primary-strong transition-colors hover:text-primary disabled:opacity-50"
-                >
-                  <CheckCheck size={14} strokeWidth={2} />
-                  Marcar todas
-                </button>
-              )}
+              <span className="flex items-center gap-3">
+                {noLeidas > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => marcarTodas.mutate()}
+                    disabled={marcarTodas.isPending}
+                    className="flex items-center gap-1 text-[12px] font-semibold text-primary-strong transition-colors hover:text-primary disabled:opacity-50"
+                  >
+                    <CheckCheck size={14} strokeWidth={2} />
+                    Marcar todas
+                  </button>
+                )}
+                {/* Solo las leídas: vaciar de un golpe algo que no se ha visto es perderlo. */}
+                {data && data.some((n) => n.read) && (
+                  <button
+                    type="button"
+                    onClick={() => vaciarLeidas.mutate()}
+                    disabled={vaciarLeidas.isPending}
+                    className="flex items-center gap-1 text-[12px] font-semibold text-text-muted transition-colors hover:text-text disabled:opacity-50"
+                  >
+                    <Trash2 size={14} strokeWidth={2} />
+                    Vaciar leídas
+                  </button>
+                )}
+              </span>
             </div>
 
             <div className="max-h-[60vh] overflow-y-auto">
@@ -143,11 +207,11 @@ export function CampanaNotificaciones({
 
               <ul>
                 {data?.map((notif) => (
-                  <li key={notif.id}>
+                  <li key={notif.id} className="group relative">
                     <button
                       type="button"
                       onClick={() => abrir(notif)}
-                      className={`flex w-full items-start gap-2.5 border-b border-surface-sunken px-4 py-3 text-left transition-colors hover:bg-surface-sunken ${
+                      className={`flex w-full items-start gap-2.5 border-b border-surface-sunken py-3 pl-4 pr-10 text-left transition-colors hover:bg-surface-sunken ${
                         notif.read ? "" : "bg-primary-soft/40"
                       }`}
                     >
@@ -173,12 +237,22 @@ export function CampanaNotificaciones({
                         )}
                       </span>
                     </button>
+                    <button
+                      type="button"
+                      aria-label={`Borrar la notificación «${notif.title}»`}
+                      onClick={() => notif.id && borrarUna.mutate(notif.id)}
+                      disabled={borrarUna.isPending}
+                      className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-text-muted opacity-0 transition-opacity hover:bg-surface-sunken hover:text-text focus-visible:opacity-100 focus-visible:shadow-focus group-hover:opacity-100 disabled:opacity-40"
+                    >
+                      <X size={15} strokeWidth={2.2} />
+                    </button>
                   </li>
                 ))}
               </ul>
             </div>
           </div>
-        </>
+        </>,
+        document.body,
       )}
     </div>
   );

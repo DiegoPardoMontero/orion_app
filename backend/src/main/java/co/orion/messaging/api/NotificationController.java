@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -48,5 +49,18 @@ public class NotificationController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void markAllRead(@AuthenticationPrincipal OrionUserDetails principal) {
         notifications.markAllRead(principal.user().getId());
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@AuthenticationPrincipal OrionUserDetails principal, @PathVariable UUID id) {
+        notifications.delete(principal.user().getId(), id);
+    }
+
+    /** Vacía las leídas. Las que aún no se han visto no se tocan. */
+    @DeleteMapping("/read")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteRead(@AuthenticationPrincipal OrionUserDetails principal) {
+        notifications.deleteRead(principal.user().getId());
     }
 }
