@@ -20,6 +20,7 @@ import type {
 import { esGratis, tarifaClase } from "@/lib/format";
 import { etiquetaNivel, NIVELES, t } from "@/lib/i18n";
 import { useMediaQuery } from "@/lib/useMediaQuery";
+import { Rigel } from "@/components/Rigel";
 
 type Orden = "RELEVANCE" | "PRICE_ASC" | "PRICE_DESC";
 
@@ -198,8 +199,31 @@ export default function ProfesoresPage() {
 
   return (
     <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-6xl lg:px-12 lg:py-8">
-      <h1 className="font-display text-h1 font-bold">Profesores</h1>
-      <p className="mt-1 text-[14px] text-text-secondary">
+      {/*
+        Un banner ancho y bajo: ocupa todo el horizontal para que se lea de un vistazo, y poco
+        vertical para no empujar a los profesores fuera de la pantalla, que es a lo que se viene.
+        Rigel a la derecha, recortado por el borde inferior, sin robar altura.
+      */}
+      <section className="gradient-dawn relative overflow-hidden rounded-card px-5 py-5 sm:px-7">
+        <div className="relative flex items-center gap-4">
+          <div className="min-w-0 flex-1">
+            <h1 className="font-display text-[24px] font-bold leading-tight text-on-primary sm:text-[28px]">
+              Tu próxima clase empieza hoy.
+            </h1>
+            <p className="mt-1.5 max-w-[46ch] text-[13.5px] leading-relaxed text-on-primary/85">
+              El profesor correcto no es el más caro ni el más titulado: es con el que te atreves a
+              hablar. Aquí están todos, con su agenda real.
+            </p>
+          </div>
+          <Rigel
+            pose="animo"
+            decorativo
+            className="-mb-5 hidden h-[104px] w-auto shrink-0 self-end drop-shadow-xl sm:block"
+          />
+        </div>
+      </section>
+
+      <p className="mt-5 text-[14px] text-text-secondary">
         Elige con quién quieres practicar y reserva tu clase.
       </p>
 

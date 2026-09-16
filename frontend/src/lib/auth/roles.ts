@@ -21,20 +21,23 @@ export const HOME_BY_ROLE: Record<Role, string> = {
 
 export const NAV_BY_ROLE: Record<Role, NavGroup[]> = {
   STUDENT: [
-    { items: [{ href: "/profesores", label: "Buscar profesor" }] },
+    // «Buscar profesor» entra aquí y el grupo pasa a llamarse «Clases»: buscar al siguiente profesor
+    // es parte de tus clases, no una sección aparte, y suelto arriba competía con la agenda sin
+    // ganarle. Tres entradas y no más — apretar aquí lo que sea es lo que había que evitar.
     {
-      titulo: "Mis clases",
+      titulo: "Clases",
       items: [
-        { href: "/mis-clases", label: "Agenda" },
+        { href: "/profesores", label: "Buscar profesor" },
+        { href: "/mis-clases", label: "Mi agenda" },
         { href: "/mensajes", label: "Mensajes" },
       ],
     },
     {
       titulo: "Mi cuenta",
       items: [
-        { href: "/saldo", label: "Pagos y saldo" },
-        { href: "/logros", label: "Mi cielo" },
+        // «Mi cielo» ya no está suelto: vive dentro del perfil, que es de quien es.
         { href: "/cuenta", label: "Perfil" },
+        { href: "/saldo", label: "Pagos y saldo" },
         { href: "/ayuda", label: "Ayuda" },
       ],
     },

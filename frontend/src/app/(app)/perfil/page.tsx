@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BadgeCheck, Check, Eye, Plus, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -152,6 +154,12 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
 
   const error = guardar.error instanceof ApiError ? guardar.error.message : null;
 
+  const params = useSearchParams();
+  const pedida = params.get("seccion");
+  const seccion: SeccionProfesor = SECCIONES_PROFESOR.some((x) => x.clave === pedida)
+    ? (pedida as SeccionProfesor)
+    : "perfil";
+
   const disponibles = useMemo(
     () => (languages.data ?? []).filter((l) => !langs.some((x) => x.code === l.code)),
     [languages.data, langs],
@@ -188,6 +196,23 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
       <h1 className="font-display text-h1 font-bold">Mi perfil</h1>
       <p className="mt-1 text-[12.5px] text-text-secondary">Esto es lo que ven los estudiantes.</p>
 
+      {/*
+        Tres cosas distintas vivían apiladas: tu perfil público, las reglas de cancelación y las
+        preguntas frecuentes. Las dos últimas son documentación —se consultan cuando hace falta— y
+        estaban obligando a bajar por ellas cada vez que se venía a cambiar la tarifa. Ahora son
+        secciones, y la dirección las recuerda para poder enlazarlas.
+      */}
+      <SubNavProfesor actual={seccion} />
+
+      {seccion === "cancelar" && (
+        <div className="mt-2">
+          <PoliticaCancelacion rol="profesor" />
+        </div>
+      )}
+
+      {seccion === "preguntas" && <PreguntasFrecuentes rol="profesor" />}
+
+      <div className={seccion === "perfil" ? "" : "hidden"}>
       <div className="mt-5">
         <CambiarFoto nombre={inicial.fullName ?? ""} fotoUrl={inicial.photoUrl} />
       </div>
@@ -466,9 +491,7 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
         onGuardar={() => guardar.mutate()}
       />
 
-      <PoliticaCancelacion rol="profesor" />
-
-      <PreguntasFrecuentes rol="profesor" />
+      </div>
     </main>
   );
 }
@@ -478,6 +501,40 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
  * profesor vea qué recibe y qué retiene Orión antes de guardar. El "Guardar tarifa" persiste solo
  * la tarifa (PUT /me/profile/rate), independiente del resto del formulario.
  */
+type SeccionProfesor = "perfil" | "cancelar" | "preguntas";
+
+const SECCIONES_PROFESOR: { clave: SeccionProfesor; label: string }[] = [
+  { clave: "perfil", label: "Mi perfil" },
+  { clave: "cancelar", label: "Si hay que cancelar" },
+  { clave: "preguntas", label: "Preguntas" },
+];
+
+/** La sección va en la URL: así un enlace puede apuntar a una concreta y atrás funciona. */
+function SubNavProfesor({ actual }: { actual: SeccionProfesor }) {
+  return (
+    <nav className="mt-5 -mx-5 overflow-x-auto px-5 lg:mx-0 lg:px-0">
+      <ul className="flex w-max gap-1.5 lg:w-auto lg:flex-wrap">
+        {SECCIONES_PROFESOR.map(({ clave, label }) => (
+          <li key={clave}>
+            <Link
+              href={`/perfil?seccion=${clave}`}
+              scroll={false}
+              aria-current={actual === clave ? "page" : undefined}
+              className={`inline-flex h-9 items-center rounded-pill px-3.5 text-[13px] font-semibold transition-colors focus-visible:shadow-focus ${
+                actual === clave
+                  ? "bg-primary text-on-primary"
+                  : "bg-surface-sunken text-text-secondary hover:bg-border/60 hover:text-text"
+              }`}
+            >
+              {label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
 function WidgetTarifa({
   inicial,
   onGuardada,

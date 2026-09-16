@@ -3,9 +3,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, Check, GraduationCap, KeyRound, Mail, User } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { CambiarClave } from "@/components/CambiarClave";
 import { CambiarFoto } from "@/components/CambiarFoto";
+import { MiCielo } from "@/components/gamificacion/MiCielo";
 import { MiFicha } from "@/components/gamificacion/MiFicha";
 import { PanelProgreso } from "@/components/PanelProgreso";
 import { PoliticaCancelacion } from "@/components/PoliticaCancelacion";
@@ -50,6 +52,48 @@ export default function CuentaPage() {
   return <FormularioCuenta inicial={cuenta.data} />;
 }
 
+type Seccion = "resumen" | "cielo" | "ficha" | "datos" | "cancelar" | "preguntas";
+
+const SECCIONES: { clave: Seccion; label: string }[] = [
+  { clave: "resumen", label: "Resumen" },
+  { clave: "ficha", label: "Mi ficha" },
+  { clave: "datos", label: "Mis datos" },
+  { clave: "cancelar", label: "Si hay que cancelar" },
+  { clave: "preguntas", label: "Preguntas" },
+];
+
+/**
+ * La sección vive en la URL y no en un estado local, para que un enlace pueda apuntar a una
+ * concreta —un correo de logro a «cielo», por ejemplo— y para que atrás funcione como se espera.
+ */
+function SubNav({ actual }: { actual: Seccion }) {
+  return (
+    <nav className="mt-5 -mx-5 overflow-x-auto px-5 lg:mx-0 lg:px-0">
+      <ul className="flex w-max gap-1.5 lg:w-auto lg:flex-wrap">
+        {SECCIONES.map(({ clave, label }) => {
+          const activa = actual === clave || (clave === "resumen" && actual === "cielo");
+          return (
+            <li key={clave}>
+              <Link
+                href={`/cuenta?seccion=${clave}`}
+                scroll={false}
+                aria-current={activa ? "page" : undefined}
+                className={`inline-flex h-9 items-center rounded-pill px-3.5 text-[13px] font-semibold transition-colors focus-visible:shadow-focus ${
+                  activa
+                    ? "bg-primary text-on-primary"
+                    : "bg-surface-sunken text-text-secondary hover:bg-border/60 hover:text-text"
+                }`}
+              >
+                {label}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+
 function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
   const queryClient = useQueryClient();
 
@@ -75,6 +119,12 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
 
   const error = guardar.error instanceof ApiError ? guardar.error.message : null;
 
+  const params = useSearchParams();
+  const pedida = params.get("seccion");
+  const seccion: Seccion = SECCIONES.some((s) => s.clave === pedida) || pedida === "cielo"
+    ? (pedida as Seccion)
+    : "resumen";
+
   return (
     <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-3xl lg:px-12 lg:py-8">
       <h1 className="font-display text-h1 font-bold">Mi perfil</h1>
@@ -82,12 +132,37 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
         Cómo vas y los datos con los que coordinas tus clases.
       </p>
 
-      {/* El panel va primero: es lo que se viene a mirar. Editar el teléfono es algo que se hace
-          una vez al año, y tenerlo arriba convertía esta pantalla en un formulario y nada más. */}
-      <PanelProgreso />
+      {/*
+        Cinco cosas distintas vivían apiladas en una sola pantalla: el progreso, tu cielo, la ficha
+        que lee tu profesor, tus datos de contacto y las reglas de cancelación. Lo que se venía a
+        mirar quedaba mezclado con lo que se cambia una vez al año, y había que recorrerlo entero
+        para encontrar cualquier cosa. Ahora son secciones, y la dirección las recuerda —
+        `?seccion=` — para poder enlazar a una concreta desde un correo o una notificación.
+      */}
+      <SubNav actual={seccion} />
 
-      <MiFicha />
+      {seccion === "resumen" && (
+        <>
+          <PanelProgreso />
+          <div className="mt-8">
+            <MiCielo />
+          </div>
+        </>
+      )}
 
+      {seccion === "cielo" && <MiCielo />}
+
+      {seccion === "ficha" && <MiFicha />}
+
+      {seccion === "cancelar" && (
+        <div className="mt-6">
+          <PoliticaCancelacion rol="estudiante" />
+        </div>
+      )}
+
+      {seccion === "preguntas" && <PreguntasFrecuentes rol="estudiante" />}
+
+      <div className={seccion === "datos" ? "" : "hidden"}>
       <h2 className="mt-8 font-display text-[19px] font-bold">Tus datos</h2>
 
       <div className="mt-4">
@@ -154,6 +229,7 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
       <PreguntasFrecuentes rol="estudiante" />
 
       <EnseñarCta />
+      </div>
 
       {cambiandoClave && <CambiarClave onCerrar={() => setCambiandoClave(false)} />}
     </main>
