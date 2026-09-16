@@ -1,0 +1,78 @@
+package co.orion.admin.api;
+
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
+import co.orion.admin.application.SystemStatusService;
+import co.orion.scheduling.application.TestClassService;
+import co.orion.scheduling.domain.Booking;
+import co.orion.shared.security.OrionUserDetails;
+import co.orion.shared.time.BusinessZone;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+
+/** Estado del despliegue y ensayo del aula. Solo admin: la ruta ya está bajo `/api/v1/admin/**`. */
+@RestController
+@RequestMapping("/api/v1/admin/system")
+public class SystemStatusController {
+
+    private final SystemStatusService status;
+    private final TestClassService testClasses;
+
+    public SystemStatusController(SystemStatusService status, TestClassService testClasses) {
+        this.status = status;
+        this.testClasses = testClasses;
+    }
+
+    @GetMapping("/status")
+    public SystemStatusResponse status() {
+        return status.status();
+    }
+
+    /**
+     * Crea una clase de prueba para ensayar el aula. No cobra, no manda correos y no cuenta en las
+     * ganancias: nace confirmada y marcada como {@code is_trial}.
+     */
+    @PostMapping("/test-class")
+    @ResponseStatus(HttpStatus.CREATED)
+    public TestClassResponse testClass(@AuthenticationPrincipal OrionUserDetails principal,
+                                       @Valid @RequestBody TestClassRequest body) {
+        Instant inicio = body.startsAt() == null
+                ? null
+                : body.startsAt().atZone(BusinessZone.BOGOTA).toInstant();
+
+        Booking creada = testClasses.create(
+                principal.user(), body.studentEmail(), body.professorEmail(), inicio);
+
+        return new TestClassResponse(
+                creada.getId(),
+                ZonedDateTime.ofInstant(creada.getStartsAt(), BusinessZone.BOGOTA),
+                ZonedDateTime.ofInstant(creada.getEndsAt(), BusinessZone.BOGOTA),
+                creada.getMeetingLink());
+    }
+
+    /** La hora va en hora de Bogotá y sin zona: es la que el admin lee en su reloj. */
+    public record TestClassRequest(
+            @NotBlank @Email String studentEmail,
+            @NotBlank @Email String professorEmail,
+            LocalDateTime startsAt) {
+    }
+
+    public record TestClassResponse(java.util.UUID bookingId,
+                                    ZonedDateTime startsAt,
+                                    ZonedDateTime endsAt,
+                                    String aula) {
+    }
+}

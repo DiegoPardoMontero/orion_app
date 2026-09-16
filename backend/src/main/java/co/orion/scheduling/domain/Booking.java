@@ -330,6 +330,15 @@ public class Booking {
         return trial;
     }
 
+    /**
+     * Marca la reserva como clase de prueba. Hoy solo lo usa el ensayo del aula que lanza un
+     * administrador: es lo que la deja fuera de las ganancias y del ranking sin inventar un estado
+     * nuevo — una clase de prueba no mueve dinero y no debería contar como trabajo hecho.
+     */
+    public void markAsTrial() {
+        this.trial = true;
+    }
+
     public Instant getExpiresAt() {
         return expiresAt;
     }

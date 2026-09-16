@@ -15,6 +15,7 @@ import {
   LifeBuoy,
   LogOut,
   MessageCircle,
+  HeartPulse,
   SlidersHorizontal,
   Undo2,
   Sparkles,
@@ -74,6 +75,7 @@ const ICONO: Record<string, LucideIcon> = {
   "/ayuda": LifeBuoy,
   "/admin/soporte": LifeBuoy,
   "/admin/ajustes": SlidersHorizontal,
+  "/admin/sistema": HeartPulse,
   "/admin/devoluciones": Undo2,
 };
 
