@@ -28,6 +28,7 @@ public class SystemStatusService {
     private final String wompiApiBase;
     private final String resendKey;
     private final String openAiKey;
+    private final String voiceProvider;
 
     public SystemStatusService(JaasTokenMinter jaas,
                                @Value("${CLOUDINARY_URL:}") String cloudinaryUrl,
@@ -36,7 +37,9 @@ public class SystemStatusService {
                                @Value("${orion.payments.wompi.events-secret:}") String wompiEvents,
                                @Value("${orion.payments.wompi.api-base-url:}") String wompiApiBase,
                                @Value("${RESEND_API_KEY:}") String resendKey,
-                               @Value("${OPENAI_API_KEY:}") String openAiKey) {
+                               @Value("${OPENAI_API_KEY:}") String openAiKey,
+                               @Value("${orion.assessment.voice.provider:scripted}")
+                               String voiceProvider) {
         this.jaas = jaas;
         this.cloudinaryUrl = cloudinaryUrl;
         this.wompiPublicKey = wompiPublicKey;
@@ -45,6 +48,7 @@ public class SystemStatusService {
         this.wompiApiBase = wompiApiBase;
         this.resendKey = resendKey;
         this.openAiKey = openAiKey;
+        this.voiceProvider = voiceProvider;
     }
 
     public SystemStatusResponse status() {
@@ -72,9 +76,22 @@ public class SystemStatusService {
                         "No sale ningún correo: ni verificación, ni confirmación de clase.",
                         null, List.of("RESEND_API_KEY")),
 
-                new Integracion("Diagnóstico de voz (OpenAI)", hay(openAiKey),
-                        "El diagnóstico de confianza no puede iniciar la conversación.",
-                        null, List.of("OPENAI_API_KEY"))));
+                new Integracion("Diagnóstico de voz (OpenAI)",
+                        hay(openAiKey) && "openai".equals(voiceProvider),
+                        elMotivo(),
+                        "openai".equals(voiceProvider) ? "Conversación real" : null,
+                        List.of("OPENAI_API_KEY", "ORION_VOICE_PROVIDER"))));
+    }
+
+    /**
+     * Por qué el diagnóstico no está listo. Se distinguen los dos casos porque se arreglan distinto,
+     * y el segundo es el peligroso: con el proveedor falso la conversación ocurre y es de mentira.
+     */
+    private String elMotivo() {
+        if (!"openai".equals(voiceProvider)) {
+            return "ORION_VOICE_PROVIDER no es «openai»: la conversación sería simulada, no real.";
+        }
+        return "Falta la llave: el diagnóstico no puede iniciar la conversación.";
     }
 
     /** El cloud, que no es secreto y es justo lo que se compara con la consola de Cloudinary. */

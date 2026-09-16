@@ -70,6 +70,19 @@ orion:
       # Cada 5 minutos: el plazo para pagar son 20 (platform_settings.payment_hold_minutes), así que
       # un cupo nunca queda bloqueado más de 25.
       interval-ms: ${ORION_PAYMENT_EXPIRY_INTERVAL_MS:300000}
+  assessment:
+    voice:
+      # Quién sostiene la conversación del diagnóstico.
+      #
+      # `scripted` es un proveedor FALSO: no llama a nadie, no gasta y devuelve una sesión de
+      # mentira. Es el valor por defecto a propósito —así ningún test toca la red ni el saldo, y un
+      # despliegue mal configurado no empieza a gastar dinero por accidente— pero significa que en
+      # producción hay que poner `openai` A MANO. Sin eso, el diagnóstico «funciona» y la
+      # conversación es de pega, que es el peor de los dos fallos posibles porque no se nota.
+      #
+      # El estado real se ve en Administración → Sistema.
+      provider: ${ORION_VOICE_PROVIDER:scripted}
+
   # Videollamada: Jitsi as a Service (JaaS) de 8x8.
   #
   # La llave privada NO está aquí ni puede estarlo: es un secreto y va por variable de entorno.
