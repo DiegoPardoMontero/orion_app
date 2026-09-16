@@ -92,6 +92,25 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID>,
                                @Param("from") Instant from,
                                @Param("to") Instant to);
 
+    /**
+     * Lo que ya viaja en una liquidación pero todavía no ha salido: la transferencia la hace una
+     * persona y el banco tarda. Antes este dinero se sumaba a "por cobrar", y eso le decía al
+     * profesor que su pago entraría en la próxima liquidación cuando ya estaba en una.
+     */
+    @Query("""
+            select coalesce(sum(p.professorEarningsCop), 0) from Payment p
+            where p.professorId = :professorId
+              and p.createdAt >= :from
+              and p.createdAt < :to
+              and exists (select 1 from PayoutItem i, Payout o
+                          where i.id.paymentId = p.id
+                            and o.id = i.id.payoutId
+                            and o.status = co.orion.billing.domain.PayoutStatus.PENDING)
+            """)
+    long sumInTransit(@Param("professorId") UUID professorId,
+                      @Param("from") Instant from,
+                      @Param("to") Instant to);
+
     /* --- Cifras del tablero del admin --- */
 
     @Query("""

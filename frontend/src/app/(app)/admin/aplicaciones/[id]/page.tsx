@@ -266,7 +266,7 @@ function DatosEnviados({
   return (
     <div className="space-y-5">
       <Bloque titulo="Presentación">
-        <Dato etiqueta="Titular" valor={perfil.headline} />
+        <Dato etiqueta="Título" valor={perfil.headline} />
         <Dato etiqueta="Sobre sí" valor={perfil.bio} multilinea />
       </Bloque>
 

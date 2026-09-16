@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import co.orion.legal.domain.AgreementAcceptance;
 import co.orion.legal.persistence.AgreementAcceptanceRepository;
+import co.orion.catalog.application.PublicFiguresService;
 import co.orion.legal.domain.LegalDocument;
 import co.orion.legal.domain.LegalDocumentCode;
 import co.orion.legal.persistence.LegalDocumentRepository;
@@ -40,15 +42,18 @@ public class LegalDocumentService {
     private final LegalDocumentRepository documents;
     private final AgreementAcceptanceRepository acceptances;
     private final LegalIdentity identity;
+    private final PublicFiguresService figures;
     private final Clock clock;
 
     public LegalDocumentService(LegalDocumentRepository documents,
                                 AgreementAcceptanceRepository acceptances,
                                 LegalIdentity identity,
+                                PublicFiguresService figures,
                                 Clock clock) {
         this.documents = documents;
         this.acceptances = acceptances;
         this.identity = identity;
+        this.figures = figures;
         this.clock = clock;
     }
 
@@ -110,15 +115,19 @@ public class LegalDocumentService {
     }
 
     private Rendered render(LegalDocument document) {
-        Map<String, String> valores = Map.of(
-                "responsable", identity.responsable(),
-                "documento", identity.documento(),
-                "domicilio", identity.domicilio(),
-                "ciudad", identity.ciudad(),
-                "correo", identity.correo(),
-                "whatsapp", identity.whatsapp(),
-                "horario", identity.horario(),
-                "vigencia", document.getEffectiveFrom().format(VIGENCIA));
+        // Los datos del responsable, la vigencia de esta versión, y las cifras de negocio. Estas
+        // últimas vienen de `platform_settings` en cada lectura: si mañana la comisión cambia desde
+        // Ajustes, la cláusula lo dice en la siguiente carga y no hace falta publicar una versión.
+        // Lo que se congela por versión son las cláusulas, no los números que citan.
+        Map<String, String> valores = new LinkedHashMap<>(figures.marcadores());
+        valores.put("responsable", identity.responsable());
+        valores.put("documento", identity.documento());
+        valores.put("domicilio", identity.domicilio());
+        valores.put("ciudad", identity.ciudad());
+        valores.put("correo", identity.correo());
+        valores.put("whatsapp", identity.whatsapp());
+        valores.put("horario", identity.horario());
+        valores.put("vigencia", document.getEffectiveFrom().format(VIGENCIA));
 
         String body = document.getBody();
         for (Map.Entry<String, String> valor : valores.entrySet()) {

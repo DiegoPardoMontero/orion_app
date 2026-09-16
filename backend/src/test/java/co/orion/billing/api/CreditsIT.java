@@ -94,6 +94,11 @@ class CreditsIT extends ApiIntegrationSupport {
 
     @BeforeEach
     void seed() {
+        // Este test afirma cifras exactas de comisión, así que fija la tasa en vez de heredarla.
+        // La lección la dejó `booking_min_lead_hours`: un test que depende de un ajuste y no lo
+        // fija se rompe el día que alguien cambia el valor por defecto, y por el motivo equivocado.
+        jdbc.update("update platform_settings set value = '1500' where key = 'commission_rate_bps'");
+
         bookings.deleteAll();
         rules.deleteAll();
         profiles.deleteAll();
@@ -126,10 +131,10 @@ class CreditsIT extends ApiIntegrationSupport {
         assertThat(booking.payment().checkoutUrl()).contains("amount-in-cents=4000000");
 
         // La comisión se calcula sobre el PRECIO, no sobre lo cobrado: el crédito lo pone Orión,
-        // no el profesor. 20 % de 60 000 = 12 000, y el profesor se gana 48 000 completos.
+        // no el profesor. 15 % de 60 000 = 9 000, y el profesor se gana 51 000 completos.
         var payment = payments.findByBookingId(booking.id()).orElseThrow();
-        assertThat(payment.getCommissionCop()).isEqualTo(12_000);
-        assertThat(payment.getProfessorEarningsCop()).isEqualTo(48_000);
+        assertThat(payment.getCommissionCop()).isEqualTo(9_000);
+        assertThat(payment.getProfessorEarningsCop()).isEqualTo(51_000);
     }
 
     @Test

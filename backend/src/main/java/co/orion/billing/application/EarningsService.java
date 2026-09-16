@@ -54,12 +54,14 @@ public class EarningsService {
         long released = payments.sumEarningsByStatus(
                 professorId, PaymentStatus.RELEASED, fromInstant, toInstant);
         long transferred = payments.sumAlreadyTransferred(professorId, fromInstant, toInstant);
+        long inTransit = payments.sumInTransit(professorId, fromInstant, toInstant);
 
         List<Payment> found = payments
                 .findByProfessorIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
                         professorId, fromInstant, toInstant);
 
-        return new EarningsSummary(held, released - transferred, transferred, lines(found));
+        return new EarningsSummary(
+                held, released - transferred - inTransit, inTransit, transferred, lines(found));
     }
 
     /**

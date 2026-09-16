@@ -1,5 +1,6 @@
 package co.orion.scheduling.domain;
 
+import co.orion.shared.time.ClassLength;
 import co.orion.shared.time.BusinessZone;
 import java.time.Duration;
 import java.time.Instant;
@@ -20,12 +21,8 @@ public final class SlotCalculator {
 
     public static final ZoneId BOGOTA = BusinessZone.BOGOTA;
 
-    /**
-     * Cuánto dura una clase. Cincuenta y cinco minutos y no sesenta: los cinco que sobran de cada
-     * hora son el respiro del profesor entre una clase y la siguiente, y salen solos de que los
-     * cupos sigan empezando en punto. Sin ese margen, dos clases seguidas se pisan por diseño.
-     */
-    public static final Duration CLASS_LENGTH = Duration.ofMinutes(55);
+    /** Cuánto dura una clase. El porqué de los 55 está en {@link ClassLength}, que es su dueño. */
+    public static final Duration CLASS_LENGTH = ClassLength.DURATION;
 
     /**
      * Cada cuánto empieza un cupo. Es la hora en punto, y es independiente de lo que dure la clase:

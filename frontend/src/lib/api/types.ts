@@ -60,6 +60,25 @@ export type MessageResponse = Schemas["MessageResponse"];
 export type NotificationResponse = Schemas["NotificationResponse"];
 export type UnreadCountResponse = Schemas["UnreadCountResponse"];
 
+/**
+ * Los números de negocio que se escriben en pantallas y documentos, servidos por
+ * `/api/v1/catalog/figures`. A mano y no desde `Schemas` porque los lee `useCifras`, que es de las
+ * primeras cosas que se monta: un tipo generado que todavía no se ha regenerado rompería el build
+ * por un endpoint nuevo.
+ */
+export type PublicFigures = {
+  commissionPercent: number;
+  classMinutes: number;
+  paymentHoldMinutes: number;
+  studentCancelHours: number;
+  professorCancelHours: number;
+  bookingMinLeadHours: number;
+  noShowReportMinutes: number;
+  disputeReportWindowHours: number;
+  autoCompleteHours: number;
+  applicationReviewBusinessDays: number;
+};
+
 export type TeacherApplicationView = Schemas["TeacherApplicationView"];
 export type DocumentView = Schemas["DocumentView"];
 export type AdminApplicationSummary = Schemas["AdminApplicationSummary"];
@@ -129,6 +148,7 @@ export type MyPaymentResponse = {
 export type EarningsResponse = {
   heldCop: number;
   payableCop: number;
+  inTransitCop: number;
   transferredCop: number;
   totalCop: number;
   lines: {

@@ -14,6 +14,7 @@ import co.orion.shared.time.BusinessZone;
  */
 public record EarningsResponse(long heldCop,
                                long payableCop,
+                               long inTransitCop,
                                long transferredCop,
                                long totalCop,
                                List<Line> lines) {
@@ -31,6 +32,7 @@ public record EarningsResponse(long heldCop,
         return new EarningsResponse(
                 summary.heldCop(),
                 summary.payableCop(),
+                summary.inTransitCop(),
                 summary.transferredCop(),
                 summary.totalCop(),
                 summary.lines().stream().map(EarningsResponse::line).toList());

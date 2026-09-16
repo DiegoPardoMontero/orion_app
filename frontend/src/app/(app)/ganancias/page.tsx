@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Banknote, Hourglass, Landmark } from "lucide-react";
+import { Banknote, Hourglass, Landmark, Send } from "lucide-react";
 import { useState } from "react";
 import { Cifra, LineaImporte } from "@/components/dinero";
 import { Cargando, ErrorCarga, Vacio } from "@/components/estados";
@@ -72,7 +72,7 @@ export default function GananciasPage() {
         </div>
       ) : (
         <>
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Cifra
               tono="melocoton"
               icono={<Hourglass size={18} strokeWidth={2.2} />}
@@ -85,14 +85,21 @@ export default function GananciasPage() {
               icono={<Banknote size={18} strokeWidth={2.2} />}
               valorCop={ganancias.data.payableCop}
               etiqueta="Por cobrar"
-              ayuda="Ya te lo ganaste; entra en la próxima liquidación."
+              ayuda="Clase dictada. Este pago se incluirá en tu próxima liquidación."
+            />
+            <Cifra
+              tono="lavanda"
+              icono={<Send size={18} strokeWidth={2.2} />}
+              valorCop={ganancias.data.inTransitCop}
+              etiqueta="En camino"
+              ayuda="Transferencia en proceso: esperando aprobación del banco."
             />
             <Cifra
               tono="lavanda"
               icono={<Landmark size={18} strokeWidth={2.2} />}
               valorCop={ganancias.data.transferredCop}
               etiqueta="Transferido"
-              ayuda="Ya salió hacia tu cuenta."
+              ayuda="Transferencia completada: el dinero ya está en tu cuenta."
             />
           </div>
 

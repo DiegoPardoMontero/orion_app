@@ -54,6 +54,7 @@ import {
 import { etiquetaNivel, etiquetaObjetivo } from "@/lib/i18n";
 import { aplicarSaldo } from "@/lib/saldo";
 import { useMediaQuery } from "@/lib/useMediaQuery";
+import { minutos, useCifras } from "@/lib/cifras";
 
 export default function AgendaProfesorPage() {
   // En Next 16 los params de página son una Promise; en un client component se leen con este hook.
@@ -63,6 +64,7 @@ export default function AgendaProfesorPage() {
 
   const esDesktop = useMediaQuery("(min-width: 1024px)");
   const { data: me } = useMe();
+  const cifras = useCifras();
 
   // Abrir (o reencontrar) la conversación con este profesor y saltar a su hilo. Un usuario anónimo
   // —que en teoría no llega hasta aquí, porque la ruta es del estudiante— iría a iniciar sesión.
@@ -236,7 +238,7 @@ export default function AgendaProfesorPage() {
       {precio !== null && (
         <div className="rounded-base border border-border bg-surface-sunken px-4 py-3 text-[13px]">
           <LineaImporte
-            etiqueta="Clase de 60 minutos"
+            etiqueta={`Clase de ${minutos(cifras.classMinutes)}`}
             valor={esGratis(precio) ? "Gratis" : precioCop(precio)}
           />
           {creditoAplicado > 0 && (

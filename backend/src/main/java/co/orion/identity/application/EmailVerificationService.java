@@ -98,7 +98,7 @@ public class EmailVerificationService {
 
         try {
             mailer.sendVerificationLink(user.getEmail(), user.getFullName(),
-                    baseUrl + "/verificar?token=" + rawToken);
+                    baseUrl + "/verificar?token=" + rawToken, user.getSignupIntent());
         } catch (RuntimeException ex) {
             log.error("No se pudo enviar la verificación a {}: {}", user.getEmail(), ex.toString());
         }

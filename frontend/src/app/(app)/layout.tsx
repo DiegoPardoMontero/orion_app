@@ -147,7 +147,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <MobileHeader me={me} />
         {/* Barra y no diálogo: la tarea está a medias en el buzón, y bloquear la app no la acerca.
             Quien de verdad la necesita es quien va a reservar, y ahí el backend responde 422. */}
-        {!me.emailVerified && <AvisoCorreoSinVerificar correo={me.email} />}
+        {!me.emailVerified && (
+          <AvisoCorreoSinVerificar
+            correo={me.email}
+            ensena={me.role === "PROFESSOR" || me.role === "TEACHER_APPLICANT"}
+          />
+        )}
         <div className="flex-1 pb-24 lg:pb-0">
           {rutaProtegida ? <GateProfesor aplic={aplic}>{children}</GateProfesor> : children}
         </div>

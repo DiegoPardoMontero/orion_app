@@ -32,17 +32,17 @@ Una cuenta es de una sola persona y de un solo tipo a la vez: estudiante, profes
 
 ## 4. Cómo funciona una clase
 
-1. Todas las clases duran **60 minutos** y empiezan en punto. Todo se rige por la hora de **Bogotá (America/Bogotá)**.
+1. Todas las clases duran **{{duracion_clase}}** y empiezan en punto. Todo se rige por la hora de **Bogotá (America/Bogotá)**.
 2. Eliges profesor, día y hora, y la modalidad: virtual o presencial.
-3. La reserva **no queda confirmada al crearla**. Queda pendiente de pago, con el cupo apartado durante **20 minutos**. Si no pagas en ese plazo, el horario se libera.
+3. La reserva **no queda confirmada al crearla**. Queda pendiente de pago, con el cupo apartado durante **{{retencion_pago}}**. Si no pagas en ese plazo, el horario se libera.
 4. Cuando el pago se confirma, recibes el correo con la invitación de calendario y, si la clase es virtual, el enlace de la sala.
-5. Cuando la clase termina, el profesor registra la asistencia. Si no registra nada, el sistema cierra la clase a las **24 horas**.
+5. Cuando la clase termina, el profesor registra la asistencia. Si no registra nada, el sistema cierra la clase a las **{{cierre_automatico}}**.
 
 ## 5. Precios, comisión e impuestos
 
 El precio de cada clase lo fija el profesor y se muestra completo antes de que pagues. **No hay cargos ocultos**: lo que ves antes de confirmar es lo que se cobra.
 
-Orión retiene una **comisión del 20 %** sobre el precio de cada clase. Esa comisión es la contraprestación por el servicio de intermediación y se descuenta de lo que se le liquida al profesor; para ti, el estudiante, el precio no cambia por ella.
+Orión retiene una **comisión del {{comision}}** sobre el precio de cada clase. Esa comisión es la contraprestación por el servicio de intermediación y se descuenta de lo que se le liquida al profesor; para ti, el estudiante, el precio no cambia por ella.
 
 Cada profesor es responsable de sus propias obligaciones tributarias derivadas de los ingresos que recibe a través de Orión.
 
@@ -60,15 +60,15 @@ Cuando pagas, el dinero queda **retenido** hasta que la clase se dicte. Solo ent
 
 | Situación | Qué pasa |
 |---|---|
-| **Cancelas con más de 12 horas** de antelación | Recibes el valor completo como **saldo a favor** |
-| **Cancelas con menos de 12 horas** | La clase se considera prestada: el profesor recibe su pago y no hay devolución |
+| **Cancelas con más de {{cancelacion_estudiante}}** de antelación | Recibes el valor completo como **saldo a favor** |
+| **Cancelas con menos de {{cancelacion_estudiante}}** | La clase se considera prestada: el profesor recibe su pago y no hay devolución |
 | **El profesor cancela**, con el tiempo que sea | Recibes el valor completo como **saldo a favor** |
 | **El profesor no se presenta** | Puedes reportarlo (sección 9) y, si se resuelve a tu favor, recibes el valor completo |
 | **No te presentas tú** | La clase se considera prestada: el profesor apartó su hora y estuvo ahí |
 
 La diferencia entre las dos primeras filas es tuya y la conoces antes de pulsar: te la decimos en el momento de cancelar. La tercera no tiene plazo a propósito — si la clase se cae por el lado del profesor, no hay razón para que tú pierdas dinero, sea cuando sea.
 
-**Reprogramar** es distinto de cancelar y **sí se puede dentro de las 12 horas**: propones otro horario libre del mismo profesor y la clase se mueve solo cuando la otra parte acepta. El pago no se toca. Solo puede haber una propuesta viva por clase.
+**Reprogramar** es distinto de cancelar y **sí se puede dentro de las {{cancelacion_estudiante}}**: propones otro horario libre del mismo profesor y la clase se mueve solo cuando la otra parte acepta. El pago no se toca. Solo puede haber una propuesta viva por clase.
 
 Lo anterior se entiende **sin perjuicio de tu derecho de retracto**, que se regula en la sección siguiente y prevalece sobre esta tabla cuando aplica.
 
@@ -92,7 +92,7 @@ Puedes ejercerlo desde la propia clase en «Mis clases» o escribiéndonos a **{
 
 Si algo sale mal, tienes dos caminos y los dos dejan constancia:
 
-- **Reportar un problema con una clase concreta**, desde «Mis clases». Si el profesor no se presentó, puedes reportarlo desde los **15 minutos** siguientes a la hora de inicio y hasta **24 horas** después de que la clase debía terminar. Mientras el reclamo esté abierto, el dinero queda congelado.
+- **Reportar un problema con una clase concreta**, desde «Mis clases». Si el profesor no se presentó, puedes reportarlo desde los **{{reporte_ausencia}}** siguientes a la hora de inicio y hasta **{{ventana_reclamo}}** después de que la clase debía terminar. Mientras el reclamo esté abierto, el dinero queda congelado.
 - **Abrir un ticket en «Ayuda»**, para cualquier otra cosa. Queda registrado con su fecha y hora y puedes seguirlo, conforme al artículo 50 de la Ley 1480 de 2011.
 
 También puedes escribirnos por WhatsApp al **{{whatsapp}}** en horario de **{{horario}}**. Ese canal es para atención personalizada; para que un reclamo quede formalmente radicado, usa el ticket.

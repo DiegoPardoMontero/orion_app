@@ -13,7 +13,14 @@ import { ApiError } from "@/lib/api/fetch";
  * acerca ni un paso. Solo estorba cuando llega el momento de reservar, y ahí sí, el backend
  * responde 422.
  */
-export function AvisoCorreoSinVerificar({ correo }: { correo: string }) {
+export function AvisoCorreoSinVerificar({
+  correo,
+  ensena = false,
+}: {
+  correo: string;
+  /** Quien vino a enseñar todavía no puede reservar nada: decírselo le hace dudar de dónde se registró. */
+  ensena?: boolean;
+}) {
   const reenviar = useReenviarVerificacion();
 
   const mensaje = reenviar.isSuccess
@@ -29,8 +36,8 @@ export function AvisoCorreoSinVerificar({ correo }: { correo: string }) {
         <p className="min-w-0 flex-1">
           {mensaje ?? (
             <>
-              Confirma tu correo para poder reservar. Te enviamos un enlace a{" "}
-              <strong className="font-bold">{correo}</strong>.
+              {ensena ? "Confirma tu correo para poder dictar tus clases." : "Confirma tu correo para poder reservar."}{" "}
+              Ya te enviamos un enlace a <strong className="font-bold">{correo}</strong>.
             </>
           )}
         </p>

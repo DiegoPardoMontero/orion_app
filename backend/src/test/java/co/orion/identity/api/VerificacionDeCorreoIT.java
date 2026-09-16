@@ -20,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import co.orion.identity.application.EmailVerificationMailer;
+import co.orion.identity.domain.SignupIntent;
 import co.orion.support.ApiIntegrationSupport;
 import co.orion.TestcontainersConfiguration;
 
@@ -38,10 +39,13 @@ class VerificacionDeCorreoIT extends ApiIntegrationSupport {
     /** Captura los enlaces enviados. Registrado como @Primary para desplazar al real. */
     static class MailerEspia implements EmailVerificationMailer {
         final List<String> enlaces = new ArrayList<>();
+        final List<SignupIntent> intenciones = new ArrayList<>();
 
         @Override
-        public void sendVerificationLink(String toEmail, String fullName, String link) {
+        public void sendVerificationLink(String toEmail, String fullName, String link,
+                                         SignupIntent intent) {
             enlaces.add(link);
+            intenciones.add(intent);
         }
     }
 
@@ -68,11 +72,17 @@ class VerificacionDeCorreoIT extends ApiIntegrationSupport {
         studentProfiles.deleteAll();
         users.deleteAll();
         mailer.enlaces.clear();
+        mailer.intenciones.clear();
     }
 
     private ResponseEntity<Map> registrar(String email) {
+        return registrar(email, false);
+    }
+
+    private ResponseEntity<Map> registrar(String email, boolean quiereEnsenar) {
         return rest.postForEntity("/api/v1/auth/register",
-                new RegisterRequest("Camila Ortiz", email, CLAVE, null, false, true, true, true),
+                new RegisterRequest("Camila Ortiz", email, CLAVE, null, quiereEnsenar,
+                        true, true, true),
                 Map.class);
     }
 
@@ -91,6 +101,18 @@ class VerificacionDeCorreoIT extends ApiIntegrationSupport {
         assertThat(respuesta.getBody()).containsEntry("emailVerified", false);
         assertThat(mailer.enlaces).hasSize(1);
         assertThat(mailer.enlaces.getFirst()).contains("/verificar?token=");
+    }
+
+    @Test
+    @DisplayName("El correo de verificación sabe por qué puerta entró la cuenta")
+    void elCorreoDistingueAlQueVieneAEnsenar() {
+        registrar(CORREO, true);
+        assertThat(mailer.intenciones).containsExactly(SignupIntent.TEACH);
+
+        // Y el caso corriente sigue siendo el del estudiante, que es el texto de siempre.
+        mailer.intenciones.clear();
+        registrar("otra@orion.test", false);
+        assertThat(mailer.intenciones).containsExactly(SignupIntent.LEARN);
     }
 
     @SuppressWarnings("rawtypes")

@@ -22,6 +22,7 @@ import co.orion.identity.api.AdminApplicationSummary;
 import co.orion.identity.api.ApplicationEventView;
 import co.orion.identity.api.DocumentView;
 import co.orion.identity.api.PagedApplications;
+import co.orion.catalog.application.PlatformSettingsService;
 import co.orion.identity.api.TeacherApplicationView;
 import co.orion.identity.domain.ApplicationEventType;
 import co.orion.identity.domain.ApplicationStatus;
@@ -52,6 +53,9 @@ import co.orion.shared.error.ResourceNotFoundException;
 @Service
 public class TeacherApplicationService {
 
+    /** Días hábiles prometidos para revisar. Ajuste, no constante: es una promesa al aspirante. */
+    private static final String REVIEW_DAYS_KEY = "application_review_business_days";
+
     public static final String TEACHER_AGREEMENT = "TEACHER_AGREEMENT";
     private static final String AGREEMENT_VERSION = "1.0";
     private static final int MIN_NOTE_LENGTH = 10;
@@ -69,6 +73,7 @@ public class TeacherApplicationService {
     private final ProfessorLanguageLevelRepository levels;
     private final ProfessorGoalRepository goals;
     private final ProfessorProfileService profileService;
+    private final PlatformSettingsService settings;
     private final AdminAuditService audit;
     private final ApplicationEventPublisher publisher;
     private final Clock clock;
@@ -83,6 +88,7 @@ public class TeacherApplicationService {
                                      ProfessorLanguageLevelRepository levels,
                                      ProfessorGoalRepository goals,
                                      ProfessorProfileService profileService,
+                                     PlatformSettingsService settings,
                                      AdminAuditService audit,
                                      ApplicationEventPublisher publisher,
                                      Clock clock) {
@@ -96,6 +102,7 @@ public class TeacherApplicationService {
         this.levels = levels;
         this.goals = goals;
         this.profileService = profileService;
+        this.settings = settings;
         this.audit = audit;
         this.publisher = publisher;
         this.clock = clock;
@@ -367,7 +374,8 @@ public class TeacherApplicationService {
                 docs,
                 // Lo que el aspirante ya respondió, para que el wizard se dibuje con ello. Es una
                 // lectura: si todavía no hay fila de perfil, devuelve una vacía sin crearla.
-                profileService.getOwnProfile(userId));
+                profileService.getOwnProfile(userId),
+                settings.getInt(REVIEW_DAYS_KEY));
     }
 
     private AdminApplicationSummary summary(TeacherApplication a, User user) {

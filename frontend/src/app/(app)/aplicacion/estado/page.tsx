@@ -66,10 +66,14 @@ export default function EstadoAplicacionPage() {
             ? "espera"
             : "saludo";
 
+  // El plazo lo fija Ajustes, no esta pantalla: si un día deja de cumplirse, se cambia el dato.
+  const dias = vista.reviewBusinessDays ?? 3;
+  const plazo = `${dias} ${dias === 1 ? "día hábil" : "días hábiles"}`;
+
   const mensaje: Record<string, string> = {
-    DRAFT: "Tu postulación está en borrador. Termina de completarla y envíala a revisión cuando estés listo.",
-    PENDING_REVIEW: "Tu postulación está en la fila de revisión. Te avisaremos por correo en cuanto tengamos novedades.",
-    UNDER_REVIEW: "Nuestro equipo está revisando tu postulación. Muy pronto tendrás respuesta.",
+    DRAFT: `Tu postulación está en borrador. Termina de completarla y envíala a revisión cuando estés listo: la revisamos en un plazo de ${plazo}.`,
+    PENDING_REVIEW: `Tu postulación está en la fila de revisión. La revisamos en un plazo de ${plazo} y te avisaremos por correo en cuanto tengamos novedades.`,
+    UNDER_REVIEW: `Nuestro equipo está revisando tu postulación. Tendrás respuesta dentro del plazo de ${plazo} que te prometimos.`,
     CHANGES_REQUESTED: "La revisión pide algunos ajustes. Cámbialos y vuelve a enviar tu postulación.",
     APPROVED: "¡Felicidades! Tu postulación fue aprobada. Ya puedes completar y publicar tu perfil de profesor.",
     REJECTED: "Esta vez tu postulación no fue aprobada. Gracias por tu interés; puedes volver a intentarlo más adelante.",

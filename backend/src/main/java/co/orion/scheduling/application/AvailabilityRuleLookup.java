@@ -10,6 +10,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import co.orion.shared.time.ClassLength;
 import co.orion.identity.application.ProfessorAvailabilityLookup;
 import co.orion.scheduling.domain.AvailabilityMatcher;
 import co.orion.scheduling.persistence.AvailabilityRuleRepository;
@@ -27,7 +28,9 @@ import co.orion.scheduling.persistence.AvailabilityRuleRepository;
 @Component
 class AvailabilityRuleLookup implements ProfessorAvailabilityLookup {
 
-    private static final Duration CLASS_LENGTH = Duration.ofHours(1);
+    // Una hora era un número suelto y estaba mal: filtraba fuera del buscador al profesor cuya
+    // franja mide exactamente lo que dura una clase. La duración tiene un solo dueño.
+    private static final Duration CLASS_LENGTH = ClassLength.DURATION;
 
     private final AvailabilityRuleRepository rules;
 

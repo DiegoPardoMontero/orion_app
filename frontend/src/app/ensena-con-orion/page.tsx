@@ -16,25 +16,44 @@ import { EnsenaCta } from "@/components/EnsenaCta";
 import { NavPublica } from "@/components/NavPublica";
 import { Rigel } from "@/components/Rigel";
 import { SITE_URL } from "@/lib/config";
+import { serverFetch } from "@/lib/api/server";
+import type { PublicFigures } from "@/lib/api/types";
 
 /**
  * "Enseña en Orión": propuesta de valor para profesores. Página pública, server-rendered (SEO), sin
- * datos dinámicos —solo la isla `EnsenaCta` decide el destino según la sesión—. La comisión del 20%
- * se dice DE FRENTE, no en letra chica: es un compromiso de transparencia con el profesor.
+ * datos propios —solo la isla `EnsenaCta` decide el destino según la sesión—. La comisión se dice
+ * DE FRENTE, no en letra chica: es un compromiso de transparencia con el profesor.
+ *
+ * <p>El porcentaje NO está escrito aquí. Sale de `platform_settings` en cada petición, igual que en
+ * los Términos: si Pardo lo cambia desde Ajustes, cambia también el SEO, el JSON-LD y el número
+ * grande de la sección de comisión. Un número tecleado en una página es una segunda verdad que
+ * nadie recuerda actualizar.
  */
-export const metadata: Metadata = {
-  title: "Enseña en Orión · Construye tu agenda de clases de idiomas",
-  description:
-    "Publica tu perfil de profesor de idiomas, define tus horarios y recibe estudiantes reales. Tú pones la tarifa; Orión retiene una comisión del 20%. Sin cuotas por adelantado.",
-  alternates: { canonical: "/ensena-con-orion" },
-  openGraph: {
-    title: "Enseña en Orión",
+
+/** Lo que se dice si el backend no contesta. La página tiene que salir igual: es la puerta de entrada. */
+const COMISION_POR_DEFECTO = 15;
+
+async function comision(): Promise<number> {
+  const cifras = await serverFetch<PublicFigures>("/api/v1/catalog/figures", 3600);
+  return cifras?.commissionPercent ?? COMISION_POR_DEFECTO;
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const pct = await comision();
+  return {
+    title: "Enseña en Orión · Construye tu agenda de clases de idiomas",
     description:
-      "Publica tu perfil, define tus horarios y recibe estudiantes reales. Comisión transparente del 20%, sin cuotas por adelantado.",
-    type: "website",
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Enseña en Orión" }],
-  },
-};
+      `Publica tu perfil de profesor de idiomas, define tus horarios y recibe estudiantes reales. Tú pones la tarifa; Orión retiene una comisión del ${pct}%. Sin cuotas por adelantado.`,
+    alternates: { canonical: "/ensena-con-orion" },
+    openGraph: {
+      title: "Enseña en Orión",
+      description:
+        `Publica tu perfil, define tus horarios y recibe estudiantes reales. Comisión transparente del ${pct}%, sin cuotas por adelantado.`,
+      type: "website",
+      images: [{ url: "/og.png", width: 1200, height: 630, alt: "Enseña en Orión" }],
+    },
+  };
+}
 
 const BENEFICIOS = [
   {
@@ -84,7 +103,8 @@ const PASOS = [
   },
 ];
 
-export default function EnsenaConOrionPage() {
+export default async function EnsenaConOrionPage() {
+  const pct = await comision();
   return (
     <div className="flex-1">
       <script
@@ -97,7 +117,7 @@ export default function EnsenaConOrionPage() {
             url: `${SITE_URL}/ensena-con-orion`,
             inLanguage: "es-CO",
             description:
-              "Propuesta para profesores de idiomas: publica tu perfil, define tus horarios y recibe estudiantes. Comisión del 20%.",
+              `Propuesta para profesores de idiomas: publica tu perfil, define tus horarios y recibe estudiantes. Comisión del ${pct}%.`,
             publisher: {
               "@type": "Organization",
               name: "Orión Idiomas",
@@ -160,7 +180,7 @@ export default function EnsenaConOrionPage() {
         </div>
       </section>
 
-      {/* — Comisión 20%, de frente — */}
+      {/* — La comisión, de frente — */}
       <section className="mx-auto max-w-5xl px-5 pb-16 lg:px-8 lg:pb-24">
         <div className="grid items-center gap-6 rounded-card bg-night px-7 py-10 text-text-on-night lg:grid-cols-[auto_1fr] lg:px-12 lg:py-12">
           <div className="flex items-center gap-4">
@@ -168,13 +188,13 @@ export default function EnsenaConOrionPage() {
               <Percent size={30} strokeWidth={2.2} />
             </span>
             <p className="font-display text-[40px] font-extrabold leading-none text-on-primary lg:text-[52px]">
-              20%
+              {pct}%
             </p>
           </div>
           <div>
             <h2 className="font-display text-h3 font-bold text-on-primary">Comisión clara, sin sorpresas.</h2>
             <p className="mt-2 text-[15px] leading-relaxed text-on-primary/85">
-              Orión retiene una comisión del <strong className="font-bold text-accent-peach">20%</strong>{" "}
+              Orión retiene una comisión del <strong className="font-bold text-accent-peach">{pct}%</strong>{" "}
               sobre tu tarifa por cada clase reservada. Lo demás es tuyo. Sin cuotas por adelantado ni
               costos ocultos: verás el desglose completo antes de publicar tu perfil.
             </p>

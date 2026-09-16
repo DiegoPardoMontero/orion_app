@@ -23,7 +23,7 @@ los que un estudiante encuentra profesor.
 
 ## Cómo gana dinero
 
-**Orión retiene el 20 % de cada clase.** La comisión se congela en el momento de la reserva: si
+**Orión retiene el 15 % de cada clase.** La comisión se congela en el momento de la reserva: si
 mañana se cambia el porcentaje, las clases ya vendidas conservan el suyo.
 
 El recorrido del dinero:
@@ -161,7 +161,7 @@ en producción.
 
 | Cifra | Qué es |
 |---|---|
-| **20 %** | Comisión de Orión, congelada en cada reserva |
+| **15 %** | Comisión de Orión, congelada en cada reserva |
 | **60 min** | Duración de una clase, siempre en punto |
 | **$20.000 – $500.000** | Rango de tarifa por hora del profesor |
 | **20 minutos** | Lo que se aparta un cupo esperando el pago |

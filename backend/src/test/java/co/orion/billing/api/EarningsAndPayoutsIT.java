@@ -56,8 +56,8 @@ class EarningsAndPayoutsIT extends ApiIntegrationSupport {
     private static final Instant FROZEN_NOW = Instant.parse("2026-07-13T17:00:00Z");
     private static final LocalDate WEDNESDAY = LocalDate.of(2026, 7, 15);
     private static final long RATE_COP = 60_000;
-    private static final long COMMISSION_COP = 12_000;
-    private static final long EARNINGS_COP = 48_000;
+    private static final long COMMISSION_COP = 9_000;   // 15 % de 60 000
+    private static final long EARNINGS_COP = 51_000;
 
     @TestConfiguration
     static class FrozenClockConfiguration {
@@ -96,6 +96,11 @@ class EarningsAndPayoutsIT extends ApiIntegrationSupport {
 
     @BeforeEach
     void seed() {
+        // Este test afirma cifras exactas de comisión, así que fija la tasa en vez de heredarla.
+        // La lección la dejó `booking_min_lead_hours`: un test que depende de un ajuste y no lo
+        // fija se rompe el día que alguien cambia el valor por defecto, y por el motivo equivocado.
+        jdbc.update("update platform_settings set value = '1500' where key = 'commission_rate_bps'");
+
         bookings.deleteAll();
         rules.deleteAll();
         profiles.deleteAll();
@@ -213,8 +218,8 @@ class EarningsAndPayoutsIT extends ApiIntegrationSupport {
                 adminSession, String.class).getBody();
         assertThat(csv)
                 .contains("fecha_clase,estudiante,precio_cop,comision_cop,ganancia_cop")
-                .contains("\"Ana Ramírez\",60000,12000,48000")
-                .contains("TOTAL,,,,48000");
+                .contains("\"Ana Ramírez\",60000," + COMMISSION_COP + "," + EARNINGS_COP)
+                .contains("TOTAL,,,," + EARNINGS_COP);
 
         // Y ya transferido, deja de estar "por cobrar" para el profesor.
         EarningsResponse after = earnings(mariaSession);

@@ -20,6 +20,7 @@ import type {
 import { precioCop } from "@/lib/format";
 import { etiquetaNivel, NIVELES } from "@/lib/i18n";
 import { estadoBio, estadoTitular } from "@/lib/perfil-profesor";
+import { minutos, useCifras } from "@/lib/cifras";
 
 /** El idioma tal como lo edita el profesor: código + si es nativo + niveles que enseña. */
 type LangEdit = { code: string; isNative: boolean; levels: string[] };
@@ -455,6 +456,7 @@ function WidgetTarifa({
     return () => clearTimeout(id);
   }, [numero]);
 
+  const cifras = useCifras();
   const preview = useQuery({
     queryKey: ["rate-preview", debounced],
     queryFn: () =>
@@ -486,12 +488,12 @@ function WidgetTarifa({
   const desglose: RateBreakdownResponse | undefined =
     valido && preview.data ? preview.data : inicial.rate ?? undefined;
 
-  const pct = desglose?.commissionRateBps != null ? Math.round(desglose.commissionRateBps / 100) : 20;
-
   return (
     <section className="mt-6 rounded-card bg-accent-peach-soft p-4">
       <h2 className="text-[13.5px] font-bold text-[#8a5a33]">Tu tarifa por hora</h2>
-      <p className="mt-0.5 text-[11.5px] text-[#8a5a33]/85">Entre $20.000 y $500.000 por clase de 60 minutos.</p>
+      <p className="mt-0.5 text-[11.5px] text-[#8a5a33]/85">
+        Entre $20.000 y $500.000 por clase de {minutos(cifras.classMinutes)}.
+      </p>
 
       <div className="mt-3 flex items-center gap-2">
         <div className="relative flex-1">
@@ -535,7 +537,7 @@ function WidgetTarifa({
             </span>
           </p>
           <p className="mt-1 flex items-center justify-between text-text-muted">
-            <span>Orión retiene ({pct}%)</span>
+            <span>Comisión de Orión</span>
             <span className="font-semibold">{precioCop(desglose.commissionCop ?? 0)}</span>
           </p>
         </div>

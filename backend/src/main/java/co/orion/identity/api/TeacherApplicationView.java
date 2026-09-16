@@ -22,5 +22,7 @@ public record TeacherApplicationView(
         boolean agreementAccepted,
         List<String> missing,
         List<DocumentView> documents,
-        ProfileResponse answers) {
+        ProfileResponse answers,
+        /** Días hábiles que se le prometen para la revisión. Sale de `platform_settings`. */
+        int reviewBusinessDays) {
 }

@@ -67,3 +67,9 @@ frontend/*-tmp.mjs
 
 # Guion de verificación puntual contra OpenAI: no va al repo.
 verificar-openai.sh
+
+# Llaves privadas. Nunca en el repo: la de JaaS vive en ~/.orion/jaas/ y en Railway.
+*.pk
+*.pem
+*.key
+*:Zone.Identifier

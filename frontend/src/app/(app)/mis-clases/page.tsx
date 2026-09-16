@@ -34,6 +34,7 @@ import { useMe } from "@/lib/auth/session";
 import { esperaPago, etiquetaEstado } from "@/lib/estados-clase";
 import { diaBogota, fechaCorta, fechaYRango, horaBogota, precioCop, rangoHoras } from "@/lib/format";
 import { useElegibilidadRetracto, useRetractarse } from "@/lib/retracto";
+import { horas, minutos, useCifras } from "@/lib/cifras";
 
 type Scope = "upcoming" | "past";
 type Vista = "agenda" | "calendario";
@@ -333,6 +334,7 @@ function TarjetaClase({
   // Abre el hilo con la contraparte —o reencuentra el que ya existía— y salta a él. Vale para los
   // dos lados: el mismo endpoint aplica una regla u otra según quién pida. Para el profesor la
   // condición la cumple esta misma tarjeta, que es una clase que comparten.
+  const cifras = useCifras();
   const escribir = useMutation({
     mutationFn: () =>
       apiFetch<ConversationSummary>("/api/v1/conversations", {
@@ -445,7 +447,7 @@ function TarjetaClase({
             <p className="mt-1 text-[12.5px] text-warning">
               {esProfesor
                 ? "Tu horario está apartado. Te confirmamos la clase en cuanto entre el pago; si no entra, el horario se libera solo."
-                : "Tienes 20 minutos para pagar. Si no lo haces, la reserva se cancela sola y el horario queda libre para otra persona; no se te cobra nada."}
+                : `Tienes ${minutos(cifras.paymentHoldMinutes)} para pagar. Si no lo haces, la reserva se cancela sola y el horario queda libre para otra persona; no se te cobra nada.`}
             </p>
             {!esProfesor && (
               <div className="mt-3 flex flex-wrap gap-2 sm:justify-end">
@@ -453,7 +455,7 @@ function TarjetaClase({
                   <Boton className="h-10 w-full">Completar el pago</Boton>
                 </Link>
                 {/* Arrepentirse antes de pagar se puede siempre: no hay clase que proteger, y
-                    esperar 20 minutos a que venza no es una respuesta. Se llama «cancelar» como
+                    esperar {minutos(cifras.paymentHoldMinutes)} a que venza no es una respuesta. Se llama «cancelar» como
                     todo lo demás: «soltar el cupo» era vocabulario nuestro, no del estudiante. */}
                 <Boton
                   variante="contorno"
@@ -729,6 +731,7 @@ function ModalCancelar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
   const alMedioDePago = puedeElegirDestino && destino === "medio-de-pago";
   const trabajando = cancelar.isPending || retractarse.isPending;
   const fallo = alMedioDePago ? retractarse.error : cancelar.error;
+  const cifras = useCifras();
   const error = fallo instanceof ApiError ? fallo.message : null;
 
   function confirmar() {
@@ -795,8 +798,8 @@ function ModalCancelar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
           {esProfesor
             ? "El estudiante recuperará el valor completo como saldo a favor, y tú no cobrarás esta clase."
             : clase.lateCancel
-              ? "Faltan menos de 12 horas para la clase. Tu profesor ya apartó esa hora, así que la cobra igual y no hay devolución."
-              : "Faltan más de 12 horas, así que recuperas el valor completo como saldo a favor, disponible enseguida."}
+              ? `Faltan menos de ${horas(cifras.studentCancelHours)} para la clase. Tu profesor ya apartó esa hora, así que la cobra igual y no hay devolución.`
+              : `Faltan más de ${horas(cifras.studentCancelHours)}, así que recuperas el valor completo como saldo a favor, disponible enseguida.`}
         </p>
       )}
 

@@ -24,7 +24,7 @@ public enum SettingDefinition {
     // ---------------------------------------------------------------------------- dinero
     COMMISSION_RATE_BPS("commission_rate_bps", Grupo.DINERO, Tipo.ENTERO,
             "Comisión de Orión",
-            "En puntos básicos: 2000 son 20 %. Se congela en cada reserva, así que las clases ya "
+            "En puntos básicos: 1500 son 15 %. Se congela en cada reserva, así que las clases ya "
                     + "reservadas conservan la comisión que tenían.",
             0, 5000, true),
     PAYMENT_HOLD_MINUTES("payment_hold_minutes", Grupo.DINERO, Tipo.ENTERO,
@@ -49,7 +49,7 @@ public enum SettingDefinition {
     ASSESSMENT_MAX_MINUTES("assessment_max_minutes", Grupo.PLAZOS, Tipo.ENTERO,
             "Duración máxima del diagnóstico",
             "Minutos de conversación antes del corte duro. Subirlo alarga la conversación y la "
-                    + "factura a la vez: se paga por minuto hablado.", 3, 15, false),
+                    + "factura a la vez: se paga por minuto hablado.", 2, 15, false),
     ASSESSMENT_MIN_MINUTES("assessment_min_minutes", Grupo.PLAZOS, Tipo.ENTERO,
             "Duración mínima para puntuar",
             "Por debajo de esto no se calcula puntaje: un número sacado de noventa segundos es "
@@ -88,6 +88,11 @@ public enum SettingDefinition {
             "Cuánto pesan las muletillas y las autocorrecciones por cada cien palabras.",
             0, 100, true),
 
+    APPLICATION_REVIEW_BUSINESS_DAYS("application_review_business_days", Grupo.PLAZOS, Tipo.ENTERO,
+            "Plazo para revisar una postulación",
+            "Días hábiles que se le prometen al aspirante cuando envía su postulación. Se le "
+                    + "muestra en pantalla: subirlo es incómodo, pero incumplirlo es peor.",
+            1, 30, false),
     BOOKING_MIN_LEAD_HOURS("booking_min_lead_hours", Grupo.PLAZOS, Tipo.ENTERO,
             "Antelación mínima para reservar",
             "Con menos de estas horas por delante, el cupo ya no se ofrece ni se puede reservar. "

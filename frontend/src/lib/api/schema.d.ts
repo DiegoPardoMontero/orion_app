@@ -1911,47 +1911,6 @@ export interface components {
             /** Format: date-time */
             uploadedAt?: string;
         };
-        TeacherApplicationView: {
-            /** Format: uuid */
-            id?: string;
-            status?: string;
-            /** Format: date-time */
-            submittedAt?: string;
-            decisionNote?: string;
-            agreementAccepted?: boolean;
-            missing?: string[];
-            documents?: components["schemas"]["DocumentView"][];
-            answers?: components["schemas"]["ProfileResponse"];
-        };
-        StudentProfileRequest: {
-            selfDeclaredLevel?: string;
-            primaryLanguage?: string;
-            motivation?: string;
-            goalCodes?: string[];
-        };
-        Accessory: {
-            zone?: string;
-            accessoryCode?: string;
-        };
-        StudentProfileResponse: {
-            /** Format: uuid */
-            id?: string;
-            fullName?: string;
-            photoUrl?: string;
-            selfDeclaredLevel?: string;
-            primaryLanguage?: string;
-            motivation?: string;
-            goalCodes?: string[];
-            frameCode?: string;
-            paletteCode?: string;
-            skyCode?: string;
-            accessories?: components["schemas"]["Accessory"][];
-            isPublic?: boolean;
-            ownView?: boolean;
-        };
-        StudentVisibilityRequest: {
-            isPublic: boolean;
-        };
         ProfileLanguage: {
             code?: string;
             nameEs?: string;
@@ -1993,6 +1952,49 @@ export interface components {
             commissionCop?: number;
             /** Format: int64 */
             earningsCop?: number;
+        };
+        TeacherApplicationView: {
+            /** Format: uuid */
+            id?: string;
+            status?: string;
+            /** Format: date-time */
+            submittedAt?: string;
+            decisionNote?: string;
+            agreementAccepted?: boolean;
+            missing?: string[];
+            documents?: components["schemas"]["DocumentView"][];
+            answers?: components["schemas"]["ProfileResponse"];
+            /** Format: int32 */
+            reviewBusinessDays?: number;
+        };
+        StudentProfileRequest: {
+            selfDeclaredLevel?: string;
+            primaryLanguage?: string;
+            motivation?: string;
+            goalCodes?: string[];
+        };
+        Accessory: {
+            zone?: string;
+            accessoryCode?: string;
+        };
+        StudentProfileResponse: {
+            /** Format: uuid */
+            id?: string;
+            fullName?: string;
+            photoUrl?: string;
+            selfDeclaredLevel?: string;
+            primaryLanguage?: string;
+            motivation?: string;
+            goalCodes?: string[];
+            frameCode?: string;
+            paletteCode?: string;
+            skyCode?: string;
+            accessories?: components["schemas"]["Accessory"][];
+            isPublic?: boolean;
+            ownView?: boolean;
+        };
+        StudentVisibilityRequest: {
+            isPublic: boolean;
         };
         RateRequest: {
             /** Format: int64 */
@@ -2231,7 +2233,7 @@ export interface components {
             professorId: string;
             /** Format: date-time */
             startsAt: string;
-            modality: string;
+            modality?: string;
             locationNote?: string;
             languageCode?: string;
             /** Format: uuid */
@@ -2676,6 +2678,8 @@ export interface components {
             heldCop?: number;
             /** Format: int64 */
             payableCop?: number;
+            /** Format: int64 */
+            inTransitCop?: number;
             /** Format: int64 */
             transferredCop?: number;
             /** Format: int64 */

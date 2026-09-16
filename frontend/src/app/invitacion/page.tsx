@@ -152,8 +152,11 @@ function Invitacion() {
             </div>
 
             <label className="mt-4 block text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary" htmlFor="headline">
-              Titular <span className="font-semibold normal-case text-text-muted">(opcional)</span>
+              Título <span className="font-semibold normal-case text-text-muted">(opcional)</span>
             </label>
+            <p className="mt-0.5 text-[12px] normal-case tracking-normal text-text-muted">
+              Atrae estudiantes con una frase que muestre tu experiencia.
+            </p>
             <Campo
               id="headline"
               type="text"

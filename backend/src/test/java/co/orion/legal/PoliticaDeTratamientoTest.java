@@ -100,8 +100,11 @@ class PoliticaDeTratamientoTest {
         String terminos = leer("legal/terms-1.0.md");
 
         assertThat(terminos).contains("**Cancelar se puede siempre**");
-        assertThat(terminos).contains("Cancelas con más de 12 horas");
-        assertThat(terminos).contains("Cancelas con menos de 12 horas");
+        // La cifra no se escribe en la cláusula: se cita el ajuste, y `LegalDocumentService` la
+        // rellena en cada lectura. Lo que este test fija es que la cláusula siga hablando de las
+        // dos caras de la frontera, no cuál es la frontera — eso lo decide Ajustes.
+        assertThat(terminos).contains("Cancelas con más de {{cancelacion_estudiante}}");
+        assertThat(terminos).contains("Cancelas con menos de {{cancelacion_estudiante}}");
         assertThat(terminos).contains("el profesor recibe su pago y no hay devolución");
         assertThat(terminos).contains("**El profesor cancela**, con el tiempo que sea");
     }

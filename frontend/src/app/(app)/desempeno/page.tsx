@@ -83,8 +83,8 @@ export default function DesempenoPage() {
         <Tarjeta className="mt-5">
           <p className="text-[14px] font-semibold text-text">Aún no hay nada que medir</p>
           <p className="mt-1 text-[13px] text-text-secondary">
-            Tus indicadores aparecen cuando empieces a dar clases. Mientras tanto, en el buscador
-            apareces con una posición neutra: nadie te penaliza por ser nuevo.
+            Tus indicadores aparecerán en cuanto empieces a dar clases. Mientras tanto, tu perfil
+            se muestra en una posición estándar dentro del buscador.
           </p>
         </Tarjeta>
       ) : (

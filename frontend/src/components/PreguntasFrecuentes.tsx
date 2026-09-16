@@ -2,6 +2,8 @@
 
 import { MessageCircle } from "lucide-react";
 import { useContacto } from "@/lib/soporte";
+import { horas, minutos, useCifras } from "@/lib/cifras";
+import type { PublicFigures } from "@/lib/api/types";
 
 type Pregunta = { p: string; r: string };
 
@@ -15,11 +17,11 @@ type Pregunta = { p: string; r: string };
  * <p>Debajo, siempre, la salida humana. Una sección de preguntas frecuentes que no ofrece hablar
  * con alguien es un callejón sin salida para quien tiene justo la pregunta que no está.
  */
-const PREGUNTAS: Record<"estudiante" | "profesor" | "general", Pregunta[]> = {
+const preguntas = (c: PublicFigures): Record<"estudiante" | "profesor" | "general", Pregunta[]> => ({
   estudiante: [
     {
       p: "¿Cómo reservo una clase?",
-      r: "Busca un profesor, abre su perfil y elige día y hora entre los cupos libres. Las clases duran 60 minutos y empiezan en punto, en hora de Bogotá.",
+      r: `Busca un profesor, abre su perfil y elige día y hora entre los cupos libres. Las clases duran ${minutos(c.classMinutes)} y empiezan en punto, en hora de Bogotá.`,
     },
     {
       p: "Reservé y no me confirmó la clase. ¿Por qué?",
@@ -31,7 +33,7 @@ const PREGUNTAS: Record<"estudiante" | "profesor" | "general", Pregunta[]> = {
     },
     {
       p: "¿Qué pasa si cancelo?",
-      r: "Cancelar se puede siempre. Con más de 12 horas por delante recuperas el valor completo; dentro de las últimas 12 horas no hay devolución, porque tu profesor ya apartó esa hora y no puede dársela a nadie más.",
+      r: `Cancelar se puede siempre. Con más de ${horas(c.studentCancelHours)} por delante recuperas el valor completo; dentro de las últimas ${horas(c.studentCancelHours)} no hay devolución, porque tu profesor ya apartó esa hora y no puede dársela a nadie más.`,
     },
     {
       p: "¿Puedo pedir que me devuelvan el dinero a la tarjeta en vez de saldo?",
@@ -47,11 +49,11 @@ const PREGUNTAS: Record<"estudiante" | "profesor" | "general", Pregunta[]> = {
     },
     {
       p: "Mi profesor no llegó. ¿Qué hago?",
-      r: "En «Mis clases», pestaña de pasadas, usa «Reportar un problema». Puedes hacerlo desde 15 minutos después de la hora de inicio y hasta 24 horas después de que termine. El pago queda congelado hasta que lo revisemos.",
+      r: `En «Mis clases», pestaña de pasadas, usa «Reportar un problema». Puedes hacerlo desde ${minutos(c.noShowReportMinutes)} después de la hora de inicio y hasta ${horas(c.disputeReportWindowHours)} después de que termine. El pago queda congelado hasta que lo revisemos.`,
     },
     {
       p: "¿Puedo cambiar la hora de una clase?",
-      r: "Sí, con «Proponer otro horario». La clase no se mueve hasta que tu profesor acepte, y el pago no se toca. Se puede incluso dentro de las 12 horas: es la salida de quien ya no alcanza a cancelar.",
+      r: `Sí, con «Proponer otro horario». La clase no se mueve hasta que tu profesor acepte, y el pago no se toca. Se puede incluso dentro de las ${horas(c.studentCancelHours)}: es la salida de quien ya no alcanza a cancelar.`,
     },
     {
       p: "¿Qué es una semana protegida?",
@@ -69,7 +71,7 @@ const PREGUNTAS: Record<"estudiante" | "profesor" | "general", Pregunta[]> = {
     },
     {
       p: "¿Cuánto retiene Orión?",
-      r: "El 20 % del precio de la clase. Lo ves desglosado al fijar tu tarifa y clase por clase en «Ganancias». La comisión se calcula siempre sobre el precio, aunque el estudiante pague con saldo.",
+      r: `El ${c.commissionPercent} % del precio de la clase. Lo ves desglosado al fijar tu tarifa y clase por clase en «Ganancias». La comisión se calcula siempre sobre el precio, aunque el estudiante pague con saldo.`,
     },
     {
       p: "¿Cuándo me pagan?",
@@ -77,11 +79,11 @@ const PREGUNTAS: Record<"estudiante" | "profesor" | "general", Pregunta[]> = {
     },
     {
       p: "¿Qué pasa si tengo que cancelar?",
-      r: "Cancelar se puede siempre. Con más de 12 horas no tiene consecuencias para ti. Con menos, tu estudiante recupera todo igual, tú no cobras esa clase y queda registrado: las cancelaciones de último momento repetidas pesan en tu perfil.",
+      r: `Cancelar se puede siempre. Con más de ${horas(c.professorCancelHours)} no tiene consecuencias para ti. Con menos, tu estudiante recupera todo igual, tú no cobras esa clase y queda registrado: las cancelaciones de último momento repetidas pesan en tu perfil.`,
     },
     {
       p: "¿Y si el estudiante no llega?",
-      r: "Regístralo como inasistencia en «Mis clases». Cobras igual: apartaste tu hora y estuviste ahí. Si no registras nada, el sistema cierra la clase solo a las 24 horas y libera el pago de todos modos.",
+      r: `Regístralo como inasistencia en «Mis clases». Cobras igual: apartaste tu hora y estuviste ahí. Si no registras nada, el sistema cierra la clase solo a las ${horas(c.autoCompleteHours)} y libera el pago de todos modos.`,
     },
     {
       p: "¿Cómo abro mi disponibilidad?",
@@ -115,7 +117,7 @@ const PREGUNTAS: Record<"estudiante" | "profesor" | "general", Pregunta[]> = {
     },
     {
       p: "¿Puedo cancelar una clase?",
-      r: "Siempre. Con más de 12 horas por delante recuperas el valor completo; dentro de las últimas 12 horas la clase se considera prestada y no hay devolución.",
+      r: `Siempre. Con más de ${horas(c.studentCancelHours)} por delante recuperas el valor completo; dentro de las últimas ${horas(c.studentCancelHours)} la clase se considera prestada y no hay devolución.`,
     },
     {
       p: "¿Hay edad mínima?",
@@ -126,7 +128,7 @@ const PREGUNTAS: Record<"estudiante" | "profesor" | "general", Pregunta[]> = {
       r: "Postúlate desde «Enseña en Orión». Completas tu perfil, tus idiomas y tus documentos, y una persona revisa tu postulación antes de publicarte.",
     },
   ],
-};
+});
 
 const TITULO: Record<"estudiante" | "profesor" | "general", string> = {
   estudiante: "Preguntas frecuentes",
@@ -142,14 +144,15 @@ export function PreguntasFrecuentes({
   className?: string;
 }) {
   const contacto = useContacto();
-  const preguntas = PREGUNTAS[rol];
+  const cifras = useCifras();
+  const lista = preguntas(cifras)[rol];
 
   return (
     <section className={`mt-8 ${className}`}>
       <h2 className="font-display text-[19px] font-bold">{TITULO[rol]}</h2>
 
       <div className="mt-3 grid gap-2">
-        {preguntas.map((pregunta) => (
+        {lista.map((pregunta) => (
           <details
             key={pregunta.p}
             className="group rounded-card border border-border bg-surface-raised px-4 py-3.5 open:bg-surface"

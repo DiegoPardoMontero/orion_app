@@ -300,12 +300,15 @@ function Wizard({
       <div className="mt-6">
         {paso === 0 && (
           <section className="space-y-5">
-            <PanelRigel pose="saludo" texto="Cuéntanos quién eres. Empieza por tu foto y un titular que enganche a tus estudiantes." />
+            <PanelRigel pose="saludo" texto="Cuéntanos quién eres. Empieza por tu foto y un título que enganche a tus estudiantes." />
             <CambiarFoto nombre={nombre} fotoUrl={foto} />
             <div>
               <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="headline">
-                Titular
+                Título
               </label>
+              <p className="mt-0.5 text-[12px] text-text-muted">
+                Atrae estudiantes con una frase que muestre tu experiencia.
+              </p>
               <Campo
                 id="headline"
                 type="text"

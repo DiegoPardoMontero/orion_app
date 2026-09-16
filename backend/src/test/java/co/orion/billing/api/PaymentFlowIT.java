@@ -110,6 +110,11 @@ class PaymentFlowIT extends ApiIntegrationSupport {
 
     @BeforeEach
     void seed() {
+        // Este test afirma cifras exactas de comisión, así que fija la tasa en vez de heredarla.
+        // La lección la dejó `booking_min_lead_hours`: un test que depende de un ajuste y no lo
+        // fija se rompe el día que alguien cambia el valor por defecto, y por el motivo equivocado.
+        jdbc.update("update platform_settings set value = '1500' where key = 'commission_rate_bps'");
+
         bookings.deleteAll();
         rules.deleteAll();
         profiles.deleteAll();
@@ -146,9 +151,9 @@ class PaymentFlowIT extends ApiIntegrationSupport {
         var payment = payments.findByBookingId(bookingId).orElseThrow();
         assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PAID);
         assertThat(payment.getAmountCop()).isEqualTo(RATE_COP);
-        // Comisión del 20 % (platform_settings.commission_rate_bps = 2000).
-        assertThat(payment.getCommissionCop()).isEqualTo(12_000);
-        assertThat(payment.getProfessorEarningsCop()).isEqualTo(48_000);
+        // Comisión del 15 % (platform_settings.commission_rate_bps = 1500), fijada arriba.
+        assertThat(payment.getCommissionCop()).isEqualTo(9_000);
+        assertThat(payment.getProfessorEarningsCop()).isEqualTo(51_000);
         assertThat(payment.getCommissionCop() + payment.getProfessorEarningsCop())
                 .isEqualTo(payment.getAmountCop());
     }
