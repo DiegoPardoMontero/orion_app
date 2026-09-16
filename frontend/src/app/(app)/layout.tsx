@@ -28,7 +28,6 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { Avatar } from "@/components/Avatar";
 import { CambiarClave } from "@/components/CambiarClave";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import { Vacio } from "@/components/estados";
@@ -50,6 +49,7 @@ import type { Role } from "@/lib/auth/session";
 import { useLogout, useMe } from "@/lib/auth/session";
 import { useCerrarConEscape } from "@/lib/useCerrarConEscape";
 import { useMensajesNoLeidos } from "@/lib/mensajeria";
+import { MiAvatar } from "@/components/gamificacion/MiAvatar";
 
 /** Cada ruta lleva su ícono; el activo va relleno para no marcarse solo por color. */
 const ICONO: Record<string, LucideIcon> = {
@@ -421,7 +421,7 @@ function MenuUsuario({
         onClick={() => setAbierto((v) => !v)}
         className="rounded-full ring-2 ring-transparent transition hover:ring-primary-soft focus-visible:shadow-focus"
       >
-        <Avatar nombre={me.fullName} fotoUrl={me.photoUrl} size="sm" />
+        <MiAvatar size={36} />
       </button>
     ) : (
       <button
@@ -430,7 +430,7 @@ function MenuUsuario({
         onClick={() => setAbierto((v) => !v)}
         className="flex w-full items-center gap-2.5 rounded-pill bg-surface-raised px-3 py-2 text-left shadow-sm transition hover:shadow-md focus-visible:shadow-focus"
       >
-        <Avatar nombre={me.fullName} fotoUrl={me.photoUrl} size="sm" />
+        <MiAvatar size={36} />
         <span className="min-w-0">
           <span className="block truncate text-[13px] font-bold text-text">{me.fullName}</span>
           <span className="block truncate text-[11px] text-text-muted">{ETIQUETA_ROL[me.role]}</span>
