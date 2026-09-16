@@ -22,12 +22,18 @@ const DIAS = [
   { valor: 7, nombre: "Domingo", corto: "Dom" },
 ];
 
-/** Las franjas empiezan y terminan en punto: la regla la impone el backend, aquí solo se refleja. */
 /**
- * Las 24 horas en punto. El VALOR sigue siendo "18:00", que es lo que entiende el backend; lo que
+ * Cada media hora del día. El VALOR sigue siendo "18:30", que es lo que entiende el backend; lo que
  * cambia es la etiqueta que lee el profesor, en formato de 12 horas.
+ *
+ * <p>Antes eran solo las horas en punto. No lo exigía ni el backend ni la base —era convención de
+ * este formulario— y dejaba fuera al profesor que empieza a y media. Ahora que los cupos arrancan
+ * cada media hora, la franja también tiene que poder hacerlo: si no, abrir de 17:30 a 20:00 era
+ * imposible de decir.
  */
-const HORAS = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, "0")}:00`);
+const HORAS = Array.from({ length: 48 }, (_, i) =>
+  `${String(Math.floor(i / 2)).padStart(2, "0")}:${i % 2 === 0 ? "00" : "30"}`,
+);
 
 export default function DisponibilidadPage() {
   const reglas = useQuery({
@@ -474,9 +480,15 @@ function ModalBloquearFecha({ onCerrar }: { onCerrar: () => void }) {
 
 /** El backend manda "18:00:00"; en pantalla sobra el segundero. */
 /** "19:00" → "20:00". Tope en las 23:00, que es la última hora en la que puede empezar una clase. */
+/**
+ * Una hora después, conservando los minutos. Es el fin por defecto de una franja nueva, y una hora
+ * es el mínimo que sirve: la clase dura 55, así que media hora no deja caber ninguna. Truncar los
+ * minutos —que es lo que hacía antes— convertía «desde las 17:30» en una franja de 30 minutos que
+ * no producía un solo cupo.
+ */
 function siguienteHora(hhmm: string): string {
-  const h = Math.min(23, Number(hhmm.slice(0, 2)) + 1);
-  return `${String(h).padStart(2, "0")}:00`;
+  const minutos = Math.min(23 * 60 + 30, Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5)) + 60);
+  return `${String(Math.floor(minutos / 60)).padStart(2, "0")}:${minutos % 60 === 0 ? "00" : "30"}`;
 }
 
 function corta(hora?: string): string {

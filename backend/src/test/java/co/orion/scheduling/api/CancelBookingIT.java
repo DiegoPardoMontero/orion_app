@@ -157,7 +157,8 @@ class CancelBookingIT extends ApiIntegrationSupport {
                 "/api/v1/professors/" + maria.getId() + "/slots?from=2026-07-15&to=2026-07-15",
                 anaSession, SlotsResponse.class);
         // El cupo vuelve a estar disponible: el índice único parcial lo permite y el cálculo lo ofrece.
-        assertThat(after.getBody().slots()).hasSize(3);
+        // Cinco y no tres desde que los arranques van cada media hora.
+        assertThat(after.getBody().slots()).hasSize(5);
     }
 
     /**

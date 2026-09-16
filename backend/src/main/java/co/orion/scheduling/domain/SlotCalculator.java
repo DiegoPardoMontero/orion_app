@@ -25,10 +25,16 @@ public final class SlotCalculator {
     public static final Duration CLASS_LENGTH = ClassLength.DURATION;
 
     /**
-     * Cada cuánto empieza un cupo. Es la hora en punto, y es independiente de lo que dure la clase:
-     * separarlas es lo que convierte «55 minutos» en «55 de clase y 5 de margen» sin tocar nada más.
+     * Cada cuánto puede empezar un cupo. Media hora, y es independiente de lo que dure la clase:
+     * separarlas es lo que permitió pasar de «solo en punto» a «en punto y y media» sin acortar la
+     * clase ni tocar el precio.
+     *
+     * <p>No crea clases solapadas. Reservar las 5:00 ocupa hasta las 5:55, y el filtro de
+     * intersección retira las 5:30 del listado; las 6:00 siguen libres, con los mismos cinco
+     * minutos de respiro de siempre. Lo que sí cambia es que un cupo tomado ahora puede llevarse
+     * por delante al siguiente, y eso hay que verlo en la agenda del profesor.
      */
-    private static final Duration SLOT_CADENCE = Duration.ofHours(1);
+    private static final Duration SLOT_CADENCE = Duration.ofMinutes(30);
 
     /** Todos los cupos libres del rango: futuro estricto, sin exigir antelación. */
     public List<Slot> calculate(List<AvailabilityRule> rules,
@@ -81,8 +87,9 @@ public final class SlotCalculator {
                             List<Slot> slots) {
         ZonedDateTime ruleEnd = date.atTime(rule.getEndTime()).atZone(BOGOTA);
 
-        // Los cupos empiezan donde empieza la regla y avanzan de hora en hora mientras la CLASE
-        // quepa entera: una regla 18:00–21:00 da 18:00, 19:00 y 20:00, nunca un cupo a medias.
+        // Los cupos empiezan donde empieza la regla y avanzan cada media hora mientras la CLASE
+        // quepa entera: una regla 18:00–21:00 da 18:00, 18:30, 19:00, 19:30 y 20:00 — nunca las
+        // 20:30, porque esa clase terminaría a las 21:25 y la franja cierra a las 21:00.
         for (ZonedDateTime start = date.atTime(rule.getStartTime()).atZone(BOGOTA);
              !start.plus(CLASS_LENGTH).isAfter(ruleEnd);
              start = start.plus(SLOT_CADENCE)) {

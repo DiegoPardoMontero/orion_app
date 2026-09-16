@@ -154,8 +154,8 @@ class ProfessorSlotsIT extends ApiIntegrationSupport {
         ResponseEntity<SlotsResponse> response = get(slotsUrl(maria, ""), anaSession, SlotsResponse.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        // El rango por defecto (lun 13 → dom 19) contiene un solo miércoles: 3 cupos.
-        assertThat(response.getBody().slots()).hasSize(3);
+        // El rango por defecto (lun 13 → dom 19) contiene un solo miércoles: 5 cupos de media en media hora.
+        assertThat(response.getBody().slots()).hasSize(5);
         assertThat(response.getBody().slots())
                 .allSatisfy(slot -> assertThat(slot.startsAt().toLocalDate()).isEqualTo(WEDNESDAY));
     }
@@ -199,8 +199,8 @@ class ProfessorSlotsIT extends ApiIntegrationSupport {
         ResponseEntity<SlotsResponse> response = get(
                 slotsUrl(maria, "?from=2026-07-13&to=2026-07-13"), anaSession, SlotsResponse.class);
 
-        // 18:00, 19:00, 20:00 y 21:00.
-        assertThat(response.getBody().slots()).hasSize(4);
+        // De 18:00 a 21:00, cada media hora: 18:00, 18:30, 19:00, 19:30, 20:00, 20:30 y 21:00.
+        assertThat(response.getBody().slots()).hasSize(7);
         // Comparamos instantes, no la hora de pared: el cliente HTTP del test deserializa el
         // ZonedDateTime pasándolo a UTC, aunque el JSON del servidor viene en -05:00.
         assertThat(response.getBody().slots().getFirst().startsAt().toInstant())
@@ -221,8 +221,8 @@ class ProfessorSlotsIT extends ApiIntegrationSupport {
         ResponseEntity<SlotsResponse> response = get(
                 slotsUrl(maria, "?from=2026-07-13&to=2026-07-13"), anaSession, SlotsResponse.class);
 
-        // De 13:00 a 21:00: nueve cupos, todos los que quedan del día.
-        assertThat(response.getBody().slots()).hasSize(9);
+        // De 12:30 a 21:00 cada media hora: dieciocho cupos, todos los que quedan del día.
+        assertThat(response.getBody().slots()).hasSize(18);
     }
 
     @Test
@@ -260,7 +260,7 @@ class ProfessorSlotsIT extends ApiIntegrationSupport {
         ResponseEntity<SlotsResponse> response = get(
                 slotsUrl(maria, "?from=2026-07-15&to=2026-07-15"), anaSession, SlotsResponse.class);
 
-        assertThat(response.getBody().slots()).hasSize(3);
+        assertThat(response.getBody().slots()).hasSize(5);
         assertThat(response.getBody().slots())
                 .anyMatch(slot -> slot.startsAt().toInstant().equals(wednesdayAt(9)));
     }

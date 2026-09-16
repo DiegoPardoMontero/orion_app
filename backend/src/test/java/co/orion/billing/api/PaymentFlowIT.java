@@ -313,7 +313,7 @@ class PaymentFlowIT extends ApiIntegrationSupport {
                 .isEqualTo(BookingStatus.EXPIRED);
         assertThat(payments.findByBookingId(bookingId).orElseThrow().getStatus())
                 .isEqualTo(PaymentStatus.CANCELLED);
-        assertThat(availableSlots()).hasSize(3);
+        assertThat(availableSlots()).hasSize(5);
         // Y el cupo se puede volver a reservar de verdad, no solo "aparece libre".
         assertThat(book(carlosSession, 9)).isNotNull();
     }

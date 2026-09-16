@@ -16,7 +16,7 @@ export const DIAS_SEMANA = [
 ];
 
 const ALTO_HORA = 44;
-const HORA_MINIMA = 6;
+const HORA_MINIMA = 5;
 const HORA_MAXIMA = 23;
 
 /** "18:00" → 18. Las franjas siempre empiezan y terminan en punto; lo garantiza el backend. */
@@ -25,19 +25,16 @@ function hora(hhmm: string): number {
 }
 
 /**
- * La ventana que se dibuja. No son las 24 horas: un profesor que enseña de 6 a 9 de la tarde no
- * necesita mirar la madrugada, y pintarla entera dejaría su horario reducido a una franja diminuta
- * en un lienzo casi vacío. Se toma lo que ocupan sus reglas, con un margen de una hora arriba y
- * abajo para que quepa añadir al lado de lo que ya hay.
+ * La ventana que se dibuja: siempre el día entero de trabajo, de 5:00 a 23:00.
+ *
+ * <p>Antes se encogía a lo que ocupaban las reglas del profesor, con una hora de margen. La idea
+ * era no dejar su horario diminuto en un lienzo vacío, pero el efecto real era el contrario: quien
+ * todavía no había abierto nada veía una rejilla corta y no entendía hasta dónde podía llegar, y
+ * quien tenía solo la tarde no veía que la mañana existía. El lienzo completo responde la pregunta
+ * de «¿desde cuándo puedo?» sin que haya que preguntarla.
  */
-function ventana(reglas: RuleResponse[]): { desde: number; hasta: number } {
-  if (reglas.length === 0) return { desde: 7, hasta: 21 };
-  const inicios = reglas.map((r) => hora(r.startTime!));
-  const fines = reglas.map((r) => hora(r.endTime!));
-  return {
-    desde: Math.max(HORA_MINIMA, Math.min(...inicios) - 1),
-    hasta: Math.min(HORA_MAXIMA, Math.max(...fines) + 1),
-  };
+function ventana(): { desde: number; hasta: number } {
+  return { desde: HORA_MINIMA, hasta: HORA_MAXIMA };
 }
 
 /**
@@ -54,7 +51,7 @@ export function CalendarioSemanal({
   onAnadir: (weekday: number, horaInicio: string) => void;
   onEliminar: (regla: RuleResponse) => void;
 }) {
-  const { desde, hasta } = ventana(reglas);
+  const { desde, hasta } = ventana();
   const filas = hasta - desde;
 
   return (

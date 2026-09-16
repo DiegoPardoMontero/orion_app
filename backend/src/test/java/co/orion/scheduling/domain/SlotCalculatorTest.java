@@ -37,15 +37,17 @@ class SlotCalculatorTest {
 
     // C1
     @Test
-    void aSingleRuleProducesOneSlotPerWholeHourInsideIt() {
+    void aSingleRuleProducesOneSlotEveryHalfHourInsideIt() {
         List<Slot> slots = calculator.calculate(
                 List.of(rule(DayOfWeek.MONDAY, 18, 21)),
                 List.of(), List.of(),
                 MONDAY, MONDAY, LONG_BEFORE);
 
-        // 18:00–21:00 son tres cupos: 18, 19 y 20. Nunca uno que termine después de las 21:00.
+        // 18:00–21:00 da cinco arranques, de media en media hora. Las 20:30 no: esa clase
+        // terminaría a las 21:25 y la franja cierra a las 21:00.
         assertThat(startTimes(slots)).containsExactly(
-                bogota(MONDAY, 18), bogota(MONDAY, 19), bogota(MONDAY, 20));
+                bogota(MONDAY, 18), bogota(MONDAY, 18, 30), bogota(MONDAY, 19),
+                bogota(MONDAY, 19, 30), bogota(MONDAY, 20));
     }
 
     // C1 (segunda mitad: nada en los demás días del rango)
@@ -56,7 +58,7 @@ class SlotCalculatorTest {
                 List.of(), List.of(),
                 MONDAY, MONDAY.plusDays(5), LONG_BEFORE);
 
-        assertThat(slots).hasSize(3);
+        assertThat(slots).hasSize(5);
         assertThat(slots).allSatisfy(slot ->
                 assertThat(slot.startsAt().toLocalDate()).isEqualTo(MONDAY));
     }
@@ -70,8 +72,8 @@ class SlotCalculatorTest {
                 WEDNESDAY, WEDNESDAY, LONG_BEFORE);
 
         assertThat(startTimes(slots)).containsExactly(
-                bogota(WEDNESDAY, 8), bogota(WEDNESDAY, 9),
-                bogota(WEDNESDAY, 15), bogota(WEDNESDAY, 16));
+                bogota(WEDNESDAY, 8), bogota(WEDNESDAY, 8, 30), bogota(WEDNESDAY, 9),
+                bogota(WEDNESDAY, 15), bogota(WEDNESDAY, 15, 30), bogota(WEDNESDAY, 16));
     }
 
     // C3
@@ -85,7 +87,8 @@ class SlotCalculatorTest {
 
         // El lunes bloqueado desaparece entero; el lunes siguiente queda intacto.
         assertThat(startTimes(slots)).containsExactly(
-                bogota(NEXT_MONDAY, 18), bogota(NEXT_MONDAY, 19), bogota(NEXT_MONDAY, 20));
+                bogota(NEXT_MONDAY, 18), bogota(NEXT_MONDAY, 18, 30), bogota(NEXT_MONDAY, 19),
+                bogota(NEXT_MONDAY, 19, 30), bogota(NEXT_MONDAY, 20));
     }
 
     // C4
@@ -111,9 +114,12 @@ class SlotCalculatorTest {
                 List.of(),
                 WEDNESDAY, WEDNESDAY, LONG_BEFORE);
 
-        // 10:30–11:30 toca el cupo de las 10 y el de las 11: ambos mueren. 9 y 12 sobreviven.
+        // 10:30–11:30 se lleva por delante los arranques de 10:00, 10:30 y 11:00. Las 9:30
+        // sobreviven por cinco minutos —terminan a las 10:25— y las 11:30 empiezan justo donde la
+        // excepción acaba, que en semiabierto no cuenta como choque.
         assertThat(startTimes(slots)).containsExactly(
-                bogota(WEDNESDAY, 9), bogota(WEDNESDAY, 12));
+                bogota(WEDNESDAY, 9), bogota(WEDNESDAY, 9, 30),
+                bogota(WEDNESDAY, 11, 30), bogota(WEDNESDAY, 12));
     }
 
     // C6
@@ -170,7 +176,7 @@ class SlotCalculatorTest {
                 WEDNESDAY, WEDNESDAY, now);
 
         assertThat(startTimes(slots)).containsExactly(
-                bogota(WEDNESDAY, 8), bogota(WEDNESDAY, 9));
+                bogota(WEDNESDAY, 8), bogota(WEDNESDAY, 8, 30), bogota(WEDNESDAY, 9));
         // Y con el offset correcto de Colombia, que no tiene horario de verano.
         assertThat(slots.getFirst().startsAt().getOffset().getId()).isEqualTo("-05:00");
     }
@@ -184,18 +190,17 @@ class SlotCalculatorTest {
                 List.of(everyWednesday), List.of(), List.of(),
                 WEDNESDAY, WEDNESDAY, LONG_BEFORE);
 
-        assertThat(slots).hasSize(2);
+        assertThat(slots).hasSize(3);
         assertThat(slots).allSatisfy(slot ->
                 assertThat(slot.startsAt().toLocalDate()).isEqualTo(WEDNESDAY));
     }
 
     /**
-     * Cincuenta y cinco minutos de clase dentro de una cadencia de una hora: los cinco que sobran
-     * son el margen del profesor entre una clase y la siguiente, y salen de aquí, no de una regla
-     * aparte.
+     * La clase sigue durando 55 minutos; lo que cambió es cada cuánto puede empezar. Antes solo en
+     * punto, ahora también y media — sin acortar la clase y sin tocar el precio.
      */
     @Test
-    void everySlotLastsFiftyFiveMinutesAndStartsOnTheHour() {
+    void everySlotLastsFiftyFiveMinutesAndStartsOnTheHourOrTheHalf() {
         List<Slot> slots = calculator.calculate(
                 List.of(rule(DayOfWeek.MONDAY, 18, 21)),
                 List.of(), List.of(),
@@ -203,24 +208,49 @@ class SlotCalculatorTest {
 
         assertThat(slots).allSatisfy(slot -> {
             assertThat(slot.endsAt()).isEqualTo(slot.startsAt().plusMinutes(55));
-            assertThat(slot.startsAt().getMinute()).isZero();
+            assertThat(slot.startsAt().getMinute()).isIn(0, 30);
         });
-        // La cadencia no cambió: la misma franja sigue dando los mismos tres cupos.
-        assertThat(slots).hasSize(3);
+        assertThat(slots).hasSize(5);
     }
 
-    /** El hueco entre el fin de una clase y el inicio de la siguiente es el margen, y son 5. */
+    /**
+     * Los arranques que se ofrecen se pisan entre sí, y eso es correcto: son alternativas, no una
+     * agenda. Tomar uno retira del listado los que se solapan con él — lo comprueba
+     * {@link #reservarUnCupoRetiraElDeMediaHoraDespuesPeroNoElDeLaHoraSiguiente()}.
+     *
+     * <p>Lo que sí se conserva es el respiro del profesor: dos clases consecutivas de verdad —una
+     * hora de diferencia— siguen dejando cinco minutos entre el fin de una y el inicio de la otra.
+     */
     @Test
-    void thereAreFiveMinutesBetweenOneClassAndTheNext() {
+    void twoClassesAnHourApartStillLeaveTheFiveMinuteBreather() {
         List<Slot> slots = calculator.calculate(
                 List.of(rule(DayOfWeek.MONDAY, 18, 21)),
                 List.of(), List.of(),
                 MONDAY, MONDAY, LONG_BEFORE);
 
-        for (int i = 0; i < slots.size() - 1; i++) {
-            assertThat(java.time.Duration.between(slots.get(i).endsAt(), slots.get(i + 1).startsAt()))
-                    .isEqualTo(java.time.Duration.ofMinutes(5));
-        }
+        Slot lasSeis = slots.getFirst();
+        Slot lasSiete = slots.stream()
+                .filter(s -> s.startsAt().equals(lasSeis.startsAt().plusHours(1)))
+                .findFirst().orElseThrow();
+
+        assertThat(java.time.Duration.between(lasSeis.endsAt(), lasSiete.startsAt()))
+                .isEqualTo(java.time.Duration.ofMinutes(5));
+    }
+
+    /**
+     * La consecuencia de la media hora que hay que entender: un cupo tomado se lleva por delante al
+     * de treinta minutos después, porque la clase dura 55. El de la hora siguiente sigue libre.
+     */
+    @Test
+    void reservarUnCupoRetiraElDeMediaHoraDespuesPeroNoElDeLaHoraSiguiente() {
+        List<Slot> slots = calculator.calculate(
+                List.of(rule(DayOfWeek.MONDAY, 18, 21)),
+                List.of(),
+                List.of(new OccupiedInterval(bogota(MONDAY, 18), bogota(MONDAY, 18, 55))),
+                MONDAY, MONDAY, LONG_BEFORE);
+
+        assertThat(startTimes(slots)).containsExactly(
+                bogota(MONDAY, 19), bogota(MONDAY, 19, 30), bogota(MONDAY, 20));
     }
 
     private AvailabilityRule rule(DayOfWeek weekday, int startHour, int endHour) {
@@ -236,7 +266,11 @@ class SlotCalculatorTest {
     }
 
     private ZonedDateTime bogota(LocalDate date, int hour) {
-        return ZonedDateTime.of(date, LocalTime.of(hour, 0), BOGOTA);
+        return bogota(date, hour, 0);
+    }
+
+    private ZonedDateTime bogota(LocalDate date, int hour, int minute) {
+        return ZonedDateTime.of(date, LocalTime.of(hour, minute), BOGOTA);
     }
 
     private List<ZonedDateTime> startTimes(List<Slot> slots) {
