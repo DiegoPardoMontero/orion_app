@@ -1,0 +1,360 @@
+package co.orion.assessment.application;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import co.orion.assessment.domain.AssessmentMode;
+import co.orion.assessment.domain.AssessmentRecommendation;
+import co.orion.assessment.domain.AssessmentStatus;
+import co.orion.assessment.domain.AssessmentTurn;
+import co.orion.assessment.domain.ConfidenceAssessment;
+import co.orion.assessment.domain.ConfidenceScoreCalculator;
+import co.orion.assessment.domain.PesosDelPuntaje;
+import co.orion.assessment.domain.Puntaje;
+import co.orion.assessment.domain.Recomendacion;
+import co.orion.assessment.domain.SignalExtractor;
+import co.orion.assessment.domain.TurnoDelUsuario;
+import co.orion.assessment.domain.VoiceConsent;
+import co.orion.assessment.persistence.AssessmentRecommendationRepository;
+import co.orion.assessment.persistence.AssessmentTurnRepository;
+import co.orion.assessment.persistence.ConfidenceAssessmentRepository;
+import co.orion.assessment.persistence.VoiceConsentRepository;
+import co.orion.catalog.application.PlatformSettingsService;
+import co.orion.identity.domain.User;
+import co.orion.shared.error.BusinessRuleViolationException;
+import co.orion.shared.error.ConflictException;
+import co.orion.shared.error.ResourceNotFoundException;
+import co.orion.shared.error.UnprocessableException;
+import co.orion.shared.time.BusinessZone;
+
+/**
+ * El diagnóstico de confianza, de principio a fin.
+ *
+ * <p><strong>Las puertas antes de empezar.</strong> Correo verificado y consentimiento de voz
+ * vigente, cada una con su 422 y su motivo exacto — un 403 genérico obliga a la persona a adivinar
+ * qué le falta. Y el enfriamiento responde 409 con la fecha en que puede repetir y el enlace a su
+ * resultado anterior, porque «no puedes» sin «cuándo sí» es una puerta cerrada sin cartel.
+ *
+ * <p><strong>Las señales las deduce el servidor.</strong> El cliente manda lo que solo él puede
+ * medir —cuánto tardó en arrancar y cuánto habló— y el texto. Todo lo demás sale de
+ * {@link SignalExtractor} aquí dentro. Un puntaje que dependiera de números enviados por el
+ * navegador no sería reproducible, y cualquiera podría regalarse un cien.
+ *
+ * <p><strong>Sin turnos suficientes no hay número.</strong> Se cierra como ABANDONED. Un puntaje
+ * sacado de dos frases parece un dato y no lo es, y este número lleva una marca registrada encima.
+ */
+@Service
+public class AssessmentService {
+
+    private static final ObjectMapper JSON = new ObjectMapper();
+
+    /** La versión del texto de consentimiento que se está pidiendo hoy. */
+    public static final String VERSION_CONSENTIMIENTO = "1.0";
+
+    private final ConfidenceAssessmentRepository assessments;
+    private final AssessmentTurnRepository turns;
+    private final AssessmentRecommendationRepository recommendations;
+    private final VoiceConsentRepository consents;
+    private final RecommendationService recommender;
+    private final AssessmentBudgetService budget;
+    private final VoiceConversationProvider voice;
+    private final ScenarioPrompts prompts;
+    private final PlatformSettingsService settings;
+    private final Clock clock;
+
+    public AssessmentService(ConfidenceAssessmentRepository assessments,
+                             AssessmentTurnRepository turns,
+                             AssessmentRecommendationRepository recommendations,
+                             VoiceConsentRepository consents,
+                             RecommendationService recommender,
+                             AssessmentBudgetService budget,
+                             VoiceConversationProvider voice,
+                             ScenarioPrompts prompts,
+                             PlatformSettingsService settings,
+                             Clock clock) {
+        this.assessments = assessments;
+        this.turns = turns;
+        this.recommendations = recommendations;
+        this.consents = consents;
+        this.recommender = recommender;
+        this.budget = budget;
+        this.voice = voice;
+        this.prompts = prompts;
+        this.settings = settings;
+        this.clock = clock;
+    }
+
+    /* ---------------- Consentimiento ---------------- */
+
+    @Transactional
+    public VoiceConsent acceptConsent(User quien, String ip, String userAgent) {
+        return consents.save(new VoiceConsent(
+                quien.getId(), VERSION_CONSENTIMIENTO, clock.instant(), ip, userAgent));
+    }
+
+    /** Revocar no borra aquí: marca. El borrado de sus turnos lo hace el job, y se le confirma. */
+    @Transactional
+    public void revokeConsent(User quien) {
+        VoiceConsent vigente = consents.findFirstByUserIdOrderByAcceptedAtDesc(quien.getId())
+                .filter(VoiceConsent::isLive)
+                .orElseThrow(() -> new UnprocessableException(
+                        "No tienes un consentimiento de voz activo que revocar."));
+        vigente.revoke(clock.instant());
+        consents.save(vigente);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean hasLiveConsent(UUID userId) {
+        return consents.findFirstByUserIdOrderByAcceptedAtDesc(userId)
+                .filter(VoiceConsent::isLive).isPresent();
+    }
+
+    /* ---------------- Empezar ---------------- */
+
+    @Transactional
+    public Iniciada start(User quien, String languageCode) {
+        if (!quien.isEmailVerified()) {
+            throw new UnprocessableException(
+                    "Confirma tu correo antes de empezar el diagnóstico. Te enviamos el enlace "
+                            + "cuando creaste la cuenta.");
+        }
+        if (!hasLiveConsent(quien.getId())) {
+            throw new UnprocessableException(
+                    "Necesitamos tu autorización para procesar tu voz antes de empezar.");
+        }
+        if (!budget.disponible()) {
+            throw new BusinessRuleViolationException(
+                    "El diagnóstico no está disponible ahora mismo. Vuelve a intentarlo más tarde.");
+        }
+
+        // Una viva por persona e idioma: si quedó abierta, se reutiliza en vez de abrir otra. El
+        // índice único de la V34 lo garantizaría igual; esto lo hace sin estrellarse.
+        Optional<ConfidenceAssessment> viva = assessments.findByUserIdAndLanguageCodeAndStatus(
+                quien.getId(), languageCode, AssessmentStatus.IN_PROGRESS);
+        if (viva.isPresent()) {
+            return new Iniciada(viva.get(), abrirVoz(quien, languageCode));
+        }
+
+        enfriamiento(quien, languageCode);
+
+        int siguiente = assessments.lastSequence(quien.getId(), languageCode) + 1;
+        ConfidenceAssessment nueva = assessments.saveAndFlush(
+                new ConfidenceAssessment(quien.getId(), languageCode, siguiente, clock.instant()));
+        return new Iniciada(nueva, abrirVoz(quien, languageCode));
+    }
+
+    /**
+     * El enfriamiento entre diagnósticos. Responde 409 con la fecha exacta: «no puedes» sin
+     * «cuándo sí» deja a la persona sin nada que hacer con la información.
+     */
+    private void enfriamiento(User quien, String languageCode) {
+        int dias = settings.getInt("assessment_cooldown_days");
+        assessments.findFirstByUserIdAndLanguageCodeAndStatusOrderByCompletedAtDesc(
+                        quien.getId(), languageCode, AssessmentStatus.COMPLETED)
+                .filter(ultima -> ultima.getCompletedAt() != null)
+                .ifPresent(ultima -> {
+                    Instant puedeDesde = ultima.getCompletedAt().plus(Duration.ofDays(dias));
+                    if (clock.instant().isBefore(puedeDesde)) {
+                        LocalDate cuando = LocalDate.ofInstant(puedeDesde, BusinessZone.BOGOTA);
+                        throw new ConflictException(
+                                "Puedes repetir tu diagnóstico a partir del " + cuando
+                                        + ". Mientras tanto, tu resultado anterior sigue disponible.");
+                    }
+                });
+    }
+
+    private VoiceSession abrirVoz(User quien, String languageCode) {
+        int minutos = settings.getInt("assessment_max_minutes");
+        return voice.start(new VoiceSessionRequest(
+                languageCode,
+                prompts.escenario(languageCode, minutos, primerNombre(quien.getFullName())),
+                minutos * 60,
+                primerNombre(quien.getFullName())));
+    }
+
+    /* ---------------- Turnos ---------------- */
+
+    /**
+     * Registra un turno. El cliente manda lo que solo él sabe; el resto lo deduce el servidor.
+     *
+     * @param latencyMs  cuánto tardó en abrir la boca, medido en el navegador
+     * @param durationMs cuánto habló
+     */
+    @Transactional
+    public void addTurn(User quien, UUID assessmentId, int turnIndex, String speaker,
+                        String transcript, Integer latencyMs, Integer durationMs) {
+        ConfidenceAssessment evaluacion = miaYViva(quien, assessmentId);
+
+        AssessmentTurn turno = new AssessmentTurn(
+                assessmentId, turnIndex, speaker, transcript, latencyMs, durationMs, clock.instant());
+
+        if (turno.isUser()) {
+            boolean cambio = SignalExtractor.nativeSwitch(transcript, evaluacion.getLanguageCode());
+            turno.withSignals(
+                    SignalExtractor.wordCount(transcript),
+                    SignalExtractor.selfCorrections(transcript),
+                    SignalExtractor.abandonedClauses(transcript),
+                    SignalExtractor.fillerCount(transcript),
+                    cambio);
+        }
+        turns.save(turno);
+    }
+
+    /* ---------------- Cerrar ---------------- */
+
+    /**
+     * Cierra, calcula y recomienda.
+     *
+     * <p>Si no hay turnos suficientes, o la conversación se fue a español, se cierra sin número. Lo
+     * segundo es una decisión de producto y no una limitación: mostrarle un número bajo a alguien
+     * que está empezando desde cero es exactamente lo que Orión no hace.
+     */
+    @Transactional
+    public ConfidenceAssessment complete(User quien, UUID assessmentId, List<String> objetivos) {
+        ConfidenceAssessment evaluacion = miaYViva(quien, assessmentId);
+
+        List<AssessmentTurn> todos = turns.findByAssessmentIdOrderByTurnIndexAsc(assessmentId);
+        List<AssessmentTurn> delUsuario = todos.stream().filter(AssessmentTurn::isUser).toList();
+
+        int segundos = (int) Duration.between(evaluacion.getStartedAt(), clock.instant()).toSeconds();
+
+        // Dos turnos seguidos en el idioma propio: la rama en español. Misma regla que el guion.
+        if (seFueAlEspanol(delUsuario)) {
+            evaluacion.switchToFromZero();
+            evaluacion.abandon(segundos, delUsuario.size());
+            return assessments.save(evaluacion);
+        }
+
+        List<TurnoDelUsuario> senales = delUsuario.stream().map(AssessmentTurn::asSignal).toList();
+        Optional<Puntaje> puntaje = new ConfidenceScoreCalculator().calcular(senales, pesos());
+
+        if (puntaje.isEmpty()) {
+            evaluacion.abandon(segundos, delUsuario.size());
+            return assessments.save(evaluacion);
+        }
+
+        evaluacion.complete(puntaje.get(),
+                aJson(puntaje.get().dimensiones()),
+                aJson(puntaje.get().observadas().stream().map(Enum::name).toList()),
+                resumen(puntaje.get()),
+                segundos, delUsuario.size(), clock.instant());
+        ConfidenceAssessment guardada = assessments.save(evaluacion);
+
+        String nivel = nivelInferido(puntaje.get().valor());
+        List<Recomendacion> tres = recommender.para(evaluacion.getLanguageCode(), nivel, objetivos);
+        recommendations.saveAll(tres.stream()
+                .map(r -> new AssessmentRecommendation(assessmentId, r)).toList());
+
+        return guardada;
+    }
+
+    @Transactional
+    public void abandon(User quien, UUID assessmentId) {
+        ConfidenceAssessment evaluacion = miaYViva(quien, assessmentId);
+        int segundos = (int) Duration.between(evaluacion.getStartedAt(), clock.instant()).toSeconds();
+        evaluacion.abandon(segundos, (int) turns.countByAssessmentId(assessmentId));
+        assessments.save(evaluacion);
+    }
+
+    /* ---------------- Lecturas ---------------- */
+
+    @Transactional(readOnly = true)
+    public ConfidenceAssessment mia(User quien, UUID assessmentId) {
+        return assessments.findById(assessmentId)
+                .filter(a -> a.isOwnedBy(quien.getId()))
+                // 404 y no 403: la evaluación de otro no existe para ti.
+                .orElseThrow(() -> new ResourceNotFoundException("Diagnóstico no encontrado"));
+    }
+
+    @Transactional(readOnly = true)
+    public List<ConfidenceAssessment> history(User quien) {
+        return assessments.findByUserIdOrderByStartedAtDesc(quien.getId());
+    }
+
+    @Transactional(readOnly = true)
+    public List<AssessmentRecommendation> recommendationsOf(UUID assessmentId) {
+        return recommendations.findByIdAssessmentIdOrderByPositionAsc(assessmentId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AssessmentTurn> turnsOf(UUID assessmentId) {
+        return turns.findByAssessmentIdOrderByTurnIndexAsc(assessmentId);
+    }
+
+    /* ---------------- Interno ---------------- */
+
+    private ConfidenceAssessment miaYViva(User quien, UUID assessmentId) {
+        ConfidenceAssessment evaluacion = mia(quien, assessmentId);
+        if (!evaluacion.isLive()) {
+            throw new UnprocessableException("Este diagnóstico ya está cerrado.");
+        }
+        return evaluacion;
+    }
+
+    /** Dos turnos seguidos en el idioma propio. Uno solo no basta: nadie se rinde por una frase. */
+    private boolean seFueAlEspanol(List<AssessmentTurn> delUsuario) {
+        for (int i = 1; i < delUsuario.size(); i++) {
+            if (delUsuario.get(i).isNativeSwitch() && delUsuario.get(i - 1).isNativeSwitch()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private PesosDelPuntaje pesos() {
+        return new PesosDelPuntaje(
+                settings.getInt("score_weight_arranque"),
+                settings.getInt("score_weight_continuidad"),
+                settings.getInt("score_weight_extension"),
+                settings.getInt("score_weight_autonomia"),
+                settings.getInt("score_weight_soltura"));
+    }
+
+    /**
+     * El nivel que se le pasa al buscador de profesores. No es un nivel del MCER y no se le muestra
+     * a la persona como tal: es solo el filtro con el que se eligen los tres nombres.
+     */
+    private static String nivelInferido(int puntaje) {
+        if (puntaje >= 75) {
+            return "ADVANCED";
+        }
+        return puntaje >= 45 ? "INTERMEDIATE" : "BEGINNER";
+    }
+
+    /** El diagnóstico en una frase. Sin números y sin veredicto: el número ya está al lado. */
+    private static String resumen(Puntaje puntaje) {
+        return puntaje.observadas().isEmpty()
+                ? "Sostuviste la conversación de principio a fin."
+                : puntaje.observadas().getFirst().descripcion();
+    }
+
+    private static String aJson(Object valor) {
+        try {
+            return JSON.writeValueAsString(valor);
+        } catch (Exception ex) {
+            throw new IllegalStateException("No se pudo serializar el resultado del diagnóstico", ex);
+        }
+    }
+
+    private static String primerNombre(String nombre) {
+        if (nombre == null || nombre.isBlank()) {
+            return "";
+        }
+        int espacio = nombre.trim().indexOf(' ');
+        return espacio < 0 ? nombre.trim() : nombre.trim().substring(0, espacio);
+    }
+
+    /** Lo que devuelve empezar: la evaluación abierta y con qué conectarse. */
+    public record Iniciada(ConfidenceAssessment assessment, VoiceSession voice) {
+    }
+}

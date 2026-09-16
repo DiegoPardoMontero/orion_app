@@ -26,5 +26,31 @@ public enum Observacion {
     /** Se devuelve a su idioma cuando el terreno se pone difícil. */
     RETREATS_TO_NATIVE,
     /** Mucha muletilla y mucha autocorrección por cada cien palabras. */
-    FILLER_HEAVY
+    FILLER_HEAVY;
+
+    /**
+     * La observación, dicha a la persona.
+     *
+     * <p>Sin números y sin veredicto: el número ya está al lado, y repetirlo en palabras solo sirve
+     * para que duela dos veces. Lo que describe es una conducta observable, no una carencia — «te
+     * tomas unos segundos antes de empezar» es algo que se puede trabajar; «arrancas lento» es una
+     * etiqueta.
+     */
+    public String descripcion() {
+        return switch (this) {
+            case STEADY_START -> "Arrancas sin titubear: dices la primera frase y sigues.";
+            case LONG_ANSWERS_WHEN_COMFORTABLE ->
+                    "Cuando el tema te resulta cómodo te alargas. Ahí tienes más idioma del que usas.";
+            case HOLDS_UNDER_PRESSURE ->
+                    "No te encogiste cuando la pregunta pidió construir una idea más larga.";
+            case SLOW_START -> "Te tomas unos segundos antes de empezar a hablar.";
+            case ABANDONS_CLAUSES ->
+                    "Empiezas frases y las sueltas a mitad. Suele ser prisa, no falta de palabras.";
+            case SHORT_ANSWERS -> "Respondes corto aunque se note que entendiste la pregunta.";
+            case RETREATS_TO_NATIVE ->
+                    "Te devuelves al español cuando el terreno se pone difícil.";
+            case FILLER_HEAVY ->
+                    "Usas mucho relleno mientras buscas la palabra. Es esfuerzo, no error.";
+        };
+    }
 }

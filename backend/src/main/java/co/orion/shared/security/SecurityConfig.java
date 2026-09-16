@@ -102,6 +102,16 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/bookings/*/reschedule-requests").hasAnyRole("STUDENT", "PROFESSOR", "ADMIN")
                 .requestMatchers("/api/v1/reschedule-requests/**").hasAnyRole("STUDENT", "PROFESSOR", "ADMIN")
                 .requestMatchers("/api/v1/me/reschedule-requests").hasAnyRole("STUDENT", "PROFESSOR")
+                // El diagnóstico de confianza es del estudiante: el profesor no se autoevalúa aquí,
+                // y el aspirante todavía no tiene experiencia de estudiante. El servicio vuelve a
+                // comprobar la propiedad y responde 404 si la evaluación no es suya.
+                .requestMatchers("/api/v1/assessments", "/api/v1/assessments/**").hasRole("STUDENT")
+                .requestMatchers("/api/v1/me/assessments").hasRole("STUDENT")
+                .requestMatchers("/api/v1/me/voice-consent", "/api/v1/me/voice-consent/**")
+                        .authenticated()
+                // El diagnóstico de un estudiante, para su profesor. El controlador comprueba que
+                // exista reserva entre los dos y responde 404 si no: el de un desconocido no existe.
+                .requestMatchers("/api/v1/professors/me/students/*/assessment").hasRole("PROFESSOR")
                 // El aula. Los dos lados entran; el servicio comprueba que la reserva sea suya y
                 // responde 404 si no lo es, para no confirmarle a un extraño que la clase existe.
                 .requestMatchers(HttpMethod.GET, "/api/v1/bookings/*/classroom")
