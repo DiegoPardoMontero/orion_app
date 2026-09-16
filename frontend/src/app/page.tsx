@@ -44,28 +44,21 @@ import { esGratis, tarifaClase } from "@/lib/format";
  * nada de ratings ni contadores inventados, y la sección de profesores se OCULTA si hay menos de 4.
  */
 export const metadata: Metadata = {
-  title: "Orión · Encuentra al profesor de idiomas indicado",
+  title: "Orión · Encuentra a tu profesor de inglés",
   description:
-    "Marketplace de profesores de inglés, francés y español. Reserva clases en vivo con profesores reales y aprende a tu manera: para el trabajo, los viajes, el estudio o la vida en el exterior.",
+    "Clases de inglés en vivo, uno a uno, con profesores verificados. Reserva a la hora que te sirva y aprende para lo que te importa: el trabajo, los viajes, el estudio o la vida en el exterior.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Orión · Encuentra al profesor de idiomas indicado",
+    title: "Orión · Encuentra a tu profesor de inglés",
     description:
-      "Profesores reales de inglés, francés y español. Reserva clases en vivo, a tu ritmo, y aprende para lo que te importa.",
+      "Profesores de inglés verificados. Reserva clases en vivo, a tu ritmo, y aprende para lo que te importa.",
     type: "website",
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Orión — marketplace de idiomas" }],
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Orión — clases de inglés en vivo" }],
   },
 };
 
-/** Idiomas destacados en portada. Enlazan a la landing pública por idioma (código en mayúsculas). */
-const IDIOMAS_DESTACADOS = [
-  { code: "EN", nombre: "Inglés", emoji: "🇬🇧", texto: "El idioma del trabajo, los viajes y las oportunidades." },
-  { code: "FR", nombre: "Francés", emoji: "🇫🇷", texto: "Para estudiar, migrar o reencontrarte con la cultura." },
-  { code: "ES", nombre: "Español", emoji: "🇪🇸", texto: "Perfecciona tu español o apréndelo desde cero." },
-];
-
 const PASOS = [
-  { icono: UserRoundSearch, titulo: "Encuentra", texto: "Filtra por idioma, objetivo u horario. Compara perfiles reales." },
+  { icono: UserRoundSearch, titulo: "Encuentra", texto: "Filtra por objetivo, nivel u horario. Compara perfiles reales." },
   { icono: CalendarCheck, titulo: "Reserva", texto: "Elige un cupo disponible y confírmalo en segundos." },
   { icono: MessageCircle, titulo: "Aprende", texto: "Toma tu clase en vivo por videollamada. Todo se coordina dentro de Orión." },
   { icono: TrendingUp, titulo: "Avanza", texto: "Vuelve con el mismo profesor y construye una rutina." },
@@ -144,7 +137,7 @@ export default async function PortadaPage() {
                 name: "Orión Idiomas",
                 url: SITE_URL,
                 description:
-                  "Marketplace de profesores de idiomas (inglés, francés y español) para clases en vivo.",
+                  "Clases de inglés en vivo, uno a uno, con profesores verificados.",
               },
               {
                 "@type": "WebSite",
@@ -193,45 +186,6 @@ export default async function PortadaPage() {
         </div>
       </header>
 
-      {/* — Idiomas destacados — */}
-      <section id="idiomas" className="mx-auto max-w-6xl scroll-mt-20 px-5 pb-10 pt-8 lg:px-8 lg:pb-12 lg:pt-10">
-        <div className="text-center">
-          <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-primary-strong">
-            Idiomas
-          </p>
-          <h2 className="mt-2 font-display text-h2 font-bold">Elige el idioma que quieres hablar.</h2>
-          <p className="mx-auto mt-2 max-w-[54ch] text-[15px] text-text-secondary">
-            Tres idiomas con profesores publicados hoy. Entra al que te interesa para ver quién
-            enseña qué.
-          </p>
-        </div>
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
-          {IDIOMAS_DESTACADOS.map((idioma, i) => (
-            <Link
-              key={idioma.code}
-              href={`/idiomas/${idioma.code}`}
-              style={{ "--i": i } as CSSProperties}
-              className="aparece group flex flex-col rounded-card bg-surface-raised p-7 shadow-md transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-lg"
-            >
-              <span aria-hidden="true" className="text-[40px] leading-none">
-                {idioma.emoji}
-              </span>
-              <p className="mt-4 font-display text-[22px] font-bold">{idioma.nombre}</p>
-              <p className="mt-1.5 flex-1 text-[14px] leading-relaxed text-text-secondary">
-                {idioma.texto}
-              </p>
-              <span className="mt-4 inline-flex items-center gap-1 text-[14px] font-bold text-primary-strong">
-                Ver profesores
-                <ChevronRight
-                  size={16}
-                  strokeWidth={2}
-                  className="transition-transform group-hover:translate-x-0.5"
-                />
-              </span>
-            </Link>
-          ))}
-        </div>
-      </section>
 
       {/* — Conoce a los profesores (real, se oculta con <4) — */}
       {mostrarProfesores && (

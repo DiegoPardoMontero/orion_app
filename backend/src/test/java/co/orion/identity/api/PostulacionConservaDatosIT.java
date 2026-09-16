@@ -131,10 +131,13 @@ class PostulacionConservaDatosIT extends ApiIntegrationSupport {
     /** Mandar solo los idiomas no puede llevarse por delante los objetivos, ni al revés. */
     @Test
     void savingOnlyTheLanguagesKeepsTheGoals() {
+        // Un solo idioma, porque desde la V42 solo inglés está activo y el servicio ya no acepta
+        // otro. Lo que este test fija no es cuántos idiomas caben, sino que mandar la lista de
+        // idiomas no se lleve por delante la de objetivos.
         UpdateProfileRequest soloIdiomas = new UpdateProfileRequest(
                 null, null, null, null, null, null, null, null, null,
-                List.of(new UpdateProfileRequest.LanguageEntry("EN", false, List.of("BEGINNER")),
-                        new UpdateProfileRequest.LanguageEntry("FR", false, List.of("BEGINNER"))),
+                List.of(new UpdateProfileRequest.LanguageEntry("EN", false,
+                        List.of("BEGINNER", "INTERMEDIATE"))),
                 null, null);
 
         assertThat(put(MINE, aspirante, soloIdiomas, Map.class).getStatusCode())
@@ -142,7 +145,7 @@ class PostulacionConservaDatosIT extends ApiIntegrationSupport {
 
         ProfileResponse respuestas = get(MINE, aspirante, TeacherApplicationView.class)
                 .getBody().answers();
-        assertThat(respuestas.languages()).hasSize(2);
+        assertThat(respuestas.languages()).hasSize(1);
         assertThat(respuestas.goals()).containsExactly("CONVERSATION");
     }
 

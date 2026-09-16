@@ -481,7 +481,10 @@ function PanelFiltros({
     </div>
   );
 
-  const idioma = languages.length > 0 && (
+  // Un filtro con una sola opción no filtra nada: es ruido que ocupa el sitio de los que sí
+  // sirven. Desde que Orión enseña solo inglés (V42) el catálogo devuelve una única fila, así que
+  // el bloque desaparece solo. Si algún día se reactiva otro idioma, vuelve solo también.
+  const idioma = languages.length > 1 && (
     <div>
       <Titulo>{t.filtros.idioma}</Titulo>
       <div className="flex flex-wrap gap-2">

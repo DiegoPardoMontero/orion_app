@@ -7,9 +7,11 @@ import { SITE_URL } from "@/lib/config";
  * Nota de alcance (Bloque 7): el marketplace `/profesores` y los perfiles `/profesores/[id]` viven
  * en la zona autenticada —un anónimo cae en /login—, así que NO se listan aquí (los desautoriza
  * `robots.ts` y no aportarían SEO). Lo que sí es público: la portada, las landings por idioma y
- * "Enseña en Orión". Los tres idiomas del catálogo tienen landing propia (/idiomas/{code}).
+ * "Enseña en Orión". Cada idioma activo del catálogo tiene landing propia (/idiomas/{code}).
  */
-const IDIOMAS_PUBLICOS = ["EN", "FR", "ES"];
+// Solo los idiomas que Orión enseña hoy. Anunciar en el sitemap una landing de francés que ya no
+// lleva a ningún profesor es pedirle a Google que indexe una página vacía.
+const IDIOMAS_PUBLICOS = ["EN"];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const idiomas: MetadataRoute.Sitemap = IDIOMAS_PUBLICOS.map((code) => ({

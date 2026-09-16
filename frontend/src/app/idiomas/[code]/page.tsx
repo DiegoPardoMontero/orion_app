@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { NavPublica } from "@/components/NavPublica";
 import { serverFetch } from "@/lib/api/server";
 import type { LanguageResponse } from "@/lib/api/types";
@@ -46,7 +47,10 @@ export default async function IdiomaPage({ params }: { params: Promise<{ code: s
   const { code } = await params;
   const codigo = code.toUpperCase();
   const idioma = await resolverIdioma(codigo);
-  const nombre = idioma?.nameEs ?? "idiomas";
+  // Un idioma que Orión ya no enseña no tiene landing: antes caía en un genérico «clases de
+  // idiomas» sin un solo profesor detrás, que es peor que un 404 honesto.
+  if (!idioma) notFound();
+  const nombre = idioma.nameEs ?? "inglés";
 
   return (
     <>

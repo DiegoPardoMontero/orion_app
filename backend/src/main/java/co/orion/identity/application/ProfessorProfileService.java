@@ -220,9 +220,17 @@ public class ProfessorProfileService {
      * convertida en 500. Es el mismo criterio que con los niveles: el árbitro sigue siendo la base,
      * pero el mensaje lo escribe quien sabe de qué habla.
      */
+    /**
+     * Lo que se acepta es lo que se ofrece, no lo que existe en la tabla.
+     *
+     * <p>Antes se validaba contra {@code findAll()}, y eso dejaba una puerta abierta: apagar un
+     * idioma lo quitaba de los selectores pero seguía admitiéndose si alguien lo mandaba. Desde que
+     * Orión enseña solo inglés (V42) esa puerta importa — un profesor podría publicarse enseñando
+     * francés y aparecer en un buscador que ya no tiene ese filtro.
+     */
     private void validarCatalogos(UpdateProfileRequest req) {
         if (req.languages() != null) {
-            Set<String> idiomas = languageCatalog.findAll().stream()
+            Set<String> idiomas = languageCatalog.findByActiveTrueOrderByDisplayOrderAsc().stream()
                     .map(Language::getCode).collect(Collectors.toSet());
             for (UpdateProfileRequest.LanguageEntry entry : req.languages()) {
                 if (entry != null && entry.code() != null && !entry.code().isBlank()
@@ -234,7 +242,7 @@ public class ProfessorProfileService {
             }
         }
         if (req.goals() != null) {
-            Set<String> objetivos = goalCatalog.findAll().stream()
+            Set<String> objetivos = goalCatalog.findByActiveTrueOrderByDisplayOrderAsc().stream()
                     .map(TeachingGoal::getCode).collect(Collectors.toSet());
             for (String code : req.goals()) {
                 if (code != null && !code.isBlank() && !objetivos.contains(code)) {
