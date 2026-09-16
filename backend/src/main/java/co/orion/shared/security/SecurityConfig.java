@@ -102,6 +102,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/bookings/*/reschedule-requests").hasAnyRole("STUDENT", "PROFESSOR", "ADMIN")
                 .requestMatchers("/api/v1/reschedule-requests/**").hasAnyRole("STUDENT", "PROFESSOR", "ADMIN")
                 .requestMatchers("/api/v1/me/reschedule-requests").hasAnyRole("STUDENT", "PROFESSOR")
+                // El aula. Los dos lados entran; el servicio comprueba que la reserva sea suya y
+                // responde 404 si no lo es, para no confirmarle a un extraño que la clase existe.
+                .requestMatchers(HttpMethod.GET, "/api/v1/bookings/*/classroom")
+                        .hasAnyRole("STUDENT", "PROFESSOR")
                 // Reclamar una clase es del estudiante: es su dinero el que está en juego.
                 .requestMatchers(HttpMethod.POST, "/api/v1/bookings/*/report-problem").hasRole("STUDENT")
                 // "Mis clases" solo tiene sentido para quien asiste o imparte.

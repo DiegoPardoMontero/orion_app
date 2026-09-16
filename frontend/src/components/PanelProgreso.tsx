@@ -291,15 +291,13 @@ function ProximaClaseTarjeta({ clase, hoy }: { clase: ProximaClase; hoy: string 
           </p>
         </div>
         {virtual && clase.meetingLink && (
-          <a
+          <Link
             href={clase.meetingLink}
-            target="_blank"
-            rel="noopener noreferrer"
             className="inline-flex h-10 shrink-0 items-center gap-2 rounded-pill bg-primary px-4 text-[14px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus"
           >
             <Video size={16} strokeWidth={1.75} />
             Unirse
-          </a>
+          </Link>
         )}
       </div>
     </div>

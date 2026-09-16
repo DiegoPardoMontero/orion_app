@@ -70,6 +70,19 @@ orion:
       # Cada 5 minutos: el plazo para pagar son 20 (platform_settings.payment_hold_minutes), así que
       # un cupo nunca queda bloqueado más de 25.
       interval-ms: ${ORION_PAYMENT_EXPIRY_INTERVAL_MS:300000}
+  # Videollamada: Jitsi as a Service (JaaS) de 8x8.
+  #
+  # La llave privada NO está aquí ni puede estarlo: es un secreto y va por variable de entorno.
+  # En local vive en ~/.orion/jaas/private.pk, fuera del repositorio. Si falta cualquiera de los
+  # tres valores, el aula se apaga con un mensaje claro en vez de fallar al primer clic.
+  #
+  # El `key-id` es el «kid» del JWT y tiene la forma {appId}/{id de la llave} — se copia tal cual
+  # de la consola de JaaS, no se compone a mano.
+  jaas:
+    app-id:      ${JAAS_APP_ID:}
+    key-id:      ${JAAS_KEY_ID:}
+    private-key: ${JAAS_PRIVATE_KEY:}
+    domain:      ${JAAS_DOMAIN:8x8.vc}
   # Quién responde por Orión. Aparece en los términos, en la política de tratamiento y en la
   # pantalla de ayuda.
   #

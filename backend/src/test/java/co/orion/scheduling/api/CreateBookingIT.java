@@ -166,9 +166,12 @@ class CreateBookingIT extends ApiIntegrationSupport {
     /**
      * La sala virtual se crea al CONFIRMAR, no al apartar el cupo: el enlace viaja en el correo de
      * confirmación, y una reserva sin pagar no genera correo ni sala.
+     *
+     * <p>Desde JaaS, la sala es una ruta de Orión y no una URL a un tercero: el aula se monta
+     * embebida y quien no sea de esta clase no entra, aunque tenga el enlace.
      */
     @Test
-    void aVirtualBookingGetsAJitsiMeetingLinkOnceItIsPaid() {
+    void aVirtualBookingGetsAClassroomOnceItIsPaid() {
         ResponseEntity<BookingResponse> response = post(
                 BOOKINGS, anaSession, request(maria.getId(), 9, null), BookingResponse.class);
 
@@ -179,7 +182,8 @@ class CreateBookingIT extends ApiIntegrationSupport {
 
         var paid = bookings.findById(response.getBody().id()).orElseThrow();
         assertThat(paid.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
-        assertThat(paid.getMeetingLink()).startsWith("https://meet.jit.si/OrionIdiomas-");
+        assertThat(paid.getMeetingLink())
+                .isEqualTo("/mis-clases/" + response.getBody().id() + "/aula");
     }
 
     /** Orión es virtual: pedir una clase presencial se rechaza, no se convierte en silencio. */

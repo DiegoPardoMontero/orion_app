@@ -57,6 +57,24 @@
   --text-h3: clamp(1.125rem, 1rem + 0.5vw, 1.375rem);
   --text-h3--line-height: 1.3;
 
+  /* — Aula: antesala y cierre (§07 del handoff) —
+     Cuatro colores nuevos y nada más. `--color-presence` y `--color-host` que pide el diseño ya
+     existían como success e info: se aliasan en vez de duplicarse, porque un color con dos nombres
+     y un solo valor se separa en cuanto alguien retoca uno. Lo genuinamente nuevo es la vista
+     previa —un bloque oscuro dentro de una app clara— que no tenía superficie en el sistema. */
+  --color-preview-bg: #1e1430;
+  --color-preview-control: rgba(255, 246, 238, 0.14);
+  --color-preview-control-on: #fff6ee;
+  --color-presence: var(--color-success);
+  --color-presence-off: var(--color-border-strong);
+  --color-host: var(--color-info);
+  --color-host-bg: var(--color-info-bg);
+
+  --preview-h-mobile: 210px;
+  --preview-ratio-desktop: 16 / 10;
+  --lobby-max-w: 1088px;
+  --sheet-radius: 28px;
+
   /* — Gamificación (§2i del entregable) —
      Alias por función sobre colores que YA existen: ningún color nuevo entra al sistema. El coral
      (--color-primary) queda deliberadamente fuera — es el color de la acción, y si también celebra
@@ -161,6 +179,31 @@ body {
   }
   50% {
     box-shadow: 0 8px 26px rgba(232, 80, 58, 0.5);
+  }
+}
+
+/* El punto verde de «sala abierta»: respira, no parpadea. Un parpadeo dice «error»; esto dice
+   «hay alguien al otro lado». */
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.82);
+  }
+}
+
+/* Las tres barras del medidor de micrófono. Cada una arranca con su propio retardo. */
+@keyframes level {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
   }
 }
 

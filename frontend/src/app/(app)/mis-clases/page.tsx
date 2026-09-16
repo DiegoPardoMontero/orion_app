@@ -480,15 +480,13 @@ function TarjetaClase({
         */}
         <div className="mt-3.5 flex flex-wrap gap-2 sm:justify-end">
           {scope === "upcoming" && clase.status === "CONFIRMED" && virtual && clase.meetingLink && (
-            <a
+            <Link
               href={clase.meetingLink}
-              target="_blank"
-              rel="noopener noreferrer"
               className="inline-flex h-10 min-h-11 w-full items-center justify-center gap-2 rounded-pill bg-primary px-4 text-[14px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus sm:order-last sm:min-h-0 sm:w-auto"
             >
               <Video size={16} strokeWidth={1.75} />
               Unirse a la clase
-            </a>
+            </Link>
           )}
           {/* Escribirle nace aquí más que en la bandeja: la duda aparece mirando la clase. Y va en
               los dos sentidos — el profesor que necesita avisar algo de una clase concreta tampoco
