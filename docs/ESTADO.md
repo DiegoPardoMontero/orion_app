@@ -311,6 +311,75 @@ revisión» y el pago congelado.
 el Bloque 9 —Orión es 18+ por el art. 7 de la Ley 1581— y exige autorización del representante
 legal, textos legales nuevos y datos de un tercero: es un bloque entero y necesita abogado antes.
 
+## Ajustes del 15 de septiembre (16/09/2026)
+
+Tanda grande de producto, encargada el 15/09 y desplegada el 16. El brief está en
+[`briefs/ajustes-15-septiembre-2026.md`](./briefs/ajustes-15-septiembre-2026.md).
+
+- **Orión enseña solo inglés.** Se apagó, no se borró: `languages.is_active` en false para francés
+  y español (V42), y las ofertas de profesores que los usaban, eliminadas. Todo lo que ofrece
+  idiomas lee `activeLanguages()`, así que el backend se volvió monoidioma sin tocar código.
+  Reabrir un idioma es una bandera y unos selectores, no una migración de vuelta.
+  - Salió un hueco: la validación de escritura comprobaba contra `findAll()` y no contra lo activo,
+    así que un profesor podía guardarse enseñando francés aunque ya no se ofreciera. Los objetivos
+    tenían el mismo agujero.
+- **Cupos cada media hora.** `SLOT_CADENCE` pasa de 60 a 30 minutos. **La clase sigue durando 55 y
+  el precio no cambia**: lo que cambia es cuándo puede empezar. Tomar las 5:00 retira las 5:30
+  —se solapan— y deja libres las 6:00, con los mismos cinco minutos de respiro. El formulario de
+  disponibilidad también estaba atado a horas en punto por convención propia, y ya no.
+- **Un número, un solo sitio.** `PublicFiguresService` sirve las cifras a `/api/v1/catalog/figures`
+  para las pantallas y como `{{marcadores}}` para los documentos legales. Cambiar la comisión en
+  Ajustes cambia el SEO de la página pública, el JSON-LD, las preguntas frecuentes y la cláusula 5
+  de los Términos. **La comisión bajó al 15 %** (V40).
+  - Dos mentiras salieron al cablearlo: dos pantallas anunciaban clases de 60 minutos, y
+    `AvailabilityRuleLookup` tenía su propio `CLASS_LENGTH` de una hora que filtraba fuera del
+    buscador al profesor cuya franja mide justo lo que dura una clase.
+  - Se retiró la versión 1.1 de los Términos (V41): congelar un porcentaje como cláusula era el
+    error. Ahora la 1.0 dice `{{comision}}`.
+- **Notificaciones**: se borran de verdad —una a una o vaciando las leídas, que respeta lo no
+  visto— y el panel dejó de abrirse por detrás. Era un `absolute` dentro de la campana, y un
+  `z-50` solo compite dentro de su contexto de apilamiento; ahora va en un portal sobre
+  `document.body` y queda resuelto en todas las pantallas a la vez.
+- **Los perfiles se leen antes de editarse.** Botón «Editar», Cancelar que restaura, y los campos
+  apagados con un `fieldset disabled` en vez de quince `disabled` sueltos.
+- **Perfiles troceados en secciones**, con la sección en la URL para poder enlazarla. «Mi cielo»
+  vive dentro del perfil y `/logros` redirige, porque las notificaciones de logros ya apuntaban ahí.
+- **Landing**: héroe hacia el diagnóstico, fuera la sección de Idiomas, entra el Método ORION® con
+  su cita por letra, «Nosotros» minimalista y color en los cuatro pasos.
+- **Rigel**: el pulgar era un círculo suelto junto a una palma con tres costuras largas, y juntos se
+  leían como cuatro dedos. Los gestos de un dedo van ahora sobre un puño cerrado. Hay además una
+  mano negra de dibujo para donde la mano es el gesto.
+- **El aula dentro de Orión** (JaaS): el profesor entra como moderador y el estudiante no, que es
+  lo que no se podía hacer en la sala pública. Antesala, cierre y hoja de conexión caída, del
+  handoff de diseño.
+- **Administración → Sistema**: qué integraciones están vivas en este despliegue, y un ensayo del
+  aula que crea una clase de prueba sin cobrar ni mandar correos.
+
+## Diagnóstico de confianza · Bloque 9 (17/09/2026)
+
+Dos minutos de conversación por voz que terminan en un Confidence Score, un diagnóstico escrito y
+tres profesores. **No es una prueba de nivel**: mide los marcadores de confianza al hablar, así que
+alguien con gramática impecable y pánico escénico puntúa bajo — y eso es correcto.
+
+- **El puntaje vive en una clase pura** (`ConfidenceScoreCalculator`), usa medianas y no promedios,
+  y exige cuatro turnos mínimos. Por debajo se cierra como `ABANDONED`: un número sacado de dos
+  frases parece un dato y no lo es.
+- **Las señales las deduce el servidor** (`SignalExtractor`) de la transcripción. El cliente solo
+  manda lo que únicamente el navegador puede medir —latencia y duración—, porque un puntaje
+  construido sobre números que manda el navegador no es reproducible.
+- **Las tres recomendaciones no las decide la IA.** Consulta determinista que reusa el filtro del
+  buscador y el `ranking_score` de `reputation`, más una comprobación de cupos reales en 7 días.
+  Con menos de tres candidatos devuelve los que haya: nada se rellena bajando los criterios.
+- **El audio no pasa por Orión.** Se emite una credencial efímera y el navegador habla directo con
+  el proveedor. La transcripción caduca al año y revocar el consentimiento la borra sin esperar.
+- **`FROM_ZERO`**: dos turnos seguidos en español cierran sin número y sin constelación.
+- **Tope de gasto** con aviso al 80 % y apagado automático: al llegar al tope el bloque desaparece
+  de la portada, sin mensaje de error ni botón gris.
+
+**Requiere en Railway:** `OPENAI_API_KEY` y **`ORION_VOICE_PROVIDER=openai`**. Sin la segunda, el
+proveedor por defecto es el falso y el diagnóstico *funciona* con una conversación simulada — el
+peor fallo posible, porque no se nota. El estado real se ve en Administración → Sistema.
+
 ## Pendiente / bloqueos conocidos
 - **Reservas anteriores a V20 sin idioma**: las que tenía un profesor de dos idiomas quedaron con
   `language_code` en nulo a propósito, para revisión manual. La migración deja el conteo en un
@@ -330,6 +399,22 @@ legal, textos legales nuevos y datos de un tercero: es un bloque entero y necesi
   `NEXT_PUBLIC_SUPPORT_WHATSAPP`, `NEXT_PUBLIC_SITE_URL`, `ORION_LEGAL_*` y `ORION_ALERTS_TO`
   en Railway.
 - Testimonios de la landing: ocultos hasta tener citas reales de Sofía.
+- **El texto del resultado del diagnóstico no lo ha revisado Sofía.** Se desplegó con autorización
+  de Pardo (17/09/2026). Es el único momento del producto en que Orión le dice a una persona algo
+  sobre sí misma, y si se siente como un juicio la función hace más daño que bien.
+- **Las anclas del Confidence Score se calibraron contra cero conversaciones reales.** La primera
+  grabada dio 85 con un «can you repeat that?» y un cambio a español de por medio, que es
+  generoso. Con dos o tres más se mueven con algo que no sea intuición.
+- **Las heurísticas de `SignalExtractor` reconocen lo que aparece en esa única conversación.** Se
+  equivocarán en casos que aún no hemos visto; por eso el cálculo usa medianas.
+- **El secreto del webhook de JaaS**: sin él la antesala siempre dice «aún no ha entrado», y no se
+  puede calcular la tardanza del profesor (punto 12 de Sofía) porque no hay registro de a qué hora
+  entró cada uno.
+- **Rotar la llave de OpenAI**: viajó por la terminal y quedó en el transcript de la sesión.
+- **El avatar personalizado solo lo ve su dueño.** Que otros lo vean en sus listas exige embeber la
+  personalización en dos DTOs y añade una consulta a los endpoints que pintan listas.
+- **`LegalDocumentService.pendientes()` no lo llama nadie**: publicar una versión nueva de los
+  Términos no le pide a nadie que la acepte, aunque la cláusula 15 promete justo eso.
 
 ## Repaso de flujos (04/09/2026)
 Se recorrieron con navegador los flujos del manual —estudiante, profesor y administración, en

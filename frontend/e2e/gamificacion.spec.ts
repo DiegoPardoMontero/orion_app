@@ -60,14 +60,22 @@ test.describe.configure({ mode: "serial" });
 
 test("declarar un objetivo enciende una estrella y llega la notificación", async ({ page }) => {
   await registrar(page);
-  await page.goto("/cuenta");
+  // La ficha vive en su propia sección del perfil desde que la pantalla se troceó: cinco cosas
+  // distintas apiladas obligaban a recorrerla entera para llegar a cualquiera.
+  await page.goto("/cuenta?seccion=ficha");
   await expect(page.getByRole("heading", { name: "Mi ficha" })).toBeVisible();
 
+  // Y se lee antes de editarse: los campos ya no nacen abiertos.
+  await page.getByRole("button", { name: "Editar mi ficha" }).click();
   await page.getByRole("button", { name: "Intermedio" }).click();
   // El primer objetivo del catálogo, sea cual sea: lo que importa es que haya uno declarado.
-  const objetivos = page.locator("fieldset", { hasText: "¿Para qué lo aprendes?" });
+  //
+  // Por rol y nombre accesible, no por etiqueta `fieldset`: la ficha entera va ahora dentro de un
+  // fieldset —el que desactiva los campos fuera del modo edición— y un selector por etiqueta
+  // agarraba ese, cuyo primer botón no es un objetivo. El grupo con su leyenda es único.
+  const objetivos = page.getByRole("group", { name: "¿Para qué lo aprendes?" });
   await objetivos.getByRole("button").first().click();
-  await page.getByRole("button", { name: "Guardar mi ficha" }).click();
+  await page.getByRole("button", { name: "Guardar cambios" }).click();
   await expect(page.getByText("Tu profesor ya lo puede ver")).toBeVisible();
 
   // El encendido: la celebración salta sola, sin haber entrado al tablero de logros.
@@ -127,7 +135,8 @@ test("equipar una pieza bloqueada por API responde 422", async ({ page }) => {
 
 test("el perfil público se enciende y se apaga: Carlos lo ve y deja de verlo", async ({ page }) => {
   const nuevaEstudiante = await registrar(page);
-  await page.goto("/cuenta");
+  // La ficha y su interruptor de visibilidad viven en la sección «Mi ficha» del perfil.
+  await page.goto("/cuenta?seccion=ficha");
   await expect(page.getByRole("heading", { name: "Mi ficha" })).toBeVisible();
 
   const idDeElla = await page.evaluate(async () => {
@@ -156,7 +165,7 @@ test("el perfil público se enciende y se apaga: Carlos lo ve y deja de verlo", 
   await page.locator("#password").fill("orion123*");
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page).toHaveURL(/\/profesores/);
-  await page.goto("/cuenta");
+  await page.goto("/cuenta?seccion=ficha");
   await page.getByRole("button", { name: "Volverlo privado" }).click();
   await expect(page.getByText("Tu ficha es privada")).toBeVisible();
   await logout(page);

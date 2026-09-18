@@ -223,7 +223,11 @@ export default function ProfesoresPage() {
         </div>
       </section>
 
-      <p className="mt-5 text-[14px] text-text-secondary">
+      {/* La lista necesita su propio encabezado: el h1 ahora es el del banner, y sin esto los
+          resultados quedaban colgando sin título — para un lector de pantalla, sin nada que los
+          nombre. */}
+      <h2 className="mt-6 font-display text-h3 font-bold">Profesores</h2>
+      <p className="mt-1 text-[14px] text-text-secondary">
         Elige con quién quieres practicar y reserva tu clase.
       </p>
 

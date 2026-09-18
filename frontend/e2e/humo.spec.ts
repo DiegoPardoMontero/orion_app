@@ -150,7 +150,8 @@ test("un estudiante edita su perfil y persiste", async ({ page }) => {
   await login(page, USERS.ana);
   // Esperar a que el login termine (sesión establecida) antes de navegar, o /cuenta rebota a login.
   await expect(page).toHaveURL(/\/profesores/);
-  await page.goto("/cuenta");
+  // Los datos de contacto viven en su propia sección desde que el perfil se troceó.
+  await page.goto("/cuenta?seccion=datos");
   await expect(page.getByRole("heading", { name: "Mi perfil" })).toBeVisible();
 
   // #telefono es el número local del PhoneInput (el país va aparte, Colombia por defecto).
