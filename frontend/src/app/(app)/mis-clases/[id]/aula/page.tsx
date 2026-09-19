@@ -8,6 +8,7 @@ import { apiFetch, ApiError } from "@/lib/api/fetch";
 import { appIdDe, cargarJitsi, type ClassroomResponse } from "@/lib/api/aula";
 import { Cargando, ErrorCarga } from "@/components/estados";
 import { Boton } from "@/components/ui";
+import { Wordmark } from "@/components/marca";
 import { Antesala } from "@/components/aula/Antesala";
 import { HojaDeCierre } from "@/components/aula/HojaDeCierre";
 import { HojaDeConexionCaida } from "@/components/aula/HojaDeConexionCaida";
@@ -36,7 +37,10 @@ export default function AulaPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const contenedor = useRef<HTMLDivElement>(null);
-  const api = useRef<{ dispose: () => void } | null>(null);
+  const api = useRef<{
+    dispose: () => void;
+    executeCommand: (comando: string) => void;
+  } | null>(null);
   const entroAlAula = useRef<number | null>(null);
   // `montar` no puede depender de la respuesta ni de la fase sin volver a montar en cada cambio.
   const datosRef = useRef<ClassroomResponse | null>(null);
@@ -47,6 +51,7 @@ export default function AulaPage() {
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
   const [fallo, setFallo] = useState<string | null>(null);
+  const [confirmandoSalida, setConfirmandoSalida] = useState(false);
 
   // Sin caché: el token caduca con la clase. Se refresca cada minuto para que la antesala pase de
   // «cerrada» a «abierta» sola, sin que nadie tenga que recargar mirando el reloj.
@@ -73,7 +78,22 @@ export default function AulaPage() {
   const minutosDentro = () =>
     entroAlAula.current ? Math.max(1, Math.round((Date.now() - entroAlAula.current) / 60000)) : 0;
 
+  /**
+   * Salir de la sala de verdad.
+   *
+   * <p>`dispose()` solo quita el iframe. La conferencia no se entera de que te fuiste, así que tu
+   * participante se queda dentro hasta que el servidor lo da por perdido — y quien siga en la clase
+   * ve un fantasma tuyo junto a ti cuando vuelves a entrar. Con dos personas eso parecen tres.
+   *
+   * <p>Colgar primero es lo que envía la salida. El `try` no es adorno: si la conexión ya se cayó,
+   * `executeCommand` lanza, y entonces lo que no puede fallar es el `dispose` de después.
+   */
   const soltar = useCallback(() => {
+    try {
+      api.current?.executeCommand("hangup");
+    } catch {
+      // La sesión ya no estaba viva. Da igual: lo que importa es que el iframe se vaya.
+    }
     api.current?.dispose();
     api.current = null;
   }, []);
@@ -90,11 +110,16 @@ export default function AulaPage() {
         const Constructor = (window as unknown as {
           JitsiMeetExternalAPI: new (domain: string, opciones: Record<string, unknown>) => {
             dispose: () => void;
+            executeCommand: (comando: string) => void;
             addListener: (evento: string, fn: () => void) => void;
           };
         }).JitsiMeetExternalAPI;
 
-        const instancia = new Constructor(datos.domain!, {
+        const instancia: {
+          dispose: () => void;
+          executeCommand: (comando: string) => void;
+          addListener: (evento: string, fn: () => void) => void;
+        } = new Constructor(datos.domain!, {
           roomName: datos.room,
           jwt: datos.token,
           parentNode: contenedor.current,
@@ -111,8 +136,13 @@ export default function AulaPage() {
               "microphone", "camera", "desktop", "fullscreen", "hangup",
               "chat", "raisehand", "tileview", "settings", "videoquality",
             ],
+            // La marca de Orión dentro del área de vídeo: es el único sitio de la llamada que
+            // controlamos y que ve también la otra persona. La de Jitsi se apaga.
             SHOW_JITSI_WATERMARK: false,
-            SHOW_BRAND_WATERMARK: false,
+            SHOW_BRAND_WATERMARK: true,
+            BRAND_WATERMARK_LINK: "",
+            DEFAULT_LOGO_URL: "/marca-orion.svg",
+            DEFAULT_WELCOME_PAGE_LOGO_URL: "/marca-orion.svg",
             MOBILE_APP_PROMO: false,
           },
         });
@@ -195,28 +225,65 @@ export default function AulaPage() {
 
   return (
     <div className="flex h-dvh flex-col bg-preview-bg">
+      {/*
+        La barra de Orión, siempre visible aunque la llamada esté a pantalla completa. Es lo único
+        que dice de quién es esta sala: dentro del iframe manda Jitsi, y sin esto la clase parecía
+        ocurrir en cualquier sitio menos aquí.
+      */}
       <header className="flex shrink-0 items-center gap-3 px-4 py-2.5 text-[13px] text-white/90">
-        <button
-          type="button"
-          onClick={volverAClases}
-          className="flex items-center gap-1.5 rounded-base px-2 py-1 font-semibold hover:bg-white/10 focus-visible:shadow-focus"
-        >
-          <ArrowLeft size={16} strokeWidth={2.2} />
-          Mis clases
-        </button>
-        <span className="min-w-0 flex-1 truncate font-semibold">
+        <Wordmark className="text-[15px] text-white" />
+        <span className="hidden min-w-0 flex-1 truncate font-semibold sm:block">
           {datos.counterpart ? `Clase con ${datos.counterpart.firstName}` : "Tu clase"}
         </span>
+        <span className="min-w-0 flex-1 sm:hidden" />
         {datos.moderator && (
           <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11.5px] font-bold">
             <ShieldCheck size={13} strokeWidth={2.2} />
             Anfitrión
           </span>
         )}
+        <button
+          type="button"
+          onClick={() => setConfirmandoSalida(true)}
+          className="flex items-center gap-1.5 rounded-pill px-2.5 py-1 font-semibold hover:bg-white/10 focus-visible:shadow-focus"
+        >
+          <ArrowLeft size={15} strokeWidth={2.2} />
+          Salir
+        </button>
       </header>
 
       {/* Jitsi dibuja aquí dentro. El iframe se crea y se destruye con la instancia. */}
       <div ref={contenedor} className="min-h-0 flex-1" />
+
+      {/*
+        Salir pregunta. Es la otra mitad del arreglo del fantasma: antes se salía navegando por el
+        menú, sin colgar y sin darse cuenta; ahora hay una sola puerta y avisa de lo que hace.
+      */}
+      {confirmandoSalida && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-night/60 px-6">
+          <div className="w-full max-w-sm rounded-card bg-surface p-6 text-center">
+            <p className="font-display text-[18px] font-bold text-text">¿Salir de la clase?</p>
+            <p className="mt-2 text-[13.5px] leading-relaxed text-text-secondary">
+              Te vas de la sala y {datos.counterpart?.firstName ?? "la otra persona"} deja de verte.
+              Puedes volver a entrar mientras la clase siga abierta.
+            </p>
+            <div className="mt-5 grid grid-cols-2 gap-2.5">
+              <Boton variante="contorno" onClick={() => setConfirmandoSalida(false)}>
+                Seguir en clase
+              </Boton>
+              <Boton
+                variante="primario"
+                onClick={() => {
+                  soltar();
+                  volverAClases();
+                }}
+              >
+                Salir
+              </Boton>
+            </div>
+          </div>
+        </div>
+      )}
 
       {fase === "caida" && (
         <HojaDeConexionCaida

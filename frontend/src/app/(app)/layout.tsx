@@ -16,6 +16,8 @@ import {
   LogOut,
   MessageCircle,
   HeartPulse,
+  PanelLeftClose,
+  PanelLeftOpen,
   SlidersHorizontal,
   Undo2,
   Sparkles,
@@ -140,6 +142,27 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   // muestra un aviso amable en vez de la pantalla (que dependería de permisos que aún no tiene).
   const rutaProtegida =
     me.role === "PROFESSOR" && RUTAS_PROFESOR_APROBADO.some((r) => pathname.startsWith(r));
+
+  /**
+   * El aula va a pantalla completa, sin lateral ni barra inferior.
+   *
+   * <p>No es solo estética. Mientras estabas en clase, el menú te dejaba navegar a otra sección con
+   * un clic, y salir así no colgaba: la conferencia te daba por dentro un rato más y, al volver,
+   * aparecías dos veces. Con dos personas eso parecen tres.
+   *
+   * <p>Quitando el armazón, la única salida es el botón de la propia aula, que cuelga antes de irse.
+   * Se entra desde «Mis clases» y se sale por ahí: una puerta, y siempre la misma.
+   */
+  const enClase = /^\/mis-clases\/[^/]+\/aula$/.test(pathname);
+
+  if (enClase) {
+    return (
+      <>
+        {children}
+        <Encendido />
+      </>
+    );
+  }
 
   return (
     <div className="lg:flex lg:min-h-dvh">
@@ -342,21 +365,77 @@ function Sidebar({
   pathname: string;
   noLeidosMensajes: number;
 }) {
+  // Colapsado se recuerda entre pantallas y entre visitas: quien lo cierra para tener más sitio no
+  // quiere volver a cerrarlo en cada navegación. `localStorage` puede fallar (ventana privada,
+  // datos bloqueados), y si falla el lateral simplemente sale abierto, que es el valor bueno.
+  const [colapsado, setColapsado] = useState(false);
+
+  useEffect(() => {
+    try {
+      // La regla pide no llamar a setState dentro de un efecto, y con razón en el caso habitual.
+      // Aquí el dato vive en `localStorage`, que no se puede leer durante el render sin romper el
+      // renderizado en el servidor: el servidor no sabe si este navegador lo dejó plegado.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setColapsado(window.localStorage.getItem("orion.lateral") === "colapsado");
+    } catch {
+      // Sin almacenamiento: abierto, que es el valor bueno.
+    }
+  }, []);
+
+  function alternar() {
+    setColapsado((antes) => {
+      const ahora = !antes;
+      try {
+        window.localStorage.setItem("orion.lateral", ahora ? "colapsado" : "abierto");
+      } catch {
+        // No poder recordarlo no impide plegarlo ahora.
+      }
+      return ahora;
+    });
+  }
+
   return (
-    <aside className="sticky top-0 hidden h-dvh w-[248px] shrink-0 flex-col border-r border-surface-sunken bg-surface px-4 py-6 lg:flex">
-      <div className="flex items-center justify-between pl-3">
-        <Wordmark className="text-[18px] text-primary" />
-        <CampanaNotificaciones anclaje="izquierda" />
+    <aside
+      className={`sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-surface-sunken bg-surface py-6 transition-[width] lg:flex ${
+        colapsado ? "w-[76px] px-3" : "w-[248px] px-4"
+      }`}
+    >
+      <div className={`flex items-center ${colapsado ? "justify-center" : "justify-between pl-3"}`}>
+        {!colapsado && <Wordmark className="text-[18px] text-primary" />}
+        {!colapsado && <CampanaNotificaciones anclaje="izquierda" />}
+        {colapsado && <CampanaNotificaciones anclaje="izquierda" />}
       </div>
 
-      <p className="mt-8 px-3 text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted">
-        {ETIQUETA_ROL[me.role]}
-      </p>
+      <button
+        type="button"
+        onClick={alternar}
+        aria-expanded={!colapsado}
+        aria-label={colapsado ? "Expandir el menú" : "Colapsar el menú"}
+        title={colapsado ? "Expandir el menú" : "Colapsar el menú"}
+        className={`mt-4 flex h-9 items-center gap-2 rounded-pill text-[12.5px] font-semibold text-text-muted transition-colors hover:bg-surface-sunken hover:text-text focus-visible:shadow-focus ${
+          colapsado ? "justify-center px-0" : "px-4"
+        }`}
+      >
+        {colapsado ? (
+          <PanelLeftOpen size={18} strokeWidth={1.9} />
+        ) : (
+          <>
+            <PanelLeftClose size={18} strokeWidth={1.9} />
+            Colapsar
+          </>
+        )}
+      </button>
 
-      <nav className="mt-3 flex flex-col gap-4 overflow-y-auto">
+      {!colapsado && (
+        <p className="mt-6 px-3 text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted">
+          {ETIQUETA_ROL[me.role]}
+        </p>
+      )}
+
+      <nav className={`flex flex-col overflow-y-auto ${colapsado ? "mt-4 gap-2" : "mt-3 gap-4"}`}>
         {grupos.map((grupo, i) => (
           <div key={grupo.titulo ?? `g${i}`} className="flex flex-col gap-1">
-            {grupo.titulo && (
+            {grupo.titulo && !colapsado && (
               <p className="px-4 pb-1 text-[10.5px] font-bold uppercase tracking-[0.11em] text-text-muted">
                 {grupo.titulo}
               </p>
@@ -370,16 +449,26 @@ function Sidebar({
                   key={item.href}
                   href={item.href}
                   aria-current={activo ? "page" : undefined}
-                  className={`flex h-10 items-center gap-3 rounded-pill px-4 text-[14px] transition-colors ${
+                  // Colapsado, el nombre se va de la pantalla pero no del árbol accesible: el
+                  // `title` lo devuelve al pasar el ratón y `aria-label` a quien no ve el icono.
+                  title={colapsado ? item.label : undefined}
+                  aria-label={colapsado ? item.label : undefined}
+                  className={`relative flex h-10 items-center rounded-pill text-[14px] transition-colors ${
+                    colapsado ? "justify-center px-0" : "gap-3 px-4"
+                  } ${
                     activo
                       ? "bg-primary-soft font-bold text-primary-strong"
                       : "font-semibold text-text-secondary hover:bg-surface-sunken"
                   }`}
                 >
                   <Icono size={18} strokeWidth={1.75} fill={activo ? "currentColor" : "none"} />
-                  {item.label}
+                  {!colapsado && item.label}
                   {badge > 0 && (
-                    <span className="ml-auto grid h-[18px] min-w-[18px] place-items-center rounded-pill bg-primary px-1.5 text-[11px] font-bold text-on-primary">
+                    <span
+                      className={`grid h-[18px] min-w-[18px] place-items-center rounded-pill bg-primary px-1.5 text-[11px] font-bold text-on-primary ${
+                        colapsado ? "absolute right-1 top-0.5" : "ml-auto"
+                      }`}
+                    >
                       {badge > 9 ? "9+" : badge}
                     </span>
                   )}
@@ -391,7 +480,13 @@ function Sidebar({
       </nav>
 
       <div className="mt-auto">
-        <MenuUsuario me={me} posicion="arriba" />
+        {colapsado ? (
+          <div className="flex justify-center">
+            <MiAvatar size={36} />
+          </div>
+        ) : (
+          <MenuUsuario me={me} posicion="arriba" />
+        )}
       </div>
     </aside>
   );

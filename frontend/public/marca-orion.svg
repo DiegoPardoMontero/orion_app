@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  La marca de Orión para la marca de agua de la videollamada.
+
+  Va como archivo y no como componente porque quien la pinta es el iframe de Jitsi, que solo acepta
+  una URL. Blanco con sombra: el fondo de una llamada es el salón de otra persona y no se puede
+  predecir, así que la sombra es lo que la mantiene legible sobre una pared clara.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="132" height="34" viewBox="0 0 132 34" role="img"
+     aria-label="Orión">
+  <defs>
+    <filter id="s" x="-20%" y="-40%" width="140%" height="180%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1.4" flood-color="#33203B" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+  <g filter="url(#s)">
+    <text x="0" y="25" font-family="Bricolage Grotesque, Figtree, system-ui, sans-serif"
+          font-size="22" font-weight="800" letter-spacing="0.5" fill="#FFF6EE">ORIÓN</text>
+    <path d="M113,11 L114.7,16.3 L120,18 L114.7,19.7 L113,25 L111.3,19.7 L106,18 L111.3,16.3 Z"
+          fill="#FFC189"/>
+  </g>
+</svg>
