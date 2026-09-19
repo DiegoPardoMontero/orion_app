@@ -18,14 +18,14 @@ Esta Política describe cómo Orión trata los datos personales de quienes usan 
 Recogemos únicamente lo que la plataforma necesita para funcionar:
 
 - **De toda cuenta:** nombre completo, correo electrónico, contraseña (almacenada cifrada, nunca en texto claro) y, si decides darlo, un número de WhatsApp.
-- **De estudiantes:** las clases que reservas, su fecha y modalidad, tu saldo a favor y tu historial de pagos, y —si decides completarla— tu ficha de aprendizaje: nivel autodeclarado, idioma, objetivos y motivación.
+- **De estudiantes:** las clases que reservas, su fecha y modalidad, tu saldo a favor y tu historial de pagos, y, si decides completarla, tu ficha de aprendizaje: nivel autodeclarado, idioma, objetivos y motivación.
 - **De profesores:** la información de tu postulación (experiencia, formación, idiomas que enseñas), los documentos que adjuntas, tu tarifa, tu disponibilidad y tus ganancias.
 - **De la conversación:** los mensajes que intercambias dentro de Orión con la otra parte de una clase.
 - **Técnicos:** dirección IP y navegador en el momento en que aceptas los documentos legales, porque la ley nos exige poder probar esa autorización.
 
 **No recogemos** tu fecha de nacimiento, ni datos de tarjetas o cuentas bancarias. Los pagos los procesa Wompi en su propia plataforma: los datos de tu medio de pago nunca pasan por Orión ni quedan almacenados aquí.
 
-**No tratamos datos sensibles.** Si nos envías información de salud, origen étnico, convicciones religiosas o políticas, orientación sexual o datos biométricos —por ejemplo, dentro de un mensaje—, no la solicitamos ni la usamos para ninguna finalidad, y puedes pedir su eliminación.
+**No tratamos datos sensibles.** Si nos envías información de salud, origen étnico, convicciones religiosas o políticas, orientación sexual o datos biométricos (por ejemplo, dentro de un mensaje), no la solicitamos ni la usamos para ninguna finalidad, y puedes pedir su eliminación.
 
 ## 3. Para qué los usamos
 

@@ -39,12 +39,12 @@ public class EmailTeacherApplicationMailer implements TeacherApplicationMailer {
                 + "Te faltan dos pasos para recibir estudiantes:\n"
                 + "1. Completa y publica tu perfil: " + perfil + "\n"
                 + "2. Marca los horarios en los que puedes dar clase: " + horarios + "\n\n"
-                + "Nos vemos adentro.\n— El equipo de Orión";
+                + "Nos vemos adentro.\nEl equipo de Orión";
         String html = "<p>¡Felicitaciones! Tu postulación fue <strong>aprobada</strong>.</p>"
                 + "<p>Te faltan dos pasos para recibir estudiantes:</p>"
                 + "<ol><li><a href=\"" + perfil + "\">Completa y publica tu perfil</a></li>"
                 + "<li><a href=\"" + horarios + "\">Marca los horarios</a> en los que puedes dar clase</li></ol>"
-                + "<p>Nos vemos adentro.<br>— El equipo de Orión</p>";
+                + "<p>Nos vemos adentro.<br>El equipo de Orión</p>";
         send(toEmail, "Tu postulación en Orión fue aprobada", text, html);
     }
 
@@ -55,12 +55,12 @@ public class EmailTeacherApplicationMailer implements TeacherApplicationMailer {
         String text = "Revisamos tu postulación y necesitamos algunos ajustes antes de aprobarla:\n\n"
                 + note + "\n\n"
                 + "Actualízala y vuélvela a enviar cuando estés listo: " + aplicacion
-                + "\n— El equipo de Orión";
+                + "\nEl equipo de Orión";
         String html = "<p>Revisamos tu postulación y necesitamos algunos ajustes antes de aprobarla:</p>"
                 + "<blockquote>" + escape(note) + "</blockquote>"
                 + "<p><a href=\"" + aplicacion + "\">Actualiza tu postulación</a> y vuélvela a enviar "
                 + "cuando estés listo.</p>"
-                + "<p>— El equipo de Orión</p>";
+                + "<p>El equipo de Orión</p>";
         send(toEmail, "Tu postulación en Orión necesita cambios", text, html);
     }
 
@@ -68,11 +68,11 @@ public class EmailTeacherApplicationMailer implements TeacherApplicationMailer {
     public void sendRejected(String toEmail, String note) {
         String text = "Gracias por tu interés en enseñar en Orión.\n\n"
                 + "Por ahora no podemos aprobar tu postulación:\n\n" + note + "\n\n"
-                + "Te deseamos lo mejor.\n— El equipo de Orión";
+                + "Te deseamos lo mejor.\nEl equipo de Orión";
         String html = "<p>Gracias por tu interés en enseñar en Orión.</p>"
                 + "<p>Por ahora no podemos aprobar tu postulación:</p>"
                 + "<blockquote>" + escape(note) + "</blockquote>"
-                + "<p>Te deseamos lo mejor.<br>— El equipo de Orión</p>";
+                + "<p>Te deseamos lo mejor.<br>El equipo de Orión</p>";
         send(toEmail, "Sobre tu postulación en Orión", text, html);
     }
 

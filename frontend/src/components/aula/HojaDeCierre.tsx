@@ -104,7 +104,7 @@ function CierreEstudiante({
               type="button"
               role="radio"
               aria-checked={estrellas === n}
-              aria-label={`${n} — ${VALOR[n]}`}
+              aria-label={`${n}: ${VALOR[n]}`}
               onClick={() => setEstrellas(n)}
               className="rounded-base p-1 focus-visible:shadow-focus"
             >

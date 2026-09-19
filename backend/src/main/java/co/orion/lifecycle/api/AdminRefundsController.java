@@ -57,7 +57,7 @@ public class AdminRefundsController {
         RefundRequest solicitud = retraction.confirmarDevolucion(
                 refundId, body.reference(), body.note(), principal.user().getId());
         String nombre = users.findById(solicitud.getStudentId())
-                .map(User::getFullName).orElse("—");
+                .map(User::getFullName).orElse("Sin nombre");
         return RefundResponse.from(solicitud, nombre, clock.instant());
     }
 }

@@ -135,7 +135,7 @@ function Calculando() {
       <Rigel pose="espera" decorativo className="h-[140px] w-auto animate-[bob_3s_ease-in-out_infinite]" />
       <p className="mt-6 font-display text-h3 font-bold">Estamos leyendo cómo hablaste.</p>
       <p className="mt-2 max-w-[42ch] text-[14px] leading-relaxed text-text-secondary">
-        Unos segundos. No estamos corrigiendo nada — estamos mirando cómo fluiste.
+        Unos segundos. No estamos corrigiendo nada: estamos mirando cómo fluiste.
       </p>
     </main>
   );

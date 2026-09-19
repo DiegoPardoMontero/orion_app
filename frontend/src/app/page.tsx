@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     description:
       "Profesores de inglés verificados. Reserva clases en vivo, a tu ritmo, y aprende para lo que te importa.",
     type: "website",
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Orión — clases de inglés en vivo" }],
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Orión, clases de inglés en vivo" }],
   },
 };
 
@@ -247,10 +247,14 @@ export default async function PortadaPage() {
               <h1 className="mt-3 max-w-[18ch] font-display text-[34px] font-bold leading-[1.08] text-on-primary lg:text-[52px]">
                 Prueba tu inglés en 2 minutos.
               </h1>
+              {/* El héroe abría con el diagnóstico y no decía en ningún momento qué es Orión: quien
+                  llega por primera vez no sabía si esto era una app de test o una academia. La
+                  segunda frase lo dice antes de pedir nada. */}
               <p className="mt-4 max-w-[52ch] text-[15px] leading-relaxed text-on-primary/85 lg:text-[17px]">
-                Una conversación corta, sin preguntas de examen. Al colgar recibes tu Confidence
-                Score, un diagnóstico escrito de cómo hablas y tres profesores elegidos por lo que
-                contaste. Gratis y sin compromiso.
+                Orión es una academia de inglés colombiana: clases en vivo, uno a uno, con
+                profesores verificados. Empieza por una conversación corta, sin preguntas de examen.
+                Al colgar recibes tu Confidence Score, un diagnóstico escrito de cómo hablas y tres
+                profesores elegidos por lo que contaste. Gratis y sin compromiso.
               </p>
             </div>
             <div className="flex justify-center lg:justify-end">
@@ -269,14 +273,14 @@ export default async function PortadaPage() {
           <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Link
               href="/diagnostico"
-              className="inline-flex h-[52px] items-center justify-center gap-2 rounded-pill bg-surface px-7 text-[15px] font-bold text-primary-strong shadow-lg transition-transform hover:-translate-y-0.5 focus-visible:shadow-focus"
+              className="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-pill bg-surface px-7 text-[15px] font-bold text-primary-strong shadow-lg transition-transform hover:-translate-y-0.5 focus-visible:shadow-focus sm:w-auto sm:min-w-[236px]"
             >
               <Sparkles size={18} strokeWidth={2.2} />
               Empezar mi diagnóstico
             </Link>
             <Link
               href="/profesores"
-              className="inline-flex h-[52px] items-center justify-center rounded-pill border-[1.5px] border-on-primary/45 px-7 text-[15px] font-bold text-on-primary transition-colors hover:bg-on-primary/10 focus-visible:shadow-focus"
+              className="inline-flex h-[52px] w-full items-center justify-center rounded-pill border-[1.5px] border-on-primary/45 px-7 text-[15px] font-bold text-on-primary transition-colors hover:bg-on-primary/10 focus-visible:shadow-focus sm:w-auto sm:min-w-[236px]"
             >
               Ver profesores
             </Link>
@@ -418,7 +422,7 @@ export default async function PortadaPage() {
               Método ORION<span className="align-super text-[0.45em]">®</span>
             </h2>
             <p className="mt-4 text-[16px] leading-relaxed text-text-on-night/85 lg:text-[18px]">
-              Tu profesor enseña como sabe hacerlo — esa libertad no se toca. Lo que Orión estructura
+              Tu profesor enseña como sabe hacerlo, y esa libertad no se toca. Lo que Orión estructura
               es lo que pasa alrededor: qué se observa de ti, cómo se conecta con lo que ya sabes,
               qué se corrige y con qué sales de cada clase. Cinco pasos, cada uno apoyado en teoría
               que existe desde antes que nosotros.
@@ -535,13 +539,6 @@ export default async function PortadaPage() {
         </section>
       )}
 
-      {/* — Enseña en Orión — */}
-      {/* — Preguntas frecuentes — Antes del salto a profesores: quien duda es quien todavía no
-           ha reservado, y sus preguntas son las que deciden si lo hace. */}
-      <section id="preguntas" className="mx-auto max-w-3xl scroll-mt-20 px-5 pb-12 lg:px-8 lg:pb-16">
-        <PreguntasFrecuentes rol="general" className="mt-0" />
-      </section>
-
       <section className="mx-auto max-w-6xl px-5 pb-12 lg:px-8 lg:pb-16">
         <div className="grid items-center gap-8 rounded-card bg-night px-7 py-12 text-text-on-night lg:grid-cols-[1.5fr_1fr] lg:px-14 lg:py-16">
           <div>
@@ -562,7 +559,7 @@ export default async function PortadaPage() {
               <EnsenaCta />
               <Link
                 href="/ensena-con-orion"
-                className="inline-flex h-[52px] items-center justify-center gap-2 rounded-pill border-[1.5px] border-on-primary/35 px-7 text-[15px] font-bold text-on-primary transition-colors hover:bg-on-primary/10 focus-visible:shadow-focus"
+                className="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-pill border-[1.5px] border-on-primary/35 px-7 text-[15px] font-bold text-on-primary transition-colors hover:bg-on-primary/10 focus-visible:shadow-focus sm:w-auto sm:min-w-[236px]"
               >
                 Cómo funciona
                 <ArrowRight size={18} strokeWidth={1.9} />
@@ -573,6 +570,13 @@ export default async function PortadaPage() {
             <Rigel pose="animo" decorativo className="h-[170px] w-auto lg:h-[210px]" />
           </div>
         </div>
+      </section>
+
+      {/* Las preguntas van al final, después del salto a profesores: quien llega aquí ya ha visto
+           la propuesta entera, y ponerlas antes obligaba a pasar por encima de ellas a quien solo
+           quería reservar. El cierre sigue siendo la llamada a la acción, no una lista de dudas. */}
+      <section id="preguntas" className="mx-auto max-w-3xl scroll-mt-20 px-5 pb-12 lg:px-8 lg:pb-16">
+        <PreguntasFrecuentes rol="general" className="mt-0" />
       </section>
 
       {/* — CTA final — */}

@@ -86,7 +86,7 @@ export function HojaDeConexionCaida({
           >
             {esAnfitrion
               ? `Dar la clase por terminada (${minutos} min)`
-              : "No puedo continuar — terminar la clase"}
+              : "No puedo continuar, terminar la clase"}
           </button>
         </div>
       </div>

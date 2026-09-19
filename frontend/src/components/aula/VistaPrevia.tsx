@@ -137,7 +137,7 @@ export function VistaPrevia({
         </p>
       ) : !camOn ? (
         <p className="mt-2 rounded-base bg-accent-peach-soft px-3 py-2 text-[12.5px] text-[#8a5a33]">
-          Entrarás sin cámara — puedes encenderla dentro.
+          Entrarás sin cámara. Puedes encenderla dentro.
         </p>
       ) : null}
     </div>

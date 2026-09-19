@@ -170,7 +170,7 @@ export function Antesala({
             <div className="mt-6 flex items-start gap-3 rounded-card bg-accent-peach-soft p-4">
               <Rigel pose="espera" decorativo className="h-16 w-auto shrink-0 animate-[bob_3.2s_ease-in-out_infinite]" />
               <p className="text-[13px] leading-relaxed text-[#8a5a33]">
-                Respira. {nombre} sabe que estás aprendiendo — hablar con miedo también es hablar.
+                Respira. {nombre} sabe que estás aprendiendo, y hablar con miedo también es hablar.
               </p>
             </div>
           )}

@@ -24,11 +24,11 @@ public class EmailPasswordResetMailer implements PasswordResetMailer {
         String text = "Hola " + fullName + ",\n\n"
                 + "Pediste restablecer tu contraseña. Abre este enlace (vence en 30 minutos):\n"
                 + resetLink + "\n\n"
-                + "Si no fuiste tú, ignora este correo: tu contraseña sigue igual.\n\n— Orión";
+                + "Si no fuiste tú, ignora este correo: tu contraseña sigue igual.\n\nOrión";
         String html = "<p>Hola " + escape(fullName) + ",</p>"
                 + "<p>Pediste restablecer tu contraseña. El enlace vence en 30 minutos.</p>"
                 + "<p><a href=\"" + escape(resetLink) + "\">Restablecer mi contraseña</a></p>"
-                + "<p>Si no fuiste tú, ignora este correo: tu contraseña sigue igual.</p><p>— Orión</p>";
+                + "<p>Si no fuiste tú, ignora este correo: tu contraseña sigue igual.</p><p>Orión</p>";
         try {
             transport.send(OutgoingEmail.plain(toEmail, "Recupera tu contraseña de Orión", text, html));
         } catch (Exception ex) {

@@ -113,7 +113,7 @@ const preguntas = (c: PublicFigures): Record<"estudiante" | "profesor" | "genera
     },
     {
       p: "¿Es seguro pagar?",
-      r: "Sí. El cobro lo procesa Wompi —PSE, tarjeta o Nequi— y los datos de tu tarjeta nunca pasan por los servidores de Orión.",
+      r: "Sí. El cobro lo procesa Wompi (PSE, tarjeta o Nequi) y los datos de tu tarjeta nunca pasan por los servidores de Orión.",
     },
     {
       p: "¿Puedo cancelar una clase?",

@@ -44,7 +44,14 @@ export function HeroCta() {
   );
 }
 
+/**
+ * El mismo alto y el mismo ancho mínimo en los dos: en escritorio, dos botones juntos con textos de
+ * distinto largo quedaban de tamaños distintos y el par se veía torcido. `min-w` en vez de un ancho
+ * fijo para que un texto más largo pueda crecer en vez de recortarse.
+ */
+const BASE =
+  "inline-flex h-[52px] w-full items-center justify-center rounded-pill px-7 text-[15px] font-bold transition-colors focus-visible:shadow-focus sm:w-auto sm:min-w-[236px]";
 const PRIMARIO =
-  "inline-flex h-[52px] items-center justify-center gap-2 rounded-pill bg-primary px-7 text-[15px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus";
+  `${BASE} gap-2 bg-primary text-on-primary shadow-primary hover:bg-primary-strong`;
 const SECUNDARIO =
-  "inline-flex h-[52px] items-center justify-center rounded-pill border-[1.5px] border-on-primary/40 px-7 text-[15px] font-bold text-on-primary transition-colors hover:bg-on-primary/10 focus-visible:shadow-focus";
+  `${BASE} border-[1.5px] border-on-primary/40 text-on-primary hover:bg-on-primary/10`;

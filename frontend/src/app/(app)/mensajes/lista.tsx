@@ -52,7 +52,7 @@ export function ListaConversaciones({ activaId }: { activaId?: string }) {
       <Vacio
         mascota
         titulo="Aún no tienes mensajes"
-        texto="Cuando escribas a un profesor —o un estudiante te escriba— la conversación aparecerá aquí. Todo se coordina dentro de Orión."
+        texto="Cuando escribas a un profesor (o un estudiante te escriba) la conversación aparecerá aquí. Todo se coordina dentro de Orión."
       />
     );
   }

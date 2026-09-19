@@ -31,12 +31,12 @@ public class EmailVerificationLinkMailer implements EmailVerificationMailer {
                 + "Confirma que este correo es tuyo " + motivo + ". "
                 + "Abre este enlace (vence en 24 horas):\n"
                 + verificationLink + "\n\n"
-                + "Si no creaste una cuenta en Orión, ignora este correo.\n\n— Orión";
+                + "Si no creaste una cuenta en Orión, ignora este correo.\n\nOrión";
         String html = "<p>Hola " + escape(fullName) + ",</p>"
                 + "<p>Confirma que este correo es tuyo " + motivo + ". "
                 + "El enlace vence en 24 horas.</p>"
                 + "<p><a href=\"" + escape(verificationLink) + "\">Confirmar mi correo</a></p>"
-                + "<p>Si no creaste una cuenta en Orión, ignora este correo.</p><p>— Orión</p>";
+                + "<p>Si no creaste una cuenta en Orión, ignora este correo.</p><p>Orión</p>";
         try {
             transport.send(OutgoingEmail.plain(toEmail, "Confirma tu correo en Orión", text, html));
         } catch (Exception ex) {

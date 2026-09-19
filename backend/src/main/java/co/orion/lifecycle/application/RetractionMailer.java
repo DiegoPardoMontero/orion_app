@@ -41,7 +41,7 @@ public class RetractionMailer {
                     + "Registramos tu retracto. Cancelamos la clase y te vamos a devolver "
                     + formato(montoCop) + " al mismo medio de pago que usaste.\n\n"
                     + "El plazo legal para hacerlo vence el " + fecha + ". Normalmente es antes.\n\n"
-                    + "No tienes que hacer nada más.\n\n— Orión";
+                    + "No tienes que hacer nada más.\n\nOrión";
             enviar(user, "Tu retracto quedó registrado", texto);
         });
     }
@@ -51,7 +51,7 @@ public class RetractionMailer {
             String texto = "Hola " + user.getFullName() + ",\n\n"
                     + "Ya devolvimos " + formato(montoCop) + " a tu medio de pago.\n"
                     + "Referencia: " + referencia + "\n\n"
-                    + "Según tu banco, puede tardar unos días en reflejarse.\n\n— Orión";
+                    + "Según tu banco, puede tardar unos días en reflejarse.\n\nOrión";
             enviar(user, "Devolvimos tu dinero", texto);
         });
     }

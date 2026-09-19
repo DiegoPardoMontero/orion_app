@@ -361,7 +361,7 @@ function MapaDeConstancia() {
       {protegidas > 0 && (
         <p className="mt-3 border-t border-border pt-3 text-[12px] leading-relaxed text-text-secondary">
           <strong className="text-text">Tuviste una semana sin clase y tu racha siguió.</strong> Se
-          llama semana protegida: se aplica sola —no hay que pedirla— y solo una vez al mes. Tapa el
+          llama semana protegida: se aplica sola, sin que haya que pedirla, y solo una vez al mes. Tapa el
           hueco, pero no cuenta como clase, así que una racha de cuatro semanas con una protegida en
           medio sigue siendo de cuatro.
         </p>

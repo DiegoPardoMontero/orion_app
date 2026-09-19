@@ -29,9 +29,9 @@ export type FuerzaClave = { nivel: 0 | 1 | 2 | 3 | 4; mensaje: string };
 const MENSAJES_FUERZA = [
   "Mínimo 8 caracteres",
   "Muy corta todavía",
-  "Débil — súmale una mayúscula",
-  "Vas bien — añade un número",
-  "Fuerte — un símbolo la blinda",
+  "Débil: súmale una mayúscula",
+  "Vas bien: añade un número",
+  "Fuerte: un símbolo la blinda",
   "Excelente contraseña",
 ] as const;
 

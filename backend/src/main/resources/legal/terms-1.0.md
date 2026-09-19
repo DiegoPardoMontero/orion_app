@@ -28,7 +28,7 @@ Esto significa que:
 
 Solo personas **mayores de 18 años**. Al crear tu cuenta lo declaras. Si detectamos una cuenta de un menor, la suspendemos.
 
-Una cuenta es de una sola persona y de un solo tipo a la vez: estudiante, profesor o —mientras tu postulación espera decisión— aspirante a profesor.
+Una cuenta es de una sola persona y de un solo tipo a la vez: estudiante, profesor o, mientras tu postulación espera decisión, aspirante a profesor.
 
 ## 4. Cómo funciona una clase
 
@@ -66,7 +66,7 @@ Cuando pagas, el dinero queda **retenido** hasta que la clase se dicte. Solo ent
 | **El profesor no se presenta** | Puedes reportarlo (sección 9) y, si se resuelve a tu favor, recibes el valor completo |
 | **No te presentas tú** | La clase se considera prestada: el profesor apartó su hora y estuvo ahí |
 
-La diferencia entre las dos primeras filas es tuya y la conoces antes de pulsar: te la decimos en el momento de cancelar. La tercera no tiene plazo a propósito — si la clase se cae por el lado del profesor, no hay razón para que tú pierdas dinero, sea cuando sea.
+La diferencia entre las dos primeras filas es tuya y la conoces antes de pulsar: te la decimos en el momento de cancelar. La tercera no tiene plazo a propósito: si la clase se cae por el lado del profesor, no hay razón para que tú pierdas dinero, sea cuando sea.
 
 **Reprogramar** es distinto de cancelar y **sí se puede dentro de las {{cancelacion_estudiante}}**: propones otro horario libre del mismo profesor y la clase se mueve solo cuando la otra parte acepta. El pago no se toca. Solo puede haber una propuesta viva por clase.
 

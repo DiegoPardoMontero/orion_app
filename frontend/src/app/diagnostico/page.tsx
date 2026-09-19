@@ -54,7 +54,7 @@ export default function DiagnosticoPage() {
           </h1>
           <p className="mx-auto mt-4 max-w-[54ch] text-[15px] leading-relaxed text-on-primary/85 lg:text-[17px]">
             Sin examen, sin nota y sin que nadie te corrija. Una conversación corta que termina
-            diciéndote cómo hablas de verdad — y con quién seguir.
+            diciéndote cómo hablas de verdad, y con quién seguir.
           </p>
           <Rigel pose="animo" className="mx-auto mt-7 h-[150px] w-auto drop-shadow-2xl" />
         </div>
@@ -82,7 +82,7 @@ export default function DiagnosticoPage() {
             Dos minutos, y ya
           </p>
           <p className="mx-auto mt-4 max-w-[48ch] text-[15px] leading-relaxed text-text-secondary">
-            Necesitas una cuenta —el resultado es tuyo y queda guardado— y tu permiso para procesar
+            Necesitas una cuenta (el resultado es tuyo y queda guardado) y tu permiso para procesar
             la voz. Te lo pedimos justo antes de empezar, en una frase.
           </p>
           <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">

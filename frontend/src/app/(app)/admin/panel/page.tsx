@@ -211,7 +211,7 @@ export default function AdminPanelPage() {
         {d.jobs.length === 0 ? (
           <p className="text-[13px] text-text-muted">
             Ninguno ha corrido todavía desde el último reinicio. El de cierre de clases corre cada
-            hora: si sigue vacío mañana, algo lo detuvo — y es el que libera los pagos.
+            hora: si sigue vacío mañana, algo lo detuvo, y es el que libera los pagos.
           </p>
         ) : (
           d.jobs.map((job) => (

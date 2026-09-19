@@ -93,8 +93,8 @@ function Conciliacion() {
           <AlertTriangle size={16} strokeWidth={1.75} className="mt-0.5 shrink-0" />
           <span>
             {enRevision.length} pago{enRevision.length > 1 ? "s necesitan" : " necesita"} tu
-            decisión: la pasarela cobró y la clase no existe —porque se canceló, porque el cupo
-            venció mientras el banco respondía, o porque el importe no cuadró—. Esa plata no se le
+            decisión: la pasarela cobró y la clase no existe (porque se canceló, porque el cupo
+            venció mientras el banco respondía, o porque el importe no cuadró). Esa plata no se le
             paga al profesor ni vuelve sola: abónale saldo al estudiante o devuélvesela desde el
             panel de Wompi.
           </span>
@@ -236,7 +236,7 @@ function AbonarSaldo({ pago }: { pago: AdminPaymentResponse }) {
         </Boton>
       </div>
       <p className="mt-2 text-[12px] text-text-muted">
-        Sugerido: {precioCop(pago.suggestedCreditCop)} — lo que el estudiante puso de su bolsillo en
+        Sugerido: {precioCop(pago.suggestedCreditCop)}, lo que el estudiante puso de su bolsillo en
         este pago. Para devolverle el dinero al medio de pago en vez de abonarle saldo, hazlo desde
         el panel de Wompi: su API no expone reembolsos.
       </p>

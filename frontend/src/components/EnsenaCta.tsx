@@ -26,7 +26,7 @@ export function EnsenaCta({ className = "" }: { className?: string }) {
   return (
     <Link
       href={href}
-      className={`inline-flex h-[52px] items-center justify-center gap-2 rounded-pill bg-primary px-7 text-[15px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus ${className}`}
+      className={`inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-pill bg-primary px-7 text-[15px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus sm:w-auto sm:min-w-[236px] ${className}`}
     >
       {texto}
       <ArrowRight size={18} strokeWidth={1.9} />

@@ -570,7 +570,7 @@ function TarjetaClase({
         {dentroDeLas24 && (
           <p className="mt-2.5 flex items-center justify-center gap-1.5 text-center text-[11.5px] text-text-muted">
             <AlertCircle size={13} strokeWidth={2.2} />
-            Faltan menos de 24 h — la clase se considera impartida
+            Faltan menos de 24 h, así que la clase se considera impartida
           </p>
         )}
       </Tarjeta>
