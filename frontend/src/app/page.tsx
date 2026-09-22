@@ -241,20 +241,17 @@ export default async function PortadaPage() {
         <div className="relative mx-auto max-w-6xl px-5 py-12 lg:px-8 lg:py-16">
           <div className="grid gap-10 lg:grid-cols-[1.35fr_1fr] lg:items-center">
             <div>
-              <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-on-primary/80">
-                Gratis · Dos minutos · Sin examen
-              </p>
-              <h1 className="mt-3 max-w-[18ch] font-display text-[34px] font-bold leading-[1.08] text-on-primary lg:text-[52px]">
-                Prueba tu inglés en 2 minutos.
+              {/* Primero qué es Orión y después qué hacer: quien llega por primera vez no sabía si
+                  esto era una app de test o una academia. */}
+              <h1 className="max-w-[20ch] font-display text-[34px] font-bold leading-[1.08] text-on-primary lg:text-[52px]">
+                Orión es una academia de inglés especializada.
               </h1>
-              {/* El héroe abría con el diagnóstico y no decía en ningún momento qué es Orión: quien
-                  llega por primera vez no sabía si esto era una app de test o una academia. La
-                  segunda frase lo dice antes de pedir nada. */}
-              <p className="mt-4 max-w-[52ch] text-[15px] leading-relaxed text-on-primary/85 lg:text-[17px]">
-                Orión es una academia de inglés colombiana: clases en vivo, uno a uno, con
-                profesores verificados. Empieza por una conversación corta, sin preguntas de examen.
-                Al colgar recibes tu Confidence Score, un diagnóstico escrito de cómo hablas y tres
-                profesores elegidos por lo que contaste. Gratis y sin compromiso.
+              <p className="mt-4 max-w-[40ch] font-display text-[20px] font-semibold leading-snug text-on-primary lg:text-[26px]">
+                Antes de empezar, toma tu diagnóstico de inglés.
+              </p>
+              <p className="mt-3 max-w-[52ch] text-[15px] leading-relaxed text-on-primary/85 lg:text-[17px]">
+                Dos minutos de conversación, gratis y sin examen. Al colgar sabes cómo hablas y
+                tienes tres profesores elegidos por lo que contaste.
               </p>
             </div>
             <div className="flex justify-center lg:justify-end">
@@ -270,22 +267,17 @@ export default async function PortadaPage() {
             lo que dijiste. Buscar a mano sigue estando, un clic más abajo, para quien ya lo tiene
             claro.
           */}
-          <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Link
-              href="/diagnostico"
-              className="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-pill bg-surface px-7 text-[15px] font-bold text-primary-strong shadow-lg transition-transform hover:-translate-y-0.5 focus-visible:shadow-focus sm:w-auto sm:min-w-[236px]"
-            >
-              <Sparkles size={18} strokeWidth={2.2} />
-              Empezar mi diagnóstico
-            </Link>
-            <Link
-              href="/profesores"
-              className="inline-flex h-[52px] w-full items-center justify-center rounded-pill border-[1.5px] border-on-primary/45 px-7 text-[15px] font-bold text-on-primary transition-colors hover:bg-on-primary/10 focus-visible:shadow-focus sm:w-auto sm:min-w-[236px]"
-            >
-              Ver profesores
-            </Link>
-          </div>
-          <div className="mt-5">
+          {/* Una sola acción grande y el resto en una fila de secundarios iguales: el diagnóstico
+              es el primer paso que Orión propone, y los otros tres son para quien ya sabe lo que
+              quiere. */}
+          <Link
+            href="/diagnostico"
+            className="mt-9 inline-flex h-[60px] w-full items-center justify-center gap-2 rounded-pill bg-surface px-7 text-[17px] font-bold text-primary-strong shadow-lg transition-transform hover:-translate-y-0.5 focus-visible:shadow-focus"
+          >
+            <Sparkles size={20} strokeWidth={2.2} />
+            Empezar mi diagnóstico
+          </Link>
+          <div className="mt-3">
             <HeroCta />
           </div>
         </div>
