@@ -160,7 +160,7 @@ const NOSOTROS = [
   {
     icono: Sparkles,
     titulo: "Clases en vivo, nunca grabadas",
-    texto: "Sesenta minutos con una persona al otro lado que prepara la clase para ti. Sin videos enlatados ni ejercicios automáticos.",
+    texto: "Cada clase es con una persona al otro lado que la prepara para ti. Sin videos enlatados ni ejercicios automáticos.",
   },
   {
     icono: Star,
