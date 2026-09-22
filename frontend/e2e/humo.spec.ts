@@ -294,10 +294,10 @@ test("recuperar contraseña: pide enlace y rechaza un token inválido", async ({
 
 test("la landing pública lleva al registro en un clic", async ({ page }) => {
   await page.goto("/");
-  // Portada marketplace (Bloque 7): el titular cambió al nuevo mensaje en español. El botón "Crea
-  // tu cuenta" del hero (isla HeroCta, anónimo) sigue siendo el enlace del funnel hacia /registro.
+  // El titular dice qué es Orión (22/09/2026). El botón "Crea tu cuenta" de la fila del hero (isla
+  // HeroCta, anónimo) sigue siendo el enlace del funnel hacia /registro.
   await expect(
-    page.getByRole("heading", { name: /Encuentra al profesor indicado/i }),
+    page.getByRole("heading", { name: /academia de inglés especializada/i }),
   ).toBeVisible();
   await page.getByRole("link", { name: "Crea tu cuenta" }).first().click();
   await expect(page).toHaveURL(/\/registro/);

@@ -41,7 +41,8 @@ public class PublicFiguresService {
                 settings.getInt("dispute_report_window_hours"),
                 settings.getInt("auto_complete_hours"),
                 settings.getInt("application_review_business_days"),
-                settings.getInt("assessment_max_minutes"));
+                settings.getInt("assessment_max_minutes"),
+                settings.getInt("assessment_lead_retention_days"));
     }
 
     /**

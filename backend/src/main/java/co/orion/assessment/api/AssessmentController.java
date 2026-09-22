@@ -13,25 +13,51 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
+import co.orion.assessment.application.AssessmentLeadService;
 import co.orion.assessment.application.AssessmentService;
+import co.orion.assessment.application.Evaluado;
 import co.orion.assessment.application.VoiceSession;
 import co.orion.assessment.domain.ConfidenceAssessment;
+import co.orion.shared.error.ForbiddenException;
 import co.orion.shared.security.OrionUserDetails;
 import co.orion.shared.time.BusinessZone;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
-/** El diagnóstico de confianza: empezar, alimentar, cerrar y leer. Todo del dueño y de nadie más. */
+/**
+ * El diagnóstico de confianza: empezar, alimentar, cerrar y leer. Todo del dueño y de nadie más.
+ *
+ * <p>El dueño es una cuenta de estudiante o, sin cuenta, el lead de este dispositivo (la cookie
+ * {@code ORION_LEAD}). Por eso estas rutas son públicas en {@code SecurityConfig} y la puerta está
+ * aquí: sin ninguno de los dos, 401; con una cuenta que no es de estudiante, 403.
+ */
 @RestController
 @RequestMapping("/api/v1")
 public class AssessmentController {
 
     private final AssessmentService assessments;
+    private final AssessmentLeadService leads;
 
-    public AssessmentController(AssessmentService assessments) {
+    public AssessmentController(AssessmentService assessments, AssessmentLeadService leads) {
         this.assessments = assessments;
+        this.leads = leads;
+    }
+
+    /** Quién llama. La cuenta manda sobre la cookie: con sesión, el diagnóstico es de la cuenta. */
+    private Evaluado quien(OrionUserDetails principal, HttpServletRequest http) {
+        if (principal != null) {
+            if (!"STUDENT".equals(principal.rolEfectivo())) {
+                throw new ForbiddenException("El diagnóstico es para estudiantes.");
+            }
+            return Evaluado.cuenta(principal.user());
+        }
+        return leads.porLlave(LeadClaimFilter.llaveDe(http))
+                .map(Evaluado::lead)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                        "Dinos tu nombre antes de empezar."));
     }
 
     /**
@@ -58,11 +84,12 @@ public class AssessmentController {
     @PostMapping("/assessments")
     @ResponseStatus(HttpStatus.CREATED)
     public StartedResponse start(@AuthenticationPrincipal OrionUserDetails principal,
-                                 @Valid @RequestBody(required = false) StartAssessmentRequest body) {
+                                 @Valid @RequestBody(required = false) StartAssessmentRequest body,
+                                 HttpServletRequest http) {
         String idioma = body == null || body.languageCode() == null || body.languageCode().isBlank()
                 ? "EN" : body.languageCode().toUpperCase();
 
-        AssessmentService.Iniciada iniciada = assessments.start(principal.user(), idioma);
+        AssessmentService.Iniciada iniciada = assessments.start(quien(principal, http), idioma);
         VoiceSession voz = iniciada.voice();
 
         return new StartedResponse(
@@ -75,8 +102,8 @@ public class AssessmentController {
 
     @GetMapping("/assessments/{id}")
     public AssessmentResponse one(@AuthenticationPrincipal OrionUserDetails principal,
-                                  @PathVariable UUID id) {
-        ConfidenceAssessment mia = assessments.mia(principal.user(), id);
+                                  @PathVariable UUID id, HttpServletRequest http) {
+        ConfidenceAssessment mia = assessments.mia(quien(principal, http), id);
         return AssessmentViews.of(mia, assessments.recommendationsOf(id));
     }
 
@@ -84,30 +111,34 @@ public class AssessmentController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void addTurn(@AuthenticationPrincipal OrionUserDetails principal,
                         @PathVariable UUID id,
-                        @Valid @RequestBody AddTurnRequest body) {
-        assessments.addTurn(principal.user(), id, body.turnIndex(), body.speaker(),
+                        @Valid @RequestBody AddTurnRequest body,
+                        HttpServletRequest http) {
+        assessments.addTurn(quien(principal, http), id, body.turnIndex(), body.speaker(),
                 body.transcript(), body.latencyMs(), body.durationMs());
     }
 
     @PostMapping("/assessments/{id}/complete")
     public AssessmentResponse complete(@AuthenticationPrincipal OrionUserDetails principal,
                                        @PathVariable UUID id,
-                                       @RequestBody(required = false) StartAssessmentRequest body) {
+                                       @RequestBody(required = false) StartAssessmentRequest body,
+                                       HttpServletRequest http) {
         List<String> objetivos = body == null || body.goals() == null ? List.of() : body.goals();
-        ConfidenceAssessment cerrada = assessments.complete(principal.user(), id, objetivos);
+        ConfidenceAssessment cerrada = assessments.complete(quien(principal, http), id, objetivos);
         return AssessmentViews.of(cerrada, assessments.recommendationsOf(id));
     }
 
     @PostMapping("/assessments/{id}/abandon")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void abandon(@AuthenticationPrincipal OrionUserDetails principal, @PathVariable UUID id) {
-        assessments.abandon(principal.user(), id);
+    public void abandon(@AuthenticationPrincipal OrionUserDetails principal, @PathVariable UUID id,
+                        HttpServletRequest http) {
+        assessments.abandon(quien(principal, http), id);
     }
 
     /** El historial: la base de la curva entre un diagnóstico y el siguiente. */
     @GetMapping("/me/assessments")
-    public List<AssessmentResponse> mine(@AuthenticationPrincipal OrionUserDetails principal) {
-        return assessments.history(principal.user()).stream()
+    public List<AssessmentResponse> mine(@AuthenticationPrincipal OrionUserDetails principal,
+                                         HttpServletRequest http) {
+        return assessments.history(quien(principal, http)).stream()
                 .map(a -> AssessmentViews.of(a, assessments.recommendationsOf(a.getId())))
                 .toList();
     }

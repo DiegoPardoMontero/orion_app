@@ -28,6 +28,7 @@ public class IntentosDeAcceso {
 
     private static final Duration VENTANA_LOGIN = Duration.ofMinutes(15);
     private static final Duration VENTANA_HORA = Duration.ofHours(1);
+    private static final Duration VENTANA_DIA = Duration.ofDays(1);
 
     private final RateLimiter limiter = new RateLimiter();
     private final Clock clock;
@@ -35,6 +36,7 @@ public class IntentosDeAcceso {
     private final int maxLoginPorIp;
     private final int maxAltasPorIp;
     private final int maxRecuperacionesPorCorreo;
+    private final int maxDiagnosticosAnonimosPorIp;
 
     /**
      * Los topes son configurables porque el valor correcto depende de por dónde entra la gente.
@@ -50,12 +52,14 @@ public class IntentosDeAcceso {
             @Value("${orion.security.rate-limit.login-per-ip-and-email:5}") int maxLoginPorIpYCorreo,
             @Value("${orion.security.rate-limit.login-per-ip:60}") int maxLoginPorIp,
             @Value("${orion.security.rate-limit.signups-per-ip:10}") int maxAltasPorIp,
-            @Value("${orion.security.rate-limit.password-resets:3}") int maxRecuperacionesPorCorreo) {
+            @Value("${orion.security.rate-limit.password-resets:3}") int maxRecuperacionesPorCorreo,
+            @Value("${orion.security.rate-limit.anonymous-assessments-per-ip:5}") int maxDiagnosticosAnonimosPorIp) {
         this.clock = clock;
         this.maxLoginPorIpYCorreo = maxLoginPorIpYCorreo;
         this.maxLoginPorIp = maxLoginPorIp;
         this.maxAltasPorIp = maxAltasPorIp;
         this.maxRecuperacionesPorCorreo = maxRecuperacionesPorCorreo;
+        this.maxDiagnosticosAnonimosPorIp = maxDiagnosticosAnonimosPorIp;
     }
 
     public void antesDeLogin(HttpServletRequest request, String email) {
@@ -83,6 +87,18 @@ public class IntentosDeAcceso {
         exigir("recuperar:" + normalizar(email), maxRecuperacionesPorCorreo, VENTANA_HORA,
                 clock.instant(),
                 "Ya te enviamos varios enlaces. Revisa tu correo y la carpeta de spam.");
+    }
+
+    /**
+     * El diagnóstico sin cuenta abre al público una conversación que cuesta dinero. Cinco por
+     * conexión al día dejan hacerlo a una familia o a una oficina, y cortan a quien quiera vaciar
+     * el presupuesto a golpe de script. El tope diario de gasto es la otra mitad del freno.
+     */
+    public void antesDeDiagnosticoAnonimo(HttpServletRequest request) {
+        exigir("diagnostico:" + ipDe(request), maxDiagnosticosAnonimosPorIp, VENTANA_DIA,
+                clock.instant(),
+                "Ya se hicieron varios diagnósticos desde esta conexión hoy. Vuelve mañana, o crea tu "
+                        + "cuenta y hazlo desde ella.");
     }
 
     /** Solo para tests: olvida todos los intentos. Ver {@link RateLimiter#resetAll()}. */

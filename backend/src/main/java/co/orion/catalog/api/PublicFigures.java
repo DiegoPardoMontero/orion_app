@@ -36,5 +36,7 @@ public record PublicFigures(
         /** Días hábiles prometidos para revisar una postulación de profesor. */
         int applicationReviewBusinessDays,
         /** Minutos que dura la conversación del diagnóstico de confianza. */
-        int assessmentMinutes) {
+        int assessmentMinutes,
+        /** Días que se guarda un diagnóstico hecho sin cuenta, si nadie lo reclama. */
+        int assessmentLeadRetentionDays) {
 }

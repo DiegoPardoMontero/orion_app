@@ -10,7 +10,7 @@ import { PhoneInput } from "@/components/PhoneInput";
 import { Rigel, type RigelPose } from "@/components/Rigel";
 import { BotonPrincipal, Campo, Segmento, Spinner } from "@/components/ui";
 import { ApiError } from "@/lib/api/fetch";
-import { HOME_BY_ROLE } from "@/lib/auth/roles";
+import { destinoAlEntrar } from "@/lib/auth/roles";
 import { useRegister } from "@/lib/auth/session";
 import { fuerzaClave } from "@/lib/password";
 
@@ -113,7 +113,7 @@ function Registro() {
         // buscador. Sin esto un profesor recién registrado aterrizaría en el marketplace de
         // estudiantes a buscarse a sí mismo.
         onSuccess: (me) =>
-          router.replace(intencion === "ensenar" ? "/aplicacion" : HOME_BY_ROLE[me.role]),
+          router.replace(intencion === "ensenar" ? "/aplicacion" : destinoAlEntrar(me.role)),
       },
     );
   }

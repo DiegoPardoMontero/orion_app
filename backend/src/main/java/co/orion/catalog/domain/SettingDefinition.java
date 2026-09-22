@@ -65,6 +65,10 @@ public enum SettingDefinition {
             "Días que se guarda la transcripción",
             "Pasado el plazo se borra lo que la persona dijo y se conservan puntaje, señales y "
                     + "resumen. El audio no se guarda nunca.", 30, 1825, true),
+    ASSESSMENT_LEAD_RETENTION_DAYS("assessment_lead_retention_days", Grupo.PLAZOS, Tipo.ENTERO,
+            "Días que se guarda un diagnóstico sin cuenta",
+            "Si la persona no crea su cuenta en este plazo, se borra entero: su nombre, lo que dijo "
+                    + "y su resultado.", 1, 365, true),
 
     // Los pesos del Confidence Score. Suman 100 por convención, no por obligación: el cálculo
     // pondera sobre el total que haya. Cambiar cualquiera cambia la versión del puntaje, así que

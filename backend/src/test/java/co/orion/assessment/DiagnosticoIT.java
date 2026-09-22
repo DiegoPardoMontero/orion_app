@@ -72,14 +72,16 @@ class DiagnosticoIT extends ApiIntegrationSupport {
 
     @SuppressWarnings("rawtypes")
     @Test
-    @DisplayName("Sin correo confirmado no se empieza, y se dice exactamente eso")
-    void sinCorreoConfirmado() {
+    @DisplayName("El correo sin confirmar ya no frena: si se puede sin cuenta, con cuenta también")
+    void elCorreoSinConfirmarNoFrena() {
+        // Desde el 22/09/2026 el diagnóstico se hace sin cuenta. Exigirle el correo confirmado a
+        // quien sí tiene cuenta no protegería nada y solo castigaría a quien se registró primero.
         correoVerificado(false);
+        post(CONSENTIR, anaSession, Map.of(), Map.class);
 
         ResponseEntity<Map> r = empezar();
 
-        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
-        assertThat((String) r.getBody().get("error")).contains("Confirma tu correo");
+        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
 
     @SuppressWarnings("rawtypes")

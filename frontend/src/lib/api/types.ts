@@ -78,6 +78,7 @@ export type PublicFigures = {
   autoCompleteHours: number;
   applicationReviewBusinessDays: number;
   assessmentMinutes: number;
+  assessmentLeadRetentionDays: number;
 };
 
 export type TeacherApplicationView = Schemas["TeacherApplicationView"];

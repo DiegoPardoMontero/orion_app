@@ -250,7 +250,7 @@ export default async function PortadaPage() {
                 Antes de empezar, toma tu diagnóstico de inglés.
               </p>
               <p className="mt-3 max-w-[52ch] text-[15px] leading-relaxed text-on-primary/85 lg:text-[17px]">
-                Dos minutos de conversación, gratis y sin examen. Al colgar sabes cómo hablas y
+                Dos minutos de conversación, gratis, sin cuenta y sin examen. Al colgar sabes cómo hablas y
                 tienes tres profesores elegidos por lo que contaste.
               </p>
             </div>

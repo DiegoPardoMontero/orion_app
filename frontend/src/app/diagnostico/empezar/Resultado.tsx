@@ -28,7 +28,14 @@ import { precioCop } from "@/lib/format";
  * competencia, y una letra afirmaría algo que no medimos. Meissa cierra con los ojos cerrados de
  * gusto y un destello; no celebra.
  */
-export function Resultado({ diagnostico }: { diagnostico: Diagnostico }) {
+export function Resultado({
+  diagnostico,
+  sinCuenta = false,
+}: {
+  diagnostico: Diagnostico;
+  /** Hecho sin cuenta: se ofrece guardarlo, sin obligar a nada. */
+  sinCuenta?: boolean;
+}) {
   const sinNumero = diagnostico.mode === "FROM_ZERO" || diagnostico.score == null;
 
   return (
@@ -87,6 +94,7 @@ export function Resultado({ diagnostico }: { diagnostico: Diagnostico }) {
 
         <div>
           <Profesores diagnostico={diagnostico} />
+          {sinCuenta && <Guardarlo />}
           <Detalle diagnostico={diagnostico} />
         </div>
       </div>
@@ -186,6 +194,36 @@ function Profesores({ diagnostico }: { diagnostico: Diagnostico }) {
           })}
         </ul>
       )}
+    </section>
+  );
+}
+
+/**
+ * «¿Te lo guardamos?», para quien lo hizo sin cuenta. Opcional y después del resultado, nunca antes:
+ * esconder el resultado detrás de un registro se sentiría como una trampa. Al crear la cuenta o
+ * entrar, el diagnóstico pasa a ella solo (el backend lo reclama con la cookie de este dispositivo).
+ */
+function Guardarlo() {
+  return (
+    <section className="mt-4 rounded-card border border-border bg-surface-raised p-4">
+      <p className="font-display text-[16px] font-bold">¿Te lo guardamos?</p>
+      <p className="mt-1 text-[13.5px] leading-relaxed text-text-secondary">
+        Crea tu cuenta y tu resultado queda en ella. También te hará falta para reservar.
+      </p>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <Link
+          href="/registro?desde=diagnostico"
+          className="inline-flex h-11 items-center justify-center rounded-pill bg-primary px-3 text-[14px] font-bold text-on-primary shadow-primary hover:bg-primary-strong focus-visible:shadow-focus"
+        >
+          Crear cuenta
+        </Link>
+        <Link
+          href="/login?desde=diagnostico"
+          className="inline-flex h-11 items-center justify-center rounded-pill border-[1.5px] border-border px-3 text-[14px] font-bold text-text hover:bg-surface-sunken focus-visible:shadow-focus"
+        >
+          Ya tengo cuenta
+        </Link>
+      </div>
     </section>
   );
 }

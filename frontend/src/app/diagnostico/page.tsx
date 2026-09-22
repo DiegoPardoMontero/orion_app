@@ -1,114 +1,79 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Clock, MessageCircle, ShieldCheck, Sparkles, Users } from "lucide-react";
-import { NavPublica } from "@/components/NavPublica";
-import { Rigel } from "@/components/Rigel";
+import { Mic } from "lucide-react";
+import { Constelacion, Wordmark } from "@/components/marca";
+import { Meissa } from "@/components/Meissa";
 
 /**
- * El diagnóstico de confianza: la puerta a la que apunta el héroe de la portada.
+ * La puerta al diagnóstico: el destino del botón grande de la portada.
  *
- * <p>Pública a propósito: es el destino del héroe de la portada y tiene que abrirse sin sesión. La
- * conversación en sí vive en {@code /diagnostico/empezar}, dentro de la aplicación, porque necesita
- * cuenta —el resultado es de alguien— y consentimiento de voz.
+ * <p><strong>Una pantalla y a hablar</strong> (Pardo, 22/09/2026). Antes tenía tres pasos, un
+ * bloque de condiciones y otro de privacidad, y había que bajar para encontrar el botón; ahora es
+ * el diseño «antes» del handoff de Meissa sin la lista de pasos, y cabe sin scroll en un teléfono.
+ *
+ * <p>Pública y sin cuenta: el nombre y las dos casillas se piden en la pantalla siguiente, justo
+ * antes de hablar. Meissa aparece hablando, con su burbuja; Rigel no sale aquí, porque es quien
+ * recibe a la persona en el registro y nunca comparten pantalla.
  */
 export const metadata: Metadata = {
   title: "Prueba tu inglés en 2 minutos · Orión",
   description:
-    "Una conversación corta, sin preguntas de examen. Recibe tu Confidence Score, un diagnóstico escrito de cómo hablas y tres profesores elegidos por lo que contaste. Gratis.",
+    "Una conversación de dos minutos con Meissa, sin cuenta y sin examen. Recibe tu Confidence Score, un resumen de lo que contaste y tres profesores elegidos para ti. Gratis.",
   alternates: { canonical: "/diagnostico" },
 };
 
-const PASOS = [
-  {
-    icono: MessageCircle,
-    titulo: "Hablas dos minutos",
-    texto:
-      "Una conversación normal con Meissa, la voz de Orión. No hay preguntas de examen ni respuestas correctas, y nadie te corrige mientras hablas.",
-  },
-  {
-    icono: Sparkles,
-    titulo: "Recibes tu Confidence Score",
-    texto:
-      "No es un nivel del MCER. Mide la confianza al hablar: cuánto tardas en arrancar, cuántas frases sueltas a medias, cuándo te devuelves al español.",
-  },
-  {
-    icono: Users,
-    titulo: "Y tres profesores",
-    texto:
-      "Elegidos por lo que contaste en la conversación, no por un catálogo genérico. Con su agenda real, para reservar si quieres.",
-  },
-];
-
 export default function DiagnosticoPage() {
   return (
-    <>
-      <NavPublica />
+    <main className="flex min-h-dvh flex-col lg:flex-row">
+      {/* Marca: arriba en móvil (300 px) con Meissa abajo a la derecha; panel izquierdo del 47 %
+          en escritorio, como el login de Rigel pero del otro lado. */}
+      <div className="gradient-dawn relative flex h-[300px] shrink-0 flex-col overflow-hidden rounded-b-[24px] p-6 lg:m-5 lg:h-auto lg:w-[47%] lg:rounded-[22px] lg:p-10">
+        <Constelacion className="pointer-events-none absolute left-2 top-10 h-[120px] w-[120px] opacity-60 lg:left-8 lg:top-24 lg:h-[220px] lg:w-[220px]" />
+        <Link href="/" className="relative w-fit rounded-base focus-visible:shadow-focus">
+          <Wordmark className="text-[15px] text-on-primary" />
+        </Link>
 
-      <header className="gradient-dawn">
-        <div className="mx-auto max-w-4xl px-5 py-12 text-center lg:py-16">
-          <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-on-primary/80">
-            Gratis · Dos minutos · Sin examen
+        <div className="absolute bottom-3 right-3 flex flex-col items-end lg:right-10 lg:top-20 lg:bottom-auto">
+          <p className="max-w-[210px] rounded-[22px_22px_6px_22px] bg-[#FFF6EE] px-4 py-3 text-[14px] font-medium leading-[1.45] text-text lg:max-w-[250px] lg:text-[16px]">
+            Hola, soy Meissa. Hablemos dos minutos y te digo por dónde empezar.
           </p>
-          <h1 className="mx-auto mt-3 max-w-[16ch] font-display text-[34px] font-bold leading-[1.08] text-on-primary lg:text-[48px]">
-            Prueba tu inglés en 2 minutos.
+          <Meissa estado="habla" sobreAmanecer decorativo className="mt-1 h-[146px] w-auto lg:h-[236px]" />
+        </div>
+
+        <div className="relative mt-auto hidden lg:block">
+          <h1 className="max-w-[14ch] font-display text-[40px] font-bold leading-[1.08] text-on-primary">
+            Prueba tu inglés hablando.
           </h1>
-          <p className="mx-auto mt-4 max-w-[54ch] text-[15px] leading-relaxed text-on-primary/85 lg:text-[17px]">
-            Sin examen, sin nota y sin que nadie te corrija. Una conversación corta que termina
-            diciéndote cómo hablas de verdad, y con quién seguir.
+          <p className="mt-3 text-[15px] text-on-primary/80">
+            Dos minutos de conversación. Sin cuenta, sin tarjeta, sin nota.
           </p>
-          <Rigel pose="animo" className="mx-auto mt-7 h-[150px] w-auto drop-shadow-2xl" />
         </div>
-      </header>
+      </div>
 
-      <main className="mx-auto max-w-4xl px-5 py-12 lg:py-16">
-        <ol className="grid gap-4 md:grid-cols-3">
-          {PASOS.map(({ icono: Icono, titulo, texto }, i) => (
-            <li key={titulo} className="rounded-card bg-surface-raised p-6 shadow-sm">
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-primary-soft text-primary-strong">
-                <Icono size={19} strokeWidth={2} />
-              </span>
-              <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted">
-                Paso {i + 1}
-              </p>
-              <p className="mt-1 font-display text-[19px] font-bold">{titulo}</p>
-              <p className="mt-1.5 text-[14px] leading-relaxed text-text-secondary">{texto}</p>
-            </li>
-          ))}
-        </ol>
+      <div className="flex flex-1 items-start justify-center px-6 py-6 lg:items-center lg:px-10">
+        <div className="w-full max-w-md lg:max-w-[440px]">
+          <h2 className="font-display text-[28px] font-bold leading-tight lg:text-[38px]">
+            Habla dos minutos con Meissa
+          </h2>
+          <p className="mt-2 text-[15px] leading-relaxed text-text-secondary">
+            Te hace preguntas sencillas sobre ti y tu día. Respondes en inglés como puedas: si te
+            trabas, está bien. Sin cuenta, sin tarjeta, sin nota.
+          </p>
 
-        <div className="mt-10 rounded-card border border-border bg-surface-raised p-7 text-center">
-          <p className="inline-flex items-center gap-2 rounded-pill bg-accent-peach-soft px-3.5 py-1.5 text-[12.5px] font-bold text-[#8a5a33]">
-            <Clock size={14} strokeWidth={2.2} />
-            Dos minutos, y ya
+          <p className="mt-5 flex items-start gap-3 rounded-[16px] border border-border bg-surface-raised p-4 text-[13px] leading-relaxed text-[#5E4E6B]">
+            <Mic size={18} strokeWidth={2} className="mt-0.5 shrink-0 text-text-secondary" />
+            Te pediremos permiso para usar el micrófono. La conversación se guarda solo para darte
+            tu resultado, y puedes pedir que la borremos.
           </p>
-          <p className="mx-auto mt-4 max-w-[48ch] text-[15px] leading-relaxed text-text-secondary">
-            Necesitas una cuenta (el resultado es tuyo y queda guardado) y tu permiso para procesar
-            la voz. Te lo pedimos justo antes de empezar, en una frase.
-          </p>
-          <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
-            <Link
-              href="/diagnostico/empezar"
-              className="inline-flex h-[52px] items-center justify-center rounded-pill bg-primary px-7 text-[15px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus"
-            >
-              Empezar mi diagnóstico
-            </Link>
-            <Link
-              href="/profesores"
-              className="inline-flex h-[52px] items-center justify-center rounded-pill border-[1.5px] border-border px-7 text-[15px] font-bold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
-            >
-              Ver profesores
-            </Link>
-          </div>
+
+          <Link
+            href="/diagnostico/empezar"
+            className="mt-6 inline-flex h-[52px] w-full items-center justify-center rounded-pill bg-primary px-7 text-[15px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus"
+          >
+            Empezar con Meissa
+          </Link>
         </div>
-
-        <p className="mt-8 flex items-start justify-center gap-2 text-center text-[13px] leading-relaxed text-text-muted">
-          <ShieldCheck size={16} strokeWidth={2} className="mt-0.5 shrink-0" />
-          <span>
-            Tu voz no se guarda en los servidores de Orión y el audio no pasa por nosotros. Antes de
-            empezar te pedimos permiso, y puedes retirarlo cuando quieras.
-          </span>
-        </p>
-      </main>
-    </>
+      </div>
+    </main>
   );
 }

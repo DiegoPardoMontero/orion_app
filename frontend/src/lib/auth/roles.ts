@@ -9,6 +9,19 @@ export type NavItem = { href: string; label: string };
  */
 export type NavGroup = { titulo?: string; items: NavItem[] };
 
+/**
+ * A dónde llega alguien al entrar o crear su cuenta. Quien viene del resultado del diagnóstico
+ * («¿Te lo guardamos?») aterriza en su perfil, donde lo ve guardado: el backend ya lo pasó a su
+ * cuenta con la cookie de este dispositivo. Se lee de la URL en el momento, sin useSearchParams,
+ * para no obligar a envolver el login en una frontera de Suspense.
+ */
+export function destinoAlEntrar(role: Role): string {
+  const desde =
+    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("desde");
+  if (desde === "diagnostico" && role === "STUDENT") return "/cuenta?seccion=resumen";
+  return HOME_BY_ROLE[role];
+}
+
 /** A dónde llega cada rol al entrar. */
 export const HOME_BY_ROLE: Record<Role, string> = {
   STUDENT: "/profesores",

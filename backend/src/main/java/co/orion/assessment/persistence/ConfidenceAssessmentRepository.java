@@ -20,6 +20,18 @@ public interface ConfidenceAssessmentRepository extends JpaRepository<Confidence
 
     List<ConfidenceAssessment> findByUserIdOrderByStartedAtDesc(UUID userId);
 
+    /* Los de un lead mientras no tenga cuenta: en cuanto se reclaman, dejan de ser suyos. */
+
+    Optional<ConfidenceAssessment> findByLeadIdAndLanguageCodeAndStatusAndUserIdIsNull(
+            UUID leadId, String languageCode, AssessmentStatus status);
+
+    List<ConfidenceAssessment> findByLeadIdAndUserIdIsNull(UUID leadId);
+
+    List<ConfidenceAssessment> findByLeadIdAndUserIdIsNullOrderByStartedAtDesc(UUID leadId);
+
+    Optional<ConfidenceAssessment> findFirstByLeadIdAndLanguageCodeAndStatusAndUserIdIsNullOrderByCompletedAtDesc(
+            UUID leadId, String languageCode, AssessmentStatus status);
+
     /** La última terminada: de aquí sale la fecha desde la que cuenta el enfriamiento. */
     Optional<ConfidenceAssessment> findFirstByUserIdAndLanguageCodeAndStatusOrderByCompletedAtDesc(
             UUID userId, String languageCode, AssessmentStatus status);

@@ -394,6 +394,33 @@ peor fallo posible, porque no se nota. El estado real se ve en Administración �
 > Queda un desvío conocido: ante «Perdón, no entiendo», Meissa a veces pasa a español al primer
 > turno en vez de al segundo (2 de 3 en la prueba).
 
+## Diagnóstico sin cuenta y Meissa (22/09/2026)
+
+Brief en [`briefs/diagnostico-sin-cuenta-y-login-social.md`](./briefs/diagnostico-sin-cuenta-y-login-social.md),
+con las decisiones que tomó Pardo.
+
+- **Portada**: dice primero qué es Orión («una academia de inglés especializada») y después
+  propone el diagnóstico, con un botón a todo el ancho; profesores, crear cuenta y entrar van en
+  una fila de secundarios iguales.
+- **Sin cuenta hasta reservar.** El diagnóstico lo hace un *lead*: nombre de pila y dos casillas
+  separadas (mayor de 18; autorización de voz), ligado al dispositivo con la cookie httpOnly
+  `ORION_LEAD`, de la que la base solo guarda el hash (V43). Al crear cuenta o entrar,
+  `LeadClaimFilter` muda sus diagnósticos a la cuenta y copia la autorización de voz a
+  `voice_consents` con su fecha original. Lo que nadie reclama se borra a los
+  `assessment_lead_retention_days` (30). Freno de cinco diagnósticos anónimos por IP al día, además
+  del tope de gasto. El correo verificado dejó de exigirse para el diagnóstico: pedírselo a quien
+  tiene cuenta y no a quien no la tiene no protegía nada.
+- **Siempre tres profesores**, por escalones (encajan y tienen agenda → cualquiera del idioma con
+  agenda → cualquiera), y la razón nunca exagera: al relleno le corresponde `VERIFIED`.
+- **Resumen personalizado** de lo que la persona contó, escrito por `gpt-5-mini` con razonamiento
+  mínimo y revisado antes de mostrarse (palabras prohibidas → frase de plantilla). Va al presupuesto
+  del diagnóstico. Todas las salidas lo llevan, también la rama en español y la conversación corta.
+- **Etiqueta del resultado** por tramos del handoff («Ya te defiendes», «Con soltura»…); nunca
+  letras del MCER. La rama en español muestra «Primeros pasos» sin número.
+- **Meissa**, la segunda mascota, en todo el flujo: `/diagnostico` (sin pasos y sin scroll), la
+  conversación a pantalla completa con sus estados habla/escucha/piensa y el subtítulo de lo que
+  dice, la espera y el cierre. Rigel ya no aparece en el diagnóstico.
+
 ## Pendiente / bloqueos conocidos
 - **Reservas anteriores a V20 sin idioma**: las que tenía un profesor de dos idiomas quedaron con
   `language_code` en nulo a propósito, para revisión manual. La migración deja el conteo en un

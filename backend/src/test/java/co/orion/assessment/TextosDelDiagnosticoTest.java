@@ -55,9 +55,9 @@ class TextosDelDiagnosticoTest {
     private static Stream<String> textosDeCaraAlUsuario() throws IOException {
         Stream<String> observaciones = Stream.of(Observacion.values()).map(Observacion::descripcion);
         Stream<String> pantallas = Stream.of(
-                "frontend/src/app/(app)/diagnostico/empezar/Puerta.tsx",
-                "frontend/src/app/(app)/diagnostico/empezar/Resultado.tsx",
-                "frontend/src/app/(app)/diagnostico/empezar/Conversacion.tsx",
+                "frontend/src/app/diagnostico/empezar/Puerta.tsx",
+                "frontend/src/app/diagnostico/empezar/Resultado.tsx",
+                "frontend/src/app/diagnostico/empezar/Conversacion.tsx",
                 "frontend/src/app/diagnostico/page.tsx",
                 "frontend/src/components/gamificacion/TarjetaDiagnostico.tsx")
                 .map(TextosDelDiagnosticoTest::leerDelRepo)

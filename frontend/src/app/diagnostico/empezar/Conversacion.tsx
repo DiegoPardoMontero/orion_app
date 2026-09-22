@@ -83,6 +83,7 @@ export function Conversacion({
         void apiFetch(`/api/v1/assessments/${sesion.assessmentId}/turns`, {
           method: "POST",
           body: t,
+          redirectOn401: false,
         }).catch(() => undefined);
       },
     });

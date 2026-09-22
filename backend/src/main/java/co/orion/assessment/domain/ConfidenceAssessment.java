@@ -38,8 +38,16 @@ public class ConfidenceAssessment {
     @Column(name = "id", updatable = false)
     private UUID id;
 
-    @Column(name = "user_id", nullable = false, updatable = false)
+    /** La cuenta dueña. Nula mientras el diagnóstico sea de un lead que aún no la ha creado. */
+    @Column(name = "user_id")
     private UUID userId;
+
+    /**
+     * El lead que lo hizo sin cuenta, si fue así. Se conserva después de reclamarse, para poder
+     * decir de dónde vino.
+     */
+    @Column(name = "lead_id", updatable = false)
+    private UUID leadId;
 
     @Column(name = "language_code", nullable = false, length = 5, updatable = false)
     private String languageCode;
@@ -90,7 +98,14 @@ public class ConfidenceAssessment {
     }
 
     public ConfidenceAssessment(UUID userId, String languageCode, int sequence, Instant startedAt) {
+        this(userId, null, languageCode, sequence, startedAt);
+    }
+
+    /** Uno de los dos, cuenta o lead: la base lo exige con {@code ck_assessment_owner}. */
+    public ConfidenceAssessment(UUID userId, UUID leadId, String languageCode, int sequence,
+                                Instant startedAt) {
         this.userId = userId;
+        this.leadId = leadId;
         this.languageCode = languageCode;
         this.sequence = (short) sequence;
         this.status = AssessmentStatus.IN_PROGRESS;
@@ -134,12 +149,17 @@ public class ConfidenceAssessment {
         this.summary = summary;
     }
 
-    public void fail() {
-        this.status = AssessmentStatus.FAILED;
+    /**
+     * Pasa a la cuenta que reclamó el lead, con el número que le toca en la serie de esa cuenta.
+     * Es la única forma en que cambia de dueño.
+     */
+    public void assignTo(UUID userId, int sequence) {
+        this.userId = userId;
+        this.sequence = (short) sequence;
     }
 
-    public boolean isOwnedBy(UUID someone) {
-        return userId.equals(someone);
+    public void fail() {
+        this.status = AssessmentStatus.FAILED;
     }
 
     public boolean isLive() {
@@ -152,6 +172,10 @@ public class ConfidenceAssessment {
 
     public UUID getUserId() {
         return userId;
+    }
+
+    public UUID getLeadId() {
+        return leadId;
     }
 
     public String getLanguageCode() {

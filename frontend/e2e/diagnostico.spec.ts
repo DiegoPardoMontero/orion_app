@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { aceptarCondiciones, verificarCorreo } from "./apoyo";
+import { aceptarCondiciones } from "./apoyo";
 
 /**
  * El diagnóstico de confianza, de la portada al resultado.
@@ -16,22 +16,6 @@ import { aceptarCondiciones, verificarCorreo } from "./apoyo";
  */
 
 const CLAVE = "orion123*";
-
-async function registrarYVerificar(page: Page): Promise<string> {
-  const email = `diagnostico.${Date.now()}@orion.local`;
-  await page.goto("/registro");
-  await page.waitForLoadState("networkidle");
-  await page.locator("#nombre").fill("Eduardo Prueba");
-  await page.locator("#email").fill(email);
-  await page.locator("#password").fill(CLAVE);
-  await aceptarCondiciones(page);
-  await page.getByRole("button", { name: "Crear cuenta" }).click();
-  await expect(page).toHaveURL(/\/profesores/);
-
-  // Sin correo confirmado el diagnóstico no empieza, y ese es justo uno de los casos que se prueba.
-  await verificarCorreo(page, email);
-  return email;
-}
 
 /**
  * El header CSRF, que `page.request` no pone solo.
@@ -62,32 +46,33 @@ async function turno(page: Page, id: string, i: number, texto: string, latencia:
 }
 
 test.describe("Diagnóstico de confianza", () => {
-  test("de la portada al resultado, con tres profesores y el salto a reservar", async ({ page }) => {
-    await registrarYVerificar(page);
-
-    // 1 · La portada lleva al diagnóstico, que es el primer gesto que ofrece Orión.
+  test("sin cuenta, de la portada al resultado, y al crear la cuenta se muda a ella", async ({
+    page,
+  }) => {
+    // 1 · La portada lleva al diagnóstico, y la puerta lleva a hablar: sin cuenta y sin pasos.
     await page.goto("/");
     await page.getByRole("link", { name: "Empezar mi diagnóstico" }).first().click();
-    await expect(page).toHaveURL(/\/diagnostico/);
-
-    // 2 · La puerta: objetivo y consentimiento. La casilla nace desmarcada y sin ella no se avanza.
-    await page.goto("/diagnostico/empezar");
+    await expect(page).toHaveURL(/\/diagnostico$/);
+    await page.getByRole("link", { name: "Empezar con Meissa" }).click();
+    await expect(page).toHaveURL(/\/diagnostico\/empezar/);
     await page.waitForLoadState("networkidle");
+
+    // 2 · Nombre y dos casillas, separadas y desmarcadas. Sin las tres cosas no se avanza.
     const empezar = page.getByRole("button", { name: "Empezar la conversación" });
     await expect(empezar).toBeDisabled();
-
-    await page.getByRole("checkbox").check();
+    await page.getByPlaceholder("Tu nombre").fill("Eduardo");
+    await page.getByRole("checkbox", { name: "Soy mayor de 18 años" }).check();
+    await expect(empezar).toBeDisabled();
+    await page.getByRole("checkbox", { name: /Autorizo el uso de mi voz/ }).check();
     await expect(empezar).toBeEnabled();
 
-    // 3 · El consentimiento, que es lo que ese botón envía. Se manda por API y no pulsando, porque
-    //     pulsar arrancaría además la conexión de voz — y con el proveedor falso esa conexión no
-    //     lleva a ninguna parte. Lo que importa de la pantalla ya está comprobado arriba: sin la
-    //     casilla no se avanza.
-    const consentido = await page.request.post("/api/v1/me/voice-consent", {
+    // 3 · El lead y la conversación, por API: pulsar arrancaría también la voz, y con el proveedor
+    //     falso esa conexión no lleva a ninguna parte. La cookie del lead queda en el navegador.
+    const lead = await page.request.post("/api/v1/assessment-leads", {
       headers: await cabeceras(page),
-      data: {},
+      data: { firstName: "Eduardo", adult: true, acceptsVoice: true },
     });
-    expect(consentido.status()).toBe(201);
+    expect(lead.status()).toBe(201);
 
     const creada = await page.request.post("/api/v1/assessments", {
       headers: await cabeceras(page),
@@ -96,7 +81,7 @@ test.describe("Diagnóstico de confianza", () => {
     expect(creada.status()).toBe(201);
     const { assessmentId } = (await creada.json()) as { assessmentId: string };
 
-    // 4 · Cuatro turnos: el mínimo para que haya número. Con menos se cierra sin puntaje.
+    // 4 · Cuatro turnos: el mínimo para que haya número.
     await turno(page, assessmentId, 0, "Okay hi, my name is Eduardo and I work in logistics", 400);
     await turno(page, assessmentId, 1, "I coordinate shipments and talk to suppliers every day", 520);
     await turno(page, assessmentId, 2, "I want to use English at work, mostly in meetings", 610);
@@ -107,43 +92,48 @@ test.describe("Diagnóstico de confianza", () => {
       data: { goals: [] },
     });
     expect(cerrada.status()).toBe(200);
-    const resultado = (await cerrada.json()) as {
-      status: string;
-      score: number | null;
-      recommendations: { professorId: string }[];
-    };
-
-    // 5 · Hay número, y viene de la clase pura: el mismo conjunto de turnos siempre da lo mismo.
+    const resultado = (await cerrada.json()) as { status: string; score: number | null };
     expect(resultado.status).toBe("COMPLETED");
     expect(resultado.score).not.toBeNull();
 
-    // 6 · Y el resultado se ve, con su puntaje en pantalla.
-    await page.goto("/cuenta?seccion=resumen");
+    // 5 · Volver: ya no pregunta el nombre, y como hay enfriamiento, enseña el resultado que ya
+    //     tiene, con la oferta de guardarlo.
+    await page.goto("/diagnostico/empezar");
+    await expect(page.getByRole("heading", { name: "Hola de nuevo, Eduardo." })).toBeVisible();
+    await page.getByRole("button", { name: "Empezar la conversación" }).click();
+    await expect(page.getByText("Tu punto de partida")).toBeVisible();
+    await expect(page.getByText(String(resultado.score)).first()).toBeVisible();
+    await expect(page.getByText("¿Te lo guardamos?")).toBeVisible();
+
+    // 6 · Crear la cuenta desde ahí: el diagnóstico pasa a ella y se ve en el perfil.
+    await page.getByRole("link", { name: "Crear cuenta" }).click();
+    await expect(page).toHaveURL(/\/registro\?desde=diagnostico/);
+    await page.waitForLoadState("networkidle");
+    await page.locator("#nombre").fill("Eduardo Prueba");
+    await page.locator("#email").fill(`diagnostico.${Date.now()}@orion.local`);
+    await page.locator("#password").fill(CLAVE);
+    await aceptarCondiciones(page);
+    await page.getByRole("button", { name: "Crear cuenta" }).click();
+    await expect(page).toHaveURL(/\/cuenta\?seccion=resumen/);
     await page.waitForLoadState("networkidle");
     await expect(page.getByText("Confidence Score")).toBeVisible();
-    await expect(page.getByText(String(resultado.score))).toBeVisible();
-
-    // 7 · Si hubo recomendaciones, se puede saltar a la agenda de la primera. Si no las hubo
-    //     —la semilla puede no tener profesores con cupos esta semana— el resultado lo dice y
-    //     manda al directorio, que es el comportamiento correcto y no un fallo.
-    if (resultado.recommendations.length > 0) {
-      await page.goto(`/profesores/${resultado.recommendations[0].professorId}`);
-      await page.waitForLoadState("networkidle");
-      await expect(page.getByRole("heading").first()).toBeVisible();
-    }
+    await expect(page.getByText(String(resultado.score)).first()).toBeVisible();
   });
 
-  test("quien abandona con pocos turnos no recibe puntaje", async ({ page }) => {
-    await registrarYVerificar(page);
+  test("quien se queda corto no recibe puntaje, pero sí etiqueta y resumen", async ({ page }) => {
+    await page.goto("/diagnostico/empezar");
+    await page.waitForLoadState("networkidle");
 
-    await page.request.post("/api/v1/me/voice-consent", {
+    const lead = await page.request.post("/api/v1/assessment-leads", {
       headers: await cabeceras(page),
-      data: {},
+      data: { firstName: "Eduardo", adult: true, acceptsVoice: true },
     });
+    expect(lead.status()).toBe(201);
     const creada = await page.request.post("/api/v1/assessments", {
       headers: await cabeceras(page),
       data: { languageCode: "EN", goals: [] },
     });
+    expect(creada.status()).toBe(201);
     const { assessmentId } = (await creada.json()) as { assessmentId: string };
 
     await turno(page, assessmentId, 0, "Hello, I am Eduardo", 500);
@@ -154,9 +144,17 @@ test.describe("Diagnóstico de confianza", () => {
       data: { goals: [] },
     });
 
-    const resultado = (await cerrada.json()) as { status: string; score: number | null };
-    // Un puntaje sacado de dos frases parece un dato y no lo es. Antes que inventarlo, nada.
+    const resultado = (await cerrada.json()) as {
+      status: string;
+      score: number | null;
+      label: string;
+      summary: string | null;
+    };
+    // Un puntaje sacado de dos frases parece un dato y no lo es: sin número. Pero no con las manos
+    // vacías: etiqueta de quien empieza y un resumen con su nombre.
     expect(resultado.status).toBe("ABANDONED");
     expect(resultado.score).toBeNull();
+    expect(resultado.label).toBe("Primeros pasos");
+    expect(resultado.summary).toContain("Eduardo");
   });
 });

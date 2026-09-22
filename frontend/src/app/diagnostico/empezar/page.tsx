@@ -1,21 +1,34 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiFetch, ApiError } from "@/lib/api/fetch";
 import type { Diagnostico, DiagnosticoIniciado } from "@/lib/api/diagnostico";
+import type { Me } from "@/lib/auth/session";
+import { HOME_BY_ROLE } from "@/lib/auth/roles";
 import { useCifras } from "@/lib/cifras";
-import { AvisoError, Cargando } from "@/components/estados";
+import { Cargando } from "@/components/estados";
+import { Wordmark } from "@/components/marca";
 import { Meissa } from "@/components/Meissa";
+import { Boton } from "@/components/ui";
 import { Conversacion } from "./Conversacion";
 import { Puerta } from "./Puerta";
 import { Resultado } from "./Resultado";
 
 type Fase = "puerta" | "conversando" | "calculando" | "resultado";
 
+/** Todo lo de esta página se llama sin exigir sesión: sin cuenta también se puede. */
+const SIN_REDIRIGIR = { redirectOn401: false } as const;
+
 /**
  * El diagnóstico de confianza, de principio a fin y sin cambiar de dirección.
+ *
+ * <p><strong>Sin cuenta</strong> (Pardo, 22/09/2026). La página es pública: quien tiene cuenta de
+ * estudiante lo hace con ella, y quien no, con su nombre y dos casillas (un «lead» ligado a este
+ * dispositivo). Al crear su cuenta, el backend muda sus diagnósticos a ella. Las cuentas que no son
+ * de estudiante no lo hacen: no se autoevalúa aquí.
  *
  * <p>Las cuatro fases viven aquí porque la conversación no puede sobrevivir a una navegación: el
  * micrófono, la conexión con el proveedor y los turnos que se van empujando se perderían al cambiar
@@ -33,11 +46,27 @@ export default function DiagnosticoPage() {
   const [objetivos, setObjetivos] = useState<string[]>([]);
   const [resultado, setResultado] = useState<Diagnostico | null>(null);
 
+  const me = useQuery({
+    queryKey: ["auth", "me", "diagnostico"],
+    queryFn: () => apiFetch<Me>("/api/v1/auth/me", SIN_REDIRIGIR),
+    retry: false,
+  });
+  const anonimo = me.isError;
+
+  // Quien ya empezó sin cuenta en este dispositivo no tiene que volver a decir su nombre.
+  const lead = useQuery({
+    queryKey: ["assessment-leads", "me"],
+    queryFn: () => apiFetch<{ firstName: string }>("/api/v1/assessment-leads/me", SIN_REDIRIGIR),
+    enabled: anonimo,
+    retry: false,
+  });
+
   const empezar = useMutation({
     mutationFn: (metas: string[]) =>
       apiFetch<DiagnosticoIniciado>("/api/v1/assessments", {
         method: "POST",
         body: { languageCode: "EN", goals: metas },
+        ...SIN_REDIRIGIR,
       }),
     onSuccess: (iniciada) => {
       setSesion(iniciada);
@@ -50,6 +79,7 @@ export default function DiagnosticoPage() {
       apiFetch<Diagnostico>(`/api/v1/assessments/${sesion?.assessmentId}/complete`, {
         method: "POST",
         body: { goals: objetivos },
+        ...SIN_REDIRIGIR,
       }),
     onSuccess: (d) => {
       setResultado(d);
@@ -59,10 +89,11 @@ export default function DiagnosticoPage() {
   });
 
   // Si ya hay uno terminado y el enfriamiento no dejó empezar otro, se muestra ese.
+  const puedeTenerHistorial = me.data?.role === "STUDENT" || (anonimo && lead.isSuccess);
   const ultimo = useQuery({
     queryKey: ["me", "assessments"],
-    queryFn: () => apiFetch<Diagnostico[]>("/api/v1/me/assessments"),
-    enabled: fase === "puerta",
+    queryFn: () => apiFetch<Diagnostico[]>("/api/v1/me/assessments", SIN_REDIRIGIR),
+    enabled: fase === "puerta" && puedeTenerHistorial,
     staleTime: 0,
   });
 
@@ -76,7 +107,10 @@ export default function DiagnosticoPage() {
           cerrar.mutate();
         }}
         onSalir={() => {
-          void apiFetch(`/api/v1/assessments/${sesion.assessmentId}/abandon`, { method: "POST" })
+          void apiFetch(`/api/v1/assessments/${sesion.assessmentId}/abandon`, {
+            method: "POST",
+            ...SIN_REDIRIGIR,
+          })
             .catch(() => undefined)
             .finally(() => router.push("/diagnostico"));
         }}
@@ -90,11 +124,52 @@ export default function DiagnosticoPage() {
   }
 
   if (fase === "resultado") {
-    if (resultado) return <Resultado diagnostico={resultado} />;
     return (
-      <main className="mx-auto w-full max-w-lg px-5 py-10">
-        <AvisoError mensaje="No pudimos cerrar tu diagnóstico. Está guardado en tu perfil." />
-      </main>
+      <>
+        <Barra />
+        {resultado ? (
+          <Resultado diagnostico={resultado} sinCuenta={anonimo} />
+        ) : (
+          <main className="mx-auto w-full max-w-lg px-5 py-10 text-center">
+            <p className="font-display text-h3 font-bold">No pudimos cerrar tu diagnóstico.</p>
+            <p className="mt-2 text-[14px] text-text-secondary">
+              Lo que dijiste está guardado. Inténtalo de nuevo en un momento.
+            </p>
+            <Boton variante="primario" className="mt-5" onClick={() => cerrar.mutate()}>
+              Intentar de nuevo
+            </Boton>
+          </main>
+        )}
+      </>
+    );
+  }
+
+  if (me.isPending || (anonimo && lead.isPending)) {
+    return (
+      <>
+        <Barra />
+        <div className="mx-auto w-full max-w-lg px-5 py-8">
+          <Cargando filas={2} />
+        </div>
+      </>
+    );
+  }
+
+  // Profesores, aspirantes y administración: el diagnóstico no es para ellos.
+  if (me.data && me.data.role !== "STUDENT") {
+    return (
+      <>
+        <Barra />
+        <main className="mx-auto w-full max-w-lg px-5 py-10 text-center">
+          <p className="font-display text-h3 font-bold">El diagnóstico es para estudiantes.</p>
+          <Link
+            href={HOME_BY_ROLE[me.data.role]}
+            className="mt-5 inline-flex h-11 items-center rounded-pill bg-primary px-5 text-[14px] font-bold text-on-primary shadow-primary hover:bg-primary-strong focus-visible:shadow-focus"
+          >
+            Ir a mi panel
+          </Link>
+        </main>
+      </>
     );
   }
 
@@ -104,35 +179,42 @@ export default function DiagnosticoPage() {
   if (bloqueado && yaTiene) {
     return (
       <>
-        <div className="mx-auto w-full max-w-lg px-5 pt-6 lg:max-w-5xl">
+        <Barra />
+        <div className="mx-auto w-full max-w-lg px-5 pt-2 lg:max-w-5xl">
           <div className="rounded-card bg-accent-peach-soft p-4 text-[13.5px] leading-relaxed text-[#8a5a33]">
             {bloqueado}
           </div>
         </div>
-        <Resultado diagnostico={yaTiene} />
+        <Resultado diagnostico={yaTiene} sinCuenta={anonimo} />
       </>
     );
   }
 
   return (
     <>
+      <Barra />
       <Puerta
+        sinCuenta={anonimo}
+        nombreDelLead={lead.data?.firstName ?? null}
+        empezando={empezar.isPending}
+        error={bloqueado}
         onListo={(metas) => {
           setObjetivos(metas);
           empezar.mutate(metas);
         }}
       />
-      {bloqueado && (
-        <div className="mx-auto w-full max-w-lg px-5 pb-8">
-          <AvisoError mensaje={bloqueado} />
-        </div>
-      )}
-      {(empezar.isPending || ultimo.isPending) && (
-        <div className="mx-auto w-full max-w-lg px-5 pb-8">
-          <Cargando filas={1} />
-        </div>
-      )}
     </>
+  );
+}
+
+/** Sin el armazón de la app: la marca, que lleva a la portada. */
+function Barra() {
+  return (
+    <header className="mx-auto w-full max-w-lg px-5 pt-5 lg:max-w-5xl">
+      <Link href="/" className="inline-block rounded-base text-primary focus-visible:shadow-focus">
+        <Wordmark className="text-[15px]" />
+      </Link>
+    </header>
   );
 }
 

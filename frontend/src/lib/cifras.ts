@@ -28,6 +28,7 @@ const MIENTRAS_CARGA: PublicFigures = {
   autoCompleteHours: 24,
   applicationReviewBusinessDays: 3,
   assessmentMinutes: 2,
+  assessmentLeadRetentionDays: 30,
 };
 
 export function useCifras(): PublicFigures {
@@ -36,10 +37,13 @@ export function useCifras(): PublicFigures {
     queryFn: () => apiFetch<PublicFigures>("/api/v1/catalog/figures"),
     staleTime: 60 * 60_000,
   });
-  return data ?? MIENTRAS_CARGA;
+  // Campo a campo y no la respuesta entera: un backend que aún no manda un número nuevo no puede
+  // pintar «undefined días» en una pantalla.
+  return { ...MIENTRAS_CARGA, ...data };
 }
 
 /** «12 horas», «1 hora». El plural resuelto, que concatenar no vale en español. */
 export const horas = (n: number) => `${n} ${n === 1 ? "hora" : "horas"}`;
 export const minutos = (n: number) => `${n} ${n === 1 ? "minuto" : "minutos"}`;
 export const diasHabiles = (n: number) => `${n} ${n === 1 ? "día hábil" : "días hábiles"}`;
+export const dias = (n: number) => `${n} ${n === 1 ? "día" : "días"}`;

@@ -105,8 +105,12 @@ public class SecurityConfig {
                 // El diagnóstico de confianza es del estudiante: el profesor no se autoevalúa aquí,
                 // y el aspirante todavía no tiene experiencia de estudiante. El servicio vuelve a
                 // comprobar la propiedad y responde 404 si la evaluación no es suya.
-                .requestMatchers("/api/v1/assessments", "/api/v1/assessments/**").hasRole("STUDENT")
-                .requestMatchers("/api/v1/me/assessments").hasRole("STUDENT")
+                // El diagnóstico se hace también sin cuenta (22/09/2026): su dueño puede ser un
+                // estudiante o el lead de este dispositivo, y AssessmentController decide cuál —
+                // 401 sin ninguno de los dos, 403 con una cuenta que no es de estudiante.
+                .requestMatchers("/api/v1/assessment-leads", "/api/v1/assessment-leads/**").permitAll()
+                .requestMatchers("/api/v1/assessments", "/api/v1/assessments/**").permitAll()
+                .requestMatchers("/api/v1/me/assessments").permitAll()
                 .requestMatchers("/api/v1/me/voice-consent", "/api/v1/me/voice-consent/**")
                         .authenticated()
                 // El diagnóstico de un estudiante, para su profesor. El controlador comprueba que

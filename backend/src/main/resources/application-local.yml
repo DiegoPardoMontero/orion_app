@@ -17,3 +17,4 @@ orion:
       login-per-ip: 500
       login-per-ip-and-email: 50
       signups-per-ip: 100
+      anonymous-assessments-per-ip: 100

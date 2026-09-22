@@ -9,7 +9,7 @@ import { Constelacion, Wordmark } from "@/components/marca";
 import { Rigel } from "@/components/Rigel";
 import { BotonPrincipal, Campo, Spinner } from "@/components/ui";
 import { ApiError } from "@/lib/api/fetch";
-import { HOME_BY_ROLE } from "@/lib/auth/roles";
+import { destinoAlEntrar } from "@/lib/auth/roles";
 import { useLogin } from "@/lib/auth/session";
 
 export default function LoginPage() {
@@ -24,7 +24,7 @@ export default function LoginPage() {
     login.mutate(
       { email, password },
       // Cada rol aterriza donde le sirve: el estudiante a explorar, la profesora a sus clases.
-      { onSuccess: (me) => router.replace(HOME_BY_ROLE[me.role]) },
+      { onSuccess: (me) => router.replace(destinoAlEntrar(me.role)) },
     );
   }
 

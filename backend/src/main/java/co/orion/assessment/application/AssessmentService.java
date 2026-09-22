@@ -44,10 +44,12 @@ import co.orion.shared.time.BusinessZone;
 /**
  * El diagnóstico de confianza, de principio a fin.
  *
- * <p><strong>Las puertas antes de empezar.</strong> Correo verificado y consentimiento de voz
- * vigente, cada una con su 422 y su motivo exacto — un 403 genérico obliga a la persona a adivinar
- * qué le falta. Y el enfriamiento responde 409 con la fecha en que puede repetir y el enlace a su
- * resultado anterior, porque «no puedes» sin «cuándo sí» es una puerta cerrada sin cartel.
+ * <p><strong>Quién lo hace: una cuenta o un lead</strong> ({@link Evaluado}). Desde el 22/09/2026
+ * no hace falta cuenta para hablar con Meissa: el lead trae su nombre y sus dos declaraciones, y
+ * su autorización de voz va en él. A una cuenta se le pide la suya, con su 422 y su motivo exacto.
+ * Ya no se exige el correo verificado: pedírselo a quien tiene cuenta y no a quien no la tiene no
+ * protegería nada. Y el enfriamiento responde 409 con la fecha en que puede repetir, porque «no
+ * puedes» sin «cuándo sí» es una puerta cerrada sin cartel.
  *
  * <p><strong>Las señales las deduce el servidor.</strong> El cliente manda lo que solo él puede
  * medir —cuánto tardó en arrancar y cuánto habló— y el texto. Todo lo demás sale de
@@ -132,13 +134,9 @@ public class AssessmentService {
     /* ---------------- Empezar ---------------- */
 
     @Transactional
-    public Iniciada start(User quien, String languageCode) {
-        if (!quien.isEmailVerified()) {
-            throw new UnprocessableException(
-                    "Confirma tu correo antes de empezar el diagnóstico. Te enviamos el enlace "
-                            + "cuando creaste la cuenta.");
-        }
-        if (!hasLiveConsent(quien.getId())) {
+    public Iniciada start(Evaluado quien, String languageCode) {
+        // El lead trae su autorización de voz desde que se creó; la cuenta la da aparte.
+        if (!quien.esLead() && !hasLiveConsent(quien.userId())) {
             throw new UnprocessableException(
                     "Necesitamos tu autorización para procesar tu voz antes de empezar.");
         }
@@ -149,19 +147,22 @@ public class AssessmentService {
                     "El diagnóstico no está disponible ahora mismo. Vuelve a intentarlo más tarde.");
         }
 
-        // Una viva por persona e idioma: si quedó abierta, se reutiliza en vez de abrir otra. El
-        // índice único de la V34 lo garantizaría igual; esto lo hace sin estrellarse.
-        Optional<ConfidenceAssessment> viva = assessments.findByUserIdAndLanguageCodeAndStatus(
-                quien.getId(), languageCode, AssessmentStatus.IN_PROGRESS);
+        // Una viva por persona e idioma: si quedó abierta, se reutiliza en vez de abrir otra. Los
+        // índices únicos lo garantizarían igual; esto lo hace sin estrellarse.
+        Optional<ConfidenceAssessment> viva = quien.esLead()
+                ? assessments.findByLeadIdAndLanguageCodeAndStatusAndUserIdIsNull(
+                        quien.leadId(), languageCode, AssessmentStatus.IN_PROGRESS)
+                : assessments.findByUserIdAndLanguageCodeAndStatus(
+                        quien.userId(), languageCode, AssessmentStatus.IN_PROGRESS);
         if (viva.isPresent()) {
             return new Iniciada(viva.get(), abrirVoz(quien, languageCode));
         }
 
         enfriamiento(quien, languageCode);
 
-        int siguiente = assessments.lastSequence(quien.getId(), languageCode) + 1;
-        ConfidenceAssessment nueva = assessments.saveAndFlush(
-                new ConfidenceAssessment(quien.getId(), languageCode, siguiente, clock.instant()));
+        int siguiente = quien.esLead() ? 1 : assessments.lastSequence(quien.userId(), languageCode) + 1;
+        ConfidenceAssessment nueva = assessments.saveAndFlush(new ConfidenceAssessment(
+                quien.userId(), quien.leadId(), languageCode, siguiente, clock.instant()));
         return new Iniciada(nueva, abrirVoz(quien, languageCode));
     }
 
@@ -169,13 +170,16 @@ public class AssessmentService {
      * El enfriamiento entre diagnósticos. Responde 409 con la fecha exacta: «no puedes» sin
      * «cuándo sí» deja a la persona sin nada que hacer con la información.
      */
-    private void enfriamiento(User quien, String languageCode) {
+    private void enfriamiento(Evaluado quien, String languageCode) {
         int dias = settings.getInt("assessment_cooldown_days");
-        assessments.findFirstByUserIdAndLanguageCodeAndStatusOrderByCompletedAtDesc(
-                        quien.getId(), languageCode, AssessmentStatus.COMPLETED)
-                .filter(ultima -> ultima.getCompletedAt() != null)
-                .ifPresent(ultima -> {
-                    Instant puedeDesde = ultima.getCompletedAt().plus(Duration.ofDays(dias));
+        Optional<ConfidenceAssessment> ultima = quien.esLead()
+                ? assessments.findFirstByLeadIdAndLanguageCodeAndStatusAndUserIdIsNullOrderByCompletedAtDesc(
+                        quien.leadId(), languageCode, AssessmentStatus.COMPLETED)
+                : assessments.findFirstByUserIdAndLanguageCodeAndStatusOrderByCompletedAtDesc(
+                        quien.userId(), languageCode, AssessmentStatus.COMPLETED);
+        ultima.filter(u -> u.getCompletedAt() != null)
+                .ifPresent(u -> {
+                    Instant puedeDesde = u.getCompletedAt().plus(Duration.ofDays(dias));
                     if (clock.instant().isBefore(puedeDesde)) {
                         LocalDate cuando = LocalDate.ofInstant(puedeDesde, BusinessZone.BOGOTA);
                         throw new ConflictException(
@@ -185,13 +189,13 @@ public class AssessmentService {
                 });
     }
 
-    private VoiceSession abrirVoz(User quien, String languageCode) {
+    private VoiceSession abrirVoz(Evaluado quien, String languageCode) {
         int minutos = settings.getInt("assessment_max_minutes");
         return voice.start(new VoiceSessionRequest(
                 languageCode,
-                prompts.escenario(languageCode, minutos, primerNombre(quien.getFullName())),
+                prompts.escenario(languageCode, minutos, quien.nombreDePila()),
                 minutos * 60,
-                primerNombre(quien.getFullName())));
+                quien.nombreDePila()));
     }
 
     /* ---------------- Turnos ---------------- */
@@ -203,7 +207,7 @@ public class AssessmentService {
      * @param durationMs cuánto habló
      */
     @Transactional
-    public void addTurn(User quien, UUID assessmentId, int turnIndex, String speaker,
+    public void addTurn(Evaluado quien, UUID assessmentId, int turnIndex, String speaker,
                         String transcript, Integer latencyMs, Integer durationMs) {
         ConfidenceAssessment evaluacion = miaYViva(quien, assessmentId);
 
@@ -240,7 +244,7 @@ public class AssessmentService {
      * segundos y a esta escala no compite por conexiones; si algún día lo hace, se saca fuera.
      */
     @Transactional
-    public ConfidenceAssessment complete(User quien, UUID assessmentId, List<String> objetivos) {
+    public ConfidenceAssessment complete(Evaluado quien, UUID assessmentId, List<String> objetivos) {
         ConfidenceAssessment evaluacion = miaYViva(quien, assessmentId);
         List<String> metas = objetivos == null ? List.of() : objetivos;
 
@@ -285,8 +289,8 @@ public class AssessmentService {
      * Lo que contó y por qué Orión le sirve para eso. Lo escribe la IA si hay presupuesto y la
      * salida pasa la revisión; si no, la plantilla. El resultado nunca espera por esto.
      */
-    private String resumen(User quien, List<String> metas, List<AssessmentTurn> todos) {
-        String nombre = primerNombre(quien.getFullName());
+    private String resumen(Evaluado quien, List<String> metas, List<AssessmentTurn> todos) {
+        String nombre = quien.nombreDePila();
         Map<String, String> nombreDeMeta = objetivosDelCatalogo.findByActiveTrueOrderByDisplayOrderAsc()
                 .stream().collect(Collectors.toMap(TeachingGoal::getCode, TeachingGoal::getNameEs,
                         (a, b) -> a));
@@ -295,7 +299,7 @@ public class AssessmentService {
 
         if (budget.disponible()) {
             Optional<String> escrito = resumidor.resumir(new ConversationSummarizer.Pedido(
-                    quien.getId(), nombre, nombres,
+                    quien.actorId(), nombre, nombres,
                     todos.stream()
                             .map(t -> new ConversationSummarizer.Turno(!t.isUser(), t.getTranscript()))
                             .toList()));
@@ -307,7 +311,7 @@ public class AssessmentService {
     }
 
     @Transactional
-    public void abandon(User quien, UUID assessmentId) {
+    public void abandon(Evaluado quien, UUID assessmentId) {
         ConfidenceAssessment evaluacion = miaYViva(quien, assessmentId);
         int segundos = (int) Duration.between(evaluacion.getStartedAt(), clock.instant()).toSeconds();
         evaluacion.abandon(segundos, (int) turns.countByAssessmentId(assessmentId));
@@ -317,16 +321,18 @@ public class AssessmentService {
     /* ---------------- Lecturas ---------------- */
 
     @Transactional(readOnly = true)
-    public ConfidenceAssessment mia(User quien, UUID assessmentId) {
+    public ConfidenceAssessment mia(Evaluado quien, UUID assessmentId) {
         return assessments.findById(assessmentId)
-                .filter(a -> a.isOwnedBy(quien.getId()))
+                .filter(quien::esDuenoDe)
                 // 404 y no 403: la evaluación de otro no existe para ti.
                 .orElseThrow(() -> new ResourceNotFoundException("Diagnóstico no encontrado"));
     }
 
     @Transactional(readOnly = true)
-    public List<ConfidenceAssessment> history(User quien) {
-        return assessments.findByUserIdOrderByStartedAtDesc(quien.getId());
+    public List<ConfidenceAssessment> history(Evaluado quien) {
+        return quien.esLead()
+                ? assessments.findByLeadIdAndUserIdIsNullOrderByStartedAtDesc(quien.leadId())
+                : assessments.findByUserIdOrderByStartedAtDesc(quien.userId());
     }
 
     @Transactional(readOnly = true)
@@ -341,7 +347,7 @@ public class AssessmentService {
 
     /* ---------------- Interno ---------------- */
 
-    private ConfidenceAssessment miaYViva(User quien, UUID assessmentId) {
+    private ConfidenceAssessment miaYViva(Evaluado quien, UUID assessmentId) {
         ConfidenceAssessment evaluacion = mia(quien, assessmentId);
         if (!evaluacion.isLive()) {
             throw new UnprocessableException("Este diagnóstico ya está cerrado.");
@@ -385,14 +391,6 @@ public class AssessmentService {
         } catch (Exception ex) {
             throw new IllegalStateException("No se pudo serializar el resultado del diagnóstico", ex);
         }
-    }
-
-    private static String primerNombre(String nombre) {
-        if (nombre == null || nombre.isBlank()) {
-            return "";
-        }
-        int espacio = nombre.trim().indexOf(' ');
-        return espacio < 0 ? nombre.trim() : nombre.trim().substring(0, espacio);
     }
 
     /** Lo que devuelve empezar: la evaluación abierta y con qué conectarse. */
