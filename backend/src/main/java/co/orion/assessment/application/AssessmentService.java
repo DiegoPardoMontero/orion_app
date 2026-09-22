@@ -5,8 +5,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,7 @@ import co.orion.assessment.domain.ConfidenceScoreCalculator;
 import co.orion.assessment.domain.PesosDelPuntaje;
 import co.orion.assessment.domain.Puntaje;
 import co.orion.assessment.domain.Recomendacion;
+import co.orion.assessment.domain.ResumenDePlantilla;
 import co.orion.assessment.domain.SignalExtractor;
 import co.orion.assessment.domain.TurnoDelUsuario;
 import co.orion.assessment.domain.VoiceConsent;
@@ -30,6 +33,8 @@ import co.orion.assessment.persistence.AssessmentTurnRepository;
 import co.orion.assessment.persistence.ConfidenceAssessmentRepository;
 import co.orion.assessment.persistence.VoiceConsentRepository;
 import co.orion.catalog.application.PlatformSettingsService;
+import co.orion.catalog.domain.TeachingGoal;
+import co.orion.catalog.persistence.TeachingGoalRepository;
 import co.orion.identity.domain.User;
 import co.orion.shared.error.ConflictException;
 import co.orion.shared.error.ResourceNotFoundException;
@@ -68,6 +73,8 @@ public class AssessmentService {
     private final AssessmentBudgetService budget;
     private final VoiceConversationProvider voice;
     private final ScenarioPrompts prompts;
+    private final ConversationSummarizer resumidor;
+    private final TeachingGoalRepository objetivosDelCatalogo;
     private final PlatformSettingsService settings;
     private final Clock clock;
 
@@ -79,6 +86,8 @@ public class AssessmentService {
                              AssessmentBudgetService budget,
                              VoiceConversationProvider voice,
                              ScenarioPrompts prompts,
+                             ConversationSummarizer resumidor,
+                             TeachingGoalRepository objetivosDelCatalogo,
                              PlatformSettingsService settings,
                              Clock clock) {
         this.assessments = assessments;
@@ -89,6 +98,8 @@ public class AssessmentService {
         this.budget = budget;
         this.voice = voice;
         this.prompts = prompts;
+        this.resumidor = resumidor;
+        this.objetivosDelCatalogo = objetivosDelCatalogo;
         this.settings = settings;
         this.clock = clock;
     }
@@ -219,44 +230,80 @@ public class AssessmentService {
      * <p>Si no hay turnos suficientes, o la conversación se fue a español, se cierra sin número. Lo
      * segundo es una decisión de producto y no una limitación: mostrarle un número bajo a alguien
      * que está empezando desde cero es exactamente lo que Orión no hace.
+     *
+     * <p><strong>Pero nadie se va con las manos vacías</strong> (Pardo, 22/09/2026). Las tres salidas
+     * —con número, en español o demasiado corta— llevan un resumen de lo que contó y tres
+     * profesores. Antes, las dos sin número cerraban sin recomendar, y la pantalla le decía a quien
+     * acababa de atreverse a hablar «todavía no tenemos tres para ti».
+     *
+     * <p>El resumen puede ser una llamada a la IA dentro de esta transacción. Está acotada a doce
+     * segundos y a esta escala no compite por conexiones; si algún día lo hace, se saca fuera.
      */
     @Transactional
     public ConfidenceAssessment complete(User quien, UUID assessmentId, List<String> objetivos) {
         ConfidenceAssessment evaluacion = miaYViva(quien, assessmentId);
+        List<String> metas = objetivos == null ? List.of() : objetivos;
 
         List<AssessmentTurn> todos = turns.findByAssessmentIdOrderByTurnIndexAsc(assessmentId);
         List<AssessmentTurn> delUsuario = todos.stream().filter(AssessmentTurn::isUser).toList();
 
         int segundos = (int) Duration.between(evaluacion.getStartedAt(), clock.instant()).toSeconds();
+        String resumen = resumen(quien, metas, todos);
+        String nivel;
 
         // Dos turnos seguidos en el idioma propio: la rama en español. Misma regla que el guion.
         if (seFueAlEspanol(delUsuario)) {
             evaluacion.switchToFromZero();
             evaluacion.abandon(segundos, delUsuario.size());
-            return assessments.save(evaluacion);
+            evaluacion.summarize(resumen);
+            nivel = "BEGINNER";
+        } else {
+            List<TurnoDelUsuario> senales = delUsuario.stream().map(AssessmentTurn::asSignal).toList();
+            Optional<Puntaje> puntaje = new ConfidenceScoreCalculator().calcular(senales, pesos());
+            if (puntaje.isEmpty()) {
+                evaluacion.abandon(segundos, delUsuario.size());
+                evaluacion.summarize(resumen);
+                nivel = null;
+            } else {
+                evaluacion.complete(puntaje.get(),
+                        aJson(puntaje.get().dimensiones()),
+                        aJson(puntaje.get().observadas().stream().map(Enum::name).toList()),
+                        resumen,
+                        segundos, delUsuario.size(), clock.instant());
+                nivel = nivelInferido(puntaje.get().valor());
+            }
         }
 
-        List<TurnoDelUsuario> senales = delUsuario.stream().map(AssessmentTurn::asSignal).toList();
-        Optional<Puntaje> puntaje = new ConfidenceScoreCalculator().calcular(senales, pesos());
-
-        if (puntaje.isEmpty()) {
-            evaluacion.abandon(segundos, delUsuario.size());
-            return assessments.save(evaluacion);
-        }
-
-        evaluacion.complete(puntaje.get(),
-                aJson(puntaje.get().dimensiones()),
-                aJson(puntaje.get().observadas().stream().map(Enum::name).toList()),
-                resumen(puntaje.get()),
-                segundos, delUsuario.size(), clock.instant());
         ConfidenceAssessment guardada = assessments.save(evaluacion);
-
-        String nivel = nivelInferido(puntaje.get().valor());
-        List<Recomendacion> tres = recommender.para(evaluacion.getLanguageCode(), nivel, objetivos);
+        List<Recomendacion> tres = recommender.para(evaluacion.getLanguageCode(), nivel, metas);
         recommendations.saveAll(tres.stream()
                 .map(r -> new AssessmentRecommendation(assessmentId, r)).toList());
-
         return guardada;
+    }
+
+    /**
+     * Lo que contó y por qué Orión le sirve para eso. Lo escribe la IA si hay presupuesto y la
+     * salida pasa la revisión; si no, la plantilla. El resultado nunca espera por esto.
+     */
+    private String resumen(User quien, List<String> metas, List<AssessmentTurn> todos) {
+        String nombre = primerNombre(quien.getFullName());
+        Map<String, String> nombreDeMeta = objetivosDelCatalogo.findByActiveTrueOrderByDisplayOrderAsc()
+                .stream().collect(Collectors.toMap(TeachingGoal::getCode, TeachingGoal::getNameEs,
+                        (a, b) -> a));
+        List<String> nombres = metas.stream().map(nombreDeMeta::get)
+                .filter(n -> n != null && !n.isBlank()).toList();
+
+        if (budget.disponible()) {
+            Optional<String> escrito = resumidor.resumir(new ConversationSummarizer.Pedido(
+                    quien.getId(), nombre, nombres,
+                    todos.stream()
+                            .map(t -> new ConversationSummarizer.Turno(!t.isUser(), t.getTranscript()))
+                            .toList()));
+            if (escrito.isPresent()) {
+                return escrito.get();
+            }
+        }
+        return ResumenDePlantilla.para(nombre, nombres);
     }
 
     @Transactional
@@ -330,13 +377,6 @@ public class AssessmentService {
             return "ADVANCED";
         }
         return puntaje >= 45 ? "INTERMEDIATE" : "BEGINNER";
-    }
-
-    /** El diagnóstico en una frase. Sin números y sin veredicto: el número ya está al lado. */
-    private static String resumen(Puntaje puntaje) {
-        return puntaje.observadas().isEmpty()
-                ? "Sostuviste la conversación de principio a fin."
-                : puntaje.observadas().getFirst().descripcion();
     }
 
     private static String aJson(Object valor) {

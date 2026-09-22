@@ -27,5 +27,11 @@ public enum ReasonCode {
     NATIVE,
 
     /** Tiene una especialidad declarada en su perfil. */
-    SPECIALTY
+    SPECIALTY,
+
+    /**
+     * Entró para completar los tres y no le aplica nada más específico. Dice lo único que es cierto
+     * de todo profesor publicado: que pasó la verificación.
+     */
+    VERIFIED
 }

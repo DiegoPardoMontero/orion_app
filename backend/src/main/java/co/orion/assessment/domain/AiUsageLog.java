@@ -94,6 +94,14 @@ public class AiUsageLog {
                 null, null, costCop, null, outcome);
     }
 
+    /** Una llamada de texto: tokens de ida y de vuelta, lo que tardó y lo que se estima que costó. */
+    public static AiUsageLog text(String feature, UUID actorId, String provider, String model,
+                                  Integer inputTokens, Integer outputTokens, long costCop,
+                                  int latencyMs, AiUsageOutcome outcome) {
+        return new AiUsageLog(feature, actorId, provider, model, null, inputTokens, outputTokens,
+                costCop, latencyMs, outcome);
+    }
+
     /** Un intento que no llegó a conversación: el proveedor falló al abrir la sesión. */
     public static AiUsageLog failedAttempt(String feature, UUID actorId, String provider,
                                            String model, int latencyMs, AiUsageOutcome outcome) {

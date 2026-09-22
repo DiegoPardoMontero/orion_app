@@ -46,8 +46,12 @@ import co.orion.shared.time.BusinessZone;
  * a alguien sin agenda es mandar a la persona a un callejón sin salida justo en el momento en que
  * más ganas tiene de reservar.
  *
- * <p>Si salen menos de tres, se devuelven los que haya. <strong>Nunca se rellena bajando los
- * criterios en silencio</strong>: tres nombres que no encajan valen menos que uno que sí.
+ * <p><strong>Siempre tres</strong>, si la plataforma los tiene (decisión de Pardo, 22/09/2026).
+ * Antes se devolvían los que hubiera, y la persona que acababa de hablar dos minutos leía «todavía
+ * no tenemos tres para ti»: una puerta cerrada justo cuando más ganas tenía. Ahora se completa por
+ * escalones —primero los que encajan y tienen agenda, después cualquiera del idioma con agenda, y
+ * al final sin mirar agenda—, y lo que no se relaja nunca es la verdad de la razón: a quien entra
+ * por relleno no se le atribuye un encaje que no tiene. Para eso está {@link ReasonCode#VERIFIED}.
  */
 @Service
 public class RecommendationService {
@@ -85,52 +89,72 @@ public class RecommendationService {
      */
     @Transactional(readOnly = true)
     public List<Recomendacion> para(String idioma, String nivel, List<String> objetivosDeLaPersona) {
+        List<String> metas = objetivosDeLaPersona == null ? List.of() : objetivosDeLaPersona;
+        Map<String, String> nombreDelObjetivo = objetivos.findByActiveTrueOrderByDisplayOrderAsc()
+                .stream().collect(Collectors.toMap(g -> g.getCode(), g -> g.getNameEs(), (a, b) -> a));
+        LocalDate hoy = LocalDate.ofInstant(clock.instant(), BusinessZone.BOGOTA);
+
+        List<ProfessorCard> queEncajan = ordenados(buscar(idioma,
+                nivel == null ? List.of() : List.of(nivel), metas));
+        List<ProfessorCard> delIdioma = ordenados(buscar(idioma, List.of(), List.of()));
+
+        List<Recomendacion> elegidos = new ArrayList<>();
+        // Escalón 1: los que encajan y tienen agenda. Escalón 2: cualquiera del idioma con agenda.
+        // Escalón 3: cualquiera del idioma, aunque no tenga agenda esta semana.
+        elegir(queEncajan, true, hoy, idioma, nivel, metas, nombreDelObjetivo, elegidos);
+        elegir(delIdioma, true, hoy, idioma, nivel, metas, nombreDelObjetivo, elegidos);
+        elegir(delIdioma, false, hoy, idioma, nivel, metas, nombreDelObjetivo, elegidos);
+        return elegidos;
+    }
+
+    private List<ProfessorCard> buscar(String idioma, List<String> niveles, List<String> metas) {
         ProfessorSearchCriteria criterios = new ProfessorSearchCriteria(
-                idioma,
-                nivel == null ? List.of() : List.of(nivel),
-                objetivosDeLaPersona == null ? List.of() : objetivosDeLaPersona,
+                idioma, niveles, metas,
                 null, null, null, null,
                 java.util.Set.of(), null, null,
                 List.of(), null);
+        return buscador.search(criterios, ProfessorSortOption.RELEVANCE, 0, CANDIDATOS).content();
+    }
 
-        List<ProfessorCard> candidatos =
-                buscador.search(criterios, ProfessorSortOption.RELEVANCE, 0, CANDIDATOS).content();
+    /**
+     * El orden lo pone reputation. Quien no tenga métricas todavía queda al final, no fuera: un
+     * profesor nuevo no es peor, simplemente no ha demostrado nada aún.
+     */
+    private List<ProfessorCard> ordenados(List<ProfessorCard> candidatos) {
         if (candidatos.isEmpty()) {
-            return List.of();
+            return candidatos;
         }
-
-        // El orden lo pone reputation. Quien no tenga métricas todavía queda al final, no fuera:
-        // un profesor nuevo no es peor, simplemente no ha demostrado nada aún.
         Map<UUID, BigDecimal> puntajes = metrics
                 .findByProfessorIdIn(candidatos.stream().map(ProfessorCard::id).toList()).stream()
                 .filter(m -> m.getRankingScore() != null)
                 .collect(Collectors.toMap(ProfessorMetrics::getProfessorId,
                         ProfessorMetrics::getRankingScore, (a, b) -> a));
-
-        List<ProfessorCard> ordenados = candidatos.stream()
+        return candidatos.stream()
                 .sorted(Comparator
                         .comparing((ProfessorCard c) -> puntajes.getOrDefault(c.id(), BigDecimal.ZERO))
                         .reversed()
                         .thenComparing(ProfessorCard::id))
                 .toList();
+    }
 
-        Map<String, String> nombreDelObjetivo = objetivos.findByActiveTrueOrderByDisplayOrderAsc()
-                .stream().collect(Collectors.toMap(g -> g.getCode(), g -> g.getNameEs(), (a, b) -> a));
-
-        LocalDate hoy = LocalDate.ofInstant(clock.instant(), BusinessZone.BOGOTA);
-        List<Recomendacion> elegidos = new ArrayList<>();
-
-        for (ProfessorCard candidato : ordenados) {
+    private void elegir(List<ProfessorCard> candidatos, boolean exigirAgenda, LocalDate hoy,
+                        String idioma, String nivel, List<String> metas,
+                        Map<String, String> nombreDelObjetivo, List<Recomendacion> elegidos) {
+        for (ProfessorCard candidato : candidatos) {
             if (elegidos.size() == CUANTAS) {
-                break;
+                return;
             }
-            if (cupos.availableSlots(candidato.id(), hoy, hoy.plusDays(DIAS_DE_AGENDA)).isEmpty()) {
+            if (elegidos.stream().anyMatch(r -> r.professorId().equals(candidato.id()))) {
                 continue;
             }
-            elegidos.add(razonar(candidato, elegidos.size() + 1, idioma,
-                    objetivosDeLaPersona, nombreDelObjetivo));
+            boolean tieneAgenda = !cupos.availableSlots(
+                    candidato.id(), hoy, hoy.plusDays(DIAS_DE_AGENDA)).isEmpty();
+            if (exigirAgenda && !tieneAgenda) {
+                continue;
+            }
+            elegidos.add(razonar(candidato, elegidos.size() + 1, idioma, nivel, metas,
+                    tieneAgenda, nombreDelObjetivo));
         }
-        return elegidos;
     }
 
     /**
@@ -142,7 +166,9 @@ public class RecommendationService {
     private Recomendacion razonar(ProfessorCard profesor,
                                   int posicion,
                                   String idioma,
+                                  String nivel,
                                   List<String> objetivosDeLaPersona,
+                                  boolean tieneAgenda,
                                   Map<String, String> nombreDelObjetivo) {
         String nombre = primerNombre(profesor.fullName());
 
@@ -155,7 +181,9 @@ public class RecommendationService {
                     nombre + " trabaja justo con estudiantes que buscan " + queHace + ".");
         }
 
-        if (!profesor.levels().isEmpty()) {
+        // Se comprueba contra el nivel pedido y no contra «tiene niveles»: un profesor que entró de
+        // relleno no enseña necesariamente desde donde está esta persona.
+        if (nivel != null && profesor.levels().contains(nivel)) {
             return new Recomendacion(profesor.id(), posicion, ReasonCode.LEVEL_MATCH,
                     "Enseña desde el nivel en el que estás hoy.");
         }
@@ -175,8 +203,13 @@ public class RecommendationService {
                     "Se especializa en " + profesor.headline().trim() + ".");
         }
 
-        return new Recomendacion(profesor.id(), posicion, ReasonCode.SCHEDULE_MATCH,
-                "Tiene cupos libres esta semana.");
+        if (tieneAgenda) {
+            return new Recomendacion(profesor.id(), posicion, ReasonCode.SCHEDULE_MATCH,
+                    "Tiene cupos libres esta semana.");
+        }
+
+        return new Recomendacion(profesor.id(), posicion, ReasonCode.VERIFIED,
+                "Profesor verificado por Orión: documentos, experiencia y entrevista.");
     }
 
     private static String primerNombre(String nombre) {

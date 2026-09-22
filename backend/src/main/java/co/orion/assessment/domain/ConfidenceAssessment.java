@@ -126,6 +126,14 @@ public class ConfidenceAssessment {
         this.turnCount = (short) turnCount;
     }
 
+    /**
+     * El resumen de lo que contó. Las salidas sin número también lo llevan: que no haya puntaje no
+     * significa que no haya nada que decirle.
+     */
+    public void summarize(String summary) {
+        this.summary = summary;
+    }
+
     public void fail() {
         this.status = AssessmentStatus.FAILED;
     }

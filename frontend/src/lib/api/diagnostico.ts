@@ -14,6 +14,8 @@ export type Diagnostico = {
   status: "IN_PROGRESS" | "COMPLETED" | "ABANDONED" | "FAILED";
   mode: "STANDARD" | "FROM_ZERO";
   score: number | null;
+  /** El nombre del tramo («Ya te defiendes»). Hay etiqueta aunque no haya número. */
+  label: string;
   scoreVersion: string | null;
   signals: Record<string, number>;
   summary: string | null;

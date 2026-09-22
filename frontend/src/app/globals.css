@@ -10,6 +10,16 @@
  * Los nombres semánticos son los del entregable de diseño y son la fuente de verdad.
  */
 @theme {
+  /* — Meissa, la voz del diagnóstico (handoff design_handoff_orion_meissa) — */
+  /* Solo el cuerpo de Meissa: nunca en interfaz. */
+  --color-meissa-body: #c9b9f4;
+  --color-meissa-aura: #b9a7e6;
+  --color-meissa-voice: #7a4a8c;
+  --color-meissa-cheek: #f0a5b9;
+  --duration-meissa-listen: 3200ms;
+  --duration-meissa-talk: 1400ms;
+  --duration-meissa-bar: 900ms;
+
   /* — Marca y acción — */
   --color-primary: #e8503a; /* coral — CTA principal, hora seleccionada */
   --color-primary-strong: #c0341f; /* hover / texto coral pequeño — AA 4.5:1 sobre cremas y durazno */
@@ -357,6 +367,80 @@ body {
   animation: rigel-sparkle 2.6s ease-in-out infinite;
   transform-origin: center;
   transform-box: fill-box;
+}
+
+/* --- Meissa, la voz del diagnóstico --- */
+/* Su movimiento es el aura: respira lento cuando escucha, piensa o cierra, y rápido cuando habla.
+   El cuerpo queda quieto; Meissa nunca hace bob. */
+@keyframes meissa-aura {
+  0%,
+  100% {
+    transform: scale(0.97);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+}
+@keyframes meissa-bar {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+@keyframes meissa-dots {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.meissa-aura {
+  animation: meissa-aura var(--duration-meissa-listen) ease-in-out infinite;
+  transform-origin: 100px 100px;
+  transform-box: view-box;
+}
+.meissa-aura-habla {
+  animation-duration: var(--duration-meissa-talk);
+}
+.meissa-bar {
+  animation: meissa-bar var(--duration-meissa-bar) ease-in-out infinite;
+  transform-box: view-box;
+}
+.meissa-dot {
+  animation: meissa-dots 1.5s ease-in-out infinite;
+}
+.meissa-eyes {
+  animation: blink 5s ease-in-out infinite;
+  transform-origin: 100px 96px;
+  transform-box: view-box;
+}
+.meissa-sparkle {
+  animation: rigel-sparkle 3s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+/* Con menos movimiento: el aura fija en su opacidad máxima, las barras quietas a media altura y
+   los puntos de espera visibles sin parpadear. */
+@media (prefers-reduced-motion: reduce) {
+  .meissa-aura {
+    animation: none;
+    opacity: 1;
+  }
+  .meissa-bar {
+    animation: none;
+    transform: scaleY(0.35);
+  }
+  .meissa-dot {
+    animation: none;
+    opacity: 1;
+  }
 }
 
 /*

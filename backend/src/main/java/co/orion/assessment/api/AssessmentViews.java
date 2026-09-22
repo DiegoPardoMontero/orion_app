@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import co.orion.assessment.domain.AssessmentRecommendation;
 import co.orion.assessment.domain.ConfidenceAssessment;
+import co.orion.assessment.domain.EtiquetaDelPuntaje;
 import co.orion.shared.time.BusinessZone;
 
 /** Arma las respuestas del diagnóstico. Un sitio, para que la transcripción no se escape por otro. */
@@ -28,6 +29,7 @@ public final class AssessmentViews {
                 a.getStatus().name(),
                 a.getMode().name(),
                 a.getScore() == null ? null : (int) a.getScore(),
+                EtiquetaDelPuntaje.de(a.getScore() == null ? null : (int) a.getScore(), a.getMode()),
                 a.getScoreVersion(),
                 leerMapa(a.getSignals()),
                 a.getSummary(),

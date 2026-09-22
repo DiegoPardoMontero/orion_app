@@ -208,7 +208,7 @@ class DiagnosticoIT extends ApiIntegrationSupport {
 
     @SuppressWarnings("rawtypes")
     @Test
-    @DisplayName("Con menos de cuatro turnos se cierra sin número, no se inventa uno")
+    @DisplayName("Con menos de cuatro turnos se cierra sin número, pero con etiqueta y resumen")
     void sinTurnosSuficientesNoHayPuntaje() {
         correoVerificado(true);
         post(CONSENTIR, anaSession, Map.of(), Map.class);
@@ -227,11 +227,14 @@ class DiagnosticoIT extends ApiIntegrationSupport {
 
         assertThat(r.getBody()).containsEntry("status", "ABANDONED");
         assertThat(r.getBody().get("score")).isNull();
+        // Sin número, pero no con las manos vacías: etiqueta y resumen de lo que contó.
+        assertThat(r.getBody()).containsEntry("label", "Primeros pasos");
+        assertThat((String) r.getBody().get("summary")).contains("Ana");
     }
 
     @SuppressWarnings("rawtypes")
     @Test
-    @DisplayName("Dos turnos seguidos en español activan la rama FROM_ZERO y no dan número")
+    @DisplayName("Dos turnos seguidos en español activan la rama FROM_ZERO: sin número, con resumen")
     void desdeCeroNoRecibeUnNumeroBajo() {
         correoVerificado(true);
         post(CONSENTIR, anaSession, Map.of(), Map.class);
@@ -254,6 +257,9 @@ class DiagnosticoIT extends ApiIntegrationSupport {
         // Mostrarle un número bajo a quien está empezando desde cero es lo que Orión no hace.
         assertThat(r.getBody()).containsEntry("mode", "FROM_ZERO");
         assertThat(r.getBody().get("score")).isNull();
+        // Y aun así se va con algo: la etiqueta de quien empieza y un resumen, no un «vuelve luego».
+        assertThat(r.getBody()).containsEntry("label", "Primeros pasos");
+        assertThat((String) r.getBody().get("summary")).contains("Ana");
     }
 
     @SuppressWarnings("rawtypes")

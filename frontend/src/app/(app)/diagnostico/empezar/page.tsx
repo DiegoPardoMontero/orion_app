@@ -6,7 +6,7 @@ import { apiFetch, ApiError } from "@/lib/api/fetch";
 import type { Diagnostico, DiagnosticoIniciado } from "@/lib/api/diagnostico";
 import { useCifras } from "@/lib/cifras";
 import { AvisoError, Cargando } from "@/components/estados";
-import { Rigel } from "@/components/Rigel";
+import { Meissa } from "@/components/Meissa";
 import { Conversacion } from "./Conversacion";
 import { Puerta } from "./Puerta";
 import { Resultado } from "./Resultado";
@@ -20,7 +20,7 @@ type Fase = "puerta" | "conversando" | "calculando" | "resultado";
  * micrófono, la conexión con el proveedor y los turnos que se van empujando se perderían al cambiar
  * de ruta, y la persona se quedaría a medias sin entender por qué.
  *
- * <p>La espera del resultado tiene pantalla propia, con Rigel y sin spinner genérico. Son unos
+ * <p>La espera del resultado tiene pantalla propia, con Meissa y sin spinner genérico. Son unos
  * segundos en los que alguien acaba de exponerse hablando un idioma que no domina; un círculo
  * girando dice «el sistema está ocupado» y lo que hay que decir es «lo estamos leyendo».
  */
@@ -95,14 +95,14 @@ export default function DiagnosticoPage() {
 
   if (bloqueado && yaTiene) {
     return (
-      <main className="mx-auto w-full max-w-lg px-5 py-8">
-        <div className="rounded-card bg-accent-peach-soft p-5 text-[13.5px] leading-relaxed text-[#8a5a33]">
-          {bloqueado}
+      <>
+        <div className="mx-auto w-full max-w-lg px-5 pt-6 lg:max-w-5xl">
+          <div className="rounded-card bg-accent-peach-soft p-4 text-[13.5px] leading-relaxed text-[#8a5a33]">
+            {bloqueado}
+          </div>
         </div>
-        <div className="mt-6">
-          <Resultado diagnostico={yaTiene} />
-        </div>
-      </main>
+        <Resultado diagnostico={yaTiene} />
+      </>
     );
   }
 
@@ -128,12 +128,18 @@ export default function DiagnosticoPage() {
   );
 }
 
-/** La espera. Nunca un spinner genérico: acaban de exponerse y merecen una frase, no un círculo. */
+/**
+ * La espera. Nunca un spinner genérico: acaban de exponerse y merecen una frase, no un círculo.
+ * Meissa piensa, con su línea de estado al lado; el dibujo nunca comunica solo.
+ */
 function Calculando() {
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center px-6 text-center">
-      <Rigel pose="espera" decorativo className="h-[140px] w-auto animate-[bob_3s_ease-in-out_infinite]" />
-      <p className="mt-6 font-display text-h3 font-bold">Estamos leyendo cómo hablaste.</p>
+      <Meissa estado="piensa" decorativo className="h-[150px] w-auto" />
+      <p role="status" aria-live="polite" className="mt-2 text-[14px] font-semibold text-text-secondary">
+        <span className="text-[#7A4A8C]">Meissa</span> · un momento…
+      </p>
+      <p className="mt-4 font-display text-h3 font-bold">Estamos leyendo cómo hablaste.</p>
       <p className="mt-2 max-w-[42ch] text-[14px] leading-relaxed text-text-secondary">
         Unos segundos. No estamos corrigiendo nada: estamos mirando cómo fluiste.
       </p>

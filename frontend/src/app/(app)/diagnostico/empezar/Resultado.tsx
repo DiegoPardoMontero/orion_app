@@ -2,128 +2,120 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { Check, ChevronDown, ChevronRight } from "lucide-react";
 import { apiFetch } from "@/lib/api/fetch";
 import type { Diagnostico } from "@/lib/api/diagnostico";
 import type { ProfessorCard } from "@/lib/api/types";
 import { Avatar } from "@/components/Avatar";
 import { Cargando } from "@/components/estados";
-import { Rigel } from "@/components/Rigel";
+import { Meissa } from "@/components/Meissa";
 import { precioCop } from "@/lib/format";
 
 /**
- * El resultado: dónde estás, qué se notó, y con quién seguir.
+ * El resultado: lo que contaste, dónde estás y con quién seguir. En una pantalla corta.
  *
- * <p>El número aparece pequeño y acompañado, nunca desnudo. Un 62 sin nada al lado es una nota, y
- * esto no es un examen — por eso va dentro de una constelación de diez estrellas, que es el lenguaje
- * que la plataforma ya usa para hablar de progreso.
+ * <p><strong>Nadie se va con las manos vacías</strong> (Pardo, 22/09/2026). Con número, en español
+ * o demasiado corta, la conversación termina igual: con un resumen de lo que contó, una etiqueta de
+ * punto de partida y tres profesores. Antes, la rama en español decía «esta vez no te ponemos
+ * número» y a veces «todavía no tenemos tres para ti», que es cerrarle la puerta a quien acaba de
+ * atreverse a hablar.
  *
- * <p>El coral se reserva para la acción —ver la agenda de un profesor—. El resultado vive en
- * durazno y lavanda, que es el territorio del avance. Un puntaje pintado del color del botón
- * convierte una medición en una venta.
+ * <p><strong>Se celebra el esfuerzo, nunca cómo habló.</strong> «Hablaste dos minutos en inglés»
+ * es un hecho; «hablas muy bien» sería una evaluación, y la regla de marca del diagnóstico la
+ * prohíbe (ver {@code TextosDelDiagnosticoTest}).
  *
- * <p><strong>Modo FROM_ZERO: sin constelación y sin número.</strong> No es una limitación técnica,
- * es la decisión: mostrarle un número bajo a alguien que está empezando desde cero es exactamente
- * lo que Orión no hace.
+ * <p>El número va con su etiqueta y nunca como letra del MCER: mide confianza al hablar, no
+ * competencia, y una letra afirmaría algo que no medimos. Meissa cierra con los ojos cerrados de
+ * gusto y un destello; no celebra.
  */
 export function Resultado({ diagnostico }: { diagnostico: Diagnostico }) {
-  const desdeCero = diagnostico.mode === "FROM_ZERO" || diagnostico.score == null;
+  const sinNumero = diagnostico.mode === "FROM_ZERO" || diagnostico.score == null;
 
   return (
-    <main className="mx-auto w-full max-w-lg px-5 py-6 lg:max-w-4xl lg:py-10">
-      {desdeCero ? <Bienvenida /> : <PuntoDePartida diagnostico={diagnostico} />}
+    <main className="mx-auto w-full max-w-lg px-5 py-5 lg:max-w-5xl lg:py-10">
+      <div className="flex items-center justify-between">
+        <span className="inline-flex items-center gap-1.5 rounded-pill bg-[#DEF3E7] px-3 py-1 text-[12.5px] font-bold text-[#2E6B4A]">
+          <Check size={14} strokeWidth={2.6} />
+          Diagnóstico listo
+        </span>
+        {diagnostico.durationSeconds != null && (
+          <span className="text-[14px] font-semibold tabular-nums text-text-secondary">
+            {reloj(diagnostico.durationSeconds)}
+          </span>
+        )}
+      </div>
 
-      {diagnostico.observations.length > 0 && (
-        <section className="mt-9">
-          <h2 className="font-display text-[19px] font-bold">Lo que notamos</h2>
-          <ul className="mt-3 grid gap-2.5">
-            {diagnostico.observations.map((obs) => (
-              <li
-                key={obs}
-                className="rounded-card border-l-[3px] border-accent-peach bg-surface-raised p-4 text-[14px] leading-relaxed text-text-secondary shadow-sm"
-              >
-                {TEXTO_OBSERVACION[obs] ?? obs}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <div className="mt-4 grid gap-6 lg:grid-cols-[1fr_1.05fr] lg:items-start lg:gap-10">
+        <div>
+          <div className="flex items-center gap-3">
+            <Meissa estado="cierre" decorativo className="h-[120px] w-auto shrink-0" />
+            <p className="rounded-[22px_22px_22px_6px] bg-surface-raised px-4 py-3 text-[15px] font-medium leading-snug shadow-sm">
+              Gracias por hablar conmigo. Ya te conozco un poco: esto es lo que veo.
+            </p>
+          </div>
 
-      <Profesores diagnostico={diagnostico} />
+          <h1 className="mt-5 font-display text-[22px] font-bold leading-tight lg:text-[26px]">
+            {animo(diagnostico)}
+          </h1>
+          <p className="mt-2 text-[14.5px] leading-relaxed text-text-secondary">
+            En Orión vas a tener muchas conversaciones como esta, con un profesor que te acompaña en
+            cada una. Cada vez te van a salir con más calma.
+          </p>
 
-      <p className="mt-10 text-center text-[13px] text-text-muted">
-        Tu resultado queda guardado en tu perfil. También te lo enviamos por correo.
-      </p>
+          <section className="mt-5 rounded-[24px] bg-[#33203B] p-6 text-[#FFF6EE]">
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-accent-lavender">
+              Tu punto de partida
+            </p>
+            {sinNumero ? (
+              <p className="mt-2 font-display text-[34px] font-extrabold leading-none">
+                {diagnostico.label}
+              </p>
+            ) : (
+              <p className="mt-2 flex items-baseline gap-3">
+                <span className="font-display text-[56px] font-extrabold leading-none tabular-nums">
+                  {diagnostico.score}
+                </span>
+                <span className="whitespace-nowrap text-[15px] font-semibold">{diagnostico.label}</span>
+                <span className="sr-only">Confidence Score {diagnostico.score} sobre 100.</span>
+              </p>
+            )}
+            {diagnostico.summary && (
+              <p className="mt-4 text-[14px] leading-relaxed text-[#EFE9F9]">{diagnostico.summary}</p>
+            )}
+          </section>
+        </div>
+
+        <div>
+          <Profesores diagnostico={diagnostico} />
+          <Detalle diagnostico={diagnostico} />
+        </div>
+      </div>
     </main>
   );
 }
 
-function PuntoDePartida({ diagnostico }: { diagnostico: Diagnostico }) {
-  const puntaje = diagnostico.score ?? 0;
-  const encendidas = Math.max(1, Math.round(puntaje / 10));
-
-  return (
-    <section className="rounded-card bg-[linear-gradient(150deg,#2E1E4E_0%,#4A2E63_100%)] p-7 text-text-on-night">
-      <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-accent-peach">
-        Tu punto de partida
-      </p>
-
-      {/* Diez estrellas, no un número desnudo: el mismo lenguaje con el que la plataforma ya
-          cuenta el progreso. El número está, pequeño y al lado. */}
-      <div className="mt-4 flex items-end gap-3">
-        <span className="flex gap-1" aria-hidden="true">
-          {Array.from({ length: 10 }, (_, i) => (
-            <Estrella key={i} encendida={i < encendidas} />
-          ))}
-        </span>
-        <span className="font-display text-[22px] font-bold leading-none text-accent-peach">
-          {puntaje}
-        </span>
-      </div>
-      <p className="sr-only">Tu Confidence Score es {puntaje} sobre 100.</p>
-
-      {diagnostico.summary && (
-        <p className="mt-5 max-w-[52ch] text-[15px] leading-relaxed text-text-on-night/90">
-          {diagnostico.summary}
-        </p>
-      )}
-    </section>
-  );
+/** El esfuerzo, dicho como hecho. En la rama en español no se dice «en inglés»: no sería cierto. */
+function animo(diagnostico: Diagnostico) {
+  const minutos = minutosEnPalabras(diagnostico.durationSeconds);
+  if (diagnostico.mode === "FROM_ZERO") {
+    return `Conversaste ${minutos} con Meissa. Ese es el primer paso, y el más difícil.`;
+  }
+  return `Hablaste ${minutos} en inglés con alguien que no conocías. Eso ya es un gran paso.`;
 }
 
-function Bienvenida() {
-  return (
-    <section className="flex items-center gap-4 rounded-card bg-accent-peach-soft p-7">
-      <Rigel pose="animo" decorativo className="h-24 w-auto shrink-0" />
-      <div>
-        <h1 className="font-display text-h2 font-bold text-[#8a5a33]">
-          Estás empezando, y ese es un buen lugar para empezar.
-        </h1>
-        <p className="mt-2 text-[14px] leading-relaxed text-[#8a5a33]">
-          Esta vez no te ponemos número. Hablar un idioma que no dominas cuesta, y medirte el primer
-          día no te diría nada útil. Empieza con alguien que enseñe desde cero y vuelve cuando
-          quieras.
-        </p>
-      </div>
-    </section>
-  );
+function minutosEnPalabras(segundos: number | null) {
+  const m = Math.max(1, Math.round((segundos ?? 120) / 60));
+  const palabras = ["", "un minuto", "dos minutos", "tres minutos", "cuatro minutos", "cinco minutos"];
+  return palabras[m] ?? `${m} minutos`;
 }
 
-function Estrella({ encendida }: { encendida: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" width={17} height={17} aria-hidden="true">
-      <polygon
-        points="12,2 15,9 22,12 15,15 12,22 9,15 2,12 9,9"
-        fill={encendida ? "#FFC189" : "none"}
-        stroke={encendida ? "#FFC189" : "rgba(255,246,238,.35)"}
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+function reloj(segundos: number) {
+  const m = Math.floor(segundos / 60);
+  const s = segundos % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-/** Las tres recomendaciones, con la tarjeta de profesor de siempre y la razón debajo. */
+/** Los tres profesores, compactos: foto, nombre, por qué, precio. Toda la fila lleva a su agenda. */
 function Profesores({ diagnostico }: { diagnostico: Diagnostico }) {
   const ids = diagnostico.recommendations.map((r) => r.professorId);
 
@@ -134,73 +126,90 @@ function Profesores({ diagnostico }: { diagnostico: Diagnostico }) {
     enabled: ids.length > 0,
   });
 
+  // Solo si la plataforma entera no tiene profesores del idioma: el servicio completa hasta tres.
   if (ids.length === 0) {
     return (
-      <section className="mt-9 rounded-card border border-border bg-surface-raised p-6">
-        <h2 className="font-display text-[19px] font-bold">Todavía no tenemos tres para ti</h2>
-        <p className="mt-2 text-[14px] leading-relaxed text-text-secondary">
-          No queremos recomendarte a alguien que no encaje solo por llenar la lista. Mira el
-          directorio completo y elige tú.
-        </p>
+      <section>
+        <h2 className="font-display text-[19px] font-bold">Tus profesores</h2>
         <Link
           href="/profesores"
-          className="mt-4 inline-flex h-11 items-center rounded-pill bg-primary px-5 text-[14px] font-bold text-on-primary shadow-primary hover:bg-primary-strong focus-visible:shadow-focus"
+          className="mt-3 inline-flex h-11 items-center rounded-pill bg-primary px-5 text-[14px] font-bold text-on-primary shadow-primary hover:bg-primary-strong focus-visible:shadow-focus"
         >
-          Ver profesores
+          Conoce a los profesores de Orión
         </Link>
       </section>
     );
   }
 
-  if (fichas.isPending) return <div className="mt-9"><Cargando filas={3} /></div>;
-
   return (
-    <section className="mt-9">
-      <h2 className="flex items-center gap-2 font-display text-[19px] font-bold">
-        <Sparkles size={18} strokeWidth={2} className="text-accent-lavender" />
-        Tres profesores para ti
-      </h2>
-      <p className="mt-1 text-[13.5px] text-text-secondary">
-        Elegidos por lo que contaste, no por un catálogo genérico.
+    <section>
+      <h2 className="font-display text-[19px] font-bold">Tres profesores para ti</h2>
+      <p className="mt-0.5 text-[13.5px] text-text-secondary">
+        Elige uno y reserva tu primera clase.
       </p>
 
-      <ul className="mt-4 grid gap-3 lg:grid-cols-3">
-        {diagnostico.recommendations.map((rec) => {
-          const ficha = (fichas.data ?? []).find((f) => f?.id === rec.professorId);
-          if (!ficha) return null;
-          return (
-            <li
-              key={rec.professorId}
-              className="flex flex-col rounded-card bg-surface-raised p-5 shadow-sm"
-            >
-              <div className="flex items-center gap-3">
-                <Avatar nombre={ficha.fullName ?? ""} fotoUrl={ficha.photoUrl} size="md" />
-                <div className="min-w-0">
-                  <p className="truncate font-display text-[16px] font-bold">{ficha.fullName}</p>
-                  {ficha.hourlyRateCop && (
-                    <p className="text-[12.5px] text-text-muted">
-                      {precioCop(ficha.hourlyRateCop)} por clase
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <p className="mt-3 flex-1 rounded-base bg-accent-lavender-soft px-3 py-2.5 text-[13px] leading-relaxed text-info">
-                {rec.reasonText}
-              </p>
-
-              <Link
-                href={`/profesores/${rec.professorId}`}
-                className="mt-4 inline-flex h-11 items-center justify-center gap-1.5 rounded-pill bg-primary px-5 text-[14px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus"
-              >
-                Ver agenda
-                <ArrowRight size={15} strokeWidth={2.2} />
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+      {fichas.isPending ? (
+        <div className="mt-3">
+          <Cargando filas={3} />
+        </div>
+      ) : (
+        <ul className="mt-3 grid gap-2.5">
+          {diagnostico.recommendations.map((rec) => {
+            const ficha = (fichas.data ?? []).find((f) => f?.id === rec.professorId);
+            if (!ficha) return null;
+            return (
+              <li key={rec.professorId}>
+                <Link
+                  href={`/profesores/${rec.professorId}`}
+                  className="flex items-center gap-3 rounded-card bg-surface-raised p-3.5 shadow-sm transition-shadow hover:shadow-md focus-visible:shadow-focus"
+                >
+                  <Avatar nombre={ficha.fullName ?? ""} fotoUrl={ficha.photoUrl} size="md" />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-baseline justify-between gap-2">
+                      <span className="truncate font-display text-[15.5px] font-bold">
+                        {ficha.fullName}
+                      </span>
+                      {ficha.hourlyRateCop != null && (
+                        <span className="shrink-0 text-[12.5px] text-text-muted">
+                          {precioCop(ficha.hourlyRateCop)}
+                        </span>
+                      )}
+                    </span>
+                    <span className="mt-0.5 line-clamp-2 block text-[13px] leading-snug text-text-secondary">
+                      {rec.reasonText}
+                    </span>
+                  </span>
+                  <ChevronRight size={18} strokeWidth={2.2} className="shrink-0 text-primary-strong" />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </section>
+  );
+}
+
+/** Lo que se notó en la conversación, plegado: está para quien lo busque, no alarga la pantalla. */
+function Detalle({ diagnostico }: { diagnostico: Diagnostico }) {
+  if (diagnostico.observations.length === 0) return null;
+  return (
+    <details className="group mt-4">
+      <summary className="flex h-11 cursor-pointer list-none items-center justify-center gap-1.5 rounded-pill text-[14px] font-bold text-text-secondary hover:bg-surface-sunken focus-visible:shadow-focus">
+        Ver el detalle de mi diagnóstico
+        <ChevronDown size={16} strokeWidth={2.2} className="transition-transform group-open:rotate-180" />
+      </summary>
+      <ul className="mt-2 grid gap-2">
+        {diagnostico.observations.map((obs) => (
+          <li
+            key={obs}
+            className="rounded-card border-l-[3px] border-accent-peach bg-surface-raised p-3.5 text-[13.5px] leading-relaxed text-text-secondary"
+          >
+            {TEXTO_OBSERVACION[obs] ?? obs}
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }
 

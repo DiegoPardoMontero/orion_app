@@ -44,6 +44,8 @@ public class AiUsageRecorder {
     private final AiUsageLogRepository logs;
     private final TransactionTemplate enSuPropiaTransaccion;
     private final long milesimasDeDolarPorMinuto;
+    private final double dolaresPorMillonDeEntrada;
+    private final double dolaresPorMillonDeSalida;
     private final long pesosPorDolar;
     private final Clock clock;
 
@@ -53,6 +55,9 @@ public class AiUsageRecorder {
             // En milésimas de dólar para no meter decimales: 16 = 0,016 USD por minuto, que es lo
             // que cuesta hoy el modelo mini. Cambiar de modelo es cambiar este número.
             @Value("${orion.ai.voice-cost-per-minute-millis-usd:16}") long milesimasDeDolarPorMinuto,
+            // Precio del modelo de texto por millón de tokens: los de gpt-5-mini a septiembre de 2026.
+            @Value("${orion.ai.text-input-usd-per-million:0.25}") double dolaresPorMillonDeEntrada,
+            @Value("${orion.ai.text-output-usd-per-million:2.0}") double dolaresPorMillonDeSalida,
             @Value("${orion.ai.usd-to-cop:3101}") long pesosPorDolar,
             Clock clock) {
         this.logs = logs;
@@ -60,6 +65,8 @@ public class AiUsageRecorder {
         this.enSuPropiaTransaccion.setPropagationBehavior(
                 TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         this.milesimasDeDolarPorMinuto = milesimasDeDolarPorMinuto;
+        this.dolaresPorMillonDeEntrada = dolaresPorMillonDeEntrada;
+        this.dolaresPorMillonDeSalida = dolaresPorMillonDeSalida;
         this.pesosPorDolar = pesosPorDolar;
         this.clock = clock;
     }
@@ -76,6 +83,19 @@ public class AiUsageRecorder {
                                Duration tardanza, AiUsageOutcome outcome) {
         guardar(AiUsageLog.failedAttempt(FEATURE_DIAGNOSTICO, actorId, provider, model,
                 (int) tardanza.toMillis(), outcome), actorId);
+    }
+
+    /**
+     * Una llamada de texto del diagnóstico —el resumen—. Se carga al mismo presupuesto que la
+     * conversación: es parte de la misma función, y el tope es uno por función.
+     */
+    public void texto(UUID actorId, String provider, String model, Integer entrada, Integer salida,
+                      int latenciaMs, AiUsageOutcome outcome) {
+        double dolares = ((entrada == null ? 0 : entrada) * dolaresPorMillonDeEntrada
+                + (salida == null ? 0 : salida) * dolaresPorMillonDeSalida) / 1_000_000.0;
+        long pesos = (long) Math.ceil(dolares * pesosPorDolar);
+        guardar(AiUsageLog.text(FEATURE_DIAGNOSTICO, actorId, provider, model, entrada, salida,
+                pesos, latenciaMs, outcome), actorId);
     }
 
     private void guardar(AiUsageLog fila, UUID actorId) {

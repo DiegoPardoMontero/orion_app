@@ -19,6 +19,8 @@ public record AssessmentResponse(
         String status,
         String mode,
         Integer score,
+        /** El nombre del tramo («Ya te defiendes»). Hay etiqueta aunque no haya número. */
+        String label,
         String scoreVersion,
         /** Las cinco dimensiones normalizadas. Vacío mientras no haya terminado. */
         Map<String, Integer> signals,

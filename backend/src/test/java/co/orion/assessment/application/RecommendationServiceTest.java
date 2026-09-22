@@ -3,6 +3,7 @@ package co.orion.assessment.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -35,12 +36,12 @@ import co.orion.scheduling.application.SlotQueryService;
 import co.orion.scheduling.domain.Slot;
 
 /**
- * Las tres recomendaciones: deterministas, ordenadas por reputación y con agenda de verdad.
+ * Las tres recomendaciones: deterministas, ordenadas por reputación y siempre tres.
  *
- * <p>Lo que más importa de este test es lo que impide. Que nadie rellene hasta tres bajando los
- * criterios, que no se recomiende a quien no tiene cupos —mandar a alguien a un callejón sin salida
- * en el momento de mayor intención de compra— y que el texto de la razón salga de plantilla y del
- * perfil real, nunca de un modelo.
+ * <p>Lo que más importa de este test es lo que impide. Desde el 22/09/2026 se completa hasta tres
+ * (decisión de Pardo), pero por escalones y sin mentir: quien entra de relleno va detrás de quien
+ * encaja, quien no tiene agenda va detrás de quien sí, y la razón de cada uno dice solo lo que es
+ * cierto de él. El texto sale de plantilla y del perfil real, nunca de un modelo.
  */
 class RecommendationServiceTest {
 
@@ -65,10 +66,25 @@ class RecommendationServiceTest {
     }
 
     private ProfessorCard profesor(String nombre, List<String> metas, boolean nativo, String titular) {
+        return profesor(nombre, metas, nativo, titular, List.of("BEGINNER"));
+    }
+
+    private ProfessorCard profesor(String nombre, List<String> metas, boolean nativo, String titular,
+                                   List<String> niveles) {
         return new ProfessorCard(UUID.randomUUID(), nombre, null, titular, "Bogotá", "CO",
                 false, 60_000L, null, 0,
                 List.of(new LanguageBadge(IDIOMA, "Inglés", "English", "🇬🇧", nativo)),
-                List.of("BEGINNER"), metas);
+                niveles, metas);
+    }
+
+    /** Lo que devuelve el buscador cuando se le piden objetivos, y cuando se le pide solo el idioma. */
+    private void devuelvePorEscalon(List<ProfessorCard> queEncajan, List<ProfessorCard> delIdioma) {
+        when(buscador.search(argThat(c -> c != null && !c.goals().isEmpty()),
+                eq(ProfessorSortOption.RELEVANCE), anyInt(), anyInt()))
+                .thenReturn(new PagedProfessors(queEncajan, 0, queEncajan.size(), queEncajan.size(), 1));
+        when(buscador.search(argThat(c -> c != null && c.goals().isEmpty()),
+                eq(ProfessorSortOption.RELEVANCE), anyInt(), anyInt()))
+                .thenReturn(new PagedProfessors(delIdioma, 0, delIdioma.size(), delIdioma.size(), 1));
     }
 
     private void devuelve(ProfessorCard... cards) {
@@ -92,9 +108,42 @@ class RecommendationServiceTest {
     }
 
     @Test
-    @DisplayName("Con dos que encajan se devuelven dos, no tres")
-    void nuncaSeRellenaBajandoLosCriterios() {
-        // Tres nombres que no encajan valen menos que uno que sí.
+    @DisplayName("Con dos que encajan se completa hasta tres con otro del idioma, detrás de ellos")
+    void seCompletaHastaTres() {
+        ProfessorCard ana = profesor("Ana Ruiz", List.of("WORK"), false, null);
+        ProfessorCard beto = profesor("Beto Cruz", List.of("WORK"), false, null);
+        ProfessorCard cami = profesor("Cami Díaz", List.of(), false, null);
+        devuelvePorEscalon(List.of(ana, beto), List.of(cami, ana, beto));
+
+        List<Recomendacion> r = service.para(IDIOMA, "BEGINNER", List.of("WORK"));
+
+        // Entre Ana y Beto desempata el id (sin métricas, los dos puntúan igual); lo que importa es
+        // que los dos que encajan van delante y el relleno, detrás.
+        assertThat(r).hasSize(3);
+        assertThat(r.subList(0, 2)).extracting(Recomendacion::professorId)
+                .containsExactlyInAnyOrder(ana.id(), beto.id());
+        assertThat(r.get(2).professorId()).isEqualTo(cami.id());
+    }
+
+    @Test
+    @DisplayName("A quien entra de relleno no se le atribuye un encaje que no tiene")
+    void elRellenoNoMiente() {
+        // Sin objetivo común, sin el nivel pedido, sin ser nativo, sin titular y sin agenda: lo
+        // único cierto que se puede decir de él es que está verificado.
+        ProfessorCard ana = profesor("Ana Ruiz", List.of("WORK"), false, null);
+        ProfessorCard relleno = profesor("Beto Cruz", List.of(), false, null, List.of("ADVANCED"));
+        devuelvePorEscalon(List.of(ana), List.of(ana, relleno));
+        when(cupos.availableSlots(eq(relleno.id()), any(), any())).thenReturn(List.of());
+
+        Recomendacion segunda = service.para(IDIOMA, "BEGINNER", List.of("WORK")).get(1);
+
+        assertThat(segunda.professorId()).isEqualTo(relleno.id());
+        assertThat(segunda.reasonCode()).isEqualTo(ReasonCode.VERIFIED);
+    }
+
+    @Test
+    @DisplayName("Solo si la plataforma entera tiene menos de tres se devuelven los que haya")
+    void menosDeTresSoloSiNoHayMas() {
         devuelve(profesor("Ana Ruiz", List.of(), false, null),
                  profesor("Beto Cruz", List.of(), false, null));
 
@@ -111,17 +160,18 @@ class RecommendationServiceTest {
     }
 
     @Test
-    @DisplayName("Quien no tiene cupos en la semana no se recomienda")
-    void sinAgendaNoSeRecomienda() {
-        ProfessorCard sinAgenda = profesor("Ana", List.of(), false, null);
+    @DisplayName("Quien no tiene cupos en la semana va detrás de quien sí, y no se le prometen")
+    void sinAgendaVaAlFinal() {
+        ProfessorCard sinAgenda = profesor("Ana", List.of(), false, null, List.of());
         ProfessorCard conAgenda = profesor("Beto", List.of(), false, null);
         devuelve(sinAgenda, conAgenda);
         when(cupos.availableSlots(eq(sinAgenda.id()), any(), any())).thenReturn(List.of());
 
         List<Recomendacion> r = service.para(IDIOMA, "BEGINNER", List.of());
 
-        assertThat(r).hasSize(1);
-        assertThat(r.getFirst().professorId()).isEqualTo(conAgenda.id());
+        assertThat(r).extracting(Recomendacion::professorId)
+                .containsExactly(conAgenda.id(), sinAgenda.id());
+        assertThat(r.get(1).reasonCode()).isNotEqualTo(ReasonCode.SCHEDULE_MATCH);
     }
 
     @Test
