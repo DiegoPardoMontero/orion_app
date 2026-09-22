@@ -23,19 +23,30 @@ import org.springframework.stereotype.Component;
 public class ScenarioPrompts {
 
     /** El guion vigente. Subir de versión es cambiar esta constante y dejar el archivo viejo. */
-    static final String VIGENTE = "prompts/assessment-scenario-v3.txt";
+    static final String VIGENTE = "prompts/assessment-scenario-v4.txt";
 
     private static final Map<String, String> NOMBRE_DEL_IDIOMA = Map.of(
             "EN", "inglés",
             "FR", "francés",
             "ES", "español");
 
+    /**
+     * El mismo idioma, dicho en inglés. El guion está escrito en español y un modelo de voz tiende
+     * a contestar en el idioma de sus instrucciones: la regla del idioma se le da en el idioma que
+     * tiene que hablar, y para eso hace falta el nombre en inglés.
+     */
+    private static final Map<String, String> LANGUAGE_NAME = Map.of(
+            "EN", "English",
+            "FR", "French",
+            "ES", "Spanish");
+
     public String escenario(String languageCode, int minutos, String nombreDePila) {
+        String codigo = languageCode == null ? "EN" : languageCode.toUpperCase();
         return sinComentarios(leer(VIGENTE))
                 .replace("{{NOMBRE}}", nombreDePila == null || nombreDePila.isBlank()
                         ? "la persona" : nombreDePila)
-                .replace("{{IDIOMA}}", NOMBRE_DEL_IDIOMA.getOrDefault(
-                        languageCode == null ? "EN" : languageCode.toUpperCase(), "inglés"))
+                .replace("{{IDIOMA}}", NOMBRE_DEL_IDIOMA.getOrDefault(codigo, "inglés"))
+                .replace("{{LANGUAGE}}", LANGUAGE_NAME.getOrDefault(codigo, "English"))
                 .replace("{{MINUTOS}}", String.valueOf(minutos));
     }
 

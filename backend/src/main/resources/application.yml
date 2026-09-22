@@ -82,6 +82,12 @@ orion:
       #
       # El estado real se ve en Administración → Sistema.
       provider: ${ORION_VOICE_PROVIDER:scripted}
+      # `minimal` porque los gpt-realtime-2.x, mientras razonan, rellenan en voz alta («déjame
+      # pensar un momento») antes de cada turno. Vacío si se pasa a un modelo sin razonamiento: con
+      # él vacío el parámetro no se envía.
+      reasoning-effort: ${ORION_VOICE_REASONING_EFFORT:minimal}
+      # Transcribe lo que dice la persona. Sin esto no llega ningún turno suyo y no hay puntaje.
+      transcription-model: ${ORION_VOICE_TRANSCRIPTION_MODEL:gpt-4o-mini-transcribe}
 
   # Videollamada: Jitsi as a Service (JaaS) de 8x8.
   #

@@ -86,7 +86,7 @@ class TextosDelDiagnosticoTest {
     @Test
     @DisplayName("El guion vigente tampoco: es lo que la IA dice en voz alta")
     void elGuionTampoco() throws IOException {
-        String guion = leerDelRepo("backend/src/main/resources/prompts/assessment-scenario-v3.txt");
+        String guion = leerDelRepo("backend/src/main/resources/prompts/assessment-scenario-v4.txt");
         // Solo las líneas que la IA puede decir: las prohibiciones del propio guion NOMBRAN estas
         // frases para prohibirlas, y contarlas ahí sería castigar al archivo por hacer su trabajo.
         String hablado = guion.lines()

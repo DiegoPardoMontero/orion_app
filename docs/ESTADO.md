@@ -380,6 +380,20 @@ alguien con gramática impecable y pánico escénico puntúa bajo — y eso es c
 proveedor por defecto es el falso y el diagnóstico *funciona* con una conversación simulada — el
 peor fallo posible, porque no se nota. El estado real se ve en Administración → Sistema.
 
+> **Corregido el 22/09: Meissa hablaba en español, y el puntaje no podía salir.** Probado contra
+> OpenAI, tres saludos de tres salían en español: el guion está escrito en español y el idioma iba
+> enterrado en la segunda frase. La persona contestaba en español y a los dos turnos el propio
+> guion la mandaba a la rama en español. El **guion v4** abre con la regla del idioma, escrita en
+> inglés, y un saludo de ejemplo (15 de 15 saludos en inglés en la prueba).
+>
+> La misma prueba sacó otros dos fallos. La sesión **no pedía transcribir a la persona**, así que
+> el servidor nunca recibía un turno suyo y todo diagnóstico se habría cerrado sin número; ahora
+> se pide con `gpt-4o-mini-transcribe`, sin fijar idioma. Y los `gpt-realtime-2.x` **rellenaban
+> en voz alta** («déjame pensar un momento») antes de hablar: `reasoning.effort` va en `minimal`.
+>
+> Queda un desvío conocido: ante «Perdón, no entiendo», Meissa a veces pasa a español al primer
+> turno en vez de al segundo (2 de 3 en la prueba).
+
 ## Pendiente / bloqueos conocidos
 - **Reservas anteriores a V20 sin idioma**: las que tenía un profesor de dos idiomas quedaron con
   `language_code` en nulo a propósito, para revisión manual. La migración deja el conteo en un
@@ -411,6 +425,11 @@ peor fallo posible, porque no se nota. El estado real se ve en Administración �
   puede calcular la tardanza del profesor (punto 12 de Sofía) porque no hay registro de a qué hora
   entró cada uno.
 - **Rotar la llave de OpenAI**: viajó por la terminal y quedó en el transcript de la sesión.
+- **Límite de tasa de OpenAI**: la organización tiene 40.000 tokens por minuto en el modelo de
+  voz, y cada respuesta de Meissa gasta unos 2.800 porque relee el guion entero. Con dos o tres
+  diagnósticos a la vez se alcanza, y entonces la respuesta llega como `response.done` con estado
+  `failed`: el navegador no lo trata, así que Meissa simplemente se calla. Visto el 22/09 en la
+  prueba del guion v4.
 - **El avatar personalizado solo lo ve su dueño.** Que otros lo vean en sus listas exige embeber la
   personalización en dos DTOs y añade una consulta a los endpoints que pintan listas.
 - **`LegalDocumentService.pendientes()` no lo llama nadie**: publicar una versión nueva de los

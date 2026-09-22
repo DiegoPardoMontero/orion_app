@@ -1,6 +1,7 @@
 package co.orion.assessment.application;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +30,19 @@ import co.orion.shared.error.ServiceUnavailableException;
  * el navegador: si el guion viajara al cliente, cualquiera podría reemplazarlo — y con él, las
  * prohibiciones de nunca corregir y nunca evaluar en voz alta, que son las que hacen que la
  * medición valga algo.
+ *
+ * <p><strong>La transcripción de lo que dice la persona se pide aquí, y sin ella no hay
+ * diagnóstico.</strong> OpenAI no transcribe el audio de entrada si la sesión no lo pide, y todo el
+ * puntaje sale de esas transcripciones: sin ellas el servidor no recibe ni un turno del usuario y
+ * la conversación se cierra siempre sin número. Va sin idioma fijo a propósito: fijarlo en inglés
+ * haría que una respuesta en español llegara traducida, y justo esa es la señal de la rama en
+ * español.
+ *
+ * <p><strong>El razonamiento va al mínimo.</strong> Los modelos {@code gpt-realtime-2.x} razonan,
+ * y mientras razonan <em>hablan</em>: un relleno en voz alta («déjame pensar un momento») antes de
+ * cada turno. En una conversación de dos minutos que mide cómo habla la otra persona, eso sobra.
+ * Si algún día se pasa a un modelo sin razonamiento, la propiedad se deja vacía y el parámetro no
+ * se envía.
  */
 @Component
 @ConditionalOnProperty(name = "orion.assessment.voice.provider", havingValue = "openai")
@@ -41,14 +55,21 @@ public class OpenAiRealtimeVoiceProvider implements VoiceConversationProvider {
     private final String apiKey;
     private final String model;
     private final String voice;
+    private final String reasoningEffort;
+    private final String transcriptionModel;
 
     public OpenAiRealtimeVoiceProvider(
             @Value("${OPENAI_API_KEY:}") String apiKey,
             @Value("${orion.assessment.voice.model:gpt-realtime-2.1-mini}") String model,
-            @Value("${orion.assessment.voice.voice:marin}") String voice) {
+            @Value("${orion.assessment.voice.voice:marin}") String voice,
+            @Value("${orion.assessment.voice.reasoning-effort:minimal}") String reasoningEffort,
+            @Value("${orion.assessment.voice.transcription-model:gpt-4o-mini-transcribe}")
+            String transcriptionModel) {
         this.apiKey = apiKey;
         this.model = model;
         this.voice = voice;
+        this.reasoningEffort = reasoningEffort;
+        this.transcriptionModel = transcriptionModel;
     }
 
     @Override
@@ -58,23 +79,13 @@ public class OpenAiRealtimeVoiceProvider implements VoiceConversationProvider {
                     "El diagnóstico no está disponible en este momento. Inténtalo más tarde.");
         }
 
-        Map<String, Object> cuerpo = Map.of(
-                // La credencial vive lo que dure la conversación y un minuto más para conectarse.
-                "expires_after", Map.of("anchor", "created_at", "seconds", request.maxSeconds() + 60),
-                "session", Map.of(
-                        "type", "realtime",
-                        "model", model,
-                        "instructions", request.scenarioPrompt(),
-                        "output_modalities", List.of("audio"),
-                        "audio", Map.of("output", Map.of("voice", voice))));
-
         Map<?, ?> respuesta;
         try {
             respuesta = http.post()
                     .uri(ENDPOINT)
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(cuerpo)
+                    .body(cuerpo(request))
                     .retrieve()
                     .body(Map.class);
         } catch (RuntimeException ex) {
@@ -99,6 +110,26 @@ public class OpenAiRealtimeVoiceProvider implements VoiceConversationProvider {
                 respuesta.get("value").toString(),
                 expiracion(respuesta.get("expires_at")),
                 model);
+    }
+
+    /** Lo que se le pide a OpenAI. Aparte y visible al paquete para que un test lo lea sin red. */
+    Map<String, Object> cuerpo(VoiceSessionRequest request) {
+        Map<String, Object> sesion = new LinkedHashMap<>();
+        sesion.put("type", "realtime");
+        sesion.put("model", model);
+        sesion.put("instructions", request.scenarioPrompt());
+        sesion.put("output_modalities", List.of("audio"));
+        sesion.put("audio", Map.of(
+                "input", Map.of("transcription", Map.of("model", transcriptionModel)),
+                "output", Map.of("voice", voice)));
+        if (!reasoningEffort.isBlank()) {
+            sesion.put("reasoning", Map.of("effort", reasoningEffort));
+        }
+
+        return Map.of(
+                // La credencial vive lo que dure la conversación y un minuto más para conectarse.
+                "expires_after", Map.of("anchor", "created_at", "seconds", request.maxSeconds() + 60),
+                "session", sesion);
     }
 
     /** {@code expires_at} llega en segundos desde la época, no en milisegundos. */
