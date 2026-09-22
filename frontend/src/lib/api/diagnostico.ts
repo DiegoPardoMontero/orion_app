@@ -54,9 +54,20 @@ export type TurnoMedido = {
  * abandonadas, cambio de idioma— lo deduce el servidor del texto, porque un puntaje que dependiera
  * de números enviados desde aquí no sería reproducible.
  */
+/**
+ * La fase en la que está Meissa, con la máquina de estados del handoff: habla mientras suena su
+ * voz, escucha mientras el micrófono está abierto para ti, y piensa entre que terminas y ella
+ * empieza (1–3 s de latencia del proveedor).
+ */
+export type FaseDeMeissa = "habla" | "escucha" | "piensa";
+
 export type ConversacionCallbacks = {
   onTurno: (turno: TurnoMedido) => void;
-  onHabla: (quien: "AI" | "USER" | null) => void;
+  onFase: (fase: FaseDeMeissa) => void;
+  /** Lo que Meissa va diciendo, acumulado mientras habla: es lo que se lee (no hay lip-sync). */
+  onSubtitulo: (texto: string) => void;
+  /** Un turno de Meissa terminó de sonar. Lleva cuántos van y si terminó en pregunta. */
+  onTurnoDeMeissa: (cuantos: number, preguntaba: boolean) => void;
   onError: (mensaje: string) => void;
 };
 
@@ -70,6 +81,10 @@ export class ConversacionDeVoz {
   private inicioDelUsuario: number | null = null;
   private finDelUsuario: number | null = null;
   private indice = 0;
+  private subtitulo = "";
+  private hablando = false;
+  private turnosDeMeissa = 0;
+  private ultimoDeMeissa = "";
 
   constructor(private readonly cb: ConversacionCallbacks) {}
 
@@ -110,26 +125,46 @@ export class ConversacionDeVoz {
     this.canal = null;
   }
 
-  private manejar(ev: { type: string; transcript?: string; error?: unknown }) {
+  private manejar(ev: { type: string; transcript?: string; delta?: string; error?: unknown }) {
     switch (ev.type) {
-      case "output_audio_buffer.stopped":
       case "response.done":
         this.finDeLaIA = performance.now();
-        this.cb.onHabla(null);
+        break;
+
+      // Terminó de SONAR, que no es lo mismo que terminar de generarse: hasta aquí el micrófono
+      // no es tuyo todavía.
+      case "output_audio_buffer.stopped":
+        this.finDeLaIA = performance.now();
+        if (this.hablando) {
+          this.hablando = false;
+          this.turnosDeMeissa++;
+          this.cb.onTurnoDeMeissa(this.turnosDeMeissa, this.ultimoDeMeissa.trim().endsWith("?"));
+        }
+        this.cb.onFase("escucha");
         break;
 
       case "input_audio_buffer.speech_started":
         this.inicioDelUsuario = performance.now();
-        this.cb.onHabla("USER");
+        this.cb.onFase("escucha");
         break;
 
       case "input_audio_buffer.speech_stopped":
         this.finDelUsuario = performance.now();
-        this.cb.onHabla(null);
+        this.cb.onFase("piensa");
         break;
 
       case "response.output_audio.delta":
-        this.cb.onHabla("AI");
+        if (!this.hablando) {
+          this.hablando = true;
+          this.subtitulo = "";
+          this.cb.onSubtitulo("");
+        }
+        this.cb.onFase("habla");
+        break;
+
+      case "response.output_audio_transcript.delta":
+        this.subtitulo += ev.delta ?? "";
+        this.cb.onSubtitulo(this.subtitulo);
         break;
 
       case "conversation.item.input_audio_transcription.completed": {
@@ -157,6 +192,8 @@ export class ConversacionDeVoz {
       case "response.audio_transcript.done": {
         const texto = (ev.transcript ?? "").trim();
         if (!texto) break;
+        this.ultimoDeMeissa = texto;
+        this.cb.onSubtitulo(texto);
         this.cb.onTurno({
           turnIndex: this.indice++,
           speaker: "AI",

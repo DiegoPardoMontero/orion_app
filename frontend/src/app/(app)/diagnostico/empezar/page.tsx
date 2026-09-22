@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiFetch, ApiError } from "@/lib/api/fetch";
 import type { Diagnostico, DiagnosticoIniciado } from "@/lib/api/diagnostico";
@@ -26,6 +27,7 @@ type Fase = "puerta" | "conversando" | "calculando" | "resultado";
  */
 export default function DiagnosticoPage() {
   const cifras = useCifras();
+  const router = useRouter();
   const [fase, setFase] = useState<Fase>("puerta");
   const [sesion, setSesion] = useState<DiagnosticoIniciado | null>(null);
   const [objetivos, setObjetivos] = useState<string[]>([]);
@@ -73,6 +75,12 @@ export default function DiagnosticoPage() {
           setFase("calculando");
           cerrar.mutate();
         }}
+        onSalir={() => {
+          void apiFetch(`/api/v1/assessments/${sesion.assessmentId}/abandon`, { method: "POST" })
+            .catch(() => undefined)
+            .finally(() => router.push("/diagnostico"));
+        }}
+        onReintentar={() => empezar.mutate(objetivos)}
       />
     );
   }
