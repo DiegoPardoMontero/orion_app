@@ -402,9 +402,10 @@ peor fallo posible, porque no se nota. El estado real se ve en Administración �
   flujo, pero conviene rotarla.
 - **Política de cancelación de una clase ya pagada**: el pago se queda retenido y aparece marcado en
   la conciliación. Decidir entre abonar saldo o devolver desde Wompi es política comercial.
-- **Los textos legales no los ha revisado un abogado.** Siguen la ley artículo por artículo y las
-  secciones obligatorias están cubiertas por test, pero eso no certifica que la redacción proteja.
-  Antes del primer cliente que paga, que los lea alguien habilitado para firmarlos.
+- ~~Los textos legales no los ha revisado un abogado.~~ **Revisados**: Pardo confirma el 22/09/2026
+  que un abogado los leyó y están bien. Queda un dato para la próxima versión: la sección 4 de la
+  política (con quién se comparten los datos) no nombra a OpenAI, que recibe la voz del
+  diagnóstico, ni a 8x8, que aloja las clases.
 - **Retracto sin flujo propio**: ver el Bloque 9. Se atiende por ticket, a mano.
 - **Subida de fotos y documentos en local**: exige `CLOUDINARY_URL` en el entorno. Sin ella la API
   responde 503 con un mensaje legible (antes era un 500 sin explicación), pero el wizard de
