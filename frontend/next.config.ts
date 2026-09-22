@@ -18,6 +18,12 @@ const nextConfig: NextConfig = {
     return [
       { source: "/api/:path*", destination: `${api}/api/:path*` },
       { source: "/actuator/:path*", destination: `${api}/actuator/:path*` },
+      // Entrar con Google, Apple o Facebook: la ida (/oauth2/authorization/google) y la vuelta
+      // (/login/oauth2/code/google) las atiende el backend, pero bajo el dominio público, que es
+      // el único que conoce el navegador y el que se da de alta en la consola de cada proveedor.
+      // La página /login sigue siendo de Next: solo se reenvía lo que cuelga de /login/oauth2.
+      { source: "/oauth2/:path*", destination: `${api}/oauth2/:path*` },
+      { source: "/login/oauth2/:path*", destination: `${api}/login/oauth2/:path*` },
     ];
   },
 };

@@ -1,0 +1,162 @@
+package co.orion.identity.api;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.net.URI;
+import java.net.URLDecoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import co.orion.TestcontainersConfiguration;
+import co.orion.identity.application.RegistrationService;
+import co.orion.identity.application.SocialLoginService;
+import co.orion.identity.application.SocialLoginService.PerfilSocial;
+import co.orion.identity.domain.SocialProvider;
+import co.orion.identity.domain.User;
+import co.orion.identity.domain.UserRole;
+import co.orion.support.ApiIntegrationSupport;
+
+/**
+ * Entrar con Google, Apple o Facebook.
+ *
+ * <p>Con Google encendido con credenciales de mentira basta para probar el cableado de verdad —la
+ * redirección a Google con la dirección de vuelta del frontend— sin tocar la red. Lo que decide qué
+ * pasa al volver se prueba contra la base: es ahí donde vive la regla que protege las cuentas.
+ */
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
+        "orion.social.google.client-id=google-de-prueba",
+        "orion.social.google.client-secret=secreto-de-prueba",
+        "orion.app.base-url=https://orion.test"})
+@AutoConfigureTestRestTemplate
+@Import(TestcontainersConfiguration.class)
+class SocialLoginIT extends ApiIntegrationSupport {
+
+    @Autowired
+    private SocialLoginService social;
+
+    @Autowired
+    private RegistrationService registro;
+
+    @Autowired
+    private JdbcTemplate jdbc;
+
+    @BeforeEach
+    void limpiar() {
+        jdbc.update("delete from social_identities");
+        users.deleteAll();
+    }
+
+    private static PerfilSocial perfil(String sujeto, String correo, boolean verificado) {
+        return new PerfilSocial(SocialProvider.GOOGLE, sujeto, correo, verificado, "Ana Ruiz");
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Test
+    @DisplayName("Solo se ofrecen los proveedores configurados en este despliegue")
+    void soloLosConfigurados() {
+        ResponseEntity<Map> r = rest.getForEntity("/api/v1/auth/social/providers", Map.class);
+
+        assertThat(r.getBody().get("providers")).isEqualTo(List.of("google"));
+    }
+
+    @Test
+    @DisplayName("La ida lleva a Google con la dirección de vuelta del frontend, no la del backend")
+    void laIdaVaAGoogle() throws Exception {
+        // Sin seguir la redirección: se mira el 302 tal cual, sin ir a Google de verdad.
+        HttpClient cliente = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build();
+        HttpResponse<Void> r = cliente.send(HttpRequest.newBuilder(
+                URI.create(rest.getRootUri() + "/oauth2/authorization/google")).GET().build(),
+                HttpResponse.BodyHandlers.discarding());
+
+        assertThat(r.statusCode()).isEqualTo(302);
+        URI destino = URI.create(r.headers().firstValue("Location").orElseThrow());
+        assertThat(destino.getHost()).isEqualTo("accounts.google.com");
+        Map<String, String> q = UriComponentsBuilder.fromUri(destino).build().getQueryParams()
+                .toSingleValueMap();
+        assertThat(q.get("client_id")).isEqualTo("google-de-prueba");
+        assertThat(URLDecoder.decode(q.get("redirect_uri"), StandardCharsets.UTF_8))
+                .isEqualTo("https://orion.test/login/oauth2/code/google");
+    }
+
+    @Test
+    @DisplayName("Alguien nuevo no entra sin completar: la cuenta no nace sin sus casillas")
+    void alguienNuevoCompleta() {
+        assertThat(social.resolver(perfil("g-1", "nueva@orion.test", true)))
+                .isInstanceOf(SocialLoginService.Completa.class);
+        assertThat(users.findByEmailIgnoreCase("nueva@orion.test")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Con un correo que ya existe y el proveedor lo verificó, se vincula y entra")
+    void seVinculaSiElCorreoEstaVerificado() {
+        User ana = createUser("ana@orion.test", "Ana Ruiz", UserRole.STUDENT);
+
+        SocialLoginService.Resultado r = social.resolver(perfil("g-2", "ana@orion.test", true));
+
+        assertThat(r).isInstanceOf(SocialLoginService.Entra.class);
+        assertThat(((SocialLoginService.Entra) r).user().getId()).isEqualTo(ana.getId());
+        // Y la próxima vez entra por la identidad, aunque el correo de Google haya cambiado.
+        assertThat(social.resolver(perfil("g-2", "otro@gmail.com", true)))
+                .isInstanceOf(SocialLoginService.Entra.class);
+    }
+
+    @Test
+    @DisplayName("Con un correo que ya existe pero sin verificar no se vincula: sería quedarse con una cuenta ajena")
+    void sinVerificarNoSeVincula() {
+        createUser("ana@orion.test", "Ana Ruiz", UserRole.STUDENT);
+
+        SocialLoginService.Resultado r = social.resolver(perfil("g-3", "ana@orion.test", false));
+
+        assertThat(r).isEqualTo(new SocialLoginService.Rechazado("correo-sin-verificar"));
+        assertThat(jdbc.queryForObject("select count(*) from social_identities", Integer.class)).isZero();
+    }
+
+    @Test
+    @DisplayName("Sin correo del proveedor no hay cuenta posible, y se dice por qué")
+    void sinCorreo() {
+        assertThat(social.resolver(perfil("g-4", null, false)))
+                .isEqualTo(new SocialLoginService.Rechazado("sin-correo"));
+    }
+
+    @Test
+    @DisplayName("Completar crea la cuenta de estudiante, verificada si el proveedor lo garantizó")
+    void completarCreaLaCuenta() {
+        User creada = social.completar(perfil("g-5", "nueva@orion.test", true), "Ana Ruiz", registro);
+
+        assertThat(creada.getRole()).isEqualTo(UserRole.STUDENT);
+        assertThat(creada.isEmailVerified()).isTrue();
+        // Sin contraseña utilizable: el login con correo no abre esta cuenta.
+        ResponseEntity<String> conClave = rest.postForEntity("/api/v1/auth/login",
+                Map.of("email", "nueva@orion.test", "password", "cualquiera"), String.class);
+        assertThat(conClave.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(social.resolver(perfil("g-5", "nueva@orion.test", true)))
+                .isInstanceOf(SocialLoginService.Entra.class);
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Test
+    @DisplayName("Completar sin haber pasado por el proveedor responde 404, no crea nada")
+    void completarSinPendiente() {
+        ResponseEntity<Map> r = rest.postForEntity("/api/v1/auth/social/complete",
+                Map.of("fullName", "Ana", "adult", true, "acceptsTerms", true, "acceptsDataPolicy", true),
+                Map.class);
+
+        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+}

@@ -9,15 +9,29 @@ export type NavItem = { href: string; label: string };
  */
 export type NavGroup = { titulo?: string; items: NavItem[] };
 
+/** Donde se recuerda de dónde venía alguien mientras va y vuelve de Google, Apple o Facebook. */
+export const DESDE_KEY = "orion:desde";
+
 /**
  * A dónde llega alguien al entrar o crear su cuenta. Quien viene del resultado del diagnóstico
  * («¿Te lo guardamos?») aterriza en su perfil, donde lo ve guardado: el backend ya lo pasó a su
- * cuenta con la cookie de este dispositivo. Se lee de la URL en el momento, sin useSearchParams,
- * para no obligar a envolver el login en una frontera de Suspense.
+ * cuenta con la cookie de este dispositivo.
+ *
+ * <p>El origen se lee de la URL (`?desde=diagnostico`) o, si la persona fue y volvió de un
+ * proveedor, de sessionStorage, donde lo dejó el botón antes de salir: la vuelta llega a otra URL.
+ * Sin useSearchParams, para no obligar a envolver el login en una frontera de Suspense.
  */
 export function destinoAlEntrar(role: Role): string {
-  const desde =
-    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("desde");
+  let desde: string | null = null;
+  if (typeof window !== "undefined") {
+    desde = new URLSearchParams(window.location.search).get("desde");
+    try {
+      desde ??= window.sessionStorage.getItem(DESDE_KEY);
+      window.sessionStorage.removeItem(DESDE_KEY);
+    } catch {
+      // Sin almacenamiento (modo privado estricto): se entra al inicio de su rol, que también vale.
+    }
+  }
   if (desde === "diagnostico" && role === "STUDENT") return "/cuenta?seccion=resumen";
   return HOME_BY_ROLE[role];
 }

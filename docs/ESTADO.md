@@ -423,6 +423,18 @@ con las decisiones que tomó Pardo.
 - **«¿Prefieres que te llame una persona?»** (V44): nombre, WhatsApp y su autorización en casilla
   propia. Avisa por correo a la academia (`ORION_LEGAL_CORREO`) y queda en Administración →
   Llamadas, con el chat de WhatsApp a un clic y el botón de marcar atendida.
+- **Entrar con Google, Apple o Facebook** (V45, `social_identities`). Cada botón aparece solo si su
+  proveedor tiene sus variables, y su estado se ve en Administración → Sistema. Quien vuelve con
+  una identidad ya vinculada entra; si su correo ya existe **y el proveedor lo verificó**, se
+  vincula y entra (sin verificación nunca: sería quedarse con una cuenta ajena); si es nuevo, pasa
+  por `/registro/completar` a marcar las tres casillas del alta, y la cuenta nace ahí, sin
+  contraseña utilizable y con el correo verificado si el proveedor lo garantizó. Apple: su secreto
+  es un JWT ES256 que se firma en cada intercambio, y como vuelve con un POST entre sitios, su
+  solicitud viaja en una cookie firmada (HMAC) de cinco minutos en vez de en la sesión.
+  **Requiere en Railway**, por proveedor: `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`;
+  `FACEBOOK_CLIENT_ID` y `FACEBOOK_CLIENT_SECRET`; `APPLE_CLIENT_ID` (Services ID),
+  `APPLE_TEAM_ID`, `APPLE_KEY_ID` y `APPLE_PRIVATE_KEY` (el .p8). La dirección de vuelta que se da
+  de alta en cada consola es `https://orionidiomas.com/login/oauth2/code/{google|facebook|apple}`.
 
 ## Pendiente / bloqueos conocidos
 - **Reservas anteriores a V20 sin idioma**: las que tenía un profesor de dos idiomas quedaron con

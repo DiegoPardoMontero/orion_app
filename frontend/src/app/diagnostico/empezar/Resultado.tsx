@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api/fetch";
 import type { Diagnostico } from "@/lib/api/diagnostico";
 import type { ProfessorCard } from "@/lib/api/types";
 import { Avatar } from "@/components/Avatar";
+import { BotonesSociales } from "@/components/BotonesSociales";
 import { Cargando } from "@/components/estados";
 import { Meissa } from "@/components/Meissa";
 import { precioCop } from "@/lib/format";
@@ -210,7 +211,10 @@ function Guardarlo() {
       <p className="mt-1 text-[13.5px] leading-relaxed text-text-secondary">
         Crea tu cuenta y tu resultado queda en ella. También te hará falta para reservar.
       </p>
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className="mt-3">
+        <BotonesSociales desde="diagnostico" separador="o con tu correo" />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
         <Link
           href="/registro?desde=diagnostico"
           className="inline-flex h-11 items-center justify-center rounded-pill bg-primary px-3 text-[14px] font-bold text-on-primary shadow-primary hover:bg-primary-strong focus-visible:shadow-focus"

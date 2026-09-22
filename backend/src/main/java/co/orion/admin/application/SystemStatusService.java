@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import co.orion.admin.api.SystemStatusResponse;
 import co.orion.admin.api.SystemStatusResponse.Integracion;
+import co.orion.identity.application.SocialProviders;
 import co.orion.scheduling.application.JaasTokenMinter;
 
 /**
@@ -29,8 +30,10 @@ public class SystemStatusService {
     private final String resendKey;
     private final String openAiKey;
     private final String voiceProvider;
+    private final SocialProviders social;
 
     public SystemStatusService(JaasTokenMinter jaas,
+                               SocialProviders social,
                                @Value("${CLOUDINARY_URL:}") String cloudinaryUrl,
                                @Value("${orion.payments.wompi.public-key:}") String wompiPublicKey,
                                @Value("${orion.payments.wompi.integrity-secret:}") String wompiIntegrity,
@@ -41,6 +44,7 @@ public class SystemStatusService {
                                @Value("${orion.assessment.voice.provider:scripted}")
                                String voiceProvider) {
         this.jaas = jaas;
+        this.social = social;
         this.cloudinaryUrl = cloudinaryUrl;
         this.wompiPublicKey = wompiPublicKey;
         this.wompiIntegrity = wompiIntegrity;
@@ -80,7 +84,21 @@ public class SystemStatusService {
                         hay(openAiKey) && "openai".equals(voiceProvider),
                         elMotivo(),
                         "openai".equals(voiceProvider) ? "Conversación real" : null,
-                        List.of("OPENAI_API_KEY", "ORION_VOICE_PROVIDER"))));
+                        List.of("OPENAI_API_KEY", "ORION_VOICE_PROVIDER")),
+
+                // Entrar con Google, Apple o Facebook: cada botón aparece solo si su proveedor está
+                // aquí encendido. Apple queda apagado hasta que se pague su programa de desarrollador.
+                new Integracion("Entrar con Google", social.configurados().contains("google"),
+                        "No aparece el botón «Continuar con Google».", null,
+                        List.of("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET")),
+
+                new Integracion("Entrar con Facebook", social.configurados().contains("facebook"),
+                        "No aparece el botón «Continuar con Facebook».", null,
+                        List.of("FACEBOOK_CLIENT_ID", "FACEBOOK_CLIENT_SECRET")),
+
+                new Integracion("Entrar con Apple", social.appleConfigurado(),
+                        "No aparece el botón «Continuar con Apple».", null,
+                        List.of("APPLE_CLIENT_ID", "APPLE_TEAM_ID", "APPLE_KEY_ID", "APPLE_PRIVATE_KEY"))));
     }
 
     /**

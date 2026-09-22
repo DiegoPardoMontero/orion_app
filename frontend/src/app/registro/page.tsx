@@ -13,6 +13,8 @@ import { ApiError } from "@/lib/api/fetch";
 import { destinoAlEntrar } from "@/lib/auth/roles";
 import { useRegister } from "@/lib/auth/session";
 import { fuerzaClave } from "@/lib/password";
+import { Consentimiento } from "@/components/Consentimiento";
+import { BotonesSociales } from "@/components/BotonesSociales";
 
 /**
  * Con qué intención llega la persona. NO es un rol: la cuenta que crea el backend es la misma en
@@ -164,6 +166,14 @@ function Registro() {
               ]}
             />
           </div>
+
+          {/* Solo para quien viene a aprender: el alta por proveedor crea una cuenta de estudiante,
+              y la postulación de profesor necesita su propio camino. */}
+          {intencion === "aprender" && (
+            <div className="mt-5">
+              <BotonesSociales />
+            </div>
+          )}
 
           {intencion === "ensenar" && (
             <p className="mt-3 rounded-base bg-accent-lavender-soft px-4 py-3 text-[12.5px] leading-relaxed text-[#5e4a8a]">
@@ -328,35 +338,5 @@ function Registro() {
         </form>
       </div>
     </main>
-  );
-}
-
-/**
- * Una casilla de consentimiento. Área de toque completa —la etiqueta también activa— y el foco
- * visible: es el único punto del registro donde marcar por error tiene consecuencias legales,
- * así que tiene que ser deliberado y tiene que verse.
- */
-function Consentimiento({
-  id,
-  marcado,
-  onCambio,
-  children,
-}: {
-  id: string;
-  marcado: boolean;
-  onCambio: (valor: boolean) => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <label htmlFor={id} className="flex cursor-pointer items-start gap-3 text-[13px] leading-relaxed text-text-secondary">
-      <input
-        id={id}
-        type="checkbox"
-        checked={marcado}
-        onChange={(event) => onCambio(event.target.checked)}
-        className="mt-[3px] h-[18px] w-[18px] shrink-0 cursor-pointer accent-primary focus-visible:shadow-focus"
-      />
-      <span>{children}</span>
-    </label>
   );
 }

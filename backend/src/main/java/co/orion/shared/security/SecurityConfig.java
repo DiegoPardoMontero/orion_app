@@ -22,6 +22,7 @@ import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import co.orion.identity.api.SocialLogin;
 
 @Configuration
 @EnableWebSecurity
@@ -32,7 +33,8 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http,
                                     @Qualifier("corsConfigurationSource") CorsConfigurationSource corsSource,
-                                    FreshPrincipalFilter freshPrincipal)
+                                    FreshPrincipalFilter freshPrincipal,
+                                    SocialLogin social)
             throws Exception {
         http
             .cors(c -> c.configurationSource(corsSource))
@@ -50,13 +52,21 @@ public class SecurityConfig {
                         // El webhook lo llama Wompi, no un navegador: no hay cookie que proteger y
                         // exigir CSRF solo garantizaría que ningún evento entre nunca. Lo que lo
                         // protege es la firma del propio evento, verificada antes de tocar la base.
-                        "/api/v1/webhooks/payments/**"))
+                        "/api/v1/webhooks/payments/**",
+                        // Apple vuelve con un POST desde su dominio: no puede traer nuestro token.
+                        // Lo que protege esa vuelta es el `state` de OAuth, que Spring comprueba.
+                        "/login/oauth2/code/*",
+                        // Completar el alta tras volver del proveedor: lo que autoriza es el perfil
+                        // pendiente guardado en la sesión, igual que register es público.
+                        "/api/v1/auth/social/complete"))
             .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
             // Antes de autorizar, el principal se refresca contra la base: así una aprobación o una
             // baja de cuenta valen desde la siguiente petición y no desde el siguiente login.
             .addFilterBefore(freshPrincipal, AuthorizationFilter.class)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health").permitAll()
+                // Entrar con Google, Apple o Facebook: la ida, la vuelta y lo que la rodea.
+                .requestMatchers("/oauth2/**", "/login/oauth2/**", "/api/v1/auth/social/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/webhooks/payments/**").permitAll()
                 .requestMatchers("/api/v1/auth/login").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/register").permitAll()
@@ -167,7 +177,14 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/bookings/*/payment")
                         .hasAnyRole("STUDENT", "ADMIN")
                 .anyRequest().authenticated())
-            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
+
+        // Solo si hay algún proveedor configurado: sin ninguno, Spring no admite un login OAuth2
+        // vacío, y tampoco hay nada que enchufar.
+        if (social.encendido()) {
+            social.configurar(http);
+        }
+        http
             .exceptionHandling(e -> e
                 .authenticationEntryPoint(new JsonAuthEntryPoint())
                 .accessDeniedHandler(new JsonAccessDeniedHandler()))

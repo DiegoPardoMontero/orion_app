@@ -89,6 +89,23 @@ orion:
       # Transcribe lo que dice la persona. Sin esto no llega ningún turno suyo y no hay puntaje.
       transcription-model: ${ORION_VOICE_TRANSCRIPTION_MODEL:gpt-4o-mini-transcribe}
 
+  # Entrar con Google, Apple o Facebook. Cada proveedor se enciende solo si tiene TODAS sus
+  # variables; sin ellas su botón no aparece. La dirección de vuelta que hay que dar de alta en cada
+  # consola es {ORION_APP_BASE_URL}/login/oauth2/code/{google|facebook|apple}.
+  social:
+    google:
+      client-id:     ${GOOGLE_CLIENT_ID:}
+      client-secret: ${GOOGLE_CLIENT_SECRET:}
+    facebook:
+      client-id:     ${FACEBOOK_CLIENT_ID:}
+      client-secret: ${FACEBOOK_CLIENT_SECRET:}
+    # Apple: el client-id es el Services ID; la llave es el .p8 de «Sign in with Apple».
+    apple:
+      client-id:   ${APPLE_CLIENT_ID:}
+      team-id:     ${APPLE_TEAM_ID:}
+      key-id:      ${APPLE_KEY_ID:}
+      private-key: ${APPLE_PRIVATE_KEY:}
+
   # Videollamada: Jitsi as a Service (JaaS) de 8x8.
   #
   # La llave privada NO está aquí ni puede estarlo: es un secreto y va por variable de entorno.

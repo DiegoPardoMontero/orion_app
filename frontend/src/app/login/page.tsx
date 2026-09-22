@@ -2,8 +2,8 @@
 
 import { ArrowRight, Eye, EyeOff, GraduationCap, Lock, Mail } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState, type FormEvent } from "react";
 import { AvisoError } from "@/components/estados";
 import { Constelacion, Wordmark } from "@/components/marca";
 import { Rigel } from "@/components/Rigel";
@@ -11,6 +11,7 @@ import { BotonPrincipal, Campo, Spinner } from "@/components/ui";
 import { ApiError } from "@/lib/api/fetch";
 import { destinoAlEntrar } from "@/lib/auth/roles";
 import { useLogin } from "@/lib/auth/session";
+import { BotonesSociales } from "@/components/BotonesSociales";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -57,6 +58,13 @@ export default function LoginPage() {
           <p className="mt-1 text-[14px] text-text-secondary">
             Entra para reservar y coordinar tus clases.
           </p>
+
+          <Suspense fallback={null}>
+            <AvisoSocial />
+          </Suspense>
+          <div className="mt-5">
+            <BotonesSociales />
+          </div>
 
           <label
             className="mt-6 block text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary"
@@ -159,5 +167,25 @@ export default function LoginPage() {
         </form>
       </div>
     </main>
+  );
+}
+
+/** Por qué no se pudo entrar con Google, Apple o Facebook, dicho de forma que se pueda hacer algo. */
+const MOTIVO_SOCIAL: Record<string, string> = {
+  error: "No pudimos entrar con ese proveedor. Inténtalo de nuevo.",
+  "sin-correo":
+    "Tu cuenta de ese proveedor no comparte un correo. Entra con otro, o crea tu cuenta con correo.",
+  "correo-sin-verificar":
+    "Ya hay una cuenta de Orión con ese correo. Entra con tu contraseña y, si no la recuerdas, recupérala.",
+  "cuenta-inactiva": "Esta cuenta está desactivada. Escríbenos si crees que es un error.",
+};
+
+function AvisoSocial() {
+  const motivo = useSearchParams().get("social");
+  if (!motivo) return null;
+  return (
+    <div className="mt-4">
+      <AvisoError mensaje={MOTIVO_SOCIAL[motivo] ?? MOTIVO_SOCIAL.error} />
+    </div>
   );
 }

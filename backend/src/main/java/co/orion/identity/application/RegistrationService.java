@@ -1,6 +1,8 @@
 package co.orion.identity.application;
 
+import java.security.SecureRandom;
 import java.time.Clock;
+import java.util.HexFormat;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,6 +30,7 @@ public class RegistrationService {
     private final StudentProfileService studentProfiles;
     private final PasswordEncoder passwordEncoder;
     private final Clock clock;
+    private final SecureRandom random = new SecureRandom();
 
     public RegistrationService(UserRepository users,
                                StudentProfileService studentProfiles,
@@ -42,6 +45,36 @@ public class RegistrationService {
     @Transactional
     public User register(String fullName, String email, String rawPassword, String whatsappPhone) {
         return register(fullName, email, rawPassword, whatsappPhone, false, true);
+    }
+
+    /**
+     * El alta de quien llega por Google, Apple o Facebook, después de marcar las casillas.
+     *
+     * <p>Sin contraseña utilizable: se guarda el hash de un secreto aleatorio que nadie conoce, así
+     * la columna sigue siendo NOT NULL y el login con correo no abre esta cuenta hasta que la
+     * persona se ponga una con «recuperar contraseña». El correo nace verificado si el proveedor lo
+     * garantizó: pedir que lo confirme otra vez sería un paso de más por algo que ya se sabe.
+     */
+    @Transactional
+    public User registerFromProvider(String fullName, String email, boolean emailVerified) {
+        if (users.existsByEmailIgnoreCase(email)) {
+            throw new ConflictException("Ya existe una cuenta con ese correo");
+        }
+        byte[] secreto = new byte[32];
+        random.nextBytes(secreto);
+        User user = new User(email, passwordEncoder.encode(HexFormat.of().formatHex(secreto)),
+                fullName, UserRole.STUDENT);
+        user.confirmAdulthood(clock.instant());
+        if (emailVerified) {
+            user.markEmailVerified(clock.instant());
+        }
+        try {
+            User creado = users.saveAndFlush(user);
+            studentProfiles.createFor(creado);
+            return creado;
+        } catch (DataIntegrityViolationException ex) {
+            throw new ConflictException("Ya existe una cuenta con ese correo");
+        }
     }
 
     @Transactional
