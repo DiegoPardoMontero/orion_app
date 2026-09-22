@@ -109,6 +109,8 @@ public class SecurityConfig {
                 // estudiante o el lead de este dispositivo, y AssessmentController decide cuál —
                 // 401 sin ninguno de los dos, 403 con una cuenta que no es de estudiante.
                 .requestMatchers("/api/v1/assessment-leads", "/api/v1/assessment-leads/**").permitAll()
+                // «¿Prefieres que te llame una persona?»: sin cuenta, con freno por IP.
+                .requestMatchers(HttpMethod.POST, "/api/v1/callback-requests").permitAll()
                 .requestMatchers("/api/v1/assessments", "/api/v1/assessments/**").permitAll()
                 .requestMatchers("/api/v1/me/assessments").permitAll()
                 .requestMatchers("/api/v1/me/voice-consent", "/api/v1/me/voice-consent/**")

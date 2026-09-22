@@ -420,6 +420,9 @@ con las decisiones que tomó Pardo.
 - **Meissa**, la segunda mascota, en todo el flujo: `/diagnostico` (sin pasos y sin scroll), la
   conversación a pantalla completa con sus estados habla/escucha/piensa y el subtítulo de lo que
   dice, la espera y el cierre. Rigel ya no aparece en el diagnóstico.
+- **«¿Prefieres que te llame una persona?»** (V44): nombre, WhatsApp y su autorización en casilla
+  propia. Avisa por correo a la academia (`ORION_LEGAL_CORREO`) y queda en Administración →
+  Llamadas, con el chat de WhatsApp a un clic y el botón de marcar atendida.
 
 ## Pendiente / bloqueos conocidos
 - **Reservas anteriores a V20 sin idioma**: las que tenía un profesor de dos idiomas quedaron con
@@ -453,6 +456,8 @@ con las decisiones que tomó Pardo.
   puede calcular la tardanza del profesor (punto 12 de Sofía) porque no hay registro de a qué hora
   entró cada uno.
 - **Rotar la llave de OpenAI**: viajó por la terminal y quedó en el transcript de la sesión.
+- **Cuánto se guardan las solicitudes de llamada ya atendidas**: hoy, indefinidamente. Conviene
+  fijar un plazo (y un job que lo cumpla) antes de que se acumulen teléfonos sin finalidad vigente.
 - **Límite de tasa de OpenAI**: la organización tiene 40.000 tokens por minuto en el modelo de
   voz, y cada respuesta de Meissa gasta unos 2.800 porque relee el guion entero. Con dos o tres
   diagnósticos a la vez se alcanza, y entonces la respuesta llega como `response.done` con estado

@@ -101,6 +101,12 @@ public class IntentosDeAcceso {
                         + "cuenta y hazlo desde ella.");
     }
 
+    /** El «te llamamos» es público y deja un teléfono a nuestro cargo: cinco por conexión al día. */
+    public void antesDeSolicitarLlamada(HttpServletRequest request) {
+        exigir("llamada:" + ipDe(request), maxDiagnosticosAnonimosPorIp, VENTANA_DIA, clock.instant(),
+                "Ya recibimos varias solicitudes desde esta conexión hoy. Te escribimos pronto.");
+    }
+
     /** Solo para tests: olvida todos los intentos. Ver {@link RateLimiter#resetAll()}. */
     public void olvidarTodo() {
         limiter.resetAll();

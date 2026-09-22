@@ -72,6 +72,15 @@ export default function DiagnosticoPage() {
           >
             Empezar con Meissa
           </Link>
+          <p className="mt-4 text-center text-[13px] text-text-secondary">
+            ¿Prefieres que te llame una persona?{" "}
+            <Link
+              href="/diagnostico/llamame"
+              className="rounded-base font-bold text-primary-strong underline underline-offset-2 focus-visible:shadow-focus"
+            >
+              Déjanos tu número
+            </Link>
+          </p>
         </div>
       </div>
     </main>
