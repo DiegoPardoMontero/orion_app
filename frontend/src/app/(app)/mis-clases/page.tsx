@@ -9,6 +9,7 @@ import {
   Clock,
   MapPin,
   MessageCircle,
+  NotebookPen,
   Star,
   Video,
   X,
@@ -30,6 +31,7 @@ import type {
   SlotsResponse,
   SlotView,
 } from "@/lib/api/types";
+import type { ResumenDeActas } from "@/lib/actas";
 import { useMe } from "@/lib/auth/session";
 import { esperaPago, etiquetaEstado } from "@/lib/estados-clase";
 import { diaBogota, fechaCorta, fechaYRango, horaBogota, precioCop, rangoHoras } from "@/lib/format";
@@ -365,6 +367,27 @@ function TarjetaClase({
     scope === "past" &&
     (clase.status === "CONFIRMED" || clase.status === "COMPLETED");
 
+  // El acta (Bloque 10): una sola consulta para toda la lista —TanStack la comparte entre
+  // tarjetas— dice qué clases tienen acta. El estudiante solo ve el enlace cuando hay algo
+  // publicado que leer; el profesor, en cada clase que el servidor marca como pendiente o con
+  // acta, con la etiqueta de lo que le falta.
+  const dictada = scope === "past" && clase.status === "COMPLETED";
+  const actas = useQuery({
+    queryKey: ["lesson-notes-summary"],
+    queryFn: () => apiFetch<ResumenDeActas>("/api/v1/me/lesson-notes/summary"),
+    enabled: dictada,
+    staleTime: 60_000,
+  });
+  const estadoActa = actas.data?.byBooking[clase.id!];
+  const actaPosible = dictada && (esProfesor ? !!estadoActa : estadoActa === "PUBLISHED");
+  const etiquetaActa = !esProfesor
+    ? "Resumen de la clase"
+    : estadoActa === "PUBLISHED"
+      ? "Ver el acta"
+      : estadoActa === "DRAFT"
+        ? "Terminar el acta"
+        : "Contar cómo estuvo";
+
   return (
     <>
       <Tarjeta>
@@ -545,6 +568,16 @@ function TarjetaClase({
             <Boton variante="tinta" onClick={() => setRegistrando(true)} className="h-10 flex-1 sm:flex-none">
               Registrar asistencia
             </Boton>
+          )}
+
+          {actaPosible && (
+            <Link
+              href={`/mis-clases/${clase.id}/acta`}
+              className="inline-flex h-10 min-h-11 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-pill border-[1.5px] border-border px-4 text-[14px] font-bold text-text transition-colors hover:border-primary hover:text-primary-strong focus-visible:shadow-focus sm:min-h-0 sm:flex-none"
+            >
+              <NotebookPen size={15} strokeWidth={1.9} />
+              {etiquetaActa}
+            </Link>
           )}
 
           {puedeCalificar && !resenaHecha && (
@@ -917,6 +950,8 @@ function ModalReportar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["me", "bookings"] });
+      // Cerrada con asistencia, la tarjeta pasa a ofrecer el acta.
+      void queryClient.invalidateQueries({ queryKey: ["lesson-notes-summary"] });
       onCerrar();
     },
   });

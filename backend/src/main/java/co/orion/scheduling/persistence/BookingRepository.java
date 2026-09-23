@@ -58,6 +58,11 @@ public interface BookingRepository extends JpaRepository<Booking, UUID>,
     /** Las reservas cuyo plazo para pagar ya se cumplió: la entrada del job de expiración. */
     List<Booking> findByStatusAndExpiresAtLessThanEqual(BookingStatus status, Instant deadline);
 
+    /** Las clases de un profesor que se cerraron desde un momento dado (las que admiten acta). */
+    List<Booking> findByProfessorIdAndStatusAndCompletedAtGreaterThanEqual(UUID professorId,
+                                                                           BookingStatus status,
+                                                                           Instant since);
+
     /**
      * Clases terminadas hace rato y todavía sin cerrar: la entrada del autocompletado. El filtro
      * por completed_at nulo es lo que lo hace idempotente incluso antes de mirar cada reserva.

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { Check, Star, X } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api/fetch";
@@ -178,13 +179,23 @@ function CierreProfesor({
   );
   const [nota, setNota] = useState("");
 
+  const router = useRouter();
+  // Si la clase se dio, lo siguiente natural es contarla: el acta se ofrece aquí mismo, mientras
+  // la clase está fresca («Ahora no» devuelve a Mis clases). Si no se presentó, no hay nada que
+  // contar y la hoja se cierra como siempre.
   const cerrar = useMutation({
     mutationFn: () =>
       apiFetch(`/api/v1/bookings/${bookingId}/attendance`, {
         method: "POST",
         body: { present: asistio, notes: nota.trim() || undefined },
       }),
-    onSuccess: onCerrar,
+    onSuccess: () => {
+      if (asistio) {
+        router.push(`/mis-clases/${bookingId}/acta`);
+      } else {
+        onCerrar();
+      }
+    },
   });
 
   return (

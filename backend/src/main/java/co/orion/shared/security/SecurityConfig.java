@@ -133,6 +133,14 @@ public class SecurityConfig {
                 // Cuánto habló su estudiante en sus clases juntos (webhook de JaaS). El servicio
                 // exige además que haya habido reserva entre los dos.
                 .requestMatchers("/api/v1/professors/me/students/*/classroom").hasRole("PROFESSOR")
+                // El acta de clase (Bloque 10): la escribe, corrige y publica el profesor; la lee
+                // también el estudiante. El servicio exige además ser de esa reserva (403 a otro
+                // profesor, 404 a un tercero y al estudiante mientras es borrador).
+                .requestMatchers(HttpMethod.POST, "/api/v1/bookings/*/lesson-note/draft").hasRole("PROFESSOR")
+                .requestMatchers(HttpMethod.GET, "/api/v1/bookings/*/lesson-note").hasAnyRole("STUDENT", "PROFESSOR")
+                .requestMatchers("/api/v1/lesson-notes/**").hasRole("PROFESSOR")
+                .requestMatchers("/api/v1/me/lesson-notes", "/api/v1/me/lesson-notes/**")
+                        .hasAnyRole("STUDENT", "PROFESSOR")
                 // El aula. Los dos lados entran; el servicio comprueba que la reserva sea suya y
                 // responde 404 si no lo es, para no confirmarle a un extraño que la clase existe.
                 .requestMatchers(HttpMethod.GET, "/api/v1/bookings/*/classroom")

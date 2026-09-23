@@ -70,6 +70,28 @@ public enum SettingDefinition {
             "Si la persona no crea su cuenta en este plazo, se borra entero: su nombre, lo que dijo "
                     + "y su resultado.", 1, 365, true),
 
+    // El acta de clase (Bloque 10). Presupuesto propio, aparte del diagnóstico: uno por función.
+    AI_LESSON_NOTES_ENABLED("ai_lesson_notes_enabled", Grupo.POLITICAS, Tipo.BOOLEANO,
+            "Borrador del acta con IA",
+            "Apagado, el profesor escribe el acta a mano en los mismos cuatro campos: la función no "
+                    + "desaparece, solo deja de proponer el borrador.",
+            true),
+    AI_DAILY_BUDGET_COP("ai_daily_budget_cop", Grupo.DINERO, Tipo.ENTERO,
+            "Presupuesto diario de las actas",
+            "Pesos al día en IA para los borradores de acta. Al llegar al tope el profesor escribe a "
+                    + "mano hasta mañana; al 80 % sale un aviso por correo.", 0, 5_000_000, true),
+    AI_NOTE_TIMEOUT_SECONDS("ai_note_timeout_seconds", Grupo.PLAZOS, Tipo.ENTERO,
+            "Espera máxima del borrador del acta",
+            "Segundos que se espera a la IA antes de pasar al camino a mano.", 5, 60, false),
+    LESSON_NOTE_EDIT_WINDOW_HOURS("lesson_note_edit_window_hours", Grupo.PLAZOS, Tipo.ENTERO,
+            "Horas para corregir un acta publicada",
+            "Pasado el plazo el acta queda como está. Si se corrige antes, el estudiante ve "
+                    + "«Actualizada el…».", 1, 336, false),
+    LESSON_NOTE_NUDGE_MINUTES("lesson_note_nudge_minutes", Grupo.PLAZOS, Tipo.ENTERO,
+            "Recordatorio del acta",
+            "Minutos después de cerrarse la clase en que se le recuerda al profesor, una sola vez, "
+                    + "que escriba el acta.", 0, 1440, false),
+
     // Los pesos del Confidence Score. Suman 100 por convención, no por obligación: el cálculo
     // pondera sobre el total que haya. Cambiar cualquiera cambia la versión del puntaje, así que
     // los diagnósticos de antes siguen siendo comparables entre ellos y no con los de después.

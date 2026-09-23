@@ -443,6 +443,38 @@ con las decisiones que tomó Pardo.
   `APPLE_TEAM_ID`, `APPLE_KEY_ID` y `APPLE_PRIVATE_KEY` (el .p8). La dirección de vuelta que se da
   de alta en cada consola es `https://orionidiomas.com/login/oauth2/code/{google|facebook|apple}`.
 
+## Acta de clase · Bloque 10, Parte A (22/09/2026)
+
+Brief en [`briefs/orion-bloque-10-acta-y-practica.md`](./briefs/orion-bloque-10-acta-y-practica.md).
+Solo la Parte A: la práctica entre clases (Parte B) no está construida, y por eso el botón
+«Practicar esto» no existe.
+
+- **El profesor cuenta la clase en una caja de texto** («trabajamos past simple, sigue diciendo
+  'I go yesterday'…», mínimo 20 caracteres) y `gpt-5-mini` la ordena en cuatro secciones: lo que
+  trabajaron, para tener presente, palabras nuevas (máximo 12) y lo que sigue. La salida se valida
+  —JSON con exactamente esas claves, dentro de sus límites y sin juicios sobre el estudiante— y un
+  reintento; si falla, tarda más de `ai_note_timeout_seconds` o no hay presupuesto, aparecen los
+  mismos campos vacíos con sus notas guardadas. Nunca un error técnico.
+- **Nada llega al estudiante sin que el profesor publique.** Un borrador es 404 para él. Publicado,
+  lo lee sin las notas en crudo, sin el origen y sin cuánto se corrigió (`edit_ratio`, la cifra que
+  dirá si el prompt ayuda o estorba). Se puede corregir durante `lesson_note_edit_window_hours`
+  (72) y el estudiante ve «Actualizada el…».
+- **Avisos**: notificación en la app al publicar (sin correo) y **un** recordatorio al profesor
+  `lesson_note_nudge_minutes` (60) después de cerrarse la clase, si no escribió el acta. Nunca
+  insiste.
+- **Sin actas retroactivas** (D4): solo las clases cerradas desde que se aplicó la V48.
+- **Presupuesto propio**, `ai_daily_budget_cop` (30.000), aparte del diagnóstico, con aviso al 80 %.
+  Apagarlo (`ai_lesson_notes_enabled`) no quita la función: el profesor la escribe a mano.
+- Pantalla: `/mis-clases/{id}/acta`. Lleva a ella el cierre del aula (al marcar que el estudiante
+  asistió, mientras la clase está fresca; «Ahora no» vuelve a Mis clases), la tarjeta de la clase
+  cerrada («Contar cómo estuvo», «Terminar el acta», «Ver el acta»; el estudiante, «Resumen de la
+  clase» cuando hay uno publicado) y las notificaciones. Qué tarjeta admite acta lo dice el
+  servidor (`/me/lesson-notes/summary`), con el mismo criterio con que la acepta.
+- Frontera: fuera de `teaching` solo se importan sus eventos (`FronterasDeTeachingTest`).
+- El borrador lo arma `gpt-5-mini` solo con `ORION_VOICE_PROVIDER=openai` y `OPENAI_API_KEY`, las
+  mismas del diagnóstico; sin ellas (local y tests) lo arma una regla simple sin red: las notas
+  enteras en «lo que trabajaron» y cada término entre comillas como palabra nueva.
+
 ## Revisión de seguridad y permisos (22/09/2026)
 
 Recorrido de todo el backend y el frontend: autorización por endpoint, IDOR, CSRF, cookies,
@@ -524,6 +556,10 @@ su test; lo que cambia el comportamiento o pide una decisión está abajo, en Pe
   prueba del guion v4.
 - **El avatar personalizado solo lo ve su dueño.** Que otros lo vean en sus listas exige embeber la
   personalización en dos DTOs y añade una consulta a los endpoints que pintan listas.
+- **Bloque 10, Parte B (la práctica entre clases)**: sin construir. Tampoco las listas de la Parte A
+  con sus estados vacíos («Estás al día», «Todavía no hay resúmenes»): el acta se abre desde el
+  cierre del aula, la tarjeta de cada clase y la notificación, en su propia pantalla y no dentro de
+  la tarjeta, como proponía el brief.
 - **Seguridad — para decidir (revisión del 22/09)**:
   - **IP detrás del proxy de Railway.** `forward-headers-strategy: framework` confía en el primer
     valor de `X-Forwarded-For`, que el cliente puede inventar; si Railway no lo reescribe, todos los
