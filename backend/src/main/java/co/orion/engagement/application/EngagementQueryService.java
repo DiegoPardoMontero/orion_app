@@ -94,7 +94,7 @@ public class EngagementQueryService {
         Set<LocalDate> mesesProtegidos = protections.findByUserId(studentId).stream()
                 .map(StreakProtection::getGrantedFor).collect(Collectors.toSet());
 
-        StreakCalculator.Racha racha = StreakCalculator.calcular(tomadas, mesesProtegidos, ahora);
+        StreakCalculator.Racha racha = StreakCalculator.calcular(conPracticas(studentId, tomadas), mesesProtegidos, ahora);
         Set<String> encendidos = codigosEncendidos(studentId);
 
         return new Resumen(
@@ -218,7 +218,7 @@ public class EngagementQueryService {
         Instant ahora = clock.instant();
         Set<LocalDate> protegidas = protections.findByUserId(studentId).stream()
                 .map(StreakProtection::getWeekStart).collect(Collectors.toSet());
-        return StreakCalculator.mapa(clasesDe(studentId, ahora), protegidas, semanas, ahora);
+        return StreakCalculator.mapa(conPracticas(studentId, clasesDe(studentId, ahora)), protegidas, semanas, ahora);
     }
 
     private Set<String> codigosEncendidos(UUID studentId) {
@@ -226,6 +226,18 @@ public class EngagementQueryService {
                 .filter(UserAchievement::isUnlocked)
                 .map(UserAchievement::getAchievementCode)
                 .collect(Collectors.toSet());
+    }
+
+    /**
+     * Las semanas activas: las clases y, desde el Bloque 10, las prácticas terminadas, leídas del
+     * propio libro de puntos. Las usan la racha y el mapa de constancia, para que nunca se
+     * contradigan: una semana con solo práctica es una semana cumplida en los dos.
+     */
+    private List<Tomada> conPracticas(UUID studentId, List<Tomada> clases) {
+        List<Tomada> activas = new java.util.ArrayList<>(clases);
+        pointEvents.findByUserIdAndSourceType(studentId, AchievementService.FUENTE_PRACTICA)
+                .forEach(p -> activas.add(new Tomada(null, p.getOccurredAt(), p.getOccurredAt())));
+        return activas;
     }
 
     private List<Tomada> clasesDe(UUID studentId, Instant ahora) {

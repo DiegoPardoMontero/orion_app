@@ -522,6 +522,33 @@ Solo la Parte A: la práctica entre clases (Parte B) no está construida, y por 
   enteras en «lo que trabajaron» y cada término entre comillas como palabra nueva. Cuál de los dos
   está activo se ve en Administración → Sistema, «Borrador del acta (OpenAI)».
 
+## Práctica entre clases · Bloque 10, Parte B (23/09/2026)
+
+Pardo decidió desplegarla **encendida** y que **practicar también avance la racha** (el brief
+pedía confirmarlo con Sofía; lo decidió él).
+
+- **Nace del acta publicada** (V49, `practice_sets` y `practice_items`): publicar encola un set
+  `PENDING` con lo que el acta decía ese día (el evento del acta trae su contenido; la práctica no
+  importa nada de `teaching` salvo sus eventos). Un trabajo cada minuto lo genera y lo deja
+  `READY`; nunca se genera al abrir la pantalla. Un acta, un set, para siempre.
+- **Cinco tipos** (completar, corregir, emparejar, ordenar un diálogo, frase propia), generados
+  por `gpt-5-mini` y **anclados al acta**: lo que no sale del vocabulario, de los errores
+  recurrentes o de lo trabajado se descarta (`ValidadorDeEjercicios`), como mucho dos del mismo
+  tipo, y con menos de dos ejercicios el set queda `FAILED` y no se ofrece nada. Probado contra
+  OpenAI: cuatro de cuatro válidos, variados y anclados, en ~8 s. Sin IA (local y pruebas), un
+  generador determinista que solo usa lo literal del acta.
+- **Reglas**: solo su dueño opera el set (404 a cualquier otro), dos intentos por ejercicio
+  (después se muestra la respuesta con su explicación), un set vencido no acepta respuestas
+  (`practice_set_ttl_days`, 7), y completar dos veces no recalcula ni vuelve a dar puntos. La
+  frase propia se evalúa por usar el término en una frase de verdad: una frase válida que nadie
+  previó nunca es incorrecta.
+- **Puntos y racha**: completar da 15 puntos (índice único del libro: una vez por set) y la semana
+  cuenta para la racha, leída del propio libro de puntos de `engagement`.
+- **El profesor** ve un resumen agregado —cuántas practicó esta semana y dónde le costó—, nunca las
+  respuestas.
+- Presupuesto propio (`practice_daily_budget_cop`, 20.000): sin presupuesto los sets esperan a
+  mañana en vez de fallar.
+
 ## Revisión de seguridad y permisos (22/09/2026)
 
 Recorrido de todo el backend y el frontend: autorización por endpoint, IDOR, CSRF, cookies,
@@ -603,9 +630,8 @@ su test; lo que cambia el comportamiento o pide una decisión está abajo, en Pe
   prueba del guion v4.
 - **El avatar personalizado solo lo ve su dueño.** Que otros lo vean en sus listas exige embeber la
   personalización en dos DTOs y añade una consulta a los endpoints que pintan listas.
-- **Bloque 10, Parte B (la práctica entre clases)**: sin construir, y tampoco el panel de calidad
-  del admin (C1). De la Parte A, una desviación consciente: el acta se escribe en su propia
-  pantalla y no dentro de la tarjeta de la clase, como proponía el brief.
+- **Bloque 10**: de la Parte A, una desviación consciente: el acta se escribe en su propia pantalla
+  y no dentro de la tarjeta de la clase, como proponía el brief.
 - **Resend y Wompi siguen con `SimpleClientHttpRequestFactory`**, el cliente cuyo corte de lectura
   no cortó un POST lento en la prueba del acta. En Resend, un envío lento podría esperar de más (o,
   si el JDK reintenta el POST, duplicar un correo). No se tocó de noche sin una prueba que lo

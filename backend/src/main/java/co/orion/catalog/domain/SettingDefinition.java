@@ -92,6 +92,29 @@ public enum SettingDefinition {
             "Minutos después de cerrarse la clase en que se le recuerda al profesor, una sola vez, "
                     + "que escriba el acta.", 0, 1440, false),
 
+    // La práctica entre clases (Bloque 10, Parte B).
+    PRACTICE_ENABLED("practice_enabled", Grupo.POLITICAS, Tipo.BOOLEANO,
+            "Práctica entre clases",
+            "Apagada, las actas se siguen publicando pero no generan ejercicios, y la invitación a "
+                    + "practicar desaparece sin dejar rastro.",
+            true),
+    PRACTICE_SET_TTL_DAYS("practice_set_ttl_days", Grupo.PLAZOS, Tipo.ENTERO,
+            "Días que dura una práctica",
+            "Pasado el plazo, el set deja de ofrecerse: el viejo no compite con el de la clase siguiente.",
+            1, 30, false),
+    PRACTICE_ITEMS_PER_SET("practice_items_per_set", Grupo.POLITICAS, Tipo.ENTERO,
+            "Ejercicios por práctica",
+            "Cuántos ejercicios trae cada set. Más ejercicios, más minutos para el estudiante.",
+            2, 8, false),
+    PRACTICE_MAX_ATTEMPTS("practice_max_attempts", Grupo.POLITICAS, Tipo.ENTERO,
+            "Intentos por ejercicio",
+            "Después se muestra la respuesta con su explicación y se sigue.", 1, 5, false),
+    PRACTICE_DAILY_BUDGET_COP("practice_daily_budget_cop", Grupo.DINERO, Tipo.ENTERO,
+            "Presupuesto diario de la práctica",
+            "Pesos al día en IA para generar ejercicios, aparte del acta y del diagnóstico. Al llegar "
+                    + "al tope, los sets nuevos esperan a mañana; al 80 % sale un aviso.",
+            0, 5_000_000, true),
+
     // Los pesos del Confidence Score. Suman 100 por convención, no por obligación: el cálculo
     // pondera sobre el total que haya. Cambiar cualquiera cambia la versión del puntaje, así que
     // los diagnósticos de antes siguen siendo comparables entre ellos y no con los de después.

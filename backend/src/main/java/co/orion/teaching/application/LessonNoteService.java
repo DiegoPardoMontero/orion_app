@@ -137,8 +137,7 @@ public class LessonNoteService {
         nota.editar(limpio(trabajado), limpio(presente), limpio(sigue), ventana(), clock.instant());
         List<LessonVocabulary> guardadas = reemplazarVocabulario(notas.save(nota), palabras);
         if (publicada) {
-            eventos.publishEvent(new LessonNotePublishedEvent(nota.getId(), nota.getBookingId(),
-                    nota.getStudentId(), nota.getProfessorId(), true));
+            eventos.publishEvent(evento(nota, guardadas, true));
         }
         return new Acta(nota, guardadas, false);
     }
@@ -152,8 +151,7 @@ public class LessonNoteService {
                 palabras.stream().map(v -> new Palabra(v.getTerm(), v.getMeaning())).toList());
         if (nota.publicar(publicado, clock.instant())) {
             notas.save(nota);
-            eventos.publishEvent(new LessonNotePublishedEvent(nota.getId(), nota.getBookingId(),
-                    nota.getStudentId(), nota.getProfessorId(), false));
+            eventos.publishEvent(evento(nota, palabras, false));
         }
         return new Acta(nota, palabras, false);
     }
@@ -248,6 +246,15 @@ public class LessonNoteService {
     }
 
     /* ---------------- interno ---------------- */
+
+    /** El evento lleva lo que el acta dice: la práctica lo usa sin tener que leer el acta. */
+    private LessonNotePublishedEvent evento(LessonNote nota, List<LessonVocabulary> palabras, boolean actualizacion) {
+        Instant clase = bookings.findById(nota.getBookingId()).map(Booking::getStartsAt).orElse(null);
+        return new LessonNotePublishedEvent(nota.getId(), nota.getBookingId(), nota.getStudentId(),
+                nota.getProfessorId(), actualizacion, nota.getLanguageCode(), clase, nota.getWorkedOn(),
+                nota.getRecurringIssues(), nota.getNextSteps(),
+                palabras.stream().map(v -> new LessonNotePublishedEvent.Termino(v.getTerm(), v.getMeaning())).toList());
+    }
 
     private void exigirProfesorDe(Booking b, User profesor) {
         if (!b.getProfessorId().equals(profesor.getId())) {

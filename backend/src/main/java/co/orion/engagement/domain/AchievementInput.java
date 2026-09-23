@@ -26,6 +26,7 @@ import co.orion.scheduling.domain.LearningProgress.Tomada;
  * @param diasSinCancelar días corridos desde la última cancelación del estudiante
  * @param mesesYaProtegidos meses en los que ya gastó su protección de racha
  * @param ahora el instante de referencia
+ * @param practicas las prácticas terminadas, como semanas activas para la racha
  */
 public record AchievementInput(List<Tomada> clasesTomadas,
                                long presenciales,
@@ -35,5 +36,28 @@ public record AchievementInput(List<Tomada> clasesTomadas,
                                int camposDePerfil,
                                long diasSinCancelar,
                                Set<java.time.LocalDate> mesesYaProtegidos,
-                               Instant ahora) {
+                               Instant ahora,
+                               List<Tomada> practicas) {
+
+    /** Sin prácticas: la forma de antes del Bloque 10, que siguen usando las pruebas. */
+    public AchievementInput(List<Tomada> clasesTomadas, long presenciales, Set<String> idiomas, Set<UUID> profesores,
+                            Set<String> eventosOcurridos, int camposDePerfil, long diasSinCancelar,
+                            Set<java.time.LocalDate> mesesYaProtegidos, Instant ahora) {
+        this(clasesTomadas, presenciales, idiomas, profesores, eventosOcurridos, camposDePerfil, diasSinCancelar,
+                mesesYaProtegidos, ahora, List.of());
+    }
+
+    /**
+     * Lo que cuenta para la racha: las clases y, desde el Bloque 10, las prácticas terminadas
+     * (decisión de Pardo, 22/09/2026: la racha mide esfuerzo, no solo consumo). Para el volumen y
+     * la amplitud siguen contando solo las clases.
+     */
+    public List<Tomada> semanasActivas() {
+        if (practicas == null || practicas.isEmpty()) {
+            return clasesTomadas;
+        }
+        List<Tomada> todas = new java.util.ArrayList<>(clasesTomadas);
+        todas.addAll(practicas);
+        return todas;
+    }
 }

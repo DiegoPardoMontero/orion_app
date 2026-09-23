@@ -30,7 +30,7 @@ public final class AchievementEvaluators {
 
             CriteriaType.STREAK_WEEKS,
             (in, params) -> StreakCalculator
-                    .calcular(in.clasesTomadas(), in.mesesYaProtegidos(), in.ahora())
+                    .calcular(in.semanasActivas(), in.mesesYaProtegidos(), in.ahora())
                     .actual(),
 
             CriteriaType.DISTINCT_PROFESSORS,

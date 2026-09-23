@@ -10,6 +10,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import co.orion.identity.domain.StudentProfileUpdatedEvent;
 import co.orion.lifecycle.domain.LessonCompletedEvent;
+import co.orion.practice.domain.PracticeCompletedEvent;
 import co.orion.scheduling.domain.BookingCompletedEvent;
 import co.orion.scheduling.domain.BookingCreatedEvent;
 
@@ -65,6 +66,14 @@ public class EngagementListener {
     public void on(StudentProfileUpdatedEvent event) {
         seguro(() -> achievements.onSomethingHappened(event.studentId()),
                 "ficha actualizada de " + event.studentId());
+    }
+
+    /** Una práctica terminada da sus puntos y cuenta para la racha (Bloque 10, Parte B). */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void on(PracticeCompletedEvent event) {
+        seguro(() -> achievements.onPracticeCompleted(event.studentId(), event.setId(), event.completedAt()),
+                "práctica terminada " + event.setId());
     }
 
     private void seguro(Runnable accion, String que) {

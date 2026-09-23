@@ -62,6 +62,9 @@ public class AchievementService {
     private static final int PUNTOS_POR_RESENA = 20;
 
     private static final String FUENTE_CLASE = "LESSON";
+    static final String FUENTE_PRACTICA = "PRACTICE";
+    /** Lo que promete el cierre de la práctica (brief, B5.3): «+15 puntos». */
+    static final int PUNTOS_PRACTICA = 15;
     private static final String FUENTE_RESENA = "REVIEW";
     private static final String FUENTE_LOGRO = "ACHIEVEMENT";
 
@@ -157,6 +160,23 @@ public class AchievementService {
     }
 
     /** Los hechos que solo mueven logros y no dan puntos directos. */
+    /**
+     * Una práctica terminada: sus puntos (una vez por set, por el índice único del libro) y, como
+     * cuenta para la racha, la reevaluación de las estrellas de constancia.
+     */
+    @Transactional
+    public void onPracticeCompleted(UUID studentId, UUID setId, Instant when) {
+        concederSiEsNueva(studentId, FUENTE_PRACTICA, setId, PUNTOS_PRACTICA, when);
+        reevaluar(studentId);
+    }
+
+    /** Las prácticas terminadas, leídas del propio libro de puntos: engagement no importa practice. */
+    private List<Tomada> practicasDe(UUID studentId) {
+        return pointEvents.findByUserIdAndSourceType(studentId, FUENTE_PRACTICA).stream()
+                .map(p -> new Tomada(null, p.getOccurredAt(), p.getOccurredAt()))
+                .toList();
+    }
+
     @Transactional
     public void onSomethingHappened(UUID studentId) {
         reevaluar(studentId);
@@ -224,7 +244,7 @@ public class AchievementService {
         // Las protecciones que el cálculo decidió gastar se persisten aquí: el cálculo es puro y
         // no escribe nada, y así recompute llega al mismo sitio que el camino incremental.
         StreakCalculator.Racha racha = StreakCalculator.calcular(
-                input.clasesTomadas(), input.mesesYaProtegidos(), ahora);
+                input.semanasActivas(), input.mesesYaProtegidos(), ahora);
         List<LocalDate> protegidasAhora = new ArrayList<>();
         for (LocalDate semana : racha.semanasProtegidas()) {
             if (!protections.existsByUserIdAndGrantedFor(studentId, semana.withDayOfMonth(1))) {
@@ -329,7 +349,8 @@ public class AchievementService {
                 diasSinCancelar(studentId, pasadas, ahora),
                 protections.findByUserId(studentId).stream()
                         .map(StreakProtection::getGrantedFor).collect(Collectors.toSet()),
-                ahora);
+                ahora,
+                practicasDe(studentId));
     }
 
     private Set<UUID> profesoresConTarifaCero(List<Booking> reservas) {
