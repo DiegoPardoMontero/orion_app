@@ -1,9 +1,11 @@
 package co.orion.lifecycle.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.time.Clock;
 import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -312,6 +314,11 @@ class LessonLifecycleIT extends ApiIntegrationSupport {
         assertThat(bookings.findById(id).orElseThrow().getStatus()).isEqualTo(BookingStatus.COMPLETED);
         assertThat(payments.findByBookingId(id).orElseThrow().getStatus())
                 .isEqualTo(PaymentStatus.RELEASED);
+        // Y la clase le cuenta a Ana: el evento sale después del commit, así que sin transacción se
+        // perdía y la clase cerrada por el job no daba puntos.
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> assertThat(jdbc.queryForObject(
+                "select count(*) from point_events where source_type = 'LESSON' and source_id = ?",
+                Integer.class, id)).isEqualTo(1));
     }
 
     /** Idempotente: correr dos veces no libera el mismo pago dos veces. */

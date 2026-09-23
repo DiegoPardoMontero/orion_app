@@ -14,7 +14,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 import co.orion.shared.observability.JobRunRegistry;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import co.orion.billing.application.PaymentLifecycleService;
 import co.orion.catalog.application.PlatformSettingsService;
@@ -47,6 +48,7 @@ public class LessonAutoCompleteJob {
     private final ApplicationEventPublisher events;
     private final PlatformSettingsService settings;
     private final JobRunRegistry runs;
+    private final TransactionTemplate cadaClaseEnSuTransaccion;
     private final Clock clock;
 
     public LessonAutoCompleteJob(BookingRepository bookings,
@@ -55,6 +57,7 @@ public class LessonAutoCompleteJob {
                                  ApplicationEventPublisher events,
                                  PlatformSettingsService settings,
                                  JobRunRegistry runs,
+                                 PlatformTransactionManager transacciones,
                                  Clock clock) {
         this.bookings = bookings;
         this.disputes = disputes;
@@ -62,6 +65,7 @@ public class LessonAutoCompleteJob {
         this.events = events;
         this.settings = settings;
         this.runs = runs;
+        this.cadaClaseEnSuTransaccion = new TransactionTemplate(transacciones);
         this.clock = clock;
     }
 
@@ -102,7 +106,7 @@ public class LessonAutoCompleteJob {
                 continue;
             }
             try {
-                if (close(booking.getId(), now)) {
+                if (Boolean.TRUE.equals(cadaClaseEnSuTransaccion.execute(estado -> close(booking.getId(), now)))) {
                     closed++;
                 }
             } catch (RuntimeException ex) {
@@ -115,8 +119,14 @@ public class LessonAutoCompleteJob {
         return closed;
     }
 
-    @Transactional
-    protected boolean close(UUID bookingId, Instant now) {
+    /**
+     * Dentro de la transacción de {@link #run()}, por {@code TransactionTemplate}. Hasta el 23/09 era un
+     * {@code @Transactional} llamado desde la misma clase, que Spring no aplica: el cierre y la
+     * liberación del pago iban cada uno por su lado —si la segunda fallaba, la clase quedaba cerrada
+     * con el dinero retenido y el job ya no volvía a pasar por ella— y el evento, publicado sin
+     * transacción, no le llegaba a nadie: la clase no daba sus puntos.
+     */
+    private boolean close(UUID bookingId, Instant now) {
         Booking booking = bookings.findById(bookingId).orElse(null);
         if (booking == null || !booking.autoComplete(now)) {
             return false;   // ya estaba cerrada: el job puede correr dos veces sin duplicar nada
