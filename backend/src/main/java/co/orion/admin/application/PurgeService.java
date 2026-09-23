@@ -97,7 +97,14 @@ public class PurgeService {
                 row("Propuestas de cambio",
                         count("select count(*) from reschedule_requests where booking_id = ?", bookingId)),
                 row("Ausencias registradas",
-                        count("select count(*) from professor_absences where booking_id = ?", bookingId)));
+                        count("select count(*) from professor_absences where booking_id = ?", bookingId)),
+                // Se van por la FK en cascada, pero el acta es texto que escribió el profesor: quien
+                // confirma el borrado tiene que verla en la lista.
+                row("Acta de la clase",
+                        count("select count(*) from lesson_notes where booking_id = ?", bookingId)),
+                row("Práctica de esa acta",
+                        count("select count(*) from practice_sets s join lesson_notes n on n.id = s.lesson_note_id "
+                              + "where n.booking_id = ?", bookingId)));
 
         PurgePreview.Money money = moneyOfBooking(bookingId);
         return new PurgePreview("booking", describeBooking(bookingId), rows, money,
@@ -153,7 +160,11 @@ public class PurgeService {
                         count("select count(*) from availability_rules where professor_id = ?", userId)
                         + count("select count(*) from availability_exceptions where professor_id = ?", userId)),
                 row("Postulación y documentos",
-                        count("select count(*) from teacher_applications where user_id = ?", userId)));
+                        count("select count(*) from teacher_applications where user_id = ?", userId)),
+                row("Actas de clase escritas o recibidas",
+                        count("select count(*) from lesson_notes where student_id = ? or professor_id = ?", userId, userId)),
+                row("Sets de práctica",
+                        count("select count(*) from practice_sets where student_id = ? or professor_id = ?", userId, userId)));
 
         PurgePreview.Money money = moneyOfUser(userId);
         List<String> warnings = new ArrayList<>(warningsFor(money,

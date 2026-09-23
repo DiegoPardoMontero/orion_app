@@ -2,6 +2,7 @@ package co.orion.admin.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -137,6 +138,37 @@ class PurgaDeUsuarioIT extends ApiIntegrationSupport {
     private void escribir(UUID ticketId, UUID autor, String texto) {
         jdbc.update("insert into support_messages (ticket_id, author_id, body) values (?, ?, ?)",
                 ticketId, autor, texto);
+    }
+
+    /**
+     * El acta y su práctica se van por la FK en cascada con la cuenta (brief del Bloque 10: «pedir su
+     * borrado como cualquier otro dato suyo»), y la vista previa que el admin confirma lo dice.
+     */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    @Test
+    void lasActasYSuPracticaSeVenEnLaVistaPreviaYSeBorran() {
+        UUID maria = createUser("maria@orion.test", "María Gómez", UserRole.PROFESSOR).getId();
+        UUID clase = jdbc.queryForObject("""
+                insert into bookings (student_id, professor_id, starts_at, ends_at, status, modality, completed_at,
+                                      created_by)
+                values (?, ?, now() - interval '3 hours', now() - interval '2 hours', 'COMPLETED', 'VIRTUAL', now(), ?)
+                returning id""", UUID.class, estudiante.getId(), maria, estudiante.getId());
+        UUID acta = jdbc.queryForObject("""
+                insert into lesson_notes (booking_id, professor_id, student_id, raw_input)
+                values (?, ?, ?, 'Trabajamos past simple.') returning id""", UUID.class, clase, maria, estudiante.getId());
+        jdbc.update("""
+                insert into practice_sets (student_id, lesson_note_id, professor_id, material, expires_at)
+                values (?, ?, ?, '{}'::jsonb, now() + interval '7 days')""", estudiante.getId(), acta, maria);
+
+        Map vista = get("/api/v1/admin/users/" + estudiante.getId() + "/purge-preview", admin, Map.class).getBody();
+        assertThat((List<Map>) vista.get("rows")).anySatisfy(r ->
+                assertThat(r).containsEntry("what", "Actas de clase escritas o recibidas").containsEntry("count", 1));
+        assertThat((List<Map>) vista.get("rows")).anySatisfy(r ->
+                assertThat(r).containsEntry("what", "Sets de práctica").containsEntry("count", 1));
+
+        assertThat(purgar(estudiante.getId()).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(jdbc.queryForObject("select count(*) from lesson_notes", Integer.class)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from practice_sets", Integer.class)).isZero();
     }
 
     @SuppressWarnings("rawtypes")
