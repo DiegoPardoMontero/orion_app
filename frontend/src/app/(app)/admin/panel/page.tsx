@@ -10,6 +10,7 @@ import {
   GraduationCap,
   Hourglass,
   Landmark,
+  NotebookPen,
   Users,
   Wallet,
   XCircle,
@@ -149,6 +150,7 @@ export default function AdminPanelPage() {
       </div>
 
       <FilaDelDiagnostico />
+      <FilaDeLasActas />
 
       {/* 3. Personas y clases */}
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
@@ -403,6 +405,96 @@ function FilaDelDiagnostico() {
           ayuda="Contra el tope diario de Ajustes"
         />
       </div>
+    </section>
+  );
+}
+
+type PanelDeActas = {
+  generadasHoy: number;
+  publicadasHoy: number;
+  clasesCerradas: number;
+  clasesConActa: number;
+  sinEditar: number;
+  edicionMenor: number;
+  reescritas: number;
+  gastadoHoyCop: number;
+  topeCop: number;
+  iaEncendida: boolean;
+  resultadosHoy: Record<string, number>;
+};
+
+/**
+ * El acta de clase (Bloque 10, paso C1), en la fila que decide si se amplía o se revisa.
+ *
+ * <p>La cifra que manda es la de <strong>reescritas</strong>: si más de la mitad de las actas se
+ * reescriben por completo, el borrador estorba en vez de ayudar y el prompt se revisa antes de
+ * construir nada encima.
+ */
+function FilaDeLasActas() {
+  const panel = useQuery({
+    queryKey: ["admin", "lesson-notes"],
+    queryFn: () => apiFetch<PanelDeActas>("/api/v1/admin/lesson-notes/metrics"),
+    staleTime: 60_000,
+  });
+
+  if (!panel.data) return null;
+  const d = panel.data;
+  const conRatio = d.sinEditar + d.edicionMenor + d.reescritas;
+  const porcentaje = (parte: number, total: number) =>
+    total === 0 ? "—" : `${Math.round((parte / total) * 100)} %`;
+  const resultados = Object.entries(d.resultadosHoy);
+
+  return (
+    <section className="mt-8">
+      <h2 className="text-[13px] font-bold uppercase tracking-[0.04em] text-text-secondary">
+        Acta de clase
+        {!d.iaEncendida && (
+          <span className="ml-2 rounded-pill bg-warning-bg px-2 py-0.5 text-[11px] normal-case text-warning">
+            borrador con IA apagado
+          </span>
+        )}
+      </h2>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Cifra
+          tono="lavanda"
+          icono={<NotebookPen size={18} strokeWidth={2.2} />}
+          valor={String(d.publicadasHoy)}
+          etiqueta="Publicadas hoy"
+          ayuda={`${d.generadasHoy} empezadas hoy`}
+        />
+        <Cifra
+          tono="menta"
+          icono={<NotebookPen size={18} strokeWidth={2.2} />}
+          valor={porcentaje(d.clasesConActa, d.clasesCerradas)}
+          etiqueta="Clases con acta"
+          ayuda={`${d.clasesConActa} de ${d.clasesCerradas} cerradas, últimos 30 días`}
+        />
+        <Cifra
+          tono={conRatio > 0 && d.reescritas * 2 > conRatio ? "coral" : "melocoton"}
+          icono={<NotebookPen size={18} strokeWidth={2.2} />}
+          valor={porcentaje(d.reescritas, conRatio)}
+          etiqueta="Reescritas por el profesor"
+          ayuda="Si pasa de la mitad, se revisa el prompt antes de ampliar"
+        />
+        <Cifra
+          tono="neutral"
+          icono={<Wallet size={18} strokeWidth={2.2} />}
+          valor={precioCop(d.gastadoHoyCop)}
+          etiqueta="Gasto de hoy"
+          ayuda={`De ${precioCop(d.topeCop)} de tope diario`}
+        />
+      </div>
+      <Tarjeta className="mt-3">
+        <Linea icono={<NotebookPen size={14} />} etiqueta="Sin editar" valor={d.sinEditar} />
+        <Linea icono={<NotebookPen size={14} />} etiqueta="Edición menor" valor={d.edicionMenor} />
+        <Linea icono={<NotebookPen size={14} />} etiqueta="Reescritas" valor={d.reescritas} />
+        <p className="mt-2 text-[12px] text-text-muted">
+          Llamadas al proveedor hoy:{" "}
+          {resultados.length === 0
+            ? "ninguna."
+            : resultados.map(([resultado, n]) => `${n} ${resultado}`).join(" · ")}
+        </p>
+      </Tarjeta>
     </section>
   );
 }

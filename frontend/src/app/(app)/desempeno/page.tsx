@@ -1,7 +1,8 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, BarChart3, CalendarCheck, Star, TrendingUp, Users } from "lucide-react";
+import { AlertTriangle, BarChart3, CalendarCheck, NotebookPen, Star, TrendingUp, Users } from "lucide-react";
+import Link from "next/link";
 import { Cargando, ErrorCarga } from "@/components/estados";
 import { Badge, Tarjeta } from "@/components/ui";
 import { apiFetch } from "@/lib/api/fetch";
@@ -146,6 +147,8 @@ export default function DesempenoPage() {
               </div>
             )}
           </Tarjeta>
+
+          <ActasDeTusClases />
         </>
       )}
 
@@ -184,6 +187,50 @@ export default function DesempenoPage() {
         </section>
       )}
     </main>
+  );
+}
+
+/**
+ * Cuántas de sus clases cerradas tienen acta (Bloque 10, paso C1). Informativo: no pesa en el
+ * buscador ni genera sanciones, y la tarjeta lo dice para que nadie lo lea como una amenaza.
+ */
+function ActasDeTusClases() {
+  const actas = useQuery({
+    queryKey: ["me", "lesson-notes-share"],
+    queryFn: () =>
+      apiFetch<{ clasesCerradas: number; clasesConActa: number; dias: number }>(
+        "/api/v1/professors/me/lesson-notes/share",
+      ),
+    staleTime: 60_000,
+  });
+  if (!actas.data || actas.data.clasesCerradas === 0) return null;
+  const { clasesCerradas, clasesConActa, dias } = actas.data;
+  const faltan = clasesCerradas - clasesConActa;
+
+  return (
+    <Tarjeta className="mt-4">
+      <p className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.04em] text-text-secondary">
+        <NotebookPen size={15} strokeWidth={2.2} />
+        Actas de tus clases
+      </p>
+      <p className="mt-2 text-[13.5px] text-text">
+        Escribiste el acta de {clasesConActa} de tus {clasesCerradas}{" "}
+        {clasesCerradas === 1 ? "clase cerrada" : "clases cerradas"} en los últimos {dias} días (
+        {Math.round((clasesConActa / clasesCerradas) * 100)} %).
+      </p>
+      <p className="mt-1 text-[12.5px] text-text-muted">
+        Es para que tus estudiantes repasen lo que trabajaron. No cuenta para tu posición en el
+        buscador ni para ninguna sanción.
+      </p>
+      {faltan > 0 && (
+        <Link
+          href="/mis-clases?scope=past"
+          className="mt-2 inline-flex min-h-11 items-center text-[13px] font-bold text-primary-strong hover:underline focus-visible:shadow-focus"
+        >
+          {faltan === 1 ? "Ver la clase que falta" : `Ver las ${faltan} que faltan`}
+        </Link>
+      )}
+    </Tarjeta>
   );
 }
 

@@ -141,6 +141,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/lesson-notes/**").hasRole("PROFESSOR")
                 .requestMatchers("/api/v1/me/lesson-notes", "/api/v1/me/lesson-notes/**")
                         .hasAnyRole("STUDENT", "PROFESSOR")
+                // Cuántas de sus clases tienen acta: informativo, en su desempeño.
+                .requestMatchers("/api/v1/professors/me/lesson-notes/**").hasRole("PROFESSOR")
                 // El aula. Los dos lados entran; el servicio comprueba que la reserva sea suya y
                 // responde 404 si no lo es, para no confirmarle a un extraño que la clase existe.
                 .requestMatchers(HttpMethod.GET, "/api/v1/bookings/*/classroom")

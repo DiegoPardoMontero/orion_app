@@ -492,6 +492,12 @@ Solo la Parte A: la práctica entre clases (Parte B) no está construida, y por 
   servidor (`/me/lesson-notes/summary`), con el mismo criterio con que la acepta.
 - En «Mis clases → Pasadas», arriba, la lista: al profesor, «Actas por escribir» (o «Estás al
   día»); al estudiante, sus resúmenes (o «Todavía no hay resúmenes»). Sale de `/me/lesson-notes/index`.
+- **Panel de calidad (C1)**: en Administración → Panel, la fila «Acta de clase»: publicadas hoy,
+  **% de clases cerradas con acta** (30 días), **cuántas se reescriben** (cortes de `edit_ratio`:
+  sin editar hasta 0,05, reescrita desde 0,5; si las reescritas pasan de la mitad, se revisa el
+  prompt antes de ampliar), el gasto de hoy contra el tope y las llamadas al proveedor por
+  resultado. El profesor ve en su Desempeño cuántas de sus clases de los últimos 90 días tienen
+  acta, con el aviso de que no cuenta para el buscador ni para sanciones.
 - Frontera: fuera de `teaching` solo se importan sus eventos (`FronterasDeTeachingTest`).
 - Pruebas del paso C2 completas (23/09): el redactor contra un servidor local que tarda (fila
   `TIMEOUT`, sin reintento), que devuelve algo que no es JSON (un reintento y dos filas
