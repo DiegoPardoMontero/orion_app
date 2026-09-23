@@ -495,10 +495,17 @@ con las decisiones que tomó Pardo.
   contraseña utilizable y con el correo verificado si el proveedor lo garantizó. Apple: su secreto
   es un JWT ES256 que se firma en cada intercambio, y como vuelve con un POST entre sitios, su
   solicitud viaja en una cookie firmada (HMAC) de cinco minutos en vez de en la sesión.
+  **Microsoft** (23/09/2026, en lugar de Facebook, que Pardo descartó por lo difícil de configurar):
+  Outlook, Hotmail, Live y cuentas de trabajo o universidad, por el extremo «common». Su correo
+  **nunca cuenta como verificado** —Microsoft no lo garantiza—, así que la cuenta nueva recibe el
+  correo de verificación y una existente no se vincula sola; y como el emisor del token cambia con
+  cada inquilino, `EmisorDeMicrosoft` lo comprueba contra el `tid` del propio token (V50 admite
+  `MICROSOFT` en `social_identities`). Su secreto caduca: renovarlo en Entra antes de la fecha.
   **Requiere en Railway**, por proveedor: `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`;
+  `MICROSOFT_CLIENT_ID` y `MICROSOFT_CLIENT_SECRET`;
   `FACEBOOK_CLIENT_ID` y `FACEBOOK_CLIENT_SECRET`; `APPLE_CLIENT_ID` (Services ID),
   `APPLE_TEAM_ID`, `APPLE_KEY_ID` y `APPLE_PRIVATE_KEY` (el .p8). La dirección de vuelta que se da
-  de alta en cada consola es `https://orionidiomas.com/login/oauth2/code/{google|facebook|apple}`.
+  de alta en cada consola es `https://orionidiomas.com/login/oauth2/code/{google|microsoft|facebook|apple}`.
 
 ## Acta de clase · Bloque 10, Parte A (22/09/2026)
 

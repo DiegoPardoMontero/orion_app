@@ -4,7 +4,8 @@ package co.orion.identity.domain;
 public enum SocialProvider {
     GOOGLE,
     FACEBOOK,
-    APPLE;
+    APPLE,
+    MICROSOFT;
 
     public String registrationId() {
         return name().toLowerCase();

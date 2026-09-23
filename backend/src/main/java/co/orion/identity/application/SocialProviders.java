@@ -14,7 +14,7 @@ import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.stereotype.Component;
 
 /**
- * Google, Facebook y Apple: cuáles están configurados en este despliegue y cómo se habla con cada uno.
+ * Google, Microsoft, Facebook y Apple: cuáles están configurados en este despliegue y cómo se habla con cada uno.
  *
  * <p><strong>Cada proveedor existe solo si tiene sus credenciales</strong> (Pardo, 22/09/2026:
  * «Google primero»). Sin variables, el proveedor no se registra, su botón no aparece y Administración
@@ -30,6 +30,7 @@ import org.springframework.stereotype.Component;
 public class SocialProviders implements ClientRegistrationRepository {
 
     public static final String APPLE = "apple";
+    public static final String MICROSOFT = "microsoft";
 
     private final Map<String, ClientRegistration> registros = new LinkedHashMap<>();
     private final AppleClientSecret appleSecret;
@@ -41,6 +42,8 @@ public class SocialProviders implements ClientRegistrationRepository {
             @Value("${orion.social.google.client-secret:}") String googleSecret,
             @Value("${orion.social.facebook.client-id:}") String facebookId,
             @Value("${orion.social.facebook.client-secret:}") String facebookSecret,
+            @Value("${orion.social.microsoft.client-id:}") String microsoftId,
+            @Value("${orion.social.microsoft.client-secret:}") String microsoftSecret,
             @Value("${orion.social.apple.client-id:}") String appleId,
             @Value("${orion.social.apple.team-id:}") String appleTeam,
             @Value("${orion.social.apple.key-id:}") String appleKey,
@@ -53,6 +56,24 @@ public class SocialProviders implements ClientRegistrationRepository {
                     .clientId(googleId).clientSecret(googleSecret)
                     .redirectUri(vuelta)
                     .scope("openid", "email", "profile")
+                    .build());
+        }
+        if (llenos(microsoftId, microsoftSecret)) {
+            // El extremo «common»: cuentas personales (Outlook, Hotmail, Live) y de trabajo o
+            // universidad. Sin userinfo: basta el token de identidad, y así no hay una segunda
+            // llamada que falle. Su emisor cambia con cada inquilino, así que no se fija aquí: lo
+            // comprueba EmisorDeMicrosoft contra el «tid» del propio token.
+            registros.put(MICROSOFT, ClientRegistration.withRegistrationId(MICROSOFT)
+                    .clientId(microsoftId).clientSecret(microsoftSecret)
+                    .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
+                    .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                    .redirectUri(vuelta)
+                    .scope("openid", "profile", "email")
+                    .authorizationUri("https://login.microsoftonline.com/common/oauth2/v2.0/authorize")
+                    .tokenUri("https://login.microsoftonline.com/common/oauth2/v2.0/token")
+                    .jwkSetUri("https://login.microsoftonline.com/common/discovery/v2.0/keys")
+                    .userNameAttributeName("sub")
+                    .clientName("Microsoft")
                     .build());
         }
         if (llenos(facebookId, facebookSecret)) {

@@ -112,6 +112,10 @@ public class SystemStatusService {
                         "No aparece el botón «Continuar con Google».", null,
                         List.of("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET")),
 
+                new Integracion("Entrar con Microsoft", social.configurados().contains("microsoft"),
+                        "No aparece el botón «Continuar con Microsoft».", null,
+                        List.of("MICROSOFT_CLIENT_ID", "MICROSOFT_CLIENT_SECRET")),
+
                 new Integracion("Entrar con Facebook", social.configurados().contains("facebook"),
                         "No aparece el botón «Continuar con Facebook».", null,
                         List.of("FACEBOOK_CLIENT_ID", "FACEBOOK_CLIENT_SECRET")),

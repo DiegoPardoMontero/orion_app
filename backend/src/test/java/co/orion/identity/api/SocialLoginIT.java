@@ -45,6 +45,8 @@ import co.orion.support.ApiIntegrationSupport;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "orion.social.google.client-id=google-de-prueba",
         "orion.social.google.client-secret=secreto-de-prueba",
+        "orion.social.microsoft.client-id=microsoft-de-prueba",
+        "orion.social.microsoft.client-secret=secreto-de-prueba",
         "orion.app.base-url=https://orion.test"})
 @AutoConfigureTestRestTemplate
 @Import(TestcontainersConfiguration.class)
@@ -75,7 +77,7 @@ class SocialLoginIT extends ApiIntegrationSupport {
     void soloLosConfigurados() {
         ResponseEntity<Map> r = rest.getForEntity("/api/v1/auth/social/providers", Map.class);
 
-        assertThat(r.getBody().get("providers")).isEqualTo(List.of("google"));
+        assertThat(r.getBody().get("providers")).isEqualTo(List.of("google", "microsoft"));
     }
 
     @Test
@@ -160,6 +162,36 @@ class SocialLoginIT extends ApiIntegrationSupport {
     void sinCorreo() {
         assertThat(social.resolver(perfil("g-4", null, false)))
                 .isEqualTo(new SocialLoginService.Rechazado("sin-correo"));
+    }
+
+    @Test
+    @DisplayName("La ida lleva a Microsoft, al extremo de cuentas personales y de trabajo, con la vuelta del frontend")
+    void laIdaVaAMicrosoft() throws Exception {
+        HttpClient cliente = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build();
+        HttpResponse<Void> r = cliente.send(HttpRequest.newBuilder(
+                URI.create(rest.getRootUri() + "/oauth2/authorization/microsoft")).GET().build(),
+                HttpResponse.BodyHandlers.discarding());
+
+        assertThat(r.statusCode()).isEqualTo(302);
+        URI destino = URI.create(r.headers().firstValue("Location").orElseThrow());
+        assertThat(destino.getHost()).isEqualTo("login.microsoftonline.com");
+        assertThat(destino.getPath()).isEqualTo("/common/oauth2/v2.0/authorize");
+        Map<String, String> q = UriComponentsBuilder.fromUri(destino).build().getQueryParams().toSingleValueMap();
+        assertThat(q.get("client_id")).isEqualTo("microsoft-de-prueba");
+        assertThat(URLDecoder.decode(q.get("redirect_uri"), StandardCharsets.UTF_8))
+                .isEqualTo("https://orion.test/login/oauth2/code/microsoft");
+    }
+
+    @Test
+    @DisplayName("Con Microsoft la cuenta nace sin verificar y queda vinculada: a la segunda, entra")
+    void completarConMicrosoft() {
+        PerfilSocial deMicrosoft = new PerfilSocial(SocialProvider.MICROSOFT, "ms-1", "ana@outlook.com", false, "Ana Ruiz");
+
+        User creada = social.completar(deMicrosoft, "Ana Ruiz", false, registro);
+
+        assertThat(creada.isEmailVerified()).isFalse();
+        assertThat(jdbc.queryForObject("select provider from social_identities", String.class)).isEqualTo("MICROSOFT");
+        assertThat(social.resolver(deMicrosoft)).isInstanceOf(SocialLoginService.Entra.class);
     }
 
     @Test

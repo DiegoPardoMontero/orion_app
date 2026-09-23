@@ -89,9 +89,9 @@ orion:
       # Transcribe lo que dice la persona. Sin esto no llega ningún turno suyo y no hay puntaje.
       transcription-model: ${ORION_VOICE_TRANSCRIPTION_MODEL:gpt-4o-mini-transcribe}
 
-  # Entrar con Google, Apple o Facebook. Cada proveedor se enciende solo si tiene TODAS sus
+  # Entrar con Google, Microsoft, Apple o Facebook. Cada proveedor se enciende solo si tiene TODAS sus
   # variables; sin ellas su botón no aparece. La dirección de vuelta que hay que dar de alta en cada
-  # consola es {ORION_APP_BASE_URL}/login/oauth2/code/{google|facebook|apple}.
+  # consola es {ORION_APP_BASE_URL}/login/oauth2/code/{google|microsoft|facebook|apple}.
   social:
     google:
       client-id:     ${GOOGLE_CLIENT_ID:}
@@ -99,6 +99,11 @@ orion:
     facebook:
       client-id:     ${FACEBOOK_CLIENT_ID:}
       client-secret: ${FACEBOOK_CLIENT_SECRET:}
+    # Microsoft: el «Id. de aplicación (cliente)» del registro en Microsoft Entra y el VALOR de su
+    # secreto (no su id). El secreto caduca: al crearlo se elige cuándo, y hay que renovarlo antes.
+    microsoft:
+      client-id:     ${MICROSOFT_CLIENT_ID:}
+      client-secret: ${MICROSOFT_CLIENT_SECRET:}
     # Apple: el client-id es el Services ID; la llave es el .p8 de «Sign in with Apple».
     apple:
       client-id:   ${APPLE_CLIENT_ID:}

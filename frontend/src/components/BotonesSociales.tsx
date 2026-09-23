@@ -4,10 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/fetch";
 import { DESDE_KEY, INTENCION_KEY } from "@/lib/auth/roles";
 
-type Proveedor = "google" | "apple" | "facebook";
+type Proveedor = "google" | "microsoft" | "apple" | "facebook";
 
 /**
- * «Continuar con Google / Apple / Facebook». Solo aparecen los proveedores configurados en este
+ * «Continuar con Google / Microsoft / Apple / Facebook». Solo aparecen los proveedores configurados en este
  * despliegue (regla de Pardo: nada de interfaz muerta), así que sin ninguno el componente no pinta
  * nada, ni siquiera el separador.
  *
@@ -71,15 +71,22 @@ export function BotonesSociales({
   );
 }
 
-const ORDEN: Proveedor[] = ["google", "apple", "facebook"];
+const ORDEN: Proveedor[] = ["google", "microsoft", "apple", "facebook"];
 
-const NOMBRE: Record<Proveedor, string> = { google: "Google", apple: "Apple", facebook: "Facebook" };
+const NOMBRE: Record<Proveedor, string> = {
+  google: "Google",
+  microsoft: "Microsoft",
+  apple: "Apple",
+  facebook: "Facebook",
+};
 
 const BASE =
   "inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-pill px-5 text-[15px] font-semibold transition-colors focus-visible:shadow-focus";
 
 const ESTILO: Record<Proveedor, string> = {
   google: `${BASE} border border-[#DADCE0] bg-white text-[#1F1F1F] hover:bg-[#F8F9FA]`,
+  // El botón claro de Microsoft: fondo blanco, borde gris y su logo de cuatro cuadros.
+  microsoft: `${BASE} border border-[#8C8C8C] bg-white text-[#5E5E5E] hover:bg-[#F3F3F3]`,
   apple: `${BASE} bg-black text-white hover:bg-[#1a1a1a]`,
   facebook: `${BASE} bg-[#1877F2] text-white hover:bg-[#166FE5]`,
 };
@@ -91,6 +98,14 @@ const LOGO: Record<Proveedor, React.ReactNode> = {
       <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
       <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z" />
       <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z" />
+    </svg>
+  ),
+  microsoft: (
+    <svg viewBox="0 0 21 21" width={18} height={18} aria-hidden="true">
+      <rect x="1" y="1" width="9" height="9" fill="#F25022" />
+      <rect x="11" y="1" width="9" height="9" fill="#7FBA00" />
+      <rect x="1" y="11" width="9" height="9" fill="#00A4EF" />
+      <rect x="11" y="11" width="9" height="9" fill="#FFB900" />
     </svg>
   ),
   apple: (

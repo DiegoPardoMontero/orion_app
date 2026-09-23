@@ -184,7 +184,7 @@ public class SocialLogin {
      * Apple manda el nombre una sola vez, la primera, y no en el token sino en el parámetro
      * {@code user} de ese mismo POST.
      */
-    private static PerfilSocial perfil(String registro, OAuth2User usuario, HttpServletRequest request) {
+    static PerfilSocial perfil(String registro, OAuth2User usuario, HttpServletRequest request) {
         SocialProvider proveedor = SocialProvider.fromRegistrationId(registro);
         Map<String, Object> a = usuario.getAttributes();
         return switch (proveedor) {
@@ -201,7 +201,20 @@ public class SocialLogin {
                 yield new PerfilSocial(proveedor, oidc.getSubject(), oidc.getEmail(),
                         "true".equals(String.valueOf(verificado)), nombreDeApple(request));
             }
+            // Microsoft no garantiza que el correo esté verificado (en cuentas de trabajo lo pone
+            // quien administra el directorio), así que nunca cuenta como verificado: una cuenta
+            // nueva recibe el correo de verificación y una existente no se vincula sola. Sin
+            // «email», el nombre de usuario, si tiene forma de correo.
+            case MICROSOFT -> {
+                OidcUser oidc = (OidcUser) usuario;
+                String correo = oidc.getEmail() != null ? oidc.getEmail() : comoCorreo(oidc.getPreferredUsername());
+                yield new PerfilSocial(proveedor, oidc.getSubject(), correo, false, oidc.getFullName());
+            }
         };
+    }
+
+    private static String comoCorreo(String valor) {
+        return valor != null && valor.matches("[^@\\s]+@[^@\\s]+\\.[^@\\s]+") ? valor : null;
     }
 
     private static String nombreDeApple(HttpServletRequest request) {
