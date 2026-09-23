@@ -54,6 +54,9 @@ async function logout(page: Page) {
   await page.getByRole("button", { name: "Menú de usuario" }).click();
   await page.getByRole("button", { name: "Salir" }).click();
   await page.waitForURL("**/login");
+  // Que se asiente: una consulta que responde 401 justo al salir también manda a /login, y un
+  // `goto` inmediato choca con esa segunda navegación.
+  await page.waitForLoadState("networkidle");
 }
 
 test.describe.configure({ mode: "serial" });

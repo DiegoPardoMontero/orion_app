@@ -28,6 +28,17 @@ function csrfToken(): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+/**
+ * Mientras se cierra la sesión, un 401 no redirige. Al salir se vacía la caché y las consultas de
+ * la pantalla en curso se vuelven a pedir —ya sin sesión— antes de que la navegación a /login
+ * termine: cada 401 disparaba una segunda navegación, a página completa, encima de la primera.
+ */
+let cerrandoSesion = false;
+
+export function marcarCierreDeSesion(enCurso: boolean) {
+  cerrandoSesion = enCurso;
+}
+
 type ApiFetchOptions = {
   method?: string;
   body?: unknown;
@@ -67,6 +78,7 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
   if (
     response.status === 401 &&
     (options.redirectOn401 ?? true) &&
+    !cerrandoSesion &&
     !window.location.pathname.startsWith("/login")
   ) {
     window.location.href = "/login";

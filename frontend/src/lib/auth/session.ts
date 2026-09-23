@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/api/fetch";
+import { apiFetch, marcarCierreDeSesion } from "@/lib/api/fetch";
 
 /**
  * El rol EFECTIVO que devuelve el backend, no la columna de la base.
@@ -53,6 +53,7 @@ export function useLogin() {
     mutationFn: (credentials: { email: string; password: string }) =>
       apiFetch<Me>("/api/v1/auth/login", { method: "POST", body: credentials }),
     onSuccess: (me) => {
+      marcarCierreDeSesion(false);
       // Sembramos la caché con el usuario que acaba de entrar: evita un /me redundante.
       queryClient.setQueryData(meQueryKey, me);
     },
@@ -87,6 +88,7 @@ export function useRegister() {
     mutationFn: (input: RegisterInput) =>
       apiFetch<Me>("/api/v1/auth/register", { method: "POST", body: input }),
     onSuccess: (me) => {
+      marcarCierreDeSesion(false);
       queryClient.setQueryData(meQueryKey, me);
     },
   });
@@ -121,8 +123,10 @@ export function useLogout() {
 
   return useMutation({
     mutationFn: () => apiFetch<void>("/api/v1/auth/logout", { method: "POST" }),
+    onMutate: () => marcarCierreDeSesion(true),
     onSuccess: () => {
       queryClient.clear();
     },
+    onError: () => marcarCierreDeSesion(false),
   });
 }
