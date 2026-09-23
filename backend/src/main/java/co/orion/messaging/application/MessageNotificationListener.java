@@ -8,6 +8,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
+import org.springframework.web.util.HtmlUtils;
 
 import co.orion.messaging.application.MessageDelivery.Delivery;
 import co.orion.shared.mail.MailTransport;
@@ -50,7 +51,8 @@ public class MessageNotificationListener {
                 <p>%s te escribió un mensaje en Orión. Respóndele desde la plataforma, en tu bandeja
                 de Mensajes.</p>
                 <p>Un abrazo,<br>El equipo de Orión</p>
-                """.formatted(firstName, target.senderName());
+                """.formatted(HtmlUtils.htmlEscape(firstName, "UTF-8"),
+                HtmlUtils.htmlEscape(target.senderName(), "UTF-8"));
         String text = """
                 Hola, %s.
 

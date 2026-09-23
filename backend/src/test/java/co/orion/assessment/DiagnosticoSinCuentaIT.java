@@ -132,6 +132,29 @@ class DiagnosticoSinCuentaIT extends ApiIntegrationSupport {
                 Boolean.class, id)).isTrue();
     }
 
+    /**
+     * Cada «empezar» entrega una llave del proveedor que se paga, también al retomar uno abierto.
+     * Se carga al presupuesto al abrirla —quien pide llaves y no cierra nada consume igual— y hay
+     * un tope por persona para que un solo lead no se gaste el día entero.
+     */
+    @Test
+    @DisplayName("Cada sesión de voz se carga al presupuesto al abrirse, y un lead no puede pedir sin fin")
+    void cadaSesionSeCargaYTieneTope() {
+        jdbc.update("delete from ai_usage_log");
+        String llave = nuevoLead("Eduardo");
+
+        for (int i = 0; i < 10; i++) {
+            assertThat(comoLead(HttpMethod.POST, "/api/v1/assessments", llave, Map.of("languageCode", "EN"))
+                    .getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        }
+
+        assertThat(jdbc.queryForObject(
+                "select count(*) from ai_usage_log where voice_seconds is not null and cost_cop > 0",
+                Integer.class)).isEqualTo(10);
+        assertThat(comoLead(HttpMethod.POST, "/api/v1/assessments", llave, Map.of("languageCode", "EN"))
+                .getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+    }
+
     @SuppressWarnings("rawtypes")
     @Test
     @DisplayName("Sin las dos casillas no hay lead: ni la mayoría de edad ni la voz se suponen")

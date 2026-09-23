@@ -5,6 +5,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+import co.orion.shared.security.CabeEnBcrypt;
+
 /**
  * Alta que hace la propia persona desde la pantalla de registro. No lleva rol: el auto-registro
  * siempre nace STUDENT (crear profesores o admins es decisión de negocio, no de un formulario
@@ -22,7 +24,7 @@ public record RegisterRequest(
         @NotBlank @Size(max = 150) String fullName,
         @NotBlank @Email String email,
         @NotBlank @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
-        String password,
+        @CabeEnBcrypt String password,
         @Size(max = 20) String whatsappPhone,
         boolean wantsToTeach,
         @AssertTrue(message = "Orión está disponible solo para mayores de 18 años.")

@@ -236,6 +236,9 @@ public class PurgeService {
         jdbc.update("delete from refund_requests where student_id = ?", userId);
         jdbc.update("update refund_requests set resolved_by = null where resolved_by = ?", userId);
 
+        // Diagnóstico: el gasto de IA (se desliga) y las recomendaciones de este profesor en
+        // resultados ajenos (se borran) los resuelve la base desde la V47, con sus ON DELETE.
+
         // Las firmas ajenas: lo que este usuario decidió SOBRE otras cuentas. La decisión se
         // conserva —es historia de esa otra persona— y solo pierde el nombre de quien la tomó.
         jdbc.update("update disputes set resolved_by = null where resolved_by = ?", userId);

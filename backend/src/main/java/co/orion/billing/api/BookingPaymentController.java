@@ -1,6 +1,7 @@
 package co.orion.billing.api;
 
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,6 +37,13 @@ public class BookingPaymentController {
     }
 
     /**
+     * Forma de un id de Wompi ({@code 1234-1610641025-49201}). El id se pega a la ruta de una
+     * petición saliente con nuestra llave: algo como {@code ../merchants/…} la llevaría a otro
+     * recurso de su API. Lo que no tiene esta forma se ignora, como si no hubiera llegado.
+     */
+    private static final Pattern ID_DE_TRANSACCION = Pattern.compile("[A-Za-z0-9-]{1,64}");
+
+    /**
      * {@code transactionId} llega en la URL de vuelta de Wompi. Cuando viene, antes de responder se
      * le pregunta a la pasarela por esa transacción y se aplica lo que diga: es la red de seguridad
      * para el webhook que se pierde. El servicio comprueba que la transacción sea de este pago, así
@@ -51,7 +59,7 @@ public class BookingPaymentController {
                                            @RequestParam(required = false) String transactionId) {
         PaymentView view = paymentQueries.statusOf(principal.user(), id);
 
-        if (transactionId != null && !transactionId.isBlank()
+        if (transactionId != null && ID_DE_TRANSACCION.matcher(transactionId.trim()).matches()
                 && view.payment().canStillLearnFromProvider()) {
             payments.syncFromProvider(view.payment(), transactionId.trim());
             view = paymentQueries.statusOf(principal.user(), id);

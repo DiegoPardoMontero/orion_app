@@ -165,6 +165,10 @@ public class SocialLogin {
         contexto.setAuthentication(UsernamePasswordAuthenticationToken.authenticated(
                 detalles, null, detalles.getAuthorities()));
         SecurityContextHolder.setContext(contexto);
+        // Como en el login con contraseña: id de sesión nuevo al autenticarse.
+        if (request.getSession(false) != null) {
+            request.changeSessionId();
+        }
         contextos.saveContext(contexto, request, response);
     }
 

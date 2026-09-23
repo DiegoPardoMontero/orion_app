@@ -18,7 +18,7 @@ import jakarta.validation.constraints.Size;
  */
 public record UpdateProfileRequest(
         @Size(max = 120) String headline,
-        String bio,
+        @Size(max = 5000) String bio,
         @Size(max = 2) String countryCode,
         @Size(max = 80) String city,
         @Size(max = 5) String nativeLanguage,

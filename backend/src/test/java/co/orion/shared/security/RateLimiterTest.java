@@ -102,11 +102,44 @@ class RateLimiterTest {
         RateLimiter limiter = new RateLimiter();
 
         // Todas vencidas: la purga debe poder recuperarlas todas.
-        for (int i = 0; i < 12_000; i++) {
+        for (int i = 0; i < 101_000; i++) {
             limiter.tryAcquire("vieja-" + i, 5, VENTANA, T0);
         }
 
         // Mucho después, una clave nueva sigue pasando.
         assertThat(limiter.tryAcquire("nueva", 5, VENTANA, T0.plusSeconds(3600))).isTrue();
+    }
+
+    @Test
+    @DisplayName("Llenarlo de claves inventadas no apaga el freno de una clave que ya está cortada")
+    void llenoNoAbreLaPuerta() {
+        RateLimiter limiter = new RateLimiter();
+        for (int i = 0; i < 5; i++) {
+            limiter.tryAcquire("login:atacante", 5, VENTANA, T0);
+        }
+        assertThat(limiter.tryAcquire("login:atacante", 5, VENTANA, T0)).isFalse();
+
+        // Cien mil claves nuevas en la misma ventana, ninguna vencida: antes esto dejaba pasar todo.
+        for (int i = 0; i < 100_000; i++) {
+            limiter.tryAcquire("relleno-" + i, 5, VENTANA, T0.plusMillis(i + 1));
+        }
+
+        assertThat(limiter.tryAcquire("login:atacante", 5, VENTANA, T0.plusSeconds(200))).isFalse();
+    }
+
+    @Test
+    @DisplayName("Purgar respeta la ventana de cada clave: un límite diario no se borra a los quince minutos")
+    void cadaClaveSuVentana() {
+        RateLimiter limiter = new RateLimiter();
+        Duration dia = Duration.ofDays(1);
+        for (int i = 0; i < 3; i++) {
+            limiter.tryAcquire("diario", 3, dia, T0);
+        }
+        // Una hora después, el mapa se llena y se purga con claves de 15 minutos.
+        for (int i = 0; i < 100_000; i++) {
+            limiter.tryAcquire("corta-" + i, 5, VENTANA, T0.plusSeconds(3600));
+        }
+
+        assertThat(limiter.tryAcquire("diario", 3, dia, T0.plusSeconds(3601))).isFalse();
     }
 }

@@ -50,6 +50,27 @@ class ChangePasswordIT extends ApiIntegrationSupport {
         assertThat(login("ana@orion.test", PASSWORD).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
+    /**
+     * Quien cambia la contraseña porque sospecha de un intruso tiene que poder echarlo: la otra
+     * sesión se cierra en su siguiente petición. La suya sigue, con un id de sesión nuevo.
+     */
+    @Test
+    void changingThePasswordClosesTheOtherSessionsButNotTheOwn() {
+        Session intruso = login("ana@orion.test");
+        assertThat(get("/api/v1/auth/me", intruso, Map.class).getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        ResponseEntity<Void> cambio = post(
+                PASSWORD_URL, anaSession, new ChangePasswordRequest(PASSWORD, NUEVA), Void.class);
+        assertThat(cambio.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+
+        assertThat(get("/api/v1/auth/me", intruso, Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
+        String renovada = cookieValue(cambio, "ORION_SESSION");
+        assertThat(renovada).isNotNull().isNotEqualTo(anaSession.cookie());
+        assertThat(get("/api/v1/auth/me", new Session(renovada, anaSession.csrfToken()), Map.class)
+                .getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
     @Test
     void aWrongCurrentPasswordIsRejectedAndChangesNothing() {
         ResponseEntity<Map> response = post(

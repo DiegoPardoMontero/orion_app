@@ -78,6 +78,7 @@ public class AssessmentService {
     private final ConversationSummarizer resumidor;
     private final TeachingGoalRepository objetivosDelCatalogo;
     private final PlatformSettingsService settings;
+    private final AiUsageRecorder usage;
     private final Clock clock;
 
     public AssessmentService(ConfidenceAssessmentRepository assessments,
@@ -91,6 +92,7 @@ public class AssessmentService {
                              ConversationSummarizer resumidor,
                              TeachingGoalRepository objetivosDelCatalogo,
                              PlatformSettingsService settings,
+                             AiUsageRecorder usage,
                              Clock clock) {
         this.assessments = assessments;
         this.turns = turns;
@@ -103,6 +105,7 @@ public class AssessmentService {
         this.resumidor = resumidor;
         this.objetivosDelCatalogo = objetivosDelCatalogo;
         this.settings = settings;
+        this.usage = usage;
         this.clock = clock;
     }
 
@@ -189,13 +192,20 @@ public class AssessmentService {
                 });
     }
 
+    /**
+     * Cada llamada entrega una llave nueva del proveedor, y cada llave es una conversación que se
+     * paga: por eso el cargo al presupuesto va aquí y no en {@code start}, porque retomar una
+     * evaluación viva también abre una sesión. El tope por persona lo pone el controlador.
+     */
     private VoiceSession abrirVoz(Evaluado quien, String languageCode) {
         int minutos = settings.getInt("assessment_max_minutes");
-        return voice.start(new VoiceSessionRequest(
+        VoiceSession sesion = voice.start(new VoiceSessionRequest(
                 languageCode,
                 prompts.escenario(languageCode, minutos, quien.nombreDePila()),
                 minutos * 60,
                 quien.nombreDePila()));
+        usage.sesionDeVozAbierta(quien.actorId(), voice.name(), sesion.model(), Duration.ofMinutes(minutos));
+        return sesion;
     }
 
     /* ---------------- Turnos ---------------- */

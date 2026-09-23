@@ -211,6 +211,24 @@ class BookingNotificationIT extends ApiIntegrationSupport {
                 assertThat(messageAsString(cancellation)).contains("Viaje imprevisto"));
     }
 
+    /**
+     * El motivo lo escribe un usuario y lo lee el otro en su buzón, con nuestro remitente. En la
+     * parte HTML tiene que llegar como texto: si no, un «motivo» con un enlace sería phishing
+     * firmado por Orión. (La parte de texto plano lo lleva tal cual, y ahí es inofensivo.)
+     */
+    @Test
+    void whatAUserWroteArrivesAsTextInTheHtmlPart() throws Exception {
+        BookingResponse booking = book();
+
+        ArgumentCaptor<MimeMessage> sent = ArgumentCaptor.forClass(MimeMessage.class);
+        post("/api/v1/bookings/" + booking.id() + "/cancel", anaSession,
+                new CancelBookingRequest("<b>Paga aqui</b>"), BookingResponse.class);
+
+        verify(mailSender, timeout(5000).times(4)).send(sent.capture());
+        assertThat(sent.getAllValues()).anySatisfy(message ->
+                assertThat(messageAsString(message)).contains("&lt;b&gt;Paga aqui&lt;/b&gt;"));
+    }
+
     @Test
     void aMailServerFailureDoesNotBreakTheBooking() {
         doThrow(new org.springframework.mail.MailSendException("Mailpit caído"))

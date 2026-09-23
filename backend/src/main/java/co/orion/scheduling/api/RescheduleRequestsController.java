@@ -42,7 +42,7 @@ public class RescheduleRequestsController {
     @GetMapping("/api/v1/bookings/{id}/reschedule-requests")
     public List<RescheduleRequestResponse> ofBooking(@AuthenticationPrincipal OrionUserDetails principal,
                                                      @PathVariable UUID id) {
-        return reschedules.ofBooking(id).stream()
+        return reschedules.ofBooking(principal.user(), id).stream()
                 .map(request -> RescheduleRequestResponse.of(request, principal.user().getId()))
                 .toList();
     }

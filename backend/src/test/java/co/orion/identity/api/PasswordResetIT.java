@@ -112,6 +112,18 @@ class PasswordResetIT extends ApiIntegrationSupport {
         assertThat(loginStatus(EMAIL, PASSWORD)).isEqualTo(401); // la vieja ya no sirve
     }
 
+    /** Recuperar la cuenta sirve de poco si el que la tenía sigue con su sesión abierta. */
+    @Test
+    void resettingClosesTheSessionsThatWereOpen() {
+        Session abierta = login(EMAIL);
+        forgot(EMAIL);
+
+        reset(tokenFromLastLink(), NEW_PASSWORD, Void.class);
+
+        assertThat(get("/api/v1/auth/me", abierta, String.class).getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
     @Test
     void aTokenIsSingleUse() {
         forgot(EMAIL);

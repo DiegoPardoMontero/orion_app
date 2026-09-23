@@ -110,8 +110,8 @@ public class AuthController {
      */
     @PostMapping("/forgot-password")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void forgotPassword(@Valid @RequestBody ForgotPasswordRequest body) {
-        intentos.antesDeRecuperar(body.email());
+    public void forgotPassword(@Valid @RequestBody ForgotPasswordRequest body, HttpServletRequest request) {
+        intentos.antesDeRecuperar(request, body.email());
         passwordResetService.request(body.email());
     }
 
@@ -163,6 +163,11 @@ public class AuthController {
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(auth);
         SecurityContextHolder.setContext(context);
+        // Un id de sesión nuevo al autenticarse: si alguien logró plantar el suyo en este
+        // navegador antes del login, se queda con una sesión anónima que ya no es esta.
+        if (request.getSession(false) != null) {
+            request.changeSessionId();
+        }
         contextRepository.saveContext(context, request, response);
 
         return UserResponse.from((OrionUserDetails) auth.getPrincipal());

@@ -5,6 +5,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.HtmlUtils;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
@@ -124,7 +125,8 @@ public class AchievementNotifier {
                     <p>No es poca cosa: de todo lo que se puede conseguir en Orión, este es de los
                     que cuestan. Gracias por seguir viniendo.</p>
                     <p>Un abrazo,<br>El equipo de Orión</p>
-                    """.formatted(nombre, logro.getName(), logro.getDescription());
+                    """.formatted(HtmlUtils.htmlEscape(nombre, "UTF-8"), logro.getName(),
+                    logro.getDescription());
             String texto = """
                     Hola, %s.
 

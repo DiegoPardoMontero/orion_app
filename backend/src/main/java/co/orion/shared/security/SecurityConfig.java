@@ -57,10 +57,9 @@ public class SecurityConfig {
                         "/api/v1/webhooks/video/**",
                         // Apple vuelve con un POST desde su dominio: no puede traer nuestro token.
                         // Lo que protege esa vuelta es el `state` de OAuth, que Spring comprueba.
-                        "/login/oauth2/code/*",
-                        // Completar el alta tras volver del proveedor: lo que autoriza es el perfil
-                        // pendiente guardado en la sesión, igual que register es público.
-                        "/api/v1/auth/social/complete"))
+                        // Completar el alta tras volver del proveedor NO está aquí: crea una cuenta
+                        // y abre sesión, y la pantalla que lo llama ya tiene el token.
+                        "/login/oauth2/code/*"))
             .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
             // Antes de autorizar, el principal se refresca contra la base: así una aprobación o una
             // baja de cuenta valen desde la siguiente petición y no desde el siguiente login.

@@ -2,6 +2,9 @@ package co.orion.support.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
@@ -14,10 +17,15 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import co.orion.TestcontainersConfiguration;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
+import co.orion.scheduling.TestBookings;
+import co.orion.scheduling.domain.Booking;
+import co.orion.scheduling.domain.BookingModality;
+import co.orion.scheduling.persistence.BookingRepository;
 import co.orion.support.persistence.SupportMessageRepository;
 import co.orion.support.persistence.SupportTicketRepository;
 import co.orion.support.ApiIntegrationSupport;
@@ -33,6 +41,12 @@ class SoporteIT extends ApiIntegrationSupport {
     @Autowired
     private SupportMessageRepository mensajes;
 
+    @Autowired
+    private BookingRepository bookings;
+
+    @Autowired
+    private JdbcTemplate jdbc;
+
     private User ana;
     private User maria;
     private Session sesionAna;
@@ -43,6 +57,8 @@ class SoporteIT extends ApiIntegrationSupport {
     void seed() {
         mensajes.deleteAll();
         tickets.deleteAll();
+        jdbc.update("delete from attendance_records");
+        bookings.deleteAll();
         users.deleteAll();
 
         ana = createUser("ana@orion.test", "Ana Ramírez", UserRole.STUDENT);
@@ -181,6 +197,24 @@ class SoporteIT extends ApiIntegrationSupport {
 
         assertThat(bandeja).extracting(t -> t.get("subject"))
                 .containsExactly("Con plazo de 10 hábiles", "Con plazo de 15 hábiles", "Sin plazo");
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Test
+    @DisplayName("Solo se cita una clase propia: la de otra persona no llega al admin como si fuera tuya")
+    void soloSeCitaUnaClasePropia() {
+        User carlos = createUser("carlos@orion.test", "Carlos Peña", UserRole.STUDENT);
+        Booking deCarlos = bookings.saveAndFlush(TestBookings.confirmed(carlos.getId(), maria.getId(),
+                Instant.now().plus(Duration.ofDays(2)).truncatedTo(ChronoUnit.HOURS),
+                BookingModality.VIRTUAL, null, carlos.getId()));
+        Map<String, Object> reclamo = Map.of("category", "PAGO", "subject", "Quiero mi dinero",
+                "body", "Cuento lo que pasó.", "bookingId", deCarlos.getId().toString());
+
+        assertThat(post("/api/v1/me/support/tickets", sesionAna, reclamo, Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+        // Los dos de la clase sí pueden citarla.
+        assertThat(post("/api/v1/me/support/tickets", sesionMaria, reclamo, Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.OK);
     }
 
     @SuppressWarnings("rawtypes")

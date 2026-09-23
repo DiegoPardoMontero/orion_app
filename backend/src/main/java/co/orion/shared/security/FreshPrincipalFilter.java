@@ -1,6 +1,7 @@
 package co.orion.shared.security;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,6 +15,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 /**
  * Vuelve a leer al usuario de la base en cada petición autenticada.
@@ -48,10 +50,15 @@ public class FreshPrincipalFilter extends OncePerRequestFilter {
         Authentication actual = SecurityContextHolder.getContext().getAuthentication();
         if (actual != null && actual.getPrincipal() instanceof OrionUserDetails principal) {
             User fresco = users.findById(principal.user().getId()).orElse(null);
-            if (fresco == null || !fresco.isActive()) {
-                // La cuenta ya no existe o quedó inactiva: la sesión deja de valer aquí mismo.
+            if (fresco == null || !fresco.isActive() || cambioLaContrasena(principal.user(), fresco)) {
+                // La cuenta ya no existe, quedó inactiva o cambió de contraseña: la sesión deja de
+                // valer aquí mismo. Antes solo se vaciaba el contexto de esta petición y la sesión
+                // seguía viva en el servidor; ahora se invalida.
                 SecurityContextHolder.clearContext();
-                request.getSession(false);
+                HttpSession sesion = request.getSession(false);
+                if (sesion != null) {
+                    sesion.invalidate();
+                }
             } else {
                 OrionUserDetails renovado = new OrionUserDetails(fresco);
                 SecurityContextHolder.getContext().setAuthentication(
@@ -60,5 +67,15 @@ public class FreshPrincipalFilter extends OncePerRequestFilter {
             }
         }
         chain.doFilter(request, response);
+    }
+
+    /**
+     * Cambiar la contraseña es, casi siempre, echar a alguien: quien sospecha que le robaron la
+     * cuenta la cambia para que el otro deje de entrar. Si las sesiones abiertas sobrevivieran, el
+     * intruso seguiría dentro con la llave vieja. La sesión recuerda el hash con el que entró; si ya
+     * no es el de la base, se cierra. La de quien la cambió se renueva en el mismo cambio.
+     */
+    private static boolean cambioLaContrasena(User recordado, User fresco) {
+        return !Objects.equals(recordado.getPasswordHash(), fresco.getPasswordHash());
     }
 }

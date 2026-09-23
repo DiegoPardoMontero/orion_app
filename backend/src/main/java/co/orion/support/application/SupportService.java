@@ -9,6 +9,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import co.orion.scheduling.persistence.BookingRepository;
 import co.orion.shared.error.ResourceNotFoundException;
 import co.orion.shared.error.UnprocessableException;
 import co.orion.support.domain.SupportMessage;
@@ -34,20 +35,30 @@ public class SupportService {
 
     private final SupportTicketRepository tickets;
     private final SupportMessageRepository messages;
+    private final BookingRepository bookings;
     private final Clock clock;
     private final SecureRandom random = new SecureRandom();
 
     public SupportService(SupportTicketRepository tickets,
                           SupportMessageRepository messages,
+                          BookingRepository bookings,
                           Clock clock) {
         this.tickets = tickets;
         this.messages = messages;
+        this.bookings = bookings;
         this.clock = clock;
     }
 
     @Transactional
     public Hilo abrir(UUID userId, TicketCategory category, String subject, String body,
                       UUID bookingId) {
+        // La clase que se cita tiene que ser de quien escribe. Si no, un reclamo podría llegarle al
+        // admin como si fuera sobre la clase de otra persona —y pedir un reembolso por ella—.
+        if (bookingId != null && bookings.findById(bookingId)
+                .filter(b -> b.getStudentId().equals(userId) || b.getProfessorId().equals(userId))
+                .isEmpty()) {
+            throw new UnprocessableException("Esa clase no aparece entre las tuyas");
+        }
         Instant now = clock.instant();
         SupportTicket ticket = new SupportTicket(nuevoCodigo(), userId, category, subject,
                 bookingId, now);

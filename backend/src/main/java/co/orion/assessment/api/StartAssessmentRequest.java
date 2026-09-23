@@ -9,5 +9,6 @@ import jakarta.validation.constraints.Size;
  * @param goals        lo que la persona quiere hacer con el idioma. Alimenta las recomendaciones,
  *                     no el puntaje: el objetivo no hace a nadie hablar mejor ni peor.
  */
-public record StartAssessmentRequest(@Size(max = 5) String languageCode, List<String> goals) {
+public record StartAssessmentRequest(@Size(max = 5) String languageCode,
+                                     @Size(max = 20) List<@Size(max = 50) String> goals) {
 }

@@ -18,3 +18,4 @@ orion:
       login-per-ip-and-email: 50
       signups-per-ip: 100
       anonymous-assessments-per-ip: 100
+      voice-sessions-per-person: 100

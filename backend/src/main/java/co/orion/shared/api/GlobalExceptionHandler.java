@@ -5,16 +5,22 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MissingRequestHeaderException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -116,6 +122,39 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, Object>> handleUnreadableBody(HttpMessageNotReadableException ex) {
         return ResponseEntity.badRequest().body(Map.of("error", "El cuerpo de la petición no es válido"));
+    }
+
+    /**
+     * Lo que el cliente mandó mal fuera del cuerpo: un id que no es UUID en la ruta, un parámetro
+     * obligatorio que falta, una fecha ilegible en la query. Caía en el 500, y cada uno mandaba un
+     * correo de alerta: cualquiera con un navegador podía llenar la bandeja de Pardo de falsas
+     * alarmas escribiendo «/bookings/hola».
+     */
+    @ExceptionHandler({MethodArgumentTypeMismatchException.class,
+            MissingServletRequestParameterException.class, MissingRequestHeaderException.class,
+            HandlerMethodValidationException.class})
+    public ResponseEntity<Map<String, Object>> handleBadRequest(Exception ex) {
+        return ResponseEntity.badRequest().body(Map.of("error", "La petición no es válida"));
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<Map<String, Object>> handleMediaType(HttpMediaTypeNotSupportedException ex) {
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                .body(Map.of("error", "Formato no admitido: se espera JSON"));
+    }
+
+    /**
+     * Una constraint de la base que ningún servicio tradujo antes. Las invariantes duras viven ahí
+     * a propósito, y chocar con una es casi siempre una carrera entre dos peticiones: 409, como las
+     * que sí se traducen. Queda en el log por si alguna vez es un bug y no una carrera.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleIntegrity(DataIntegrityViolationException ex,
+                                                               HttpServletRequest request) {
+        log.warn("Constraint violada sin traducir en {} {}: {}", request.getMethod(),
+                request.getRequestURI(), ex.getMostSpecificCause().getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("error", "La operación choca con datos que ya existen. Recarga e intenta de nuevo."));
     }
 
     @ExceptionHandler(ResponseStatusException.class)

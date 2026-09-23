@@ -149,8 +149,10 @@ public class RescheduleRequestService {
         return requests.findPendingOf(userId);
     }
 
+    /** Solo los dos de la clase (y el admin): el motivo de una propuesta es conversación privada. */
     @Transactional(readOnly = true)
-    public List<RescheduleRequest> ofBooking(UUID bookingId) {
+    public List<RescheduleRequest> ofBooking(User actor, UUID bookingId) {
+        requireParticipant(actor, bookingId);
         return requests.findByBookingIdOrderByCreatedAtDesc(bookingId);
     }
 

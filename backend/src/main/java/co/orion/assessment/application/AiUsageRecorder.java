@@ -71,6 +71,16 @@ public class AiUsageRecorder {
         this.clock = clock;
     }
 
+    /**
+     * Una sesión de voz abierta, cargada <strong>al abrirla</strong> y por lo máximo que puede
+     * durar. Se carga antes de saber cuánto duró porque la llave ya está en el navegador: quien
+     * pide sesiones y nunca cierra ninguna —un script— consume igual, y un cargo que espera al
+     * cierre no se cobraría nunca. Pasarse por arriba es el error barato.
+     */
+    public void sesionDeVozAbierta(UUID actorId, String provider, String model, Duration maxima) {
+        conversacion(actorId, provider, model, maxima, AiUsageOutcome.OK);
+    }
+
     public void conversacion(UUID actorId, String provider, String model,
                              Duration duracion, AiUsageOutcome outcome) {
         int segundos = (int) Math.max(0, duracion.getSeconds());

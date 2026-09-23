@@ -1,9 +1,12 @@
 package co.orion.identity.application;
 
 import java.io.Serializable;
+import java.security.SecureRandom;
 import java.time.Clock;
+import java.util.HexFormat;
 import java.util.Optional;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,11 +38,16 @@ public class SocialLoginService {
 
     private final SocialIdentityRepository identidades;
     private final UserRepository users;
+    private static final SecureRandom RANDOM = new SecureRandom();
+
+    private final PasswordEncoder passwordEncoder;
     private final Clock clock;
 
-    public SocialLoginService(SocialIdentityRepository identidades, UserRepository users, Clock clock) {
+    public SocialLoginService(SocialIdentityRepository identidades, UserRepository users,
+                              PasswordEncoder passwordEncoder, Clock clock) {
         this.identidades = identidades;
         this.users = users;
+        this.passwordEncoder = passwordEncoder;
         this.clock = clock;
     }
 
@@ -85,6 +93,9 @@ public class SocialLoginService {
             if (!user.isActive()) {
                 return new Rechazado("cuenta-inactiva");
             }
+            if (!user.isEmailVerified()) {
+                tomarPosesion(user);
+            }
             vincular(user, perfil);
             return new Entra(user);
         }
@@ -105,6 +116,22 @@ public class SocialLoginService {
         User creado = registro.registerFromProvider(nombre, perfil.correo(), perfil.correoVerificado());
         vincular(creado, perfil);
         return creado;
+    }
+
+    /**
+     * Cierra la «cuenta preparada»: alguien se registra con el correo de otra persona y una
+     * contraseña que él conoce, sin poder confirmarlo; meses después la dueña real entra con
+     * Google, se vincula a esa cuenta, y el primero sigue teniendo llave. El proveedor acaba de
+     * probar quién es la dueña del buzón, así que la cuenta pasa a ella: correo verificado y
+     * contraseña anulada. Si la contraseña era suya, la recupera con «olvidé mi contraseña»,
+     * porque ahora el buzón es lo que manda.
+     */
+    private void tomarPosesion(User user) {
+        byte[] secreto = new byte[32];
+        RANDOM.nextBytes(secreto);
+        user.changePasswordHash(passwordEncoder.encode(HexFormat.of().formatHex(secreto)));
+        user.markEmailVerified(clock.instant());
+        users.save(user);
     }
 
     private void vincular(User user, PerfilSocial perfil) {

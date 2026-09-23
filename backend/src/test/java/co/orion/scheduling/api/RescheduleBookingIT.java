@@ -10,6 +10,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -259,6 +260,18 @@ class RescheduleBookingIT extends ApiIntegrationSupport {
 
         // Ajena → 404, no confirmamos que exista.
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    /** El motivo de una propuesta es conversación entre dos: un tercero con el id no la lee. */
+    @Test
+    void listingTheProposalsOfSomeoneElsesBookingIsNotFound() {
+        UUID anaBooking = book(anaSession, WEDNESDAY, 9);
+        propose(anaSession, anaBooking, WEDNESDAY, 10, RescheduleRequestResponse.class);
+
+        assertThat(get(BOOKINGS + "/" + anaBooking + "/reschedule-requests",
+                login("carlos@orion.test"), String.class).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(get(BOOKINGS + "/" + anaBooking + "/reschedule-requests", mariaSession, List.class)
+                .getBody()).hasSize(1);
     }
 
     /**

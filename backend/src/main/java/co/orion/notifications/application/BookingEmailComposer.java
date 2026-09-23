@@ -6,6 +6,7 @@ import java.time.format.TextStyle;
 import java.util.Locale;
 
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.HtmlUtils;
 
 import co.orion.catalog.persistence.LanguageRepository;
 import co.orion.identity.domain.User;
@@ -86,7 +87,7 @@ public class BookingEmailComposer {
                 title, booking.getStartsAt(), booking.getEndsAt(), eventDetails, location);
 
         String meetingHtml = meetingLink != null
-                ? "<p><strong>Sala de la clase:</strong> <a href=\"" + meetingLink
+                ? "<p><strong>Sala de la clase:</strong> <a href=\"" + h(meetingLink)
                         + "\">Unirse a la videollamada</a></p>"
                 : "";
         String meetingText = meetingLink != null ? "Sala de la clase: " + meetingLink + "\n" : "";
@@ -116,17 +117,17 @@ public class BookingEmailComposer {
                 guardarla en el calendario que uses.</p>
                 <p>¡Nos vemos en clase!<br>El equipo de Orión</p>
                 """.formatted(
-                greeting,
-                opening,
+                h(greeting),
+                h(opening),
                 when,
-                language != null ? "<li><strong>Idioma:</strong> " + language + "</li>" : "",
+                language != null ? "<li><strong>Idioma:</strong> " + h(language) + "</li>" : "",
                 modality,
                 booking.getLocationNote() != null
-                        ? "<li><strong>Dónde:</strong> " + booking.getLocationNote() + "</li>"
+                        ? "<li><strong>Dónde:</strong> " + h(booking.getLocationNote()) + "</li>"
                         : "",
-                counterpart.getFullName(),
+                h(counterpart.getFullName()),
                 meetingHtml,
-                calendarLink);
+                h(calendarLink));
 
         String text = """
                 %s
@@ -167,12 +168,12 @@ public class BookingEmailComposer {
                 pueden escribirse dentro de la plataforma, en la sección de Mensajes.</p>
                 <p>Un abrazo,<br>El equipo de Orión</p>
                 """.formatted(
-                firstName(recipient),
-                who,
+                h(firstName(recipient)),
+                h(who),
                 when,
-                counterpart.getFullName(),
+                h(counterpart.getFullName()),
                 reason != null && !reason.isBlank()
-                        ? "<p><strong>Motivo:</strong> " + reason + "</p>"
+                        ? "<p><strong>Motivo:</strong> " + h(reason) + "</p>"
                         : "");
 
         String text = """
@@ -189,6 +190,16 @@ public class BookingEmailComposer {
                 reason != null && !reason.isBlank() ? "Motivo: " + reason + "\n" : "");
 
         return new BookingEmail(recipient.getEmail(), subject, html, text, null);
+    }
+
+    /**
+     * Todo lo que escribió un usuario —su nombre, el motivo de una cancelación, la nota de lugar—
+     * pasa por aquí antes de entrar al HTML. Sin esto, un nombre como {@code <a href=…>} llegaba
+     * al buzón del otro como un enlace con nuestro remitente: phishing con la reputación de Orión.
+     * Con UTF-8 solo se escapan {@code < > & " '}: las tildes quedan como están.
+     */
+    private static String h(String texto) {
+        return HtmlUtils.htmlEscape(texto, "UTF-8");
     }
 
     /** "mié 15 jul, 08:00 a. m., hora de Bogotá" */

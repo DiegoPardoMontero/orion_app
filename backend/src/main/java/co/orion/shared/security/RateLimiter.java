@@ -3,7 +3,10 @@ package co.orion.shared.security;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Deque;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -24,13 +27,27 @@ public class RateLimiter {
     /**
      * Cota de claves distintas. Sin ella, un atacante que varíe el correo en cada intento haría
      * crecer el mapa sin límite: el limitador se convertiría en la fuga de memoria que lo tumbe.
-     * Al llegar al tope se purgan las entradas ya vencidas; si aun así no cabe, se deja pasar —
-     * cerrar la puerta a todo el mundo por estar lleno sería una denegación de servicio hecha por
-     * nosotros mismos.
+     *
+     * <p><strong>Lleno, nunca abre la puerta.</strong> Antes, si tras purgar lo vencido seguía
+     * lleno, dejaba pasar; eso convertía «llénalo con diez mil claves inventadas» en un interruptor
+     * que apagaba todos los frenos (auditoría del 22/09/2026). Ahora desaloja, de a un lote, las
+     * claves que llevan más tiempo quietas <em>y que no están frenando a nadie</em>: la que ya llegó
+     * a su límite es justo la que el atacante querría que se olvidara, así que es la última en irse.
+     * Cien mil claves son unos pocos megas.
      */
-    private static final int MAX_CLAVES = 10_000;
+    private static final int MAX_CLAVES = 100_000;
 
-    private final Map<String, Deque<Instant>> intentos = new ConcurrentHashMap<>();
+    /** Cuántas se desalojan de una vez, para no recorrer el mapa en cada petición de una inundación. */
+    private static final int LOTE = MAX_CLAVES / 100;
+
+    /**
+     * Cada clave recuerda su ventana y su límite: purgar con la ventana de otra borraba contadores
+     * diarios, y sin el límite no se sabe cuáles están frenando a alguien.
+     */
+    private record Registro(Duration ventana, int limite, Deque<Instant> marcas) {
+    }
+
+    private final Map<String, Registro> intentos = new ConcurrentHashMap<>();
 
     /**
      * Registra un intento y dice si cabe dentro del límite.
@@ -41,13 +58,14 @@ public class RateLimiter {
         Instant desde = now.minus(window);
 
         if (intentos.size() >= MAX_CLAVES && !intentos.containsKey(key)) {
-            purgar(now, window);
+            purgar(now);
             if (intentos.size() >= MAX_CLAVES) {
-                return true;
+                desalojarLasMasQuietas();
             }
         }
 
-        Deque<Instant> marcas = intentos.computeIfAbsent(key, k -> new ArrayDeque<>());
+        Registro registro = intentos.computeIfAbsent(key, k -> new Registro(window, limit, new ArrayDeque<>()));
+        Deque<Instant> marcas = registro.marcas();
         synchronized (marcas) {
             while (!marcas.isEmpty() && !marcas.peekFirst().isAfter(desde)) {
                 marcas.pollFirst();
@@ -62,10 +80,11 @@ public class RateLimiter {
 
     /** Cuánto falta para que se libere un hueco. Es lo que va en la cabecera {@code Retry-After}. */
     public Duration retryAfter(String key, Duration window, Instant now) {
-        Deque<Instant> marcas = intentos.get(key);
-        if (marcas == null) {
+        Registro registro = intentos.get(key);
+        if (registro == null) {
             return Duration.ZERO;
         }
+        Deque<Instant> marcas = registro.marcas();
         synchronized (marcas) {
             Instant masAntiguo = marcas.peekFirst();
             if (masAntiguo == null) {
@@ -90,13 +109,29 @@ public class RateLimiter {
         intentos.clear();
     }
 
-    private void purgar(Instant now, Duration window) {
-        Instant desde = now.minus(window);
+    /** Quita lo que ya no cuenta, cada clave según su propia ventana. */
+    private void purgar(Instant now) {
         intentos.entrySet().removeIf(entry -> {
-            Deque<Instant> marcas = entry.getValue();
-            synchronized (marcas) {
-                return marcas.isEmpty() || !marcas.peekLast().isAfter(desde);
+            Registro r = entry.getValue();
+            synchronized (r.marcas()) {
+                return r.marcas().isEmpty() || !r.marcas().peekLast().isAfter(now.minus(r.ventana()));
             }
         });
+    }
+
+    /** Un lote de las más quietas; primero las que no frenan a nadie, las frenadas solo si no queda otra. */
+    private void desalojarLasMasQuietas() {
+        record Candidata(String clave, Instant ultima, boolean frenando) {
+        }
+        List<Candidata> todas = new ArrayList<>(intentos.size());
+        intentos.forEach((clave, r) -> {
+            synchronized (r.marcas()) {
+                Instant ultima = r.marcas().peekLast();
+                todas.add(new Candidata(clave, ultima == null ? Instant.MIN : ultima,
+                        r.marcas().size() >= r.limite()));
+            }
+        });
+        todas.sort(Comparator.comparing(Candidata::frenando).thenComparing(Candidata::ultima));
+        todas.stream().limit(LOTE).forEach(c -> intentos.remove(c.clave()));
     }
 }

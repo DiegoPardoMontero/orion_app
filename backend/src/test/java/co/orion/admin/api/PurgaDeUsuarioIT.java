@@ -98,6 +98,33 @@ class PurgaDeUsuarioIT extends ApiIntegrationSupport {
                 Integer.class, ticket)).isEqualTo(1);
     }
 
+    /**
+     * Quien probó el diagnóstico tiene gasto de IA a su nombre, y el profesor que se le recomendó
+     * aparece en su resultado. Las dos filas bloqueaban la purga hasta la V47.
+     */
+    @Test
+    void quienHizoElDiagnosticoYElProfesorRecomendadoTambienSeBorran() {
+        User profesor = createUser("maria@orion.test", "María Gómez", UserRole.PROFESSOR);
+        UUID evaluacion = jdbc.queryForObject("""
+                insert into confidence_assessments (user_id, language_code, sequence, status, started_at)
+                values (?, 'EN', 1, 'IN_PROGRESS', now()) returning id
+                """, UUID.class, estudiante.getId());
+        jdbc.update("""
+                insert into assessment_recommendations (assessment_id, professor_id, position, reason_code, reason_text)
+                values (?, ?, 1, 'NIVEL', 'Por tu nivel')
+                """, evaluacion, profesor.getId());
+        jdbc.update("""
+                insert into ai_usage_log (feature, actor_id, provider, voice_seconds, cost_cop, outcome)
+                values ('confidence_assessment', ?, 'scripted', 120, 777, 'OK')
+                """, estudiante.getId());
+
+        assertThat(purgar(profesor.getId()).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(purgar(estudiante.getId()).getStatusCode()).isEqualTo(HttpStatus.OK);
+        // El gasto sigue contando para el tope del día; solo perdió a quién se cargó.
+        assertThat(jdbc.queryForObject("select count(*) from ai_usage_log where actor_id is null and cost_cop = 777",
+                Integer.class)).isEqualTo(1);
+    }
+
     private UUID abrirTicket(UUID userId) {
         String code = "ORN-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
         jdbc.update("""

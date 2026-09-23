@@ -443,6 +443,42 @@ con las decisiones que tomó Pardo.
   `APPLE_TEAM_ID`, `APPLE_KEY_ID` y `APPLE_PRIVATE_KEY` (el .p8). La dirección de vuelta que se da
   de alta en cada consola es `https://orionidiomas.com/login/oauth2/code/{google|facebook|apple}`.
 
+## Revisión de seguridad y permisos (22/09/2026)
+
+Recorrido de todo el backend y el frontend: autorización por endpoint, IDOR, CSRF, cookies,
+límites de tasa, validación de entrada, secretos y cabeceras. Lo claro se arregló, cada cosa con
+su test; lo que cambia el comportamiento o pide una decisión está abajo, en Pendiente.
+
+- **El limitador ya no abre la puerta cuando se llena.** Antes, con diez mil claves inventadas
+  dejaba pasar todo (login, altas, recuperación). Ahora caben cien mil, cada clave recuerda su
+  propia ventana (purgar con la de otra borraba contadores diarios) y, lleno, desaloja un lote de
+  las más quietas empezando por las que no frenan a nadie.
+- **Recuperar contraseña** tiene tope por conexión (20/hora), además del de tres por correo: rotar
+  correos convertía nuestro remitente en un cañón de spam.
+- **Cambiar o recuperar la contraseña cierra las demás sesiones** en su siguiente petición; la de
+  quien la cambió sigue, con id nuevo. Una sesión de una cuenta desactivada ahora se invalida de
+  verdad (antes solo se vaciaba el contexto de esa petición). Y el id de sesión se renueva al
+  entrar, con contraseña o con proveedor.
+- **Cuenta preparada**: si alguien registró el correo de otra persona sin poder confirmarlo y la
+  dueña real entra luego con Google, la cuenta pasa a ella —correo verificado y contraseña
+  anulada—. Quien sí la había creado recupera su contraseña con «olvidé mi contraseña».
+- **Propuestas de reprogramación**: listarlas exigía solo sesión; ahora solo los dos de la clase
+  (y el admin) ven el motivo. **Soporte**: un ticket solo puede citar una clase propia.
+- **Correos**: todo lo que escribe un usuario (nombre, motivo de cancelación, nota de lugar) se
+  escapa antes de entrar al HTML. Un nombre con un enlace llegaba al buzón del otro como enlace con
+  nuestro remitente.
+- **Diagnóstico**: cada sesión de voz se carga al presupuesto al abrirse, por lo máximo que puede
+  durar (antes los minutos de voz no se contaban nunca: solo el resumen), y cada persona —cuenta o
+  lead— puede abrir diez al día. Las constraints de `ai_usage_log` y `assessment_recommendations`
+  bloqueaban la purga de cuentas; la V47 les pone su `ON DELETE`.
+- **Errores**: un id que no es UUID, un parámetro que falta, un cuerpo que no es JSON o una
+  constraint sin traducir ya no son 500 (cada 500 manda correo de alerta: era una forma gratis de
+  llenar la bandeja). Contraseñas de más de 72 bytes —el límite de bcrypt— se rechazan con 400.
+- **Menores**: completar el alta social ya exige CSRF; tope de tamaño en la bio y en los turnos y
+  objetivos del diagnóstico; el id de transacción de Wompi que llega por la URL se valida antes de
+  pegarlo a una petición saliente; el frontend deja de anunciar Next.js y manda `X-Frame-Options`,
+  `X-Content-Type-Options` y `Referrer-Policy`.
+
 ## Pendiente / bloqueos conocidos
 - **Reservas anteriores a V20 sin idioma**: las que tenía un profesor de dos idiomas quedaron con
   `language_code` en nulo a propósito, para revisión manual. La migración deja el conteo en un
@@ -488,6 +524,24 @@ con las decisiones que tomó Pardo.
   prueba del guion v4.
 - **El avatar personalizado solo lo ve su dueño.** Que otros lo vean en sus listas exige embeber la
   personalización en dos DTOs y añade una consulta a los endpoints que pintan listas.
+- **Seguridad — para decidir (revisión del 22/09)**:
+  - **IP detrás del proxy de Railway.** `forward-headers-strategy: framework` confía en el primer
+    valor de `X-Forwarded-For`, que el cliente puede inventar; si Railway no lo reescribe, todos los
+    frenos por IP se esquivan cambiando esa cabecera. Probar en producción con
+    `curl -H "X-Forwarded-For: 1.2.3.4"` contra el login y ver si el freno cuenta por esa IP.
+    Cambiarlo a ciegas podría hacer que todo el mundo comparta la IP del proxy.
+  - **Límite duro en OpenAI.** El freno de gasto es nuestro; una llave de voz robada puede hablar
+    hasta el máximo de sesión del proveedor. Poner un tope mensual en el proyecto de OpenAI.
+  - **CSP y Permissions-Policy** del frontend: pendientes a propósito, porque el aula necesita
+    cámara y micrófono dentro del iframe de 8x8 y una política mal puesta la rompe sin ruido.
+  - Conversaciones y reseñas ajenas responden 403 en vez de 404 (confirman que existen).
+  - Las reseñas públicas muestran el nombre completo de quien las escribió.
+  - Un profesor ve el resumen del diagnóstico de cualquier estudiante con quien tenga una reserva,
+    aunque esté cancelada.
+  - El JWT de la sala de JaaS lleva el correo del usuario (8x8 lo ve).
+  - Facebook: su correo se trata como verificado (Meta solo entrega el principal, ya confirmado).
+  - `certified` lo marca el propio profesor, sin revisión.
+  - El alta responde 409 si el correo ya existe: revela qué correos tienen cuenta.
 - **`LegalDocumentService.pendientes()` no lo llama nadie**: publicar una versión nueva de los
   Términos no le pide a nadie que la acepte, aunque la cláusula 15 promete justo eso.
 

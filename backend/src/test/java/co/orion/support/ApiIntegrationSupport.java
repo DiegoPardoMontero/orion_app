@@ -165,7 +165,7 @@ public abstract class ApiIntegrationSupport {
     }
 
     /** Sesión autenticada: cookie de sesión + token CSRF, que es lo que exige toda petición mutante. */
-    protected record Session(String cookie, String csrfToken) {
+    public record Session(String cookie, String csrfToken) {
     }
 
     /**
@@ -239,7 +239,7 @@ public abstract class ApiIntegrationSupport {
         return headers;
     }
 
-    private String cookieValue(ResponseEntity<?> response, String name) {
+    protected String cookieValue(ResponseEntity<?> response, String name) {
         List<String> cookies = response.getHeaders().get(HttpHeaders.SET_COOKIE);
         if (cookies == null) {
             return null;

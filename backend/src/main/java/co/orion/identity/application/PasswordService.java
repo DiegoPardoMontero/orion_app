@@ -27,7 +27,7 @@ public class PasswordService {
      * encontrara una sesión abierta podría dejar al dueño fuera de su propia cuenta.
      */
     @Transactional
-    public void change(UUID userId, String currentPassword, String newPassword) {
+    public User change(UUID userId, String currentPassword, String newPassword) {
         User user = users.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
@@ -36,6 +36,6 @@ public class PasswordService {
         }
 
         user.changePasswordHash(passwordEncoder.encode(newPassword));
-        users.save(user);
+        return users.save(user);
     }
 }

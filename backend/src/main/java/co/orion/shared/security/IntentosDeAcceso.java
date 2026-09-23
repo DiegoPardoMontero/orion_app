@@ -36,7 +36,9 @@ public class IntentosDeAcceso {
     private final int maxLoginPorIp;
     private final int maxAltasPorIp;
     private final int maxRecuperacionesPorCorreo;
+    private final int maxRecuperacionesPorIp;
     private final int maxDiagnosticosAnonimosPorIp;
+    private final int maxSesionesDeVozPorPersona;
 
     /**
      * Los topes son configurables porque el valor correcto depende de por dónde entra la gente.
@@ -53,13 +55,17 @@ public class IntentosDeAcceso {
             @Value("${orion.security.rate-limit.login-per-ip:60}") int maxLoginPorIp,
             @Value("${orion.security.rate-limit.signups-per-ip:10}") int maxAltasPorIp,
             @Value("${orion.security.rate-limit.password-resets:3}") int maxRecuperacionesPorCorreo,
-            @Value("${orion.security.rate-limit.anonymous-assessments-per-ip:5}") int maxDiagnosticosAnonimosPorIp) {
+            @Value("${orion.security.rate-limit.password-resets-per-ip:20}") int maxRecuperacionesPorIp,
+            @Value("${orion.security.rate-limit.anonymous-assessments-per-ip:5}") int maxDiagnosticosAnonimosPorIp,
+            @Value("${orion.security.rate-limit.voice-sessions-per-person:10}") int maxSesionesDeVozPorPersona) {
         this.clock = clock;
         this.maxLoginPorIpYCorreo = maxLoginPorIpYCorreo;
         this.maxLoginPorIp = maxLoginPorIp;
         this.maxAltasPorIp = maxAltasPorIp;
         this.maxRecuperacionesPorCorreo = maxRecuperacionesPorCorreo;
+        this.maxRecuperacionesPorIp = maxRecuperacionesPorIp;
         this.maxDiagnosticosAnonimosPorIp = maxDiagnosticosAnonimosPorIp;
+        this.maxSesionesDeVozPorPersona = maxSesionesDeVozPorPersona;
     }
 
     public void antesDeLogin(HttpServletRequest request, String email) {
@@ -83,9 +89,16 @@ public class IntentosDeAcceso {
                 "Ya creaste varias cuentas desde aquí. Intenta de nuevo en una hora.");
     }
 
-    public void antesDeRecuperar(String email) {
-        exigir("recuperar:" + normalizar(email), maxRecuperacionesPorCorreo, VENTANA_HORA,
-                clock.instant(),
+    /**
+     * Tres por correo cuidan el buzón de cada quien; el tope por conexión corta al que rota
+     * correos para usar nuestro SMTP como cañón de spam —cada petición es un correo que sale con
+     * nuestro remitente y nuestra reputación—.
+     */
+    public void antesDeRecuperar(HttpServletRequest request, String email) {
+        Instant now = clock.instant();
+        exigir("recuperar:ip:" + ipDe(request), maxRecuperacionesPorIp, VENTANA_HORA, now,
+                "Demasiadas solicitudes desde esta conexión. Intenta de nuevo en una hora.");
+        exigir("recuperar:" + normalizar(email), maxRecuperacionesPorCorreo, VENTANA_HORA, now,
                 "Ya te enviamos varios enlaces. Revisa tu correo y la carpeta de spam.");
     }
 
@@ -99,6 +112,18 @@ public class IntentosDeAcceso {
                 clock.instant(),
                 "Ya se hicieron varios diagnósticos desde esta conexión hoy. Vuelve mañana, o crea tu "
                         + "cuenta y hazlo desde ella.");
+    }
+
+    /**
+     * Cada sesión de voz es una llave del proveedor que se paga, y retomar un diagnóstico abierto
+     * entrega otra. Sin tope, un solo lead —o una cuenta— podía pedir llaves sin fin y gastar el
+     * presupuesto del día entero. Diez al día cubren reconexiones de sobra.
+     *
+     * @param persona el id de la cuenta o del lead: los dos tienen el mismo tope
+     */
+    public void antesDeAbrirVoz(java.util.UUID persona) {
+        exigir("voz:" + persona, maxSesionesDeVozPorPersona, VENTANA_DIA, clock.instant(),
+                "Ya intentaste el diagnóstico varias veces hoy. Vuelve mañana.");
     }
 
     /** El «te llamamos» es público y deja un teléfono a nuestro cargo: cinco por conexión al día. */

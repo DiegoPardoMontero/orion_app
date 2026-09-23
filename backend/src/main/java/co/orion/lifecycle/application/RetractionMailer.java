@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.HtmlUtils;
 
 import co.orion.identity.domain.User;
 import co.orion.identity.persistence.UserRepository;
@@ -59,7 +60,7 @@ public class RetractionMailer {
     private void enviar(User user, String asunto, String texto) {
         try {
             transport.send(OutgoingEmail.plain(user.getEmail(), asunto, texto,
-                    "<p>" + texto.replace("\n", "<br>") + "</p>"));
+                    "<p>" + HtmlUtils.htmlEscape(texto, "UTF-8").replace("\n", "<br>") + "</p>"));
         } catch (Exception ex) {
             // Un correo que no sale no puede deshacer un retracto ya ejercido: el derecho está
             // ejercido y la devolución, registrada. Se anota y se sigue.

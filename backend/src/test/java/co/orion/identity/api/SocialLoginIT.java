@@ -18,6 +18,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -117,6 +119,31 @@ class SocialLoginIT extends ApiIntegrationSupport {
     }
 
     @Test
+    @DisplayName("Una cuenta preparada con el correo de otro pasa a su dueña: la contraseña del intruso deja de servir")
+    void laCuentaPreparadaPasaASuDuena() {
+        // Alguien registró ana@ con una contraseña suya y nunca pudo confirmar el correo.
+        users.save(new User("ana@orion.test", passwordEncoder.encode(PASSWORD), "Intruso", UserRole.STUDENT));
+
+        SocialLoginService.Resultado r = social.resolver(perfil("g-6", "ana@orion.test", true));
+
+        assertThat(r).isInstanceOf(SocialLoginService.Entra.class);
+        User cuenta = users.findByEmailIgnoreCase("ana@orion.test").orElseThrow();
+        assertThat(cuenta.isEmailVerified()).isTrue();
+        assertThat(passwordEncoder.matches(PASSWORD, cuenta.getPasswordHash())).isFalse();
+    }
+
+    @Test
+    @DisplayName("Una cuenta ya verificada conserva su contraseña al vincular: nadie la preparó")
+    void laVerificadaConservaSuContrasena() {
+        createUser("ana@orion.test", "Ana Ruiz", UserRole.STUDENT);
+
+        social.resolver(perfil("g-7", "ana@orion.test", true));
+
+        assertThat(passwordEncoder.matches(PASSWORD,
+                users.findByEmailIgnoreCase("ana@orion.test").orElseThrow().getPasswordHash())).isTrue();
+    }
+
+    @Test
     @DisplayName("Con un correo que ya existe pero sin verificar no se vincula: sería quedarse con una cuenta ajena")
     void sinVerificarNoSeVincula() {
         createUser("ana@orion.test", "Ana Ruiz", UserRole.STUDENT);
@@ -153,10 +180,24 @@ class SocialLoginIT extends ApiIntegrationSupport {
     @Test
     @DisplayName("Completar sin haber pasado por el proveedor responde 404, no crea nada")
     void completarSinPendiente() {
+        HttpHeaders h = new HttpHeaders();
+        h.add(HttpHeaders.COOKIE, "XSRF-TOKEN=token-de-prueba");
+        h.add("X-XSRF-TOKEN", "token-de-prueba");
+        ResponseEntity<Map> r = rest.postForEntity("/api/v1/auth/social/complete", new HttpEntity<>(
+                Map.of("fullName", "Ana", "adult", true, "acceptsTerms", true, "acceptsDataPolicy", true), h),
+                Map.class);
+
+        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Test
+    @DisplayName("Completar exige el token CSRF: crea una cuenta y abre sesión, no es una puerta lateral")
+    void completarExigeCsrf() {
         ResponseEntity<Map> r = rest.postForEntity("/api/v1/auth/social/complete",
                 Map.of("fullName", "Ana", "adult", true, "acceptsTerms", true, "acceptsDataPolicy", true),
                 Map.class);
 
-        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 }

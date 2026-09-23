@@ -5,6 +5,32 @@ const nextConfig: NextConfig = {
   // arrastrar todo node_modules. El Dockerfile copia esa carpeta y arranca con `node server.js`.
   output: "standalone",
 
+  // No anunciar el framework: es información gratis para quien busca versiones vulnerables.
+  poweredByHeader: false,
+
+  /**
+   * Cabeceras de seguridad de las páginas. La API ya las lleva (las pone Spring Security); las
+   * páginas que sirve Next no llevaban ninguna.
+   *
+   * <p>Solo las que no pueden romper nada: que nadie meta Orión dentro de un iframe ajeno
+   * (clickjacking), que el navegador no adivine tipos de archivo, y que al salir a otro sitio no
+   * viaje la URL completa. Una CSP y un Permissions-Policy quedan pendientes a propósito: el aula
+   * embebe 8x8 con cámara y micrófono, y el diagnóstico habla con OpenAI por WebRTC, y restringirlos
+   * sin probar una clase real podría dejar la cámara apagada en producción.
+   */
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        ],
+      },
+    ];
+  },
+
   /**
    * El navegador solo habla con :3000. Next reescribe /api/* hacia el backend, así que para el
    * navegador existe un único origen: las cookies (ORION_SESSION, XSRF-TOKEN) fluyen sin CORS,

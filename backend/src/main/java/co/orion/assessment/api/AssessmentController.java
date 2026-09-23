@@ -22,6 +22,7 @@ import co.orion.assessment.application.VoiceSession;
 import co.orion.assessment.domain.ConfidenceAssessment;
 import co.orion.shared.error.ForbiddenException;
 import co.orion.shared.security.OrionUserDetails;
+import co.orion.shared.security.IntentosDeAcceso;
 import co.orion.shared.time.BusinessZone;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,10 +41,13 @@ public class AssessmentController {
 
     private final AssessmentService assessments;
     private final AssessmentLeadService leads;
+    private final IntentosDeAcceso intentos;
 
-    public AssessmentController(AssessmentService assessments, AssessmentLeadService leads) {
+    public AssessmentController(AssessmentService assessments, AssessmentLeadService leads,
+                                IntentosDeAcceso intentos) {
         this.assessments = assessments;
         this.leads = leads;
+        this.intentos = intentos;
     }
 
     /** Quién llama. La cuenta manda sobre la cookie: con sesión, el diagnóstico es de la cuenta. */
@@ -89,7 +93,9 @@ public class AssessmentController {
         String idioma = body == null || body.languageCode() == null || body.languageCode().isBlank()
                 ? "EN" : body.languageCode().toUpperCase();
 
-        AssessmentService.Iniciada iniciada = assessments.start(quien(principal, http), idioma);
+        Evaluado quien = quien(principal, http);
+        intentos.antesDeAbrirVoz(quien.esLead() ? quien.leadId() : quien.userId());
+        AssessmentService.Iniciada iniciada = assessments.start(quien, idioma);
         VoiceSession voz = iniciada.voice();
 
         return new StartedResponse(
@@ -120,7 +126,7 @@ public class AssessmentController {
     @PostMapping("/assessments/{id}/complete")
     public AssessmentResponse complete(@AuthenticationPrincipal OrionUserDetails principal,
                                        @PathVariable UUID id,
-                                       @RequestBody(required = false) StartAssessmentRequest body,
+                                       @Valid @RequestBody(required = false) StartAssessmentRequest body,
                                        HttpServletRequest http) {
         List<String> objetivos = body == null || body.goals() == null ? List.of() : body.goals();
         ConfidenceAssessment cerrada = assessments.complete(quien(principal, http), id, objetivos);
