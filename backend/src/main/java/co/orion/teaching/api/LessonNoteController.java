@@ -1,5 +1,6 @@
 package co.orion.teaching.api;
 
+import java.io.IOException;
 import java.time.Clock;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
@@ -7,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,11 +18,14 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import co.orion.identity.persistence.UserRepository;
 import co.orion.shared.error.ResourceNotFoundException;
+import co.orion.shared.security.IntentosDeAcceso;
 import co.orion.shared.security.OrionUserDetails;
 import co.orion.shared.time.BusinessZone;
+import co.orion.teaching.application.DictadoService;
 import co.orion.teaching.application.LessonNoteDrafter.Palabra;
 import co.orion.teaching.application.LessonNoteService;
 import co.orion.teaching.application.LessonNoteService.Acta;
@@ -43,11 +48,16 @@ import jakarta.validation.constraints.Size;
 public class LessonNoteController {
 
     private final LessonNoteService actas;
+    private final DictadoService dictado;
+    private final IntentosDeAcceso intentos;
     private final UserRepository users;
     private final Clock clock;
 
-    public LessonNoteController(LessonNoteService actas, UserRepository users, Clock clock) {
+    public LessonNoteController(LessonNoteService actas, DictadoService dictado, IntentosDeAcceso intentos,
+                                UserRepository users, Clock clock) {
         this.actas = actas;
+        this.dictado = dictado;
+        this.intentos = intentos;
         this.users = users;
         this.clock = clock;
     }
@@ -56,6 +66,18 @@ public class LessonNoteController {
     public ActaDelProfesor draft(@AuthenticationPrincipal OrionUserDetails principal, @PathVariable UUID id,
                                  @Valid @RequestBody RedactarRequest body) {
         return delProfesor(actas.redactar(principal.user(), id, body.rawInput().trim()));
+    }
+
+    /**
+     * El profesor dicta en vez de escribir: el audio va al proveedor, vuelve el texto y el audio no
+     * se guarda. El texto cae en la caja para que lo revise antes de generar el acta.
+     */
+    @PostMapping(value = "/api/v1/bookings/{id}/lesson-note/dictation", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Map<String, String> dictar(@AuthenticationPrincipal OrionUserDetails principal, @PathVariable UUID id,
+                                      @RequestParam("file") MultipartFile audio,
+                                      @RequestParam("seconds") int segundos) throws IOException {
+        intentos.antesDeDictar(principal.user().getId());
+        return Map.of("text", dictado.dictar(principal.user(), id, audio.getBytes(), audio.getContentType(), segundos));
     }
 
     /** El acta de una clase, en la vista que le corresponde a quien la pide. */

@@ -79,6 +79,28 @@ public class TeachingAiBudget {
                 """, FEATURE, actor, modelo, entrada, salida, pesos, latenciaMs, resultado,
                 Timestamp.from(clock.instant()));
 
+        avisarSiVaPorEl80();
+    }
+
+    /**
+     * El dictado depende solo del tope, no del interruptor del borrador: apagar el borrador con IA
+     * no le quita el micrófono al profesor.
+     */
+    public boolean dictadoDisponible() {
+        return gastadoHoy() < settings.getInt("ai_daily_budget_cop");
+    }
+
+    /** Un dictado: se cobra por segundos de audio, no por tokens. */
+    public void registrarAudio(UUID actor, String modelo, int segundos, long pesos, int latenciaMs, String resultado) {
+        jdbc.update("""
+                insert into ai_usage_log (feature, actor_id, provider, model, voice_seconds, cost_cop,
+                                          latency_ms, outcome, occurred_at)
+                values (?, ?, 'openai-audio', ?, ?, ?, ?, ?, ?)
+                """, FEATURE, actor, modelo, segundos, pesos, latenciaMs, resultado, Timestamp.from(clock.instant()));
+        avisarSiVaPorEl80();
+    }
+
+    private void avisarSiVaPorEl80() {
         int tope = settings.getInt("ai_daily_budget_cop");
         if (tope > 0 && gastadoHoy() * 100 >= tope * 80L) {
             alertas.alert("actas-presupuesto-80", "Las actas van por el 80 % del presupuesto de IA de hoy",

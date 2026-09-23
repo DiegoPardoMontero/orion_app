@@ -492,6 +492,15 @@ Solo la Parte A: la práctica entre clases (Parte B) no está construida, y por 
   servidor (`/me/lesson-notes/summary`), con el mismo criterio con que la acepta.
 - En «Mis clases → Pasadas», arriba, la lista: al profesor, «Actas por escribir» (o «Estás al
   día»); al estudiante, sus resúmenes (o «Todavía no hay resúmenes»). Sale de `/me/lesson-notes/index`.
+- **Dictado del profesor** (añadido por Pardo; el brief lo dejaba fuera): botón «Dictar» en la
+  caja de «Cuéntanos cómo estuvo». Graba hasta tres minutos en el navegador, el audio va a
+  `gpt-4o-mini-transcribe` (~10 pesos el minuto, al presupuesto del acta) con una pista que le
+  dice que espera español con términos en inglés, y el texto se suma a la caja para revisarlo
+  antes de generar. **El audio no se guarda.** Mismas puertas que el acta (solo el profesor de la
+  clase y solo clases cerradas), 40 al día por profesor, y depende solo del tope: apagar el
+  borrador con IA no le quita el micrófono. Probado contra OpenAI con un dictado sintetizado:
+  transcripción exacta, «I go yesterday» y «used to» incluidos, en 1,5 s. **La política de datos
+  debería decir que la voz del profesor va a OpenAI** (hoy no nombra a OpenAI en absoluto).
 - **Panel de calidad (C1)**: en Administración → Panel, la fila «Acta de clase»: publicadas hoy,
   **% de clases cerradas con acta** (30 días), **cuántas se reescriben** (cortes de `edit_ratio`:
   sin editar hasta 0,05, reescrita desde 0,5; si las reescritas pasan de la mitad, se revisa el

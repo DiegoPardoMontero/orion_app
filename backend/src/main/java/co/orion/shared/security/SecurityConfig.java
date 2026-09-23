@@ -137,6 +137,7 @@ public class SecurityConfig {
                 // también el estudiante. El servicio exige además ser de esa reserva (403 a otro
                 // profesor, 404 a un tercero y al estudiante mientras es borrador).
                 .requestMatchers(HttpMethod.POST, "/api/v1/bookings/*/lesson-note/draft").hasRole("PROFESSOR")
+                .requestMatchers(HttpMethod.POST, "/api/v1/bookings/*/lesson-note/dictation").hasRole("PROFESSOR")
                 .requestMatchers(HttpMethod.GET, "/api/v1/bookings/*/lesson-note").hasAnyRole("STUDENT", "PROFESSOR")
                 .requestMatchers("/api/v1/lesson-notes/**").hasRole("PROFESSOR")
                 .requestMatchers("/api/v1/me/lesson-notes", "/api/v1/me/lesson-notes/**")

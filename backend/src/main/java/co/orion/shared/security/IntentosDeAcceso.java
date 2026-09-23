@@ -40,6 +40,7 @@ public class IntentosDeAcceso {
     private final int maxDiagnosticosAnonimosPorIp;
     private final int maxSesionesDeVozPorPersona;
     private final int maxTraduccionesPorDiagnostico;
+    private final int maxDictadosPorProfesor;
 
     /**
      * Los topes son configurables porque el valor correcto depende de por dónde entra la gente.
@@ -59,7 +60,8 @@ public class IntentosDeAcceso {
             @Value("${orion.security.rate-limit.password-resets-per-ip:20}") int maxRecuperacionesPorIp,
             @Value("${orion.security.rate-limit.anonymous-assessments-per-ip:5}") int maxDiagnosticosAnonimosPorIp,
             @Value("${orion.security.rate-limit.voice-sessions-per-person:10}") int maxSesionesDeVozPorPersona,
-            @Value("${orion.security.rate-limit.translations-per-assessment:80}") int maxTraduccionesPorDiagnostico) {
+            @Value("${orion.security.rate-limit.translations-per-assessment:80}") int maxTraduccionesPorDiagnostico,
+            @Value("${orion.security.rate-limit.dictations-per-professor:40}") int maxDictadosPorProfesor) {
         this.clock = clock;
         this.maxLoginPorIpYCorreo = maxLoginPorIpYCorreo;
         this.maxLoginPorIp = maxLoginPorIp;
@@ -69,6 +71,7 @@ public class IntentosDeAcceso {
         this.maxDiagnosticosAnonimosPorIp = maxDiagnosticosAnonimosPorIp;
         this.maxSesionesDeVozPorPersona = maxSesionesDeVozPorPersona;
         this.maxTraduccionesPorDiagnostico = maxTraduccionesPorDiagnostico;
+        this.maxDictadosPorProfesor = maxDictadosPorProfesor;
     }
 
     public void antesDeLogin(HttpServletRequest request, String email) {
@@ -136,6 +139,12 @@ public class IntentosDeAcceso {
     public void antesDeTraducir(java.util.UUID diagnostico) {
         exigir("traducir:" + diagnostico, maxTraduccionesPorDiagnostico, VENTANA_DIA, clock.instant(),
                 "Ya no hay más traducciones para esta conversación.");
+    }
+
+    /** Cuarenta dictados al día por profesor: uno por clase sobra, y corta a un script. */
+    public void antesDeDictar(java.util.UUID profesor) {
+        exigir("dictar:" + profesor, maxDictadosPorProfesor, VENTANA_DIA, clock.instant(),
+                "Ya dictaste muchas veces hoy. Puedes escribir tus notas en la caja.");
     }
 
     /** El «te llamamos» es público y deja un teléfono a nuestro cargo: cinco por conexión al día. */

@@ -1,10 +1,10 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, BookOpen, Check, NotebookPen, Plus, Sparkles, X } from "lucide-react";
+import { ArrowLeft, BookOpen, Check, Mic, NotebookPen, Plus, Sparkles, Square, X } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { AvisoError, Cargando, Vacio } from "@/components/estados";
 import { Constelacion } from "@/components/marca";
 import { Badge, Bloque, Boton, Spinner, Tarjeta } from "@/components/ui";
@@ -16,7 +16,7 @@ import {
   type ActaDelProfesor,
   type Palabra,
 } from "@/lib/actas";
-import { ApiError, apiFetch } from "@/lib/api/fetch";
+import { ApiError, apiFetch, uploadFile } from "@/lib/api/fetch";
 import { useMe } from "@/lib/auth/session";
 import { fechaLarga } from "@/lib/format";
 
@@ -114,9 +114,15 @@ function CerrarClase({ bookingId }: { bookingId: string }) {
       <p className="mt-1 text-[14px] text-text-secondary">
         Escribe o dicta lo que se te venga a la cabeza. Nosotros le damos forma.
       </p>
-      <label htmlFor="notas" className="sr-only">
-        Tus notas de la clase
-      </label>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+        <label htmlFor="notas" className="sr-only">
+          Tus notas de la clase
+        </label>
+        <BotonDictar
+          bookingId={bookingId}
+          onTexto={(texto) => setNotas((previas) => (previas.trim() ? `${previas.trimEnd()} ${texto}` : texto))}
+        />
+      </div>
       <textarea
         id="notas"
         rows={4}
@@ -124,7 +130,7 @@ function CerrarClase({ bookingId }: { bookingId: string }) {
         value={notas}
         onChange={(e) => setNotas(e.target.value)}
         placeholder="Trabajamos past simple, sigue diciendo 'I go yesterday', le costó 'used to', quedamos en ver condicionales…"
-        className="mt-4 w-full resize-y rounded-base border border-border bg-surface px-4 py-3 text-[14.5px] leading-relaxed focus-visible:shadow-focus focus-visible:outline-none"
+        className="mt-2 w-full resize-y rounded-base border border-border bg-surface px-4 py-3 text-[14.5px] leading-relaxed focus-visible:shadow-focus focus-visible:outline-none"
       />
       <p className="mt-1 text-right text-[12px] tabular-nums text-text-muted" aria-live="polite">
         {suficiente ? `${notas.length}/${MAX_NOTAS}` : `Faltan ${MIN_NOTAS - notas.trim().length} caracteres`}
@@ -147,6 +153,113 @@ function CerrarClase({ bookingId }: { bookingId: string }) {
         </Boton>
       </div>
     </Tarjeta>
+  );
+}
+
+/** Lo que dura un dictado como mucho: más es una clase entera grabada, no «lo que se venga». */
+const MAX_SEGUNDOS_DICTADO = 180;
+
+/**
+ * Dictar en vez de escribir (añadido por Pardo al Bloque 10). Graba en el navegador, manda el
+ * audio, y el texto que vuelve se suma a la caja para que el profesor lo revise antes de generar.
+ * Si el navegador no puede grabar, el botón no aparece: nada de interfaz que no funciona.
+ */
+function BotonDictar({ bookingId, onTexto }: { bookingId: string; onTexto: (texto: string) => void }) {
+  const [estado, setEstado] = useState<"listo" | "grabando" | "transcribiendo">("listo");
+  const [segundos, setSegundos] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const grabadora = useRef<MediaRecorder | null>(null);
+  const trozos = useRef<Blob[]>([]);
+  const inicio = useRef(0);
+  const reloj = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (reloj.current) window.clearInterval(reloj.current);
+      grabadora.current?.stream.getTracks().forEach((pista) => pista.stop());
+    },
+    [],
+  );
+
+  const puedeGrabar =
+    typeof window !== "undefined" && "MediaRecorder" in window && !!navigator.mediaDevices?.getUserMedia;
+  if (!puedeGrabar) return null;
+
+  function detener() {
+    if (reloj.current) window.clearInterval(reloj.current);
+    reloj.current = null;
+    if (grabadora.current?.state === "recording") grabadora.current.stop();
+  }
+
+  async function enviar(tipo: string) {
+    setEstado("transcribiendo");
+    const duracion = Math.max(1, Math.min(MAX_SEGUNDOS_DICTADO, Math.round((Date.now() - inicio.current) / 1000)));
+    const audio = new Blob(trozos.current, { type: tipo || "audio/webm" });
+    try {
+      const r = await uploadFile<{ text: string }>(
+        `/api/v1/bookings/${bookingId}/lesson-note/dictation`,
+        new File([audio], "dictado", { type: audio.type }),
+        { seconds: String(duracion) },
+      );
+      onTexto(r.text);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No alcanzamos a entender el audio. Intenta de nuevo o escríbelo.");
+    } finally {
+      setEstado("listo");
+    }
+  }
+
+  async function empezar() {
+    setError(null);
+    try {
+      const flujo = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const tipo = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"].find((t) =>
+        MediaRecorder.isTypeSupported(t),
+      );
+      const g = new MediaRecorder(flujo, tipo ? { mimeType: tipo } : undefined);
+      trozos.current = [];
+      g.ondataavailable = (e) => {
+        if (e.data.size > 0) trozos.current.push(e.data);
+      };
+      g.onstop = () => {
+        flujo.getTracks().forEach((pista) => pista.stop());
+        void enviar(g.mimeType);
+      };
+      g.start();
+      grabadora.current = g;
+      inicio.current = Date.now();
+      setSegundos(0);
+      setEstado("grabando");
+      reloj.current = window.setInterval(() => {
+        const transcurridos = Math.floor((Date.now() - inicio.current) / 1000);
+        setSegundos(transcurridos);
+        if (transcurridos >= MAX_SEGUNDOS_DICTADO) detener();
+      }, 250);
+    } catch {
+      setError("No pudimos usar el micrófono. Revisa el permiso del navegador o escribe tus notas.");
+    }
+  }
+
+  const tiempo = `${Math.floor(segundos / 60)}:${String(segundos % 60).padStart(2, "0")}`;
+
+  return (
+    <div className="flex w-full flex-col gap-1.5">
+      <div className="flex flex-wrap items-center gap-2">
+        {estado === "grabando" ? (
+          <Boton variante="contorno" onClick={detener} className="min-w-[150px]">
+            <Square size={14} strokeWidth={2.4} className="fill-current text-primary" />
+            Listo · <span className="tabular-nums">{tiempo}</span>
+          </Boton>
+        ) : (
+          <Boton variante="contorno" onClick={() => void empezar()} disabled={estado === "transcribiendo"}>
+            {estado === "transcribiendo" ? <Spinner /> : <Mic size={16} strokeWidth={2} />}
+            {estado === "transcribiendo" ? "Escribiendo lo que dijiste…" : "Dictar"}
+          </Boton>
+        )}
+        <span className="text-[12px] text-text-muted">El audio se vuelve texto y no se guarda.</span>
+      </div>
+      {error && <AvisoError mensaje={error} />}
+    </div>
   );
 }
 
