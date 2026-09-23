@@ -57,6 +57,9 @@ function Contenido() {
       queryClient.setQueryData(["practice-set", id], s);
       queryClient.invalidateQueries({ queryKey: ["me", "practice"] });
       queryClient.invalidateQueries({ queryKey: ["me", "engagement"] });
+      // Si terminar encendió un logro, la estrella se celebra aquí mismo (brief, B5.3): la celebración
+      // mira los logros, y sin esto no se enteraba hasta volver a cargar el perfil.
+      queryClient.invalidateQueries({ queryKey: ["me", "achievements"] });
     },
   });
 
