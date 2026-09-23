@@ -13,6 +13,7 @@ import { etiquetaObjetivo } from "@/lib/i18n";
 import { NIVEL_ESTUDIANTE, type FichaEstudiante } from "@/lib/gamificacion";
 import { useMe } from "@/lib/auth/session";
 import { fechaCorta } from "@/lib/format";
+import type { ResumenDePractica } from "@/lib/practica";
 
 /**
  * El perfil de un estudiante visto por otra persona.
@@ -130,6 +131,7 @@ function Contenido() {
       )}
 
       <EnClaseContigo estudianteId={id} />
+      <SuPractica estudianteId={id} />
 
       {/* El perfil público NO lleva correo, teléfono, saldo ni con quién ha practicado. No es que
           no se pinten: es que no viajan. */}
@@ -190,6 +192,40 @@ function EnClaseContigo({ estudianteId }: { estudianteId: string }) {
           </li>
         ))}
       </ul>
+    </section>
+  );
+}
+
+/**
+ * Cuánto practicó entre clases (Bloque 10, paso B5.4): un resumen agregado, nunca las respuestas
+ * una por una. Si el estudiante siente que sus ejercicios son vigilados deja de arriesgarse a
+ * equivocarse, y equivocarse en privado es justamente el valor de la práctica.
+ */
+function SuPractica({ estudianteId }: { estudianteId: string }) {
+  const { data: me } = useMe();
+  const resumen = useQuery({
+    queryKey: ["professors", "me", "students", estudianteId, "practice"],
+    queryFn: () => apiFetch<ResumenDePractica>(`/api/v1/professors/me/students/${estudianteId}/practice`),
+    enabled: me?.role === "PROFESSOR",
+    retry: false,
+  });
+  const d = resumen.data;
+  if (!d || (d.ofrecidasEstaSemana === 0 && d.leCosto.length === 0)) return null;
+
+  return (
+    <section className="mt-5 rounded-card border border-border bg-surface-raised p-5">
+      <h2 className="text-[12px] font-bold uppercase tracking-[0.06em] text-text-secondary">Entre clases</h2>
+      <p className="mt-2 text-[14.5px] leading-relaxed text-text">
+        {d.ofrecidasEstaSemana > 0 ? (
+          <>
+            <strong>
+              Practicó {d.completadasEstaSemana} de {d.ofrecidasEstaSemana}{" "}
+              {d.ofrecidasEstaSemana === 1 ? "vez" : "veces"} esta semana.
+            </strong>{" "}
+          </>
+        ) : null}
+        {d.leCosto.length > 0 && <>Le costó: {d.leCosto.join(", ")}.</>}
+      </p>
     </section>
   );
 }

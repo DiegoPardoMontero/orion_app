@@ -5,6 +5,11 @@ springdoc:
     enabled: true
 
 orion:
+  jobs:
+    # En local la práctica se genera a los pocos segundos de publicar el acta: la prueba de
+    # navegador no tiene por qué esperar el minuto de producción.
+    practice-generation:
+      interval-ms: 3000
   admin:
     email: ${ORION_ADMIN_EMAIL:admin@orion.local}
     password: ${ORION_ADMIN_PASSWORD:admin123*}

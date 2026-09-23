@@ -548,6 +548,14 @@ pedía confirmarlo con Sofía; lo decidió él).
   respuestas.
 - Presupuesto propio (`practice_daily_budget_cop`, 20.000): sin presupuesto los sets esperan a
   mañana en vez de fallar.
+- **Pantallas**: la invitación en Mi perfil → Resumen, debajo de la próxima clase («Para esta semana
+  · 4 min — Del miércoles con María: trabajamos past simple y dos palabras nuevas»), que no aparece
+  si no hay práctica viva; «Practicar esto» en el acta; `/practica/{id}` con un ejercicio por
+  pantalla, cuatro puntos que se encienden, «Casi…» en tono de aviso (nunca rojo) e «Intentar otra
+  vez», y un cierre sin «3 de 4»: lo logrado, lo que conviene repasar y «+15 puntos». En la ficha
+  del estudiante, el profesor ve «Practicó N de M veces esta semana. Le costó…». La racha del panel
+  de progreso es ahora la de la gamificación (la misma del cielo y del mapa), que cuenta la práctica.
+- En el navegador: Ana practica lo de su clase, ve su cierre y sus puntos, y María lo ve en la ficha.
 
 ## Revisión de seguridad y permisos (22/09/2026)
 

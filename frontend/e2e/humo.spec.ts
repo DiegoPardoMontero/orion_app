@@ -357,6 +357,65 @@ test("María escribe y publica el acta de una clase; Ana la lee", async ({ page 
 });
 
 /**
+ * La práctica (Bloque 10, Parte B), de punta a punta con el generador sin IA: del acta que María
+ * acaba de publicar sale el set; Ana entra desde «Practicar esto», resuelve los ejercicios, ve el
+ * cierre con sus puntos, y María lo ve en la ficha de Ana como un resumen, sin respuestas.
+ */
+test("Ana practica lo de su clase y María lo ve en su ficha", async ({ page }) => {
+  await login(page, USERS.ana);
+  await page.waitForURL((u) => !u.pathname.startsWith("/login"));
+  await page.goto("/mis-clases?scope=past");
+  await page.getByRole("region", { name: "Resúmenes de tus clases" }).getByRole("link", { name: /María Gómez/ }).first().click();
+  await page.waitForURL(/\/acta$/);
+
+  // El set se genera en segundo plano (cada 3 s en local): la puerta aparece cuando está listo.
+  const practicar = page.getByRole("link", { name: "Practicar esto" });
+  await expect(async () => {
+    await page.reload();
+    await expect(practicar).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 30_000 });
+  await practicar.click();
+
+  // Un ejercicio por pantalla, hasta que no quede ninguno abierto.
+  const verComo = page.getByRole("button", { name: "Ver cómo me fue" });
+  for (let i = 0; i < 8; i++) {
+    // Cada vuelta espera a que el ejercicio esté en pantalla antes de decidir cómo responderlo.
+    await expect(page.getByRole("radiogroup").or(page.getByPlaceholder("Tu frase")).or(verComo)).toBeVisible();
+    if (await verComo.isVisible()) break;
+    const opciones = page.getByRole("radio");
+    if ((await opciones.count()) > 0) {
+      await opciones.first().click();
+    } else {
+      const termino = (await page.locator("main p[lang='en']").first().textContent())?.trim() ?? "used to";
+      await page.getByPlaceholder("Tu frase").fill(`Last year I ${termino} every weekend with my friends.`);
+    }
+    await page.getByRole("button", { name: "Comprobar" }).click();
+    const otraVez = page.getByRole("button", { name: "Intentar otra vez" });
+    const siguiente = page.getByRole("button", { name: "Siguiente" });
+    await expect(page.getByText("Así es.").or(otraVez).or(siguiente)).toBeVisible();
+    if (await otraVez.isVisible()) {
+      await otraVez.click();
+      await page.getByRole("radio").last().click();
+      await page.getByRole("button", { name: "Comprobar" }).click();
+      await expect(page.getByText("Así es.").or(siguiente)).toBeVisible();
+    }
+    if (await siguiente.isVisible()) await siguiente.click();
+    await page.waitForTimeout(1400);
+  }
+  await page.getByRole("button", { name: "Ver cómo me fue" }).click();
+  await expect(page.getByRole("heading", { name: /bien usados/ })).toBeVisible();
+  await expect(page.getByText("+15 puntos")).toBeVisible();
+  await page.goto("/mis-clases");
+  await logout(page);
+
+  await login(page, USERS.maria);
+  await page.waitForURL((u) => !u.pathname.startsWith("/login"));
+  await page.goto("/mis-clases?scope=past");
+  await page.getByRole("link", { name: "Ana Ramírez", exact: true }).first().click();
+  await expect(page.getByText(/Practicó 1 de 1 vez esta semana/)).toBeVisible();
+});
+
+/**
  * Variante de fallo (brief, C2): sin la IA —apagada desde Ajustes, que es lo mismo que ve el
  * profesor cuando el proveedor cae o el presupuesto se agota— el acta se escribe a mano en los
  * mismos campos y se publica igual. Sin un solo mensaje de error técnico.

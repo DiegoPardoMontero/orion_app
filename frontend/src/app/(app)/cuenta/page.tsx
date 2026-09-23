@@ -10,6 +10,7 @@ import { CambiarFoto } from "@/components/CambiarFoto";
 import { MiCielo } from "@/components/gamificacion/MiCielo";
 import { TarjetaDiagnostico } from "@/components/gamificacion/TarjetaDiagnostico";
 import { MiFicha } from "@/components/gamificacion/MiFicha";
+import { InvitacionAPracticar } from "@/components/InvitacionAPracticar";
 import { PanelProgreso } from "@/components/PanelProgreso";
 import { PoliticaCancelacion } from "@/components/PoliticaCancelacion";
 import { PreguntasFrecuentes } from "@/components/PreguntasFrecuentes";
@@ -146,6 +147,7 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
         <>
           <TarjetaDiagnostico />
           <PanelProgreso />
+          <InvitacionAPracticar />
           <div className="mt-8">
             <MiCielo />
           </div>

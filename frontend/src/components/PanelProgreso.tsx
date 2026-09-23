@@ -7,7 +7,7 @@ import { Avatar } from "@/components/Avatar";
 import { Constelacion } from "@/components/marca";
 import { Rigel, type RigelPose } from "@/components/Rigel";
 import { apiFetch } from "@/lib/api/fetch";
-import type { MapaRacha, SemanaRacha } from "@/lib/gamificacion";
+import type { Engagement, MapaRacha, SemanaRacha } from "@/lib/gamificacion";
 import { diaBogota, fechaCorta, horaBogota } from "@/lib/format";
 
 type ProximaClase = {
@@ -135,15 +135,26 @@ function saludoDe(progreso: Progreso): Saludo {
  * los números crecen solos y nunca contradicen a la agenda.
  */
 export function PanelProgreso() {
-  const { data, isPending, isError } = useQuery({
+  const { data: progreso, isPending, isError } = useQuery({
     queryKey: ["me", "progress"],
     queryFn: () => apiFetch<Progreso>("/api/v1/me/progress"),
+    staleTime: 60_000,
+  });
+  // La racha es la de la gamificación, la misma que el cielo y el mapa: cuenta las clases, las
+  // semanas protegidas y, desde el Bloque 10, las prácticas terminadas (decisión de Pardo). La de
+  // `/me/progress` solo cuenta clases; mostrar las dos en la misma pantalla era contradecirse.
+  const { data: engagement } = useQuery({
+    queryKey: ["me", "engagement"],
+    queryFn: () => apiFetch<Engagement>("/api/v1/me/engagement"),
     staleTime: 60_000,
   });
 
   // Sin panel se sigue pudiendo editar la cuenta, que es lo que esta pantalla ya hacía: un fallo
   // aquí no debe dejar a nadie sin poder cambiar su teléfono.
-  if (isPending || isError || !data) return null;
+  if (isPending || isError || !progreso) return null;
+  const data: Progreso = engagement
+    ? { ...progreso, currentStreakWeeks: engagement.currentStreakWeeks, bestStreakWeeks: engagement.bestStreakWeeks }
+    : progreso;
 
   const saludo = saludoDe(data);
   const horas = Math.round(data.minutesTotal / 60);

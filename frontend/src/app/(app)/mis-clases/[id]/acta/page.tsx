@@ -17,6 +17,7 @@ import {
   type Palabra,
 } from "@/lib/actas";
 import { ApiError, apiFetch, uploadFile } from "@/lib/api/fetch";
+import type { SetDePractica } from "@/lib/practica";
 import { useMe } from "@/lib/auth/session";
 import { fechaLarga } from "@/lib/format";
 
@@ -574,6 +575,30 @@ function Lectura({ acta }: { acta: ActaDelEstudiante }) {
           <p className="whitespace-pre-wrap text-[14.5px] leading-relaxed">{acta.nextSteps}</p>
         </Bloque>
       )}
+
+      <PracticarEsto actaId={acta.id} />
     </div>
+  );
+}
+
+/**
+ * La puerta a la práctica (Parte B). Solo aparece si el set de esta acta está vivo: mientras se
+ * genera, si venció o si la práctica está apagada, el botón no existe.
+ */
+function PracticarEsto({ actaId }: { actaId: string }) {
+  const practica = useQuery({
+    queryKey: ["me", "practice"],
+    queryFn: () => apiFetch<SetDePractica | undefined>("/api/v1/me/practice"),
+    staleTime: 60_000,
+  });
+  if (!practica.data || practica.data.lessonNoteId !== actaId) return null;
+  return (
+    <Link
+      href={`/practica/${practica.data.id}`}
+      className="inline-flex min-h-11 items-center gap-2 rounded-pill bg-primary px-6 text-[15px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus"
+    >
+      <Sparkles size={16} strokeWidth={2} />
+      Practicar esto
+    </Link>
   );
 }
