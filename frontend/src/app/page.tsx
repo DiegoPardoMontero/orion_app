@@ -379,7 +379,9 @@ export default async function PortadaPage() {
                 className="aparece grid gap-3 bg-[#2E1E4E] p-6 sm:grid-cols-[3.5rem_minmax(0,14ch)_1fr] sm:items-start sm:gap-6 lg:p-7"
                 style={{ "--i": i } as CSSProperties}
               >
-                <span aria-hidden="true" className="font-display text-[52px] font-bold leading-none lg:text-[60px]" style={{ color: paso.color }}>
+                {/* Centrada en su columna: alineada a la izquierda, la «I» —un solo trazo— quedaba
+                    pegada al borde y fuera del eje de las otras cuatro, que llenan la columna. */}
+                <span aria-hidden="true" className="font-display text-[52px] font-bold leading-none sm:text-center lg:text-[60px]" style={{ color: paso.color }}>
                   {paso.letra}
                 </span>
                 <p className="font-display text-[20px] font-bold sm:pt-2 lg:text-[22px]">{paso.palabra}</p>
