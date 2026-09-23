@@ -311,3 +311,16 @@ export class ConversacionDeVoz {
     if (limpia) this.cb.onFrase?.(limpia, this.turnosIniciados, this.frasesDelTurno++);
   }
 }
+
+/**
+ * Lo que se lee de la traducción: las frases en orden hasta la primera que todavía no llega, para
+ * que nunca aparezca la tercera antes que la segunda. Las que no tienen traducción se saltan.
+ */
+export function traduccionVisible(traducciones: (string | null | undefined)[]): string {
+  const listas: string[] = [];
+  for (const t of traducciones) {
+    if (t === undefined) break;
+    if (t) listas.push(t);
+  }
+  return listas.join(" ");
+}

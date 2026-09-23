@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ConversacionDeVoz, type ConversacionCallbacks } from "./diagnostico";
+import { ConversacionDeVoz, traduccionVisible, type ConversacionCallbacks } from "./diagnostico";
 
 /**
  * El cliente de voz, alimentado con la secuencia de eventos que manda OpenAI por WebRTC. Ahí el
@@ -127,5 +127,17 @@ describe("ConversacionDeVoz por WebRTC", () => {
     meissaHabla.voz.recibir({ type: "response.created" });
     meissaHabla.voz.pedirDespedida("[Time is up]");
     expect(meissaHabla.enviados.map((m) => (m as { type: string }).type)).toEqual(["conversation.item.create"]);
+  });
+});
+
+describe("traduccionVisible", () => {
+  it("muestra las frases en orden y se detiene en la primera que todavía no llega", () => {
+    expect(traduccionVisible(["Hola.", undefined, "¿Y tú?"])).toBe("Hola.");
+    expect(traduccionVisible(["Hola.", "¿Cómo vas?"])).toBe("Hola. ¿Cómo vas?");
+  });
+
+  it("salta las que no tienen traducción (ya eran español o no llegaron a tiempo)", () => {
+    expect(traduccionVisible([null, "¿Dónde estás?"])).toBe("¿Dónde estás?");
+    expect(traduccionVisible([])).toBe("");
   });
 });

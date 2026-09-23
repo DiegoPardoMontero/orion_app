@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { apiFetch } from "@/lib/api/fetch";
 import {
   ConversacionDeVoz,
+  traduccionVisible,
   type DiagnosticoIniciado,
   type FaseDeMeissa,
   type TurnoMedido,
@@ -267,19 +268,6 @@ export function Conversacion({
       </div>
     </main>
   );
-}
-
-/**
- * Lo que se lee de la traducción: las frases en orden hasta la primera que todavía no llega, para
- * que nunca aparezca la tercera antes que la segunda. Las que no tienen traducción se saltan.
- */
-function traduccionVisible(traducciones: (string | null | undefined)[]): string {
-  const listas: string[] = [];
-  for (const t of traducciones) {
-    if (t === undefined) break;
-    if (t) listas.push(t);
-  }
-  return listas.join(" ");
 }
 
 const PREFERENCIA_TRADUCCION = "orion.meissa.traduccion";

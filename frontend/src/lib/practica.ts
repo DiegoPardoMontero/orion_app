@@ -65,3 +65,20 @@ export function leerPayload<T>(ejercicio: Ejercicio): T {
 }
 
 export const PUNTOS_POR_PRACTICA = 15;
+
+export function primerNombre(nombre: string): string {
+  return nombre.trim().split(/\s+/)[0];
+}
+
+/** Lo trabajado, en una línea: la primera frase del acta, sin punto final. */
+export function resumirLoTrabajado(texto: string | null): string | null {
+  if (!texto?.trim()) return null;
+  const primera = texto.trim().split(/(?<=[.;!?])\s/)[0].replace(/[.;!?]+$/, "");
+  const corta = primera.length > 70 ? `${primera.slice(0, 67).trimEnd()}…` : primera;
+  return corta.charAt(0).toLowerCase() + corta.slice(1);
+}
+
+export function palabrasNuevas(n: number): string {
+  const numeros = ["", "una", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez", "once", "doce"];
+  return n === 1 ? "una palabra nueva" : `${numeros[n] ?? n} palabras nuevas`;
+}

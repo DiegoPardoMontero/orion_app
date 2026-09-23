@@ -5,7 +5,7 @@ import { Sparkles } from "lucide-react";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api/fetch";
 import { fechaLarga } from "@/lib/format";
-import type { SetDePractica } from "@/lib/practica";
+import { palabrasNuevas, primerNombre, resumirLoTrabajado, type SetDePractica } from "@/lib/practica";
 
 /**
  * La invitación a practicar (Bloque 10, paso B5.1): «Para esta semana · 4 min». Si no hay un set
@@ -25,7 +25,7 @@ export function InvitacionAPracticar() {
   const de = [dia ? `Del ${dia}` : "De tu última clase", s.professorName ? `con ${primerNombre(s.professorName)}` : null]
     .filter(Boolean)
     .join(" ");
-  const que = [resumir(s.workedOn), s.vocabularyCount > 0 ? palabras(s.vocabularyCount) : null].filter(Boolean).join(" y ");
+  const que = [resumirLoTrabajado(s.workedOn), s.vocabularyCount > 0 ? palabrasNuevas(s.vocabularyCount) : null].filter(Boolean).join(" y ");
 
   return (
     <section className="mt-6 rounded-card bg-accent-lavender-soft p-5" aria-labelledby="titulo-practica">
@@ -45,21 +45,4 @@ export function InvitacionAPracticar() {
       </Link>
     </section>
   );
-}
-
-function primerNombre(nombre: string): string {
-  return nombre.trim().split(/\s+/)[0];
-}
-
-/** Lo trabajado, en una línea: la primera frase del acta, sin punto final. */
-function resumir(texto: string | null): string | null {
-  if (!texto?.trim()) return null;
-  const primera = texto.trim().split(/(?<=[.;!?])\s/)[0].replace(/[.;!?]+$/, "");
-  const corta = primera.length > 70 ? `${primera.slice(0, 67).trimEnd()}…` : primera;
-  return corta.charAt(0).toLowerCase() + corta.slice(1);
-}
-
-function palabras(n: number): string {
-  const numeros = ["", "una", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez", "once", "doce"];
-  return n === 1 ? "una palabra nueva" : `${numeros[n] ?? n} palabras nuevas`;
 }
