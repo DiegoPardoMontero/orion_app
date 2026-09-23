@@ -9,7 +9,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
@@ -86,6 +88,51 @@ class OpenAiPracticeGeneratorTest {
         assertThatThrownBy(() -> generador.generar(UUID.randomUUID(), ACTA, 4))
                 .isInstanceOf(PracticeGenerator.ProveedorNoRespondio.class);
         verify(presupuesto).registrar(any(), any(), eq(null), eq(null), anyInt(), eq("ERROR"));
+    }
+
+    private static final Material COMPLETA = new Material("EN", "Job interview practice.", "Says 'make homework'.",
+            null, List.of(new Material.Termino("deadline", "fecha límite"), new Material.Termino("strength", "fortaleza")),
+            null, null);
+
+    @Test
+    @DisplayName("Los tipos se piden rotando según la clase: con v1 el diálogo no salía nunca")
+    void tiposRotan() {
+        Set<PracticeItemType> vistos = new HashSet<>();
+        for (int i = 0; i < 40; i++) {
+            Material m = new Material("EN", COMPLETA.workedOn(), COMPLETA.recurringIssues(), null,
+                    COMPLETA.vocabulary(), UUID.randomUUID().toString(), null);
+            List<PracticeItemType> tipos = OpenAiPracticeGenerator.tiposPara(m, 4);
+            assertThat(tipos).hasSize(4).doesNotHaveDuplicates();
+            vistos.addAll(tipos);
+        }
+        assertThat(vistos).containsExactlyInAnyOrder(PracticeItemType.values());
+        assertThat(OpenAiPracticeGenerator.entrada(COMPLETA, 4)).contains("Tipos para este set: ");
+    }
+
+    @Test
+    @DisplayName("Solo se piden los tipos que el acta alcanza a anclar")
+    void soloLoQueSeAncla() {
+        Material sinErroresNiTema = new Material("EN", null, " ", null, COMPLETA.vocabulary(), "x", null);
+        Material unaPalabra = new Material("EN", "Small talk.", null, null,
+                List.of(new Material.Termino("deadline", null)), "x", null);
+
+        assertThat(OpenAiPracticeGenerator.tiposPara(sinErroresNiTema, 4)).containsExactly(
+                PracticeItemType.FILL_BLANK, PracticeItemType.MATCH_MEANING, PracticeItemType.WRITE_SENTENCE);
+        assertThat(OpenAiPracticeGenerator.tiposPara(unaPalabra, 4)).containsExactly(
+                PracticeItemType.FILL_BLANK, PracticeItemType.ORDER_DIALOGUE, PracticeItemType.WRITE_SENTENCE);
+    }
+
+    @Test
+    @DisplayName("Un diálogo que llega ya en orden se desordena en vez de perderse")
+    void dialogoEnOrden() {
+        String lineas = "[\"A: Hi\",\"B: Hello\",\"A: How was it?\",\"B: Great\"]";
+        List<PracticeGenerator.Generado> leidos = OpenAiPracticeGenerator.leer(
+                "{\"items\":[{\"type\":\"ORDER_DIALOGUE\",\"prompt\":\"Ordena.\",\"payload\":{\"lines\":" + lineas
+                        + "},\"expected\":" + lineas + ",\"explanation\":\"x\",\"sourceTerm\":null}]}");
+
+        assertThat(leidos.getFirst().payload())
+                .isEqualTo("{\"lines\":[\"B: Hello\",\"B: Great\",\"A: Hi\",\"A: How was it?\"]}");
+        assertThat(ValidadorDeEjercicios.validos(leidos, COMPLETA, 4)).hasSize(1);
     }
 
     @Test

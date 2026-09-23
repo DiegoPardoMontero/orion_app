@@ -71,6 +71,17 @@ class ValidadorDeEjerciciosTest {
     }
 
     @Test
+    @DisplayName("La pista entre paréntesis del acta no cuenta: «get used to (+ing)» ancla a «get used to»")
+    void pistaEntreParentesis() {
+        Material conPista = new Material("EN", "x", null, null,
+                List.of(new Material.Termino("get used to (+ing)", "acostumbrarse a")), null, null);
+        Generado escribir = new Generado(PracticeItemType.WRITE_SENTENCE, "Escribe.", "{\"term\":\"get used to\"}",
+                null, "Usa la expresión.", "get used to");
+
+        assertThat(ValidadorDeEjercicios.validos(List.of(escribir), conPista, 4)).hasSize(1);
+    }
+
+    @Test
     @DisplayName("Un ejercicio mal formado se descarta él solo, no el set entero")
     void malFormado() {
         Generado roto = new Generado(PracticeItemType.ORDER_DIALOGUE, "Ordena.", "{no es json", "[]", "x", null);

@@ -6,9 +6,11 @@ import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -25,6 +27,8 @@ import org.springframework.web.client.RestClient;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import co.orion.practice.domain.PracticeItemType;
 
@@ -39,7 +43,7 @@ public class OpenAiPracticeGenerator implements PracticeGenerator {
 
     private static final Logger log = LoggerFactory.getLogger(OpenAiPracticeGenerator.class);
     private static final ObjectMapper JSON = new ObjectMapper();
-    static final String PROMPT = "prompts/practice-v1.txt";
+    static final String PROMPT = "prompts/practice-v2.txt";
 
     private final RestClient http;
     private final String apiKey;
@@ -116,7 +120,40 @@ public class OpenAiPracticeGenerator implements PracticeGenerator {
         for (Material.Termino t : m.vocabulary()) {
             sb.append("- ").append(t.term()).append(t.meaning() == null ? "" : " = " + t.meaning()).append('\n');
         }
+        sb.append("Tipos para este set: ").append(String.join(", ",
+                tiposPara(m, cuantos).stream().map(Enum::name).toList())).append('\n');
         return sb.toString();
+    }
+
+    /**
+     * Qué tipos pedir: los que el acta alcanza a anclar y, si sobran, rotando cuál se queda fuera
+     * según la clase. Dejándole la elección al modelo, elegía siempre los mismos cuatro y el diálogo
+     * no salía nunca; así cada set trae una mezcla distinta y todos los tipos van apareciendo.
+     */
+    static List<PracticeItemType> tiposPara(Material m, int cuantos) {
+        List<PracticeItemType> posibles = new ArrayList<>();
+        if (!m.vocabulary().isEmpty()) {
+            posibles.add(PracticeItemType.FILL_BLANK);
+        }
+        if (m.recurringIssues() != null && !m.recurringIssues().isBlank()) {
+            posibles.add(PracticeItemType.FIX_SENTENCE);
+        }
+        if (m.vocabulary().size() >= 2) {
+            posibles.add(PracticeItemType.MATCH_MEANING);
+        }
+        if (m.workedOn() != null && !m.workedOn().isBlank()) {
+            posibles.add(PracticeItemType.ORDER_DIALOGUE);
+        }
+        if (!m.vocabulary().isEmpty()) {
+            posibles.add(PracticeItemType.WRITE_SENTENCE);
+        }
+        if (posibles.size() <= cuantos) {
+            return posibles;
+        }
+        Collections.rotate(posibles, -Math.floorMod(Objects.hashCode(m.bookingId()), posibles.size()));
+        List<PracticeItemType> elegidos = new ArrayList<>(posibles.subList(0, cuantos));
+        elegidos.sort(null);
+        return elegidos;
     }
 
     static List<Generado> leer(String contenido) {
@@ -133,7 +170,9 @@ public class OpenAiPracticeGenerator implements PracticeGenerator {
                     continue;
                 }
                 JsonNode esperado = item.path("expected");
-                salida.add(new Generado(tipo, item.path("prompt").asText(null), item.path("payload").toString(),
+                JsonNode payload = tipo == PracticeItemType.ORDER_DIALOGUE
+                        ? desordenado(item.path("payload"), esperado) : item.path("payload");
+                salida.add(new Generado(tipo, item.path("prompt").asText(null), payload.toString(),
                         esperado.isNull() || esperado.isMissingNode() ? null
                                 : esperado.isTextual() ? esperado.asText() : esperado.toString(),
                         item.path("explanation").asText(null),
@@ -143,6 +182,27 @@ public class OpenAiPracticeGenerator implements PracticeGenerator {
             return List.of();
         }
         return salida;
+    }
+
+    /**
+     * A veces el modelo manda el diálogo ya en orden, y ordenar lo ordenado no es un ejercicio. En vez
+     * de perderlo, se desordena aquí: primero las intervenciones impares y luego las pares
+     * ({@code [1, 3, 0, 2]} para cuatro), que nunca coincide con el orden original.
+     */
+    static JsonNode desordenado(JsonNode payload, JsonNode esperado) {
+        JsonNode lineas = payload.path("lines");
+        if (!(payload instanceof ObjectNode objeto) || !lineas.isArray() || lineas.size() < 2 || !lineas.equals(esperado)) {
+            return payload;
+        }
+        ArrayNode nuevas = JSON.createArrayNode();
+        for (int inicio = 1; inicio >= 0; inicio--) {
+            for (int i = inicio; i < lineas.size(); i += 2) {
+                nuevas.add(lineas.get(i));
+            }
+        }
+        ObjectNode copia = objeto.deepCopy();
+        copia.set("lines", nuevas);
+        return copia;
     }
 
     private static String texto(String s) {

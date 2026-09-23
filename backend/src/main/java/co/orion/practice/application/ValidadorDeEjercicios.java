@@ -121,7 +121,11 @@ public final class ValidadorDeEjercicios {
         return s == null || s.isBlank();
     }
 
+    /**
+     * Sin mayúsculas ni la pista entre paréntesis: «get used to (+ing)» en el acta es el mismo término
+     * que el «get used to» que escribe el modelo, como ya lo entiende {@code Evaluador}.
+     */
     private static String norma(String s) {
-        return s == null ? "" : s.strip().toLowerCase(Locale.ROOT);
+        return s == null ? "" : s.replaceAll("\\([^)]*\\)", " ").replaceAll("\\s+", " ").strip().toLowerCase(Locale.ROOT);
     }
 }
