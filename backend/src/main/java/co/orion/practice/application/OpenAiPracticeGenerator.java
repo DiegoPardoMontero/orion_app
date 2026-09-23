@@ -81,11 +81,11 @@ public class OpenAiPracticeGenerator implements PracticeGenerator {
                     .body(Map.class);
         } catch (ResourceAccessException ex) {
             presupuesto.registrar(estudianteId, modelo, null, null, ms(inicio), "TIMEOUT");
-            return List.of();
+            throw new ProveedorNoRespondio("se agotó el tiempo");
         } catch (RuntimeException ex) {
             presupuesto.registrar(estudianteId, modelo, null, null, ms(inicio), "ERROR");
             log.warn("El proveedor falló al generar una práctica: {}", ex.getMessage());
-            return List.of();
+            throw new ProveedorNoRespondio(ex.getMessage());
         }
         List<Generado> generados = leer(contenido(respuesta));
         presupuesto.registrar(estudianteId, modelo, tokens(respuesta, "prompt_tokens"),

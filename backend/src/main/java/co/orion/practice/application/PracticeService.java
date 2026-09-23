@@ -39,6 +39,7 @@ import co.orion.practice.persistence.PracticeItemRepository;
 import co.orion.practice.persistence.PracticeSetRepository;
 import co.orion.scheduling.persistence.BookingRepository;
 import co.orion.shared.error.ResourceNotFoundException;
+import co.orion.shared.error.UnprocessableException;
 import co.orion.shared.time.BusinessZone;
 
 /**
@@ -116,6 +117,12 @@ public class PracticeService {
                 if (Boolean.TRUE.equals(listo)) {
                     listos++;
                 }
+            } catch (PracticeGenerator.ProveedorNoRespondio ex) {
+                // El set sigue pendiente y sin gastar intento. Los demás de esta corrida esperarían lo
+                // mismo —hasta un minuto cada uno—, así que la corrida para aquí.
+                log.info("El proveedor no respondió; {} y los que siguen esperan a la próxima corrida",
+                        pendiente.getId());
+                break;
             } catch (RuntimeException ex) {
                 // Un set que falla no frena a los demás: queda pendiente para la siguiente corrida.
                 log.warn("No se pudo generar el set {}: {}", pendiente.getId(), ex.getMessage());
@@ -222,12 +229,21 @@ public class PracticeService {
 
     /**
      * Cerrar el set. Idempotente: la segunda vez devuelve el mismo resumen, sin recalcular ni
-     * volver a publicar el evento que da los puntos.
+     * volver a publicar el evento que da los puntos. Y solo con todos los ejercicios cerrados —como
+     * en la pantalla, que no ofrece «Ver cómo me fue» antes—: los puntos y la semana de racha son
+     * por practicar, no por llamar al endpoint.
      */
     @Transactional
     public ConEjercicios completar(User estudiante, UUID setId) {
         PracticeSet set = suyo(estudiante, setId);
         List<PracticeItem> suyos = items.findByPracticeSetIdOrderByItemIndexAsc(set.getId());
+        int max = maxIntentos();
+        long abiertos = suyos.stream().filter(i -> !i.cerrado(max)).count();
+        if (set.getStatus() != PracticeSetStatus.COMPLETED && abiertos > 0) {
+            throw new UnprocessableException(abiertos == 1
+                    ? "Te falta un ejercicio. Respóndelo y ves cómo te fue."
+                    : "Te faltan " + abiertos + " ejercicios. Respóndelos y ves cómo te fue.");
+        }
         int correctos = (int) suyos.stream().filter(i -> Boolean.TRUE.equals(i.getCorrect())).count();
         if (set.completar(correctos, clock.instant())) {
             sets.save(set);

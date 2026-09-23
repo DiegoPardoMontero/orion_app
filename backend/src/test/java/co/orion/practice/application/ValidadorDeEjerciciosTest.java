@@ -49,6 +49,28 @@ class ValidadorDeEjerciciosTest {
     }
 
     @Test
+    @DisplayName("Unir significados: si el modelo parafrasea uno, no habría forma de acertar y se descarta")
+    void unirConSignificadoParafraseado() {
+        String payload = "{\"terms\":[\"used to\",\"deadline\"],\"meanings\":[\"solía\",\"fecha límite\"]}";
+        Generado bien = new Generado(PracticeItemType.MATCH_MEANING, "Une.", payload,
+                "{\"used to\":\"solía\",\"deadline\":\"Fecha límite.\"}", "Las dos de clase.", null);
+        Generado parafraseado = new Generado(PracticeItemType.MATCH_MEANING, "Une.", payload,
+                "{\"used to\":\"acostumbraba\",\"deadline\":\"fecha límite\"}", "Las dos de clase.", null);
+
+        assertThat(ValidadorDeEjercicios.validos(List.of(bien), ACTA, 4)).hasSize(1);
+        assertThat(ValidadorDeEjercicios.validos(List.of(parafraseado), ACTA, 4)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Lo que no cabe en la tabla se descarta aquí, antes de tumbar el set al guardarlo")
+    void terminoFuenteDemasiadoLargo() {
+        Generado largo = new Generado(PracticeItemType.WRITE_SENTENCE, "Escribe.", "{\"term\":\"deadline\"}",
+                null, "Usa la palabra.", "deadline " + "x".repeat(120));
+
+        assertThat(ValidadorDeEjercicios.validos(List.of(largo), ACTA, 4)).isEmpty();
+    }
+
+    @Test
     @DisplayName("Un ejercicio mal formado se descarta él solo, no el set entero")
     void malFormado() {
         Generado roto = new Generado(PracticeItemType.ORDER_DIALOGUE, "Ordena.", "{no es json", "[]", "x", null);

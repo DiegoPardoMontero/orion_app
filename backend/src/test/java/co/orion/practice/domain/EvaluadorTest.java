@@ -57,6 +57,20 @@ class EvaluadorTest {
     }
 
     @Test
+    @DisplayName("Escribir con un término que trae guion o una pista entre paréntesis también se puede acertar")
+    void escribirConPuntuacionEnElTermino() {
+        assertThat(Evaluador.esCorrecta(PracticeItemType.WRITE_SENTENCE, "{\"term\":\"check-in\"}", null,
+                "I did the check-in at noon.")).isTrue();
+        assertThat(Evaluador.esCorrecta(PracticeItemType.WRITE_SENTENCE, "{\"term\":\"T-shirt\"}", null,
+                "My favourite T-shirt is blue.")).isTrue();
+        assertThat(Evaluador.esCorrecta(PracticeItemType.WRITE_SENTENCE, "{\"term\":\"get used to (+ing)\"}", null,
+                "You will get used to waking up early.")).isTrue();
+        // Y sigue sin valer dentro de otra palabra ni con menos de cuatro palabras.
+        assertThat(Evaluador.esCorrecta(PracticeItemType.WRITE_SENTENCE, "{\"term\":\"check-in\"}", null,
+                "Check-in now.")).isFalse();
+    }
+
+    @Test
     @DisplayName("Una respuesta ilegible es incorrecta, no un error")
     void ilegible() {
         assertThat(Evaluador.esCorrecta(PracticeItemType.MATCH_MEANING, "{}", "{\"a\":\"b\"}", "no es json")).isFalse();

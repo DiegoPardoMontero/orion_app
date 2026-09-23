@@ -18,6 +18,16 @@ public interface PracticeGenerator {
         return true;
     }
 
+    /**
+     * El proveedor no respondió: se agotó el tiempo, un 5xx, un 429, una llave revocada. No es culpa
+     * del acta, así que el set no gasta un intento: sigue pendiente para la siguiente corrida.
+     */
+    final class ProveedorNoRespondio extends RuntimeException {
+        public ProveedorNoRespondio(String motivo) {
+            super(motivo);
+        }
+    }
+
     /** Un ejercicio tal como sale del generador; {@code payload} y {@code expected} en JSON o texto. */
     record Generado(PracticeItemType tipo, String prompt, String payload, String expected, String explicacion,
                     String terminoFuente) {

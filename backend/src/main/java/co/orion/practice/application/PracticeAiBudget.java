@@ -9,6 +9,9 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import co.orion.catalog.application.PlatformSettingsService;
 import co.orion.shared.observability.AlertService;
@@ -30,19 +33,22 @@ public class PracticeAiBudget {
     private final double entradaPorMillon;
     private final double salidaPorMillon;
     private final long pesosPorDolar;
+    private final TransactionTemplate enSuPropiaTransaccion;
     private final Clock clock;
 
     public PracticeAiBudget(JdbcTemplate jdbc, PlatformSettingsService settings, AlertService alertas,
                             @Value("${orion.ai.text-input-usd-per-million:0.25}") double entradaPorMillon,
                             @Value("${orion.ai.text-output-usd-per-million:2.0}") double salidaPorMillon,
                             @Value("${orion.ai.usd-to-cop:3101}") long pesosPorDolar,
-                            Clock clock) {
+                            PlatformTransactionManager transacciones, Clock clock) {
         this.jdbc = jdbc;
         this.settings = settings;
         this.alertas = alertas;
         this.entradaPorMillon = entradaPorMillon;
         this.salidaPorMillon = salidaPorMillon;
         this.pesosPorDolar = pesosPorDolar;
+        this.enSuPropiaTransaccion = new TransactionTemplate(transacciones);
+        this.enSuPropiaTransaccion.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         this.clock = clock;
     }
 
@@ -61,7 +67,17 @@ public class PracticeAiBudget {
         return total == null ? 0 : total;
     }
 
+    /**
+     * En su propia transacción, como {@code AiUsageRecorder}: la llamada se hizo y se pagó aunque la
+     * generación del set termine en rollback, y un gasto que no queda escrito es un tope que no frena.
+     */
     public void registrar(UUID actor, String modelo, Integer entrada, Integer salida, int latenciaMs,
+                          String resultado) {
+        enSuPropiaTransaccion.executeWithoutResult(estado ->
+                escribir(actor, modelo, entrada, salida, latenciaMs, resultado));
+    }
+
+    private void escribir(UUID actor, String modelo, Integer entrada, Integer salida, int latenciaMs,
                           String resultado) {
         double dolares = ((entrada == null ? 0 : entrada) * entradaPorMillon
                 + (salida == null ? 0 : salida) * salidaPorMillon) / 1_000_000.0;

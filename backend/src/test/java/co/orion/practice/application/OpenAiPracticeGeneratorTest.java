@@ -1,6 +1,7 @@
 package co.orion.practice.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -63,13 +64,28 @@ class OpenAiPracticeGeneratorTest {
         verify(presupuesto).registrar(any(), any(), eq(100), eq(20), anyInt(), eq("INVALID_OUTPUT"));
     }
 
+    /**
+     * Que el proveedor no responda no es culpa del acta: el generador lo dice con una excepción propia
+     * y el set no gasta un intento (lo prueba {@code PracticaConProveedorCaidoIT}).
+     */
     @Test
-    @DisplayName("Lento: nada, y su fila TIMEOUT; el set se reintenta en la siguiente corrida")
+    @DisplayName("Lento: su fila TIMEOUT y «el proveedor no respondió», no una lista vacía")
     void lento() {
         proveedor.tarda(2_500).responde(200, ServidorDePrueba.chat("{\"items\":[]}"));
 
-        assertThat(generador.generar(UUID.randomUUID(), ACTA, 4)).isEmpty();
+        assertThatThrownBy(() -> generador.generar(UUID.randomUUID(), ACTA, 4))
+                .isInstanceOf(PracticeGenerator.ProveedorNoRespondio.class);
         verify(presupuesto).registrar(any(), any(), eq(null), eq(null), anyInt(), eq("TIMEOUT"));
+    }
+
+    @Test
+    @DisplayName("Caído (un 503, un 429): su fila ERROR y «el proveedor no respondió»")
+    void caido() {
+        proveedor.responde(503, "{\"error\":{\"message\":\"overloaded\"}}");
+
+        assertThatThrownBy(() -> generador.generar(UUID.randomUUID(), ACTA, 4))
+                .isInstanceOf(PracticeGenerator.ProveedorNoRespondio.class);
+        verify(presupuesto).registrar(any(), any(), eq(null), eq(null), anyInt(), eq("ERROR"));
     }
 
     @Test

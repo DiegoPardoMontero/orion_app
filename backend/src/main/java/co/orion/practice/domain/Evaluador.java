@@ -60,7 +60,7 @@ public final class Evaluador {
     }
 
     /** Mayúsculas, tildes de más, espacios y la puntuación de los bordes no cuentan. */
-    static String normalizar(String texto) {
+    public static String normalizar(String texto) {
         if (texto == null) {
             return "";
         }
@@ -99,10 +99,19 @@ public final class Evaluador {
         if (termino.isBlank()) {
             return false;
         }
-        String f = " " + normalizar(frase).replaceAll("[^\\p{L}\\p{N}' ]", " ") + " ";
-        String t = normalizar(termino);
+        String f = " " + soloPalabras(frase) + " ";
+        // El término pasa por la misma limpieza que la frase: «check-in» se busca como «check in», y lo
+        // que va entre paréntesis («get used to (+ing)») es una pista para el estudiante, no parte del término.
+        String t = soloPalabras(termino.replaceAll("\\([^)]*\\)", " "));
+        if (t.isBlank()) {
+            return false;
+        }
         boolean aparece = Pattern.compile("(?<![\\p{L}])" + Pattern.quote(t) + "(?![\\p{L}])").matcher(f).find();
         long palabras = f.strip().split("\\s+").length;
         return aparece && palabras >= PALABRAS_MINIMAS;
+    }
+
+    private static String soloPalabras(String texto) {
+        return normalizar(texto).replaceAll("[^\\p{L}\\p{N}' ]", " ").replaceAll("\\s+", " ").strip();
     }
 }

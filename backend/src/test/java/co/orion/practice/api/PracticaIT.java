@@ -95,6 +95,16 @@ class PracticaIT extends ApiIntegrationSupport {
         return clase;
     }
 
+    /** Cierra cada ejercicio con dos respuestas que no son: lo mínimo para poder terminar el set. */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private void cerrarTodos(Map set) {
+        for (Map item : (List<Map>) set.get("items")) {
+            for (int intento = 0; intento < 2; intento++) {
+                post("/api/v1/practice-items/" + item.get("id") + "/answer", sesionAna, Map.of("answer", "no sé"), Map.class);
+            }
+        }
+    }
+
     /** El set de Ana, ya generado. */
     @SuppressWarnings("rawtypes")
     private Map setListo() {
@@ -171,6 +181,26 @@ class PracticaIT extends ApiIntegrationSupport {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Test
+    @DisplayName("Corregir la frase: las otras correcciones válidas no viajan mientras el ejercicio está abierto")
+    void corregirNoAdelantaLasRespuestas() {
+        Map set = setListo();
+        Object id = ((List<Map>) set.get("items")).getFirst().get("id");
+        jdbc.update("update practice_items set item_type = 'FIX_SENTENCE', expected = 'I went yesterday', "
+                + "payload = '{\"sentence\":\"I go yesterday\",\"accepted\":[\"Yesterday I went\"]}'::jsonb "
+                + "where id = ?::uuid", id);
+
+        Map abierto = ((List<Map>) get("/api/v1/practice-sets/" + set.get("id"), sesionAna, Map.class).getBody()
+                .get("items")).getFirst();
+        assertThat((String) abierto.get("payload")).contains("I go yesterday").doesNotContain("accepted");
+
+        post("/api/v1/practice-items/" + id + "/answer", sesionAna, Map.of("answer", "I goed yesterday"), Map.class);
+        Map cerrado = (Map) post("/api/v1/practice-items/" + id + "/answer", sesionAna,
+                Map.of("answer", "I gone yesterday"), Map.class).getBody().get("item");
+        assertThat((String) cerrado.get("payload")).contains("Yesterday I went");
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    @Test
     @DisplayName("Solo su dueño: responder el ejercicio de otro estudiante es 404")
     void soloElDueno() {
         Map set = setListo();
@@ -201,6 +231,9 @@ class PracticaIT extends ApiIntegrationSupport {
     void completarYRacha() {
         Map set = setListo();
         String ruta = "/api/v1/practice-sets/" + set.get("id") + "/complete";
+        // Sin responder no se termina: los puntos y la semana de racha son por practicar.
+        assertThat(post(ruta, sesionAna, null, Map.class).getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+        cerrarTodos(set);
 
         assertThat(post(ruta, sesionAna, null, Map.class).getBody()).containsEntry("status", "COMPLETED");
         assertThat(post(ruta, sesionAna, null, Map.class).getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -221,6 +254,7 @@ class PracticaIT extends ApiIntegrationSupport {
     @DisplayName("El profesor ve cuánto practicó y dónde le costó, nunca las respuestas; otro profesor, nada")
     void loQueVeElProfesor() {
         Map set = setListo();
+        cerrarTodos(set);
         post("/api/v1/practice-sets/" + set.get("id") + "/complete", sesionAna, null, Map.class);
 
         Map resumen = get("/api/v1/professors/me/students/" + ana.getId() + "/practice", sesionMaria, Map.class).getBody();
@@ -236,6 +270,7 @@ class PracticaIT extends ApiIntegrationSupport {
     @DisplayName("El panel del admin cuenta sets generados, completados y vencidos; un estudiante no lo ve")
     void elPanelDelAdmin() {
         Map set = setListo();
+        cerrarTodos(set);
         post("/api/v1/practice-sets/" + set.get("id") + "/complete", sesionAna, null, Map.class);
         createUser("admin@orion.test", "Orion Admin", UserRole.ADMIN);
 

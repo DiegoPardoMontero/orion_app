@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import co.orion.identity.persistence.UserRepository;
 import co.orion.practice.application.Material;
@@ -20,6 +22,7 @@ import co.orion.practice.application.PracticeMetrics;
 import co.orion.practice.application.PracticeService;
 import co.orion.practice.application.PracticeService.ConEjercicios;
 import co.orion.practice.domain.PracticeItem;
+import co.orion.practice.domain.PracticeItemType;
 import co.orion.practice.domain.PracticeSet;
 import co.orion.shared.security.OrionUserDetails;
 import co.orion.shared.time.BusinessZone;
@@ -134,9 +137,29 @@ public class PracticeController {
      */
     private static ItemView item(PracticeItem i, boolean cerrado) {
         boolean acerto = Boolean.TRUE.equals(i.getCorrect());
-        return new ItemView(i.getId(), i.getItemIndex(), i.getItemType().name(), i.getPrompt(), i.getPayload(),
+        return new ItemView(i.getId(), i.getItemIndex(), i.getItemType().name(), i.getPrompt(), payload(i, cerrado),
                 i.getAttempts(), i.getCorrect(), cerrado, i.getAttempts() > 0 ? i.getExplanation() : null,
                 cerrado && !acerto ? i.getExpected() : null, i.getAnswer());
+    }
+
+    /**
+     * En corregir la frase, {@code accepted} son otras correcciones igual de válidas: respuestas, y por
+     * la misma regla que {@code expected} no viajan mientras el ejercicio sigue abierto.
+     */
+    private static String payload(PracticeItem i, boolean cerrado) {
+        if (cerrado || i.getItemType() != PracticeItemType.FIX_SENTENCE) {
+            return i.getPayload();
+        }
+        try {
+            JsonNode p = JSON.readTree(i.getPayload());
+            if (p instanceof ObjectNode objeto) {
+                objeto.remove("accepted");
+                return JSON.writeValueAsString(objeto);
+            }
+            return i.getPayload();
+        } catch (Exception ex) {
+            return i.getPayload();
+        }
     }
 
     private static Material material(PracticeSet s) {

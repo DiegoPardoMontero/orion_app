@@ -11,6 +11,7 @@ import java.util.Set;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import co.orion.practice.domain.Evaluador;
 import co.orion.practice.domain.PracticeItemType;
 
 /**
@@ -56,8 +57,10 @@ public final class ValidadorDeEjercicios {
     }
 
     static boolean valido(PracticeGenerator.Generado g, Material material, Set<String> terminos) {
+        // Los largos son los de la tabla: algo que no cabe tumbaría el set entero al guardarlo.
         if (vacio(g.prompt()) || g.prompt().length() > 600 || vacio(g.explicacion()) || g.explicacion().length() > 400
-                || (g.expected() != null && g.expected().length() > 600)) {
+                || (g.expected() != null && g.expected().length() > 600)
+                || (g.terminoFuente() != null && g.terminoFuente().length() > 120)) {
             return false;
         }
         try {
@@ -75,9 +78,15 @@ public final class ValidadorDeEjercicios {
                     JsonNode esperado = JSON.readTree(g.expected());
                     List<String> ts = new ArrayList<>();
                     p.path("terms").forEach(x -> ts.add(norma(x.asText())));
+                    // Y los significados que se esperan son justo los que se ofrecen: si el modelo
+                    // parafrasea uno («de repente» contra «repentinamente»), no habría forma de acertar.
+                    Set<String> ofrecidos = new HashSet<>();
+                    p.path("meanings").forEach(x -> ofrecidos.add(Evaluador.normalizar(x.asText())));
+                    Set<String> esperados = new HashSet<>();
+                    esperado.forEach(x -> esperados.add(Evaluador.normalizar(x.asText())));
                     yield ts.size() >= 2 && ts.size() <= 5 && terminos.containsAll(ts)
                             && p.path("meanings").size() == ts.size() && esperado.size() == ts.size()
-                            && ts.stream().allMatch(t -> tieneClave(esperado, t));
+                            && ts.stream().allMatch(t -> tieneClave(esperado, t)) && esperados.equals(ofrecidos);
                 }
                 case FIX_SENTENCE -> !vacio(material.recurringIssues()) && !vacio(p.path("sentence").asText(null))
                         && !vacio(g.expected()) && !norma(g.expected()).equals(norma(p.path("sentence").asText()));
