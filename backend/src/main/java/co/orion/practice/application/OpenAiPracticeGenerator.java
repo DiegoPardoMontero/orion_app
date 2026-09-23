@@ -19,10 +19,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestClient;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -86,15 +88,34 @@ public class OpenAiPracticeGenerator implements PracticeGenerator {
         } catch (ResourceAccessException ex) {
             presupuesto.registrar(estudianteId, modelo, null, null, ms(inicio), "TIMEOUT");
             throw new ProveedorNoRespondio("se agotó el tiempo");
+        } catch (RestClientResponseException ex) {
+            presupuesto.registrar(estudianteId, modelo, null, null, ms(inicio), "ERROR");
+            log.warn("El proveedor respondió {} al generar una práctica: {}", ex.getStatusCode().value(),
+                    ex.getMessage());
+            if (pasajero(ex.getStatusCode())) {
+                throw new ProveedorNoRespondio(ex.getMessage());
+            }
+            // Un 400 es por lo que se le mandó, y repetirlo daría lo mismo: el set gasta su intento. Si
+            // no, se quedaría pendiente para siempre al frente de la cola, frenando a todos los demás.
+            return List.of();
         } catch (RuntimeException ex) {
             presupuesto.registrar(estudianteId, modelo, null, null, ms(inicio), "ERROR");
-            log.warn("El proveedor falló al generar una práctica: {}", ex.getMessage());
-            throw new ProveedorNoRespondio(ex.getMessage());
+            log.warn("No se pudo generar una práctica: {}", ex.getMessage());
+            return List.of();
         }
         List<Generado> generados = leer(contenido(respuesta));
         presupuesto.registrar(estudianteId, modelo, tokens(respuesta, "prompt_tokens"),
                 tokens(respuesta, "completion_tokens"), ms(inicio), generados.isEmpty() ? "INVALID_OUTPUT" : "OK");
         return generados;
+    }
+
+    /**
+     * Lo que se arregla solo esperando: el proveedor caído o saturado (5xx, 408, 429) y la llave
+     * rechazada (401, 403), que es un problema nuestro y no del acta.
+     */
+    static boolean pasajero(HttpStatusCode estado) {
+        int codigo = estado.value();
+        return estado.is5xxServerError() || codigo == 401 || codigo == 403 || codigo == 408 || codigo == 429;
     }
 
     Map<String, Object> cuerpo(Material material, int cuantos) {

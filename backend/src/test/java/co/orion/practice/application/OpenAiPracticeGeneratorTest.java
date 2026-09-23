@@ -136,6 +136,29 @@ class OpenAiPracticeGeneratorTest {
     }
 
     @Test
+    @DisplayName("Un 429 también es esperar: el proveedor no respondió")
+    void saturado() {
+        proveedor.responde(429, "{\"error\":{\"message\":\"rate limit\"}}");
+
+        assertThatThrownBy(() -> generador.generar(UUID.randomUUID(), ACTA, 4))
+                .isInstanceOf(PracticeGenerator.ProveedorNoRespondio.class);
+    }
+
+    /**
+     * Un 400 viene de lo que se le mandó —el acta de ese set—, y repetirlo daría lo mismo. Si se
+     * tratara como una caída, ese set no gastaría nunca sus intentos y, como es el más viejo, frenaría
+     * la corrida entera cada minuto: nadie más recibiría práctica.
+     */
+    @Test
+    @DisplayName("Un 400 no es una caída: su fila ERROR y nada, y el set gasta su intento")
+    void rechazado() {
+        proveedor.responde(400, "{\"error\":{\"code\":\"invalid_prompt\"}}");
+
+        assertThat(generador.generar(UUID.randomUUID(), ACTA, 4)).isEmpty();
+        verify(presupuesto).registrar(any(), any(), eq(null), eq(null), anyInt(), eq("ERROR"));
+    }
+
+    @Test
     @DisplayName("Sin presupuesto no está disponible: los sets esperan a mañana")
     void sinPresupuesto() {
         when(presupuesto.disponible()).thenReturn(false);
