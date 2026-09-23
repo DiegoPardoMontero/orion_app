@@ -25,9 +25,9 @@ public final class IdiomaDeLaFrase {
             "que", "de", "la", "los", "las", "el", "es", "con", "para", "por", "una", "del", "al",
             "cuéntame", "cuentas", "sigamos", "español", "cómo", "qué", "estás", "tu", "muy", "pero");
 
-    /** Basta una: son español sin duda y no son nombres. */
+    /** Basta una: son español sin duda, no son nombres y el inglés no las usa («genial» y «vale», sí). */
     private static final Set<String> INEQUIVOCAS = Set.of(
-            "sí", "hola", "gracias", "claro", "bueno", "perfecto", "ajá", "cuéntame", "genial", "vale");
+            "sí", "hola", "gracias", "claro", "bueno", "perfecto", "ajá", "cuéntame");
 
     /** Una palabra con mayúscula detrás de otra palabra o de una coma: un nombre propio. */
     private static final String NOMBRE_EN_MEDIO = "(?<=[\\p{L},;:]\\s)\\p{Lu}\\p{L}*";

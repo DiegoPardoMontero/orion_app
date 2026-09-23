@@ -118,7 +118,6 @@ public final class ValidadorDeEjercicios {
         }
     }
 
-
     private static boolean vacio(String s) {
         return s == null || s.isBlank();
     }
