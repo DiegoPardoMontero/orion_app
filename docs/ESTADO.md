@@ -199,6 +199,11 @@ enseñar» ya la cubre) y la rejilla de objetivos (la reemplaza el buscador).
 - **El catálogo y el perfil de un profesor se ven sin cuenta.** Ver horarios, reservar y escribir la
   siguen pidiendo, y al crearla o entrar se vuelve al mismo perfil (`?volver=`, solo rutas de la app).
   Es lo que hace funcionar el buscador de la portada y el enlace que un profesor comparte en sus redes.
+- **Verificación de marca de Google** (rechazada el 23/09/2026 por dos cosas): la portada ahora dice
+  qué es Orión Idiomas y qué datos toma el inicio de sesión con Google o Facebook (nombre, correo e
+  identificador de la cuenta, nada más), y muestra el nombre «Orión Idiomas» —título, esa sección y
+  el pie—, que es el que va en la pantalla de consentimiento de Google. **No quitar esa sección ni
+  cambiar el nombre sin cambiarlo también en Google**: es lo que la verificación compara.
 - El pie enlaza a la sección de cancelaciones de los términos (los documentos legales tienen ahora
   anclas por encabezado), y lleva Instagram, TikTok y LinkedIn, que también van al `sameAs` del
   JSON-LD.
@@ -696,7 +701,9 @@ su test; lo que cambia el comportamiento o pide una decisión está abajo, en Pe
   la conciliación. Decidir entre abonar saldo o devolver desde Wompi es política comercial.
 - ~~Los textos legales no los ha revisado un abogado.~~ **Revisados**: Pardo confirma el 22/09/2026
   que un abogado los leyó y están bien. Queda un dato para la próxima versión: la sección 4 de la
-  política (con quién se comparten los datos) no nombra a OpenAI, que recibe la voz del
+  política (con quién se comparten los datos) no dice que, al entrar con Google o Facebook, de
+  la cuenta se toman el nombre, el correo y su identificador; Google lo revisa al verificar la marca.
+  Tampoco nombra a OpenAI, que recibe la voz del
   diagnóstico, ni a 8x8, que aloja las clases. Desde el 23/09 OpenAI recibe además el dictado del
   profesor (su voz), sus notas de la clase y el contenido del acta publicada, del que sale la
   práctica; nunca el nombre ni el correo del estudiante, pero sí lo que el profesor diga de él.

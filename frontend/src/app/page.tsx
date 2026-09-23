@@ -36,12 +36,14 @@ import { esGratis, tarifaClase } from "@/lib/format";
  * Ajustes, y la sección de profesores se OCULTA si hay menos de 4.
  */
 export const metadata: Metadata = {
-  title: "Orión · Encuentra tu profesor de inglés",
+  // «Orión Idiomas», igual que en la pantalla de consentimiento de Google: la verificación de marca
+  // compara ese nombre con el de la página principal (Google lo rechazó el 23/09/2026 por no coincidir).
+  title: "Orión Idiomas · Encuentra tu profesor de inglés",
   description:
     "Clases de inglés en vivo, uno a uno, con profesores verificados. Empieza con un diagnóstico gratis, elige con quién y cuándo, y paga solo la clase que reservas.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Orión · Encuentra tu profesor de inglés",
+    title: "Orión Idiomas · Encuentra tu profesor de inglés",
     description:
       "Profesores de inglés verificados. Clases en vivo, a tu ritmo, sin permanencia ni renovación automática.",
     type: "website",
@@ -243,6 +245,33 @@ export default async function PortadaPage() {
       {/* — 2. Buscador rápido: dos preguntas, sin cuenta — */}
       <section aria-label="Buscar profesor" className="relative z-10 mx-auto -mt-12 max-w-6xl px-5 lg:px-8">
         <BuscadorRapido />
+      </section>
+
+      {/*
+        Qué es Orión Idiomas, dicho sin marketing, y qué hacemos con los datos de quien entra con
+        Google o Facebook. Lo pide la verificación de marca de Google: la página principal tiene que
+        explicar el propósito de la aplicación con su nombre (rechazada el 23/09/2026 por no hacerlo).
+        Lo que se toma de la cuenta es exactamente esto: identificador, correo y nombre.
+      */}
+      <section id="que-es" aria-labelledby="que-es-titulo" className="mx-auto max-w-4xl scroll-mt-20 px-5 pt-12 text-center lg:px-8 lg:pt-16">
+        <h2 id="que-es-titulo" className="text-[12px] font-bold uppercase tracking-[0.14em] text-primary-strong">
+          Qué es Orión Idiomas
+        </h2>
+        <p className="mx-auto mt-3 max-w-[64ch] text-[16px] leading-relaxed text-text lg:text-[17px]">
+          Orión Idiomas es una plataforma en línea para aprender inglés con clases en vivo, uno a uno, con profesores
+          verificados. Haces un diagnóstico gratis de tu punto de partida, eliges profesor según tu objetivo y tu
+          horario, reservas y pagas cada clase, y la tomas por videollamada. Después de cada clase recibes un resumen
+          de lo que trabajaron y ejercicios de práctica para llegar mejor a la siguiente.
+        </p>
+        <p className="mx-auto mt-3 max-w-[64ch] text-[13.5px] leading-relaxed text-text-secondary">
+          Si entras con Google o Facebook, solo usamos tu nombre, tu correo y el identificador de tu cuenta para crear
+          tu cuenta de Orión Idiomas e iniciar sesión. No publicamos nada en tu nombre ni accedemos a ningún otro dato de
+          tu cuenta.{" "}
+          <Link href="/privacidad" className="font-semibold text-primary-strong underline underline-offset-2">
+            Política de privacidad
+          </Link>
+          .
+        </p>
       </section>
 
       {/* — Conoce a los profesores (real, se oculta con <4) — */}
@@ -552,7 +581,7 @@ export default async function PortadaPage() {
             )}
           </nav>
         </div>
-        <p className="pb-8 text-center text-[12px] text-text-muted">Orión © 2026</p>
+        <p className="pb-8 text-center text-[12px] text-text-muted">© 2026 Orión Idiomas</p>
       </footer>
     </div>
   );
