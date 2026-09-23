@@ -478,7 +478,8 @@ function Vocabulario({
                 type="button"
                 aria-label={`Quitar «${p.term}»`}
                 onClick={() => onCambio(palabras.filter((x) => x.term !== p.term))}
-                className="grid h-8 w-8 place-items-center rounded-full transition-colors hover:bg-[#e2d7f4] focus-visible:shadow-focus"
+                // Se ve de 32 px, pero se toca en 44 (brief, A5): el área crece por fuera sin agrandar la pastilla.
+                className="relative grid h-8 w-8 place-items-center rounded-full transition-colors after:absolute after:-inset-1.5 hover:bg-[#e2d7f4] focus-visible:shadow-focus"
               >
                 <X size={14} strokeWidth={2.2} />
               </button>
