@@ -79,7 +79,8 @@ public class SocialAuthController {
         intentos.antesDeRegistro(http);
         PerfilSocial perfil = pendiente(http);
 
-        User creado = servicio.completar(perfil, body.fullName().trim(), registro);
+        User creado = servicio.completar(perfil, body.fullName().trim(),
+                Boolean.TRUE.equals(body.wantsToTeach()), registro);
         legal.record(creado.getId(), LegalDocumentCode.TERMS,
                 http.getRemoteAddr(), http.getHeader("User-Agent"));
         legal.record(creado.getId(), LegalDocumentCode.PRIVACY,
@@ -115,6 +116,9 @@ public class SocialAuthController {
             @AssertTrue(message = "Debes aceptar los Términos y condiciones para crear tu cuenta.")
             boolean acceptsTerms,
             @AssertTrue(message = "Necesitamos tu autorización para tratar tus datos personales.")
-            boolean acceptsDataPolicy) {
+            boolean acceptsDataPolicy,
+            // Si llegó desde «Quiero enseñar». Objeto y no primitivo: sin el campo —un frontend de
+            // antes del cambio— es el alta de siempre, de estudiante, y no un 400.
+            Boolean wantsToTeach) {
     }
 }

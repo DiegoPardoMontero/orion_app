@@ -32,6 +32,7 @@ import co.orion.identity.application.SocialLoginService.PerfilSocial;
 import co.orion.identity.domain.SocialProvider;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
+import co.orion.shared.security.OrionUserDetails;
 import co.orion.support.ApiIntegrationSupport;
 
 /**
@@ -164,7 +165,7 @@ class SocialLoginIT extends ApiIntegrationSupport {
     @Test
     @DisplayName("Completar crea la cuenta de estudiante, verificada si el proveedor lo garantizó")
     void completarCreaLaCuenta() {
-        User creada = social.completar(perfil("g-5", "nueva@orion.test", true), "Ana Ruiz", registro);
+        User creada = social.completar(perfil("g-5", "nueva@orion.test", true), "Ana Ruiz", false, registro);
 
         assertThat(creada.getRole()).isEqualTo(UserRole.STUDENT);
         assertThat(creada.isEmailVerified()).isTrue();
@@ -174,6 +175,20 @@ class SocialLoginIT extends ApiIntegrationSupport {
         assertThat(conClave.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(social.resolver(perfil("g-5", "nueva@orion.test", true)))
                 .isInstanceOf(SocialLoginService.Entra.class);
+    }
+
+    /**
+     * Desde «Quiero enseñar» también hay «Continuar con Google» (Pardo, 23/09/2026): la cuenta nace
+     * como con contraseña —de estudiante, con la intención de enseñar— y por eso llega como aspirante
+     * y aterriza en su postulación, no en el buscador.
+     */
+    @Test
+    @DisplayName("Completar desde «Quiero enseñar» crea un aspirante a profesor, como el alta con contraseña")
+    void completarParaEnsenar() {
+        User creada = social.completar(perfil("g-6", "profe@orion.test", true), "María Gómez", true, registro);
+
+        assertThat(creada.getRole()).isEqualTo(UserRole.STUDENT);
+        assertThat(UserResponse.from(new OrionUserDetails(creada)).role()).isEqualTo("TEACHER_APPLICANT");
     }
 
     @SuppressWarnings("rawtypes")

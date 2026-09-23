@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, ApiError } from "@/lib/api/fetch";
-import { destinoAlEntrar } from "@/lib/auth/roles";
+import { destinoAlEntrar, INTENCION_KEY } from "@/lib/auth/roles";
 import type { Me } from "@/lib/auth/session";
 import { Consentimiento } from "@/components/Consentimiento";
 import { AvisoError, Cargando } from "@/components/estados";
@@ -44,10 +44,22 @@ export default function CompletarRegistroPage() {
     mutationFn: () =>
       apiFetch<Me>("/api/v1/auth/social/complete", {
         method: "POST",
-        body: { fullName: nombre.trim(), adult: mayor, acceptsTerms: terminos, acceptsDataPolicy: datos },
+        body: {
+          fullName: nombre.trim(),
+          adult: mayor,
+          acceptsTerms: terminos,
+          acceptsDataPolicy: datos,
+          // Se fue desde «Quiero enseñar»: nace como aspirante y aterriza en su postulación.
+          wantsToTeach: vieneAEnsenar(),
+        },
         redirectOn401: false,
       }),
     onSuccess: (me) => {
+      try {
+        window.sessionStorage.removeItem(INTENCION_KEY);
+      } catch {
+        // Sin almacenamiento no había nada guardado.
+      }
       void qc.invalidateQueries({ queryKey: ["auth"] });
       router.replace(destinoAlEntrar(me.role));
     },
@@ -146,4 +158,12 @@ export default function CompletarRegistroPage() {
       )}
     </main>
   );
+}
+
+function vieneAEnsenar(): boolean {
+  try {
+    return window.sessionStorage.getItem(INTENCION_KEY) === "ensenar";
+  } catch {
+    return false;
+  }
 }

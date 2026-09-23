@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/fetch";
-import { DESDE_KEY } from "@/lib/auth/roles";
+import { DESDE_KEY, INTENCION_KEY } from "@/lib/auth/roles";
 
 type Proveedor = "google" | "apple" | "facebook";
 
@@ -18,7 +18,16 @@ type Proveedor = "google" | "apple" | "facebook";
  * <p>Antes de salir deja en sessionStorage de dónde venía la persona (`desde`), para que la vuelta
  * —que llega a otra URL— la lleve al mismo sitio que el login con contraseña.
  */
-export function BotonesSociales({ desde, separador = "o con tu correo" }: { desde?: string; separador?: string }) {
+export function BotonesSociales({
+  desde,
+  separador = "o con tu correo",
+  ensenar = false,
+}: {
+  desde?: string;
+  separador?: string;
+  /** Viene de «Quiero enseñar»: la cuenta nace como aspirante a profesor, no como estudiante. */
+  ensenar?: boolean;
+}) {
   const { data } = useQuery({
     queryKey: ["auth", "social", "providers"],
     queryFn: () =>
@@ -33,6 +42,8 @@ export function BotonesSociales({ desde, separador = "o con tu correo" }: { desd
     const origen = desde ?? new URLSearchParams(window.location.search).get("desde");
     try {
       if (origen) window.sessionStorage.setItem(DESDE_KEY, origen);
+      if (ensenar) window.sessionStorage.setItem(INTENCION_KEY, "ensenar");
+      else window.sessionStorage.removeItem(INTENCION_KEY);
     } catch {
       // Sin almacenamiento: al volver entra al inicio de su rol. No es motivo para no dejarle entrar.
     }

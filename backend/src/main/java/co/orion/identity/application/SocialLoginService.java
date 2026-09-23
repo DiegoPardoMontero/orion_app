@@ -109,11 +109,11 @@ public class SocialLoginService {
      * contraseña») y con el correo verificado si el proveedor lo garantizó.
      */
     @Transactional
-    public User completar(PerfilSocial perfil, String nombre, RegistrationService registro) {
+    public User completar(PerfilSocial perfil, String nombre, boolean quiereEnsenar, RegistrationService registro) {
         if (identidades.findByProviderAndSubject(perfil.proveedor(), perfil.sujeto()).isPresent()) {
             throw new ConflictException("Esta cuenta ya está vinculada. Entra de nuevo.");
         }
-        User creado = registro.registerFromProvider(nombre, perfil.correo(), perfil.correoVerificado());
+        User creado = registro.registerFromProvider(nombre, perfil.correo(), perfil.correoVerificado(), quiereEnsenar);
         vincular(creado, perfil);
         return creado;
     }

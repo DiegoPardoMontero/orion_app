@@ -13,6 +13,12 @@ export type NavGroup = { titulo?: string; items: NavItem[] };
 export const DESDE_KEY = "orion:desde";
 
 /**
+ * Y si se fue desde «Quiero enseñar»: la vuelta llega a /registro/completar, que ya no ve la
+ * pestaña, y sin esto crearía una cuenta de estudiante en vez de un aspirante a profesor.
+ */
+export const INTENCION_KEY = "orion:intencion";
+
+/**
  * A dónde llega alguien al entrar o crear su cuenta. Quien viene del resultado del diagnóstico
  * («¿Te lo guardamos?») aterriza en su perfil, donde lo ve guardado: el backend ya lo pasó a su
  * cuenta con la cookie de este dispositivo.

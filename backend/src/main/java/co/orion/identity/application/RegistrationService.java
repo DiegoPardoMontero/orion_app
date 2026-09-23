@@ -56,7 +56,7 @@ public class RegistrationService {
      * garantizó: pedir que lo confirme otra vez sería un paso de más por algo que ya se sabe.
      */
     @Transactional
-    public User registerFromProvider(String fullName, String email, boolean emailVerified) {
+    public User registerFromProvider(String fullName, String email, boolean emailVerified, boolean wantsToTeach) {
         if (users.existsByEmailIgnoreCase(email)) {
             throw new ConflictException("Ya existe una cuenta con ese correo");
         }
@@ -67,6 +67,11 @@ public class RegistrationService {
         user.confirmAdulthood(clock.instant());
         if (emailVerified) {
             user.markEmailVerified(clock.instant());
+        }
+        // Quien llegó por «Quiero enseñar» entra por la misma puerta que con contraseña: su cuenta
+        // es de estudiante y su intención, enseñar, así que aterriza en su postulación.
+        if (wantsToTeach) {
+            user.intendsToTeach();
         }
         try {
             User creado = users.saveAndFlush(user);

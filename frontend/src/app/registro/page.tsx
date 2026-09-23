@@ -217,20 +217,18 @@ function Registro() {
             />
           </div>
 
-          {/* Solo para quien viene a aprender: el alta por proveedor crea una cuenta de estudiante,
-              y la postulación de profesor necesita su propio camino. */}
-          {intencion === "aprender" && (
-            <div className="mt-5">
-              <BotonesSociales />
-            </div>
-          )}
-
           {intencion === "ensenar" && (
             <p className="mt-3 rounded-base bg-accent-lavender-soft px-4 py-3 text-[12.5px] leading-relaxed text-[#5e4a8a]">
               Creamos tu cuenta y sigues con tu postulación: idiomas que enseñas, experiencia,
               tarifa y documentos. Tu perfil aparece en el marketplace cuando la aprobamos.
             </p>
           )}
+
+          {/* En las dos pestañas: desde «Quiero enseñar», la intención viaja con la ida al
+              proveedor y la cuenta nace como aspirante a profesor, como con contraseña. */}
+          <div className="mt-5">
+            <BotonesSociales ensenar={intencion === "ensenar"} />
+          </div>
 
           <label
             className="mt-6 block text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary"
