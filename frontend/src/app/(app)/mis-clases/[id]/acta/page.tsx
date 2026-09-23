@@ -98,6 +98,7 @@ function CerrarClase({ bookingId }: { bookingId: string }) {
     onSuccess: (acta) => {
       queryClient.setQueryData(["lesson-note", bookingId], acta);
       queryClient.invalidateQueries({ queryKey: ["lesson-notes-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["lesson-notes-index"] });
     },
   });
 
@@ -189,6 +190,7 @@ function Editor({ acta }: { acta: ActaDelProfesor }) {
   const actualizar = (nueva: ActaDelProfesor) => {
     queryClient.setQueryData(["lesson-note", acta.bookingId], nueva);
     queryClient.invalidateQueries({ queryKey: ["lesson-notes-summary"] });
+    queryClient.invalidateQueries({ queryKey: ["lesson-notes-index"] });
   };
 
   const guardar = useMutation({

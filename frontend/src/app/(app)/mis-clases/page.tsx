@@ -31,7 +31,7 @@ import type {
   SlotsResponse,
   SlotView,
 } from "@/lib/api/types";
-import type { ResumenDeActas } from "@/lib/actas";
+import type { EntradaDeActa, ResumenDeActas } from "@/lib/actas";
 import { useMe } from "@/lib/auth/session";
 import { esperaPago, etiquetaEstado } from "@/lib/estados-clase";
 import { diaBogota, fechaCorta, fechaYRango, horaBogota, precioCop, rangoHoras } from "@/lib/format";
@@ -103,6 +103,10 @@ function Contenido() {
         </div>
       </div>
 
+      {scope === "past" && me && (me.role === "PROFESSOR" || me.role === "STUDENT") && (
+        <ListaDeActas esProfesor={esProfesor} />
+      )}
+
       <div className="mt-4">
         {isPending && <Cargando />}
 
@@ -159,6 +163,64 @@ function Contenido() {
  * El mes con sus clases, y debajo las del día que se elija. Elegir un día no cambia de vista: el
  * calendario se mira para ubicarse, y saltar a otra pantalla al pulsar rompería justo eso.
  */
+/**
+ * Las actas de un vistazo (Bloque 10, A5.4). Al profesor, lo que le falta escribir; al estudiante,
+ * los resúmenes que ya puede leer. Los dos estados vacíos invitan y ninguno lamenta: «Estás al
+ * día» y «Todavía no hay resúmenes».
+ */
+function ListaDeActas({ esProfesor }: { esProfesor: boolean }) {
+  const { data, isPending } = useQuery({
+    queryKey: ["lesson-notes-index"],
+    queryFn: () => apiFetch<EntradaDeActa[]>("/api/v1/me/lesson-notes/index"),
+    staleTime: 60_000,
+  });
+  if (isPending || !data) return null;
+  const visibles = data.slice(0, 5);
+
+  return (
+    <section className="mt-4 rounded-card bg-surface-raised p-4 shadow-sm" aria-labelledby="titulo-actas">
+      <h2
+        id="titulo-actas"
+        className="flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-[0.06em] text-text-secondary"
+      >
+        <NotebookPen size={14} strokeWidth={2} />
+        {esProfesor ? "Actas por escribir" : "Resúmenes de tus clases"}
+      </h2>
+      {visibles.length === 0 ? (
+        <p className="mt-2 text-[13.5px] text-text-secondary">
+          {esProfesor
+            ? "Estás al día."
+            : "Todavía no hay resúmenes. Aparecerán aquí después de tus clases."}
+        </p>
+      ) : (
+        <ul className="mt-2 divide-y divide-border">
+          {visibles.map((e) => (
+            <li key={e.bookingId}>
+              <Link
+                href={`/mis-clases/${e.bookingId}/acta`}
+                className="flex min-h-11 items-center justify-between gap-3 py-2 text-[13.5px] transition-colors hover:text-primary-strong focus-visible:shadow-focus"
+              >
+                <span className="min-w-0 truncate">
+                  <span className="font-semibold">{e.counterpartName ?? "Clase"}</span>
+                  <span className="text-text-muted"> · {fechaCorta(e.classStartsAt)}</span>
+                </span>
+                <span className="shrink-0 text-[12.5px] font-bold text-primary-strong">
+                  {!esProfesor ? "Leer" : e.status === "DRAFT" ? "Terminar" : "Escribir"}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+      {data.length > visibles.length && (
+        <p className="mt-2 text-[12px] text-text-muted">
+          Y {data.length - visibles.length} más, en sus clases de abajo.
+        </p>
+      )}
+    </section>
+  );
+}
+
 function VistaCalendario({
   clases,
   scope,
@@ -952,6 +1014,7 @@ function ModalReportar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
       void queryClient.invalidateQueries({ queryKey: ["me", "bookings"] });
       // Cerrada con asistencia, la tarjeta pasa a ofrecer el acta.
       void queryClient.invalidateQueries({ queryKey: ["lesson-notes-summary"] });
+      void queryClient.invalidateQueries({ queryKey: ["lesson-notes-index"] });
       onCerrar();
     },
   });

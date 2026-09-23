@@ -265,6 +265,30 @@ class LessonNoteIT extends ApiIntegrationSupport {
                 .containsEntry(clase.toString(), "PUBLISHED");
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    @Test
+    @DisplayName("La lista: al profesor, lo que le falta; al estudiante, lo publicado, con quién y cuándo")
+    void laListaDeActas() {
+        UUID pendiente = claseDictada();
+        assertThat(get("/api/v1/me/lesson-notes/index", sesionMaria, List.class).getBody())
+                .singleElement().satisfies(e -> assertThat((Map) e)
+                        .containsEntry("bookingId", pendiente.toString())
+                        .containsEntry("status", "PENDING")
+                        .containsEntry("counterpartName", "Ana Ruiz"));
+        assertThat(get("/api/v1/me/lesson-notes/index", sesionAna, List.class).getBody()).isEmpty();
+
+        Map borrador = redactar(sesionMaria, pendiente, NOTAS).getBody();
+        publicar(sesionMaria, borrador.get("id"));
+
+        // Publicada, deja de faltarle al profesor y aparece para el estudiante.
+        assertThat(get("/api/v1/me/lesson-notes/index", sesionMaria, List.class).getBody()).isEmpty();
+        assertThat(get("/api/v1/me/lesson-notes/index", sesionAna, List.class).getBody())
+                .singleElement().satisfies(e -> assertThat((Map) e)
+                        .containsEntry("counterpartName", "María Gómez")
+                        .containsEntry("status", "PUBLISHED")
+                        .containsKey("publishedAt"));
+    }
+
     @Test
     @DisplayName("El recordatorio al profesor sale una vez y nunca insiste")
     void elRecordatorioNoInsiste() {

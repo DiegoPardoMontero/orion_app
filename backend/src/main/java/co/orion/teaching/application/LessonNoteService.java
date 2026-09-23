@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -207,6 +208,35 @@ public class LessonNoteService {
                     .forEach(n -> porClase.put(n.getBookingId(), n.getStatus().name()));
         }
         return porClase;
+    }
+
+    /** Una línea de la lista de actas: la clase, con quién y en qué va su acta. */
+    public record Entrada(UUID bookingId, Instant claseEmpieza, UUID contraparteId, String estado,
+                          Instant publicada) {
+    }
+
+    /**
+     * La lista de actas de quien pregunta (brief, A5.4). Al profesor, lo que le falta: las clases
+     * cerradas sin acta ({@code PENDING}) y los borradores, de la más reciente a la más vieja. Al
+     * estudiante, lo publicado. Las clases se leen de una vez, no una por fila.
+     */
+    @Transactional(readOnly = true)
+    public List<Entrada> indice(User quien, boolean comoProfesor) {
+        Map<UUID, String> estados = estados(quien, comoProfesor);
+        Map<UUID, Instant> publicadas = new HashMap<>();
+        if (!comoProfesor) {
+            notas.findByStudentIdAndStatus(quien.getId(), LessonNoteStatus.PUBLISHED)
+                    .forEach(n -> publicadas.put(n.getBookingId(), n.getPublishedAt()));
+        }
+        List<UUID> ids = estados.entrySet().stream()
+                .filter(e -> !comoProfesor || !"PUBLISHED".equals(e.getValue()))
+                .map(Map.Entry::getKey).toList();
+        return bookings.findAllById(ids).stream()
+                .map(b -> new Entrada(b.getId(), b.getStartsAt(),
+                        comoProfesor ? b.getStudentId() : b.getProfessorId(),
+                        estados.get(b.getId()), publicadas.get(b.getId())))
+                .sorted(Comparator.comparing(Entrada::claseEmpieza).reversed())
+                .toList();
     }
 
     public Instant desde() {

@@ -2,6 +2,7 @@ package co.orion.teaching.api;
 
 import java.time.Clock;
 import java.time.ZonedDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -106,6 +107,27 @@ public class LessonNoteController {
     }
 
     public record ResumenDeActas(ZonedDateTime since, Map<UUID, String> byBooking) {
+    }
+
+    /**
+     * La lista de actas: al profesor, las que le faltan (cerradas sin acta y borradores); al
+     * estudiante, las publicadas. Solo lo que una lista necesita: la clase, con quién y el estado.
+     */
+    @GetMapping("/api/v1/me/lesson-notes/index")
+    public List<EntradaView> indice(@AuthenticationPrincipal OrionUserDetails principal) {
+        List<LessonNoteService.Entrada> entradas =
+                actas.indice(principal.user(), "PROFESSOR".equals(principal.rolEfectivo()));
+        Map<UUID, String> nombres = new HashMap<>();
+        users.findAllById(entradas.stream().map(LessonNoteService.Entrada::contraparteId).distinct().toList())
+                .forEach(u -> nombres.put(u.getId(), u.getFullName()));
+        return entradas.stream()
+                .map(e -> new EntradaView(e.bookingId(), bogota(e.claseEmpieza()),
+                        nombres.get(e.contraparteId()), e.estado(), bogota(e.publicada())))
+                .toList();
+    }
+
+    public record EntradaView(UUID bookingId, ZonedDateTime classStartsAt, String counterpartName,
+                              String status, ZonedDateTime publishedAt) {
     }
 
     /* ---------------- vistas ---------------- */

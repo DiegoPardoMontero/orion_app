@@ -470,6 +470,8 @@ Solo la Parte A: la práctica entre clases (Parte B) no está construida, y por 
   cerrada («Contar cómo estuvo», «Terminar el acta», «Ver el acta»; el estudiante, «Resumen de la
   clase» cuando hay uno publicado) y las notificaciones. Qué tarjeta admite acta lo dice el
   servidor (`/me/lesson-notes/summary`), con el mismo criterio con que la acepta.
+- En «Mis clases → Pasadas», arriba, la lista: al profesor, «Actas por escribir» (o «Estás al
+  día»); al estudiante, sus resúmenes (o «Todavía no hay resúmenes»). Sale de `/me/lesson-notes/index`.
 - Frontera: fuera de `teaching` solo se importan sus eventos (`FronterasDeTeachingTest`).
 - El borrador lo arma `gpt-5-mini` solo con `ORION_VOICE_PROVIDER=openai` y `OPENAI_API_KEY`, las
   mismas del diagnóstico; sin ellas (local y tests) lo arma una regla simple sin red: las notas
@@ -556,10 +558,9 @@ su test; lo que cambia el comportamiento o pide una decisión está abajo, en Pe
   prueba del guion v4.
 - **El avatar personalizado solo lo ve su dueño.** Que otros lo vean en sus listas exige embeber la
   personalización en dos DTOs y añade una consulta a los endpoints que pintan listas.
-- **Bloque 10, Parte B (la práctica entre clases)**: sin construir. Tampoco las listas de la Parte A
-  con sus estados vacíos («Estás al día», «Todavía no hay resúmenes»): el acta se abre desde el
-  cierre del aula, la tarjeta de cada clase y la notificación, en su propia pantalla y no dentro de
-  la tarjeta, como proponía el brief.
+- **Bloque 10, Parte B (la práctica entre clases)**: sin construir, y tampoco el panel de calidad
+  del admin (C1). De la Parte A, una desviación consciente: el acta se escribe en su propia
+  pantalla y no dentro de la tarjeta de la clase, como proponía el brief.
 - **Seguridad — para decidir (revisión del 22/09)**:
   - **IP detrás del proxy de Railway.** `forward-headers-strategy: framework` confía en el primer
     valor de `X-Forwarded-For`, que el cliente puede inventar; si Railway no lo reescribe, todos los

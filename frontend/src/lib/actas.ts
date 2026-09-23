@@ -48,3 +48,12 @@ export type ResumenDeActas = {
 export const MIN_NOTAS = 20;
 export const MAX_NOTAS = 2000;
 export const MAX_PALABRAS = 12;
+
+/** Una línea de la lista de actas (A5.4): la clase, con quién y en qué va su acta. */
+export type EntradaDeActa = {
+  bookingId: string;
+  classStartsAt: string;
+  counterpartName: string | null;
+  status: "PENDING" | "DRAFT" | "PUBLISHED";
+  publishedAt: string | null;
+};
