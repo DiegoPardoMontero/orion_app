@@ -1,6 +1,22 @@
 "use client";
 
-import { ArrowRight, BookOpen, Eye, EyeOff, GraduationCap, Lock, Mail, User } from "lucide-react";
+import {
+  ArrowRight,
+  BadgeCheck,
+  BookOpen,
+  CalendarDays,
+  Eye,
+  EyeOff,
+  GraduationCap,
+  Lock,
+  Mail,
+  Mic,
+  NotebookPen,
+  Sparkles,
+  User,
+  Wallet,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, type FormEvent } from "react";
@@ -13,6 +29,7 @@ import { ApiError } from "@/lib/api/fetch";
 import { destinoAlEntrar } from "@/lib/auth/roles";
 import { destinoSeguro, entrarYVolver } from "@/lib/auth/volver";
 import { useRegister } from "@/lib/auth/session";
+import { minutos, useCifras } from "@/lib/cifras";
 import { fuerzaClave } from "@/lib/password";
 import { Consentimiento } from "@/components/Consentimiento";
 import { BotonesSociales } from "@/components/BotonesSociales";
@@ -75,6 +92,20 @@ function Registro() {
     rolInicial === "profesor" ? "ensenar" : "aprender",
   );
   const copy = COPY[intencion];
+  const cifras = useCifras();
+  // Lo que se gana, en tres líneas: lo mismo que promete la portada, con las cifras de Ajustes.
+  const rasgos: { icono: LucideIcon; texto: string }[] =
+    intencion === "aprender"
+      ? [
+          { icono: Sparkles, texto: `Diagnóstico gratis de ${minutos(cifras.assessmentMinutes)}: sabes cómo arrancas.` },
+          { icono: BadgeCheck, texto: "Profesores verificados. Pagas clase por clase, sin suscripción." },
+          { icono: NotebookPen, texto: "Después de cada clase, un resumen y práctica hecha para ti." },
+        ]
+      : [
+          { icono: Wallet, texto: `Tú pones tu tarifa, y Orión retiene el ${cifras.commissionPercent} %: lo ves desde el día uno.` },
+          { icono: CalendarDays, texto: "Tus horarios, sin mínimos ni permanencia." },
+          { icono: Mic, texto: "Un minuto de audio al terminar y el seguimiento de tu estudiante queda listo." },
+        ];
 
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
@@ -129,8 +160,12 @@ function Registro() {
   return (
     <main className="flex min-h-dvh flex-col lg:flex-row">
       {/* Marca: hero del amanecer. Rigel arriba a la derecha se presenta; titular y subtítulo
-          despejados abajo a la izquierda, sin compartir columna con el personaje. */}
-      <div className="gradient-dawn relative flex h-[300px] flex-col justify-end overflow-hidden rounded-b-[24px] p-7 lg:order-2 lg:m-5 lg:h-auto lg:w-[47%] lg:rounded-[22px] lg:p-10">
+          despejados abajo a la izquierda, sin compartir columna con el personaje.
+
+          En escritorio el panel mide lo que la ventana y se queda fijo mientras el formulario
+          corre. Antes medía lo que el formulario, así que el titular caía debajo del pliegue y
+          había que bajar para leerlo; y el hueco del medio lo ocupan ahora tres razones. */}
+      <div className="gradient-dawn relative flex h-[300px] flex-col justify-end overflow-hidden rounded-b-[24px] p-7 lg:sticky lg:top-5 lg:order-2 lg:m-5 lg:h-[calc(100dvh-2.5rem)] lg:min-h-[600px] lg:w-[47%] lg:self-start lg:rounded-[22px] lg:p-10">
         <Constelacion className="pointer-events-none absolute left-2 top-8 h-[120px] w-[120px] opacity-[0.45] lg:h-[200px] lg:w-[200px]" />
         <Wordmark className="absolute left-7 top-7 text-[15px] text-on-primary lg:left-10 lg:top-10" />
         <Rigel
@@ -145,6 +180,17 @@ function Registro() {
           <p className="mt-2 max-w-[34ch] text-[13px] leading-relaxed text-on-primary/85 lg:text-[15px]">
             {copy.heroTexto}
           </p>
+          {/* Solo en escritorio: en el teléfono el encabezado se queda en sus 300 px. */}
+          <ul className="mt-6 hidden max-w-[40ch] gap-3 border-t border-on-primary/25 pt-6 lg:grid">
+            {rasgos.map(({ icono: Icono, texto }) => (
+              <li key={texto} className="flex items-start gap-3 text-[14.5px] leading-snug text-on-primary">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-on-primary/15">
+                  <Icono size={16} strokeWidth={2} />
+                </span>
+                <span className="pt-1.5">{texto}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
 
