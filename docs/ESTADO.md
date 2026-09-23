@@ -493,6 +493,15 @@ Solo la Parte A: la práctica entre clases (Parte B) no está construida, y por 
 - En «Mis clases → Pasadas», arriba, la lista: al profesor, «Actas por escribir» (o «Estás al
   día»); al estudiante, sus resúmenes (o «Todavía no hay resúmenes»). Sale de `/me/lesson-notes/index`.
 - Frontera: fuera de `teaching` solo se importan sus eventos (`FronterasDeTeachingTest`).
+- Pruebas del paso C2 completas (23/09): el redactor contra un servidor local que tarda (fila
+  `TIMEOUT`, sin reintento), que devuelve algo que no es JSON (un reintento y dos filas
+  `INVALID_OUTPUT`) o sin presupuesto (no llama a nadie); el tope del día apaga la IA; ninguna
+  pantalla, aviso ni prompt del acta usa las frases prohibidas; y en el navegador, el profesor
+  corrige una sección antes de publicar y, con la IA apagada, escribe el acta a mano y la publica.
+  **La prueba del corte encontró un fallo real**: con `SimpleClientHttpRequestFactory`
+  (HttpURLConnection) el corte de lectura no cortaba un POST lento, y el profesor esperaba la
+  respuesta entera. Los tres clientes de OpenAI (acta, resumen y traducción del diagnóstico) usan
+  ahora el cliente HTTP del JDK, que sí corta.
 - El borrador lo arma `gpt-5-mini` solo con `ORION_VOICE_PROVIDER=openai` y `OPENAI_API_KEY`, las
   mismas del diagnóstico; sin ellas (local y tests) lo arma una regla simple sin red: las notas
   enteras en «lo que trabajaron» y cada término entre comillas como palabra nueva. Cuál de los dos
@@ -582,6 +591,10 @@ su test; lo que cambia el comportamiento o pide una decisión está abajo, en Pe
 - **Bloque 10, Parte B (la práctica entre clases)**: sin construir, y tampoco el panel de calidad
   del admin (C1). De la Parte A, una desviación consciente: el acta se escribe en su propia
   pantalla y no dentro de la tarjeta de la clase, como proponía el brief.
+- **Resend y Wompi siguen con `SimpleClientHttpRequestFactory`**, el cliente cuyo corte de lectura
+  no cortó un POST lento en la prueba del acta. En Resend, un envío lento podría esperar de más (o,
+  si el JDK reintenta el POST, duplicar un correo). No se tocó de noche sin una prueba que lo
+  reproduzca contra esos dos servicios: pasarlos al cliente del JDK es un cambio de una línea.
 - **Seguridad — para decidir (revisión del 22/09)**:
   - **IP detrás del proxy de Railway.** `forward-headers-strategy: framework` confía en el primer
     valor de `X-Forwarded-For`, que el cliente puede inventar; si Railway no lo reescribe, todos los

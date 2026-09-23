@@ -2,6 +2,7 @@ package co.orion.assessment.application;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.LinkedHashMap;
@@ -18,7 +19,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
@@ -75,8 +76,10 @@ public class OpenAiConversationSummarizer implements ConversationSummarizer {
             @Value("${orion.assessment.summary.model:gpt-5-mini}") String model,
             @Value("${orion.assessment.summary.reasoning-effort:minimal}") String reasoningEffort,
             AiUsageRecorder uso) {
-        SimpleClientHttpRequestFactory fabrica = new SimpleClientHttpRequestFactory();
-        fabrica.setConnectTimeout(Duration.ofSeconds(4));
+        // El cliente HTTP del JDK: con HttpURLConnection el corte de lectura no cortaba un POST lento
+        // (lo mostró la prueba del acta contra un servidor que tarda).
+        JdkClientHttpRequestFactory fabrica = new JdkClientHttpRequestFactory(
+                HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(4)).build());
         fabrica.setReadTimeout(Duration.ofSeconds(12));
         this.http = RestClient.builder().requestFactory(fabrica).build();
         this.apiKey = apiKey;

@@ -337,6 +337,8 @@ test("María escribe y publica el acta de una clase; Ana la lee", async ({ page 
   await page.getByRole("button", { name: "Generar acta" }).click();
   await expect(page.getByText("Borrador", { exact: true })).toBeVisible();
   await expect(page.getByText("used to", { exact: true })).toBeVisible();
+  // Corrige una sección antes de publicar: lo que se publica es lo que está en pantalla.
+  await page.getByLabel("Lo que sigue").fill("La próxima: condicionales.");
   await page.getByRole("button", { name: "Publicar", exact: true }).click();
   await expect(page.getByText("Publicada", { exact: true })).toBeVisible();
   await page.goto("/mis-clases?scope=past");
@@ -349,6 +351,51 @@ test("María escribe y publica el acta de una clase; Ana la lee", async ({ page 
   await resumenes.getByRole("link", { name: /María Gómez/ }).first().click();
   await expect(page.getByRole("heading", { name: "Resumen de tu clase" })).toBeVisible();
   await expect(page.getByText(/Trabajamos past simple/)).toBeVisible();
+  await expect(page.getByText("La próxima: condicionales.")).toBeVisible();
   // Lo que escribió en crudo es su cuaderno: no llega aquí.
   await expect(page.getByText("Tus notas originales")).toHaveCount(0);
+});
+
+/**
+ * Variante de fallo (brief, C2): sin la IA —apagada desde Ajustes, que es lo mismo que ve el
+ * profesor cuando el proveedor cae o el presupuesto se agota— el acta se escribe a mano en los
+ * mismos campos y se publica igual. Sin un solo mensaje de error técnico.
+ */
+test("sin IA, María escribe el acta a mano y la publica igual", async ({ page }) => {
+  await login(page, USERS.admin);
+  await page.waitForURL((u) => !u.pathname.startsWith("/login"));
+  const cabeceras = async () => {
+    const xsrf = (await page.context().cookies()).find((c) => c.name === "XSRF-TOKEN")?.value ?? "";
+    return { "X-XSRF-TOKEN": xsrf };
+  };
+  const apagar = await page.request.put("/api/v1/admin/settings/ai_lesson_notes_enabled", {
+    headers: await cabeceras(),
+    data: { value: "false" },
+  });
+  expect(apagar.ok()).toBeTruthy();
+
+  try {
+    await logout(page);
+    await login(page, USERS.maria);
+    await page.waitForURL((u) => !u.pathname.startsWith("/login"));
+    await page.goto("/mis-clases?scope=past");
+    const porEscribir = page.getByRole("region", { name: "Actas por escribir" });
+    await porEscribir.getByRole("link", { name: /Ana Ramírez/ }).first().click();
+
+    await page.locator("#notas").fill("Repasamos el presente perfecto y le cuesta la pronunciación de la th.");
+    await page.getByRole("button", { name: "Generar acta" }).click();
+    await expect(page.getByText("Escríbela con tus palabras", { exact: false })).toBeVisible();
+    await page.getByLabel("Lo que trabajaron").fill("Presente perfecto.");
+    await page.getByRole("button", { name: "Publicar", exact: true }).click();
+    await expect(page.getByText("Publicada", { exact: true })).toBeVisible();
+  } finally {
+    await page.goto("/mis-clases");
+    await logout(page);
+    await login(page, USERS.admin);
+    await page.waitForURL((u) => !u.pathname.startsWith("/login"));
+    await page.request.put("/api/v1/admin/settings/ai_lesson_notes_enabled", {
+      headers: await cabeceras(),
+      data: { value: "true" },
+    });
+  }
 });

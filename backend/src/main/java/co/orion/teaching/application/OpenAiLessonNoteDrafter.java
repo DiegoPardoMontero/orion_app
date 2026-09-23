@@ -2,6 +2,7 @@ package co.orion.teaching.application;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -20,7 +21,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
@@ -47,7 +48,6 @@ public class OpenAiLessonNoteDrafter implements LessonNoteDrafter {
 
     private static final Logger log = LoggerFactory.getLogger(OpenAiLessonNoteDrafter.class);
     private static final ObjectMapper JSON = new ObjectMapper();
-    private static final String ENDPOINT = "https://api.openai.com/v1/chat/completions";
     static final String PROMPT = "prompts/lesson-note-v1.txt";
     static final String VERSION = "lesson-note-v1";
 
@@ -59,15 +59,21 @@ public class OpenAiLessonNoteDrafter implements LessonNoteDrafter {
     private final String modelo;
     private final TeachingAiBudget presupuesto;
     private final PlatformSettingsService settings;
+    private final String endpoint;
 
     public OpenAiLessonNoteDrafter(@Value("${OPENAI_API_KEY:}") String apiKey,
                                    @Value("${orion.teaching.model:gpt-5-mini}") String modelo,
                                    TeachingAiBudget presupuesto,
-                                   PlatformSettingsService settings) {
+                                   PlatformSettingsService settings,
+                                   // Configurable solo para que las pruebas apunten a un servidor
+                                   // local que tarda, falla o responde mal (brief, paso C2).
+                                   @Value("${orion.teaching.openai-endpoint:https://api.openai.com/v1/chat/completions}")
+                                   String endpoint) {
         this.apiKey = apiKey;
         this.modelo = modelo;
         this.presupuesto = presupuesto;
         this.settings = settings;
+        this.endpoint = endpoint;
     }
 
     @Override
@@ -88,15 +94,18 @@ public class OpenAiLessonNoteDrafter implements LessonNoteDrafter {
     }
 
     private Resultado llamar(Contexto contexto) {
-        SimpleClientHttpRequestFactory fabrica = new SimpleClientHttpRequestFactory();
-        fabrica.setConnectTimeout(Duration.ofSeconds(4));
+        // El cliente HTTP del JDK y no HttpURLConnection: con este, el corte de lectura sí corta.
+        // Con el otro, una respuesta lenta esperaba entera —la prueba contra un servidor que tarda
+        // lo mostró— y el profesor se quedaba mirando la constelación más allá del corte.
+        JdkClientHttpRequestFactory fabrica = new JdkClientHttpRequestFactory(
+                HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(4)).build());
         fabrica.setReadTimeout(Duration.ofSeconds(settings.getInt("ai_note_timeout_seconds")));
         RestClient http = RestClient.builder().requestFactory(fabrica).build();
 
         long inicio = System.nanoTime();
         Map<?, ?> respuesta;
         try {
-            respuesta = http.post().uri(ENDPOINT)
+            respuesta = http.post().uri(endpoint)
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(cuerpo(contexto))

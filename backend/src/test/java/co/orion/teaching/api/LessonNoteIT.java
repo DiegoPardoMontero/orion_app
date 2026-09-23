@@ -31,6 +31,7 @@ import co.orion.scheduling.domain.BookingModality;
 import co.orion.scheduling.persistence.BookingRepository;
 import co.orion.support.ApiIntegrationSupport;
 import co.orion.teaching.application.LessonNoteNudgeJob;
+import co.orion.teaching.application.TeachingAiBudget;
 
 /**
  * El acta de clase (Bloque 10, Parte A), con los casos que exige el paso C2 del brief: quién puede
@@ -54,6 +55,9 @@ class LessonNoteIT extends ApiIntegrationSupport {
     @Autowired
     private LessonNoteNudgeJob recordatorio;
 
+    @Autowired
+    private TeachingAiBudget presupuesto;
+
     private User maria;
     private User ana;
     private Session sesionMaria;
@@ -61,6 +65,7 @@ class LessonNoteIT extends ApiIntegrationSupport {
 
     @BeforeEach
     void seed() {
+        jdbc.update("delete from ai_usage_log where feature = 'lesson_note'");
         jdbc.update("delete from lesson_vocabulary");
         jdbc.update("delete from lesson_notes");
         jdbc.update("delete from attendance_records");
@@ -83,6 +88,7 @@ class LessonNoteIT extends ApiIntegrationSupport {
     void restaurar() {
         jdbc.update("update platform_settings set value = 'true' where key = 'ai_lesson_notes_enabled'");
         jdbc.update("update platform_settings set value = '60' where key = 'lesson_note_nudge_minutes'");
+        jdbc.update("update platform_settings set value = '30000' where key = 'ai_daily_budget_cop'");
         jdbc.update("delete from attendance_records");
         bookings.deleteAll();
     }
@@ -287,6 +293,27 @@ class LessonNoteIT extends ApiIntegrationSupport {
                         .containsEntry("counterpartName", "María Gómez")
                         .containsEntry("status", "PUBLISHED")
                         .containsKey("publishedAt"));
+    }
+
+    /**
+     * Toda llamada al proveedor deja su fila en el registro de gasto, termine como termine (brief,
+     * A2 y C2), y con el tope del día gastado la IA se apaga: el profesor ve el camino a mano, que
+     * es lo que prueba {@link #sinIaElCaminoAMano()}.
+     */
+    @Test
+    @DisplayName("Cada llamada deja su fila, también un TIMEOUT; con el tope gastado, la IA se apaga")
+    void registroYTope() {
+        presupuesto.registrar(maria.getId(), "gpt-5-mini", null, null, 25_000, "TIMEOUT");
+        assertThat(jdbc.queryForObject(
+                "select outcome from ai_usage_log where feature = 'lesson_note' and actor_id = ?",
+                String.class, maria.getId())).isEqualTo("TIMEOUT");
+        assertThat(presupuesto.disponible()).isTrue();
+
+        jdbc.update("update platform_settings set value = '10' where key = 'ai_daily_budget_cop'");
+        presupuesto.registrar(maria.getId(), "gpt-5-mini", 20_000, 4_000, 3_000, "OK");
+
+        assertThat(presupuesto.gastadoHoy()).isGreaterThanOrEqualTo(10);
+        assertThat(presupuesto.disponible()).isFalse();
     }
 
     @Test

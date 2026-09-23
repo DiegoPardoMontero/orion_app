@@ -161,10 +161,12 @@ public class DevDataSeeder implements ApplicationRunner {
             Booking booking = new Booking(anaId, clase.profesor(), inicio, inicio.plus(Duration.ofHours(1)),
                     clase.modalidad(), null, clase.idioma(), anaId, inicio);
             booking.confirmPayment();
-            // La más reciente se cierra «ahora», como si el cierre hubiera llegado tarde: es la
-            // única posterior a la llegada de las actas (V48), y así en local hay una clase a la
-            // que escribirle el acta. Las fechas de las clases no cambian, y la racha tampoco.
-            booking.autoComplete(clase.semanasAtras() == 1 ? ahora : inicio.plus(Duration.ofHours(1)));
+            // Las dos de María de las semanas 1 y 3 se cierran «ahora», como si el cierre hubiera
+            // llegado tarde: son las únicas posteriores a la llegada de las actas (V48), y así en
+            // local hay dos clases a las que escribirles el acta (una con IA y otra a mano, en las
+            // pruebas de navegador). Las fechas de las clases no cambian, y la racha tampoco.
+            boolean cerradaTarde = clase.semanasAtras() == 1 || clase.semanasAtras() == 3;
+            booking.autoComplete(cerradaTarde ? ahora : inicio.plus(Duration.ofHours(1)));
             bookings.save(booking);
         }
         log.info("Sembradas {} clases pasadas de Ana para poder ver la gamificación.", historial.size());

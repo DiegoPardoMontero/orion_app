@@ -64,8 +64,8 @@ class OpenAiLessonNoteDrafterTest {
         var contexto = new LessonNoteDrafter.Contexto(null, "notas de la clase de hoy", "Ana", "inglés", null, null);
 
         assertThat(new OpenAiLessonNoteDrafter("sk-test", "gpt-5-mini", presupuesto,
-                mock(PlatformSettingsService.class)).redactar(contexto)).isEmpty();
+                mock(PlatformSettingsService.class), "http://localhost:9/no").redactar(contexto)).isEmpty();
         assertThat(new OpenAiLessonNoteDrafter("", "gpt-5-mini", mock(TeachingAiBudget.class),
-                mock(PlatformSettingsService.class)).redactar(contexto)).isEmpty();
+                mock(PlatformSettingsService.class), "http://localhost:9/no").redactar(contexto)).isEmpty();
     }
 }
