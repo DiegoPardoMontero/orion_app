@@ -108,6 +108,8 @@ function CerrarClase({ bookingId }: { bookingId: string }) {
   }
 
   const suficiente = notas.trim().length >= MIN_NOTAS;
+  // Un dictado largo puede pasarse del límite: el textarea solo frena lo que se teclea.
+  const sobran = notas.length - MAX_NOTAS;
 
   return (
     <Tarjeta>
@@ -133,8 +135,15 @@ function CerrarClase({ bookingId }: { bookingId: string }) {
         placeholder="Trabajamos past simple, sigue diciendo 'I go yesterday', le costó 'used to', quedamos en ver condicionales…"
         className="mt-2 w-full resize-y rounded-base border border-border bg-surface px-4 py-3 text-[14.5px] leading-relaxed focus-visible:shadow-focus focus-visible:outline-none"
       />
-      <p className="mt-1 text-right text-[12px] tabular-nums text-text-muted" aria-live="polite">
-        {suficiente ? `${notas.length}/${MAX_NOTAS}` : `Faltan ${MIN_NOTAS - notas.trim().length} caracteres`}
+      <p
+        className={`mt-1 text-right text-[12px] tabular-nums ${sobran > 0 ? "font-semibold text-error" : "text-text-muted"}`}
+        aria-live="polite"
+      >
+        {sobran > 0
+          ? `Sobran ${sobran} caracteres: recorta un poco para generar`
+          : suficiente
+            ? `${notas.length}/${MAX_NOTAS}`
+            : `Faltan ${MIN_NOTAS - notas.trim().length} caracteres`}
       </p>
       {generar.isError && (
         <div className="mt-3">
@@ -148,7 +157,7 @@ function CerrarClase({ bookingId }: { bookingId: string }) {
         >
           Ahora no
         </Link>
-        <Boton disabled={!suficiente} onClick={() => generar.mutate()} className="flex-1 sm:flex-none">
+        <Boton disabled={!suficiente || sobran > 0} onClick={() => generar.mutate()} className="flex-1 sm:flex-none">
           <Sparkles size={16} strokeWidth={2} />
           Generar acta
         </Boton>
@@ -177,7 +186,12 @@ function BotonDictar({ bookingId, onTexto }: { bookingId: string; onTexto: (text
   useEffect(
     () => () => {
       if (reloj.current) window.clearInterval(reloj.current);
-      grabadora.current?.stream.getTracks().forEach((pista) => pista.stop());
+      const g = grabadora.current;
+      if (!g) return;
+      // Quien se va a mitad de un dictado lo abandona: apagar el micrófono dispara `onstop`, y sin
+      // esto el audio se subiría y se cobraría para un texto que ya nadie va a leer.
+      g.onstop = null;
+      g.stream.getTracks().forEach((pista) => pista.stop());
     },
     [],
   );
@@ -588,7 +602,7 @@ function Lectura({ acta }: { acta: ActaDelEstudiante }) {
 function PracticarEsto({ actaId }: { actaId: string }) {
   const practica = useQuery({
     queryKey: ["me", "practice"],
-    queryFn: () => apiFetch<SetDePractica | undefined>("/api/v1/me/practice"),
+    queryFn: async () => (await apiFetch<SetDePractica | undefined>("/api/v1/me/practice")) ?? null,
     staleTime: 60_000,
   });
   if (!practica.data || practica.data.lessonNoteId !== actaId) return null;

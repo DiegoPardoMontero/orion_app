@@ -14,7 +14,9 @@ import { palabrasNuevas, primerNombre, resumirLoTrabajado, type SetDePractica } 
 export function InvitacionAPracticar() {
   const practica = useQuery({
     queryKey: ["me", "practice"],
-    queryFn: () => apiFetch<SetDePractica | undefined>("/api/v1/me/practice"),
+    // Sin set vivo el endpoint responde 204, y TanStack no admite `undefined` como dato: lo toma por
+    // error y se queda con el set anterior, ya terminado. `null` sí es un «no hay».
+    queryFn: async () => (await apiFetch<SetDePractica | undefined>("/api/v1/me/practice")) ?? null,
     staleTime: 60_000,
   });
   const s = practica.data;
