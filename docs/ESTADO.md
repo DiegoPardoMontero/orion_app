@@ -30,7 +30,7 @@ dentro de `/cuenta`).
 
 ## Verificación
 Al 23/09/2026, sobre `master` con el Bloque 10 completo (Partes A y B) y su revisión:
-- Backend: `./mvnw verify` (Testcontainers) — **326 unitarios + 500 de integración**, verde.
+- Backend: `./mvnw verify` (Testcontainers) — **328 unitarios + 501 de integración**, verde.
 - Frontend: `tsc` + `lint` verdes; **70 tests de Vitest**.
 - **E2E Playwright: 20 de 21** (la última, a las 06:38 del 23/09 con todo lo de la noche), sobre
   base recreada (`docker compose down -v`): el acta escrita,
@@ -707,8 +707,25 @@ su test; lo que cambia el comportamiento o pide una decisión está abajo, en Pe
   Meissa callada. El límite sigue ahí: subirlo es pedírselo a OpenAI (sube solo con el gasto).
 - **El avatar personalizado solo lo ve su dueño.** Que otros lo vean en sus listas exige embeber la
   personalización en dos DTOs y añade una consulta a los endpoints que pintan listas.
-- **Bloque 10**: de la Parte A, una desviación consciente: el acta se escribe en su propia pantalla
-  y no dentro de la tarjeta de la clase, como proponía el brief.
+- **Bloque 10 — dónde el código se aparta del brief** (auditoría del 23/09; lo que era un olvido
+  —el enlace del acta a la mensajería (D3), la celebración del logro al terminar la práctica
+  (B5.3), el botón de 32 px (A5) y la prueba del índice único de puntos— ya se arregló):
+  - El acta se escribe en su propia pantalla y no dentro de la tarjeta de la clase.
+  - Practicar avanza la racha (decisión de Pardo), y eso tocó `engagement`, que el brief pedía no
+    tocar: su listener y el cálculo de semanas activas.
+  - Un set con menos de dos ejercicios anclados queda `FAILED` al **tercer** intento, no al primero:
+    hasta tres llamadas por set, porque el modelo a veces falla en una y acierta en la siguiente.
+  - **Para decidir:** el brief (D7) deja que la IA vea nivel y objetivo del estudiante, y el perfil
+    los tiene (`self_declared_level` y `motivation`, texto libre de 280). El acta manda el nivel pero
+    el objetivo en nulo, y la práctica no recibe ninguno de los dos. Mandarlos afinaría los
+    ejercicios, pero el objetivo es más dato personal hacia OpenAI —la motivación la escribe el
+    estudiante— y conviene que lo decida Pardo, con la política de datos. El idioma va como código
+    («FR»), no como nombre, salvo el inglés.
+  - El diálogo se acepta de 3 a 6 líneas (el prompt pide 4 o 5, como el brief).
+  - Tras un JSON inválido del acta hay un reintento, así que la espera puede pasar de 25 s; y el
+    profesor ve un único aviso neutro para IA apagada, sin presupuesto o caída (cero mensajes técnicos).
+  - La e2e llega al acta desde Mis clases, no desde la notificación (la notificación la prueba
+    `LessonNoteIT`). Las migraciones se llaman `V48__actas_de_clase` y `V49__practica`.
 - **Seguridad — para decidir (revisión del 22/09)**:
   - **IP detrás del proxy de Railway.** `forward-headers-strategy: framework` confía en el primer
     valor de `X-Forwarded-For`, que el cliente puede inventar; si Railway no lo reescribe, todos los
