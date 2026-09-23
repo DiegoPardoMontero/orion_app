@@ -140,7 +140,11 @@ function Puntos({ items }: { items: Ejercicio[] }) {
 }
 
 function EjercicioActual({ ejercicio, onActualizado }: { ejercicio: Ejercicio; onActualizado: (e: Ejercicio) => void }) {
-  const [respuesta, setRespuesta] = useState("");
+  // El diálogo ya trae una respuesta: el orden en que se muestra. Si no, quien cree que ya está bien
+  // no podría comprobarlo sin mover antes una línea.
+  const [respuesta, setRespuesta] = useState(() =>
+    ejercicio.type === "ORDER_DIALOGUE" ? JSON.stringify(leerPayload<{ lines?: string[] }>(ejercicio).lines ?? []) : "",
+  );
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const responder = useMutation({
     mutationFn: (texto: string) =>
