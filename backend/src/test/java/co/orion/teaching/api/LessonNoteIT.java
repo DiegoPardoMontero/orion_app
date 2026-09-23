@@ -316,13 +316,18 @@ class LessonNoteIT extends ApiIntegrationSupport {
         assertThat(presupuesto.disponible()).isFalse();
     }
 
+    /**
+     * Por {@code run()}, que es lo que llama el programador de tareas: antes la transacción vivía
+     * solo en {@code recordar()} y la llamada interna se saltaba el proxy, así que la clase quedaba
+     * marcada como recordada y el aviso —que se publica después del commit— se perdía para siempre.
+     */
     @Test
     @DisplayName("El recordatorio al profesor sale una vez y nunca insiste")
     void elRecordatorioNoInsiste() {
         jdbc.update("update platform_settings set value = '0' where key = 'lesson_note_nudge_minutes'");
         claseDictada();
 
-        assertThat(recordatorio.recordar()).isEqualTo(1);
+        recordatorio.run();
         assertThat(recordatorio.recordar()).isZero();
         await().atMost(Duration.ofSeconds(5)).untilAsserted(() ->
                 assertThat(avisos(maria.getId(), "LESSON_NOTE_NUDGE")).isEqualTo(1));

@@ -260,9 +260,9 @@ class DiagnosticoSinCuentaIT extends ApiIntegrationSupport {
         jdbc.update("update assessment_leads set created_at = now() - interval '31 days' "
                 + "where first_name = 'Viejo'");
 
-        int borrados = retencion.purgar();
+        // Por run(), que es lo que llama el programador de tareas de madrugada.
+        retencion.run();
 
-        assertThat(borrados).isEqualTo(1);
         assertThat(jdbc.queryForList("select first_name from assessment_leads", String.class))
                 .containsExactly("Nuevo");
         assertThat(jdbc.queryForObject("select count(*) from confidence_assessments", Integer.class))

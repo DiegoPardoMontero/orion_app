@@ -84,7 +84,8 @@ class RetencionDeTranscripcionesIT {
     void elPlazoBorraElTextoYNadaMas() {
         UUID vieja = conTranscripcion(ana, Instant.now().minusSeconds(400L * 24 * 3600));
 
-        job.purgar();
+        // Por run(), que es lo que llama el programador de tareas de madrugada.
+        job.run();
 
         assertThat(turns.countWithTranscript(List.of(vieja))).isZero();
         // Y lo que sostiene la curva sigue ahí: el número y la señal, que no son lo que dijo.

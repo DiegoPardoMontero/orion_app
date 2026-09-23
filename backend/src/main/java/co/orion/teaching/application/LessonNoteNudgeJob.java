@@ -11,7 +11,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import co.orion.catalog.application.PlatformSettingsService;
 import co.orion.teaching.domain.LessonNoteNudgeEvent;
@@ -23,6 +24,11 @@ import co.orion.teaching.domain.LessonNoteNudgeEvent;
  * sin recordatorio. Idempotente por {@code bookings.note_nudge_sent_at}: se marca en la misma
  * transacción que publica el evento. <strong>Una vez y nunca insiste</strong>: un sistema que
  * persigue al profesor todos los días es un sistema que el profesor aprende a ignorar.
+ *
+ * <p>La transacción va por {@code TransactionTemplate} y no por {@code @Transactional}: el
+ * programador llama a {@link #run()}, y una anotación en {@link #recordar()} no se aplica desde
+ * dentro de la misma clase. Sin transacción, el aviso —que sale después del commit— se perdía y
+ * la clase quedaba marcada igual.
  */
 @Component
 public class LessonNoteNudgeJob {
@@ -31,14 +37,17 @@ public class LessonNoteNudgeJob {
     private final PlatformSettingsService settings;
     private final LessonNotesLaunch lanzamiento;
     private final ApplicationEventPublisher eventos;
+    private final TransactionTemplate enTransaccion;
     private final Clock clock;
 
     public LessonNoteNudgeJob(JdbcTemplate jdbc, PlatformSettingsService settings,
-                              LessonNotesLaunch lanzamiento, ApplicationEventPublisher eventos, Clock clock) {
+                              LessonNotesLaunch lanzamiento, ApplicationEventPublisher eventos,
+                              PlatformTransactionManager transacciones, Clock clock) {
         this.jdbc = jdbc;
         this.settings = settings;
         this.lanzamiento = lanzamiento;
         this.eventos = eventos;
+        this.enTransaccion = new TransactionTemplate(transacciones);
         this.clock = clock;
     }
 
@@ -48,8 +57,12 @@ public class LessonNoteNudgeJob {
     }
 
     /** @return cuántos recordatorios salieron */
-    @Transactional
     public int recordar() {
+        Integer enviados = enTransaccion.execute(estado -> marcarYAvisar());
+        return enviados == null ? 0 : enviados;
+    }
+
+    private int marcarYAvisar() {
         Instant ahora = clock.instant();
         Instant cerradasAntesDe = ahora.minus(Duration.ofMinutes(settings.getInt("lesson_note_nudge_minutes")));
         List<Object[]> pendientes = jdbc.query("""

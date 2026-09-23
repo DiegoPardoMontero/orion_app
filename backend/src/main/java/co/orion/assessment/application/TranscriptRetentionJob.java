@@ -10,7 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import co.orion.assessment.domain.VoiceConsent;
 import co.orion.assessment.persistence.AssessmentTurnRepository;
@@ -32,6 +33,11 @@ import co.orion.catalog.application.PlatformSettingsService;
  *
  * <p>Se borra el texto, no la fila. Borrar el turno se llevaría por delante las señales, que son
  * justo lo que sí se puede conservar: son números sobre cómo habló, no lo que dijo.
+ *
+ * <p>La transacción va por {@code TransactionTemplate} y no por {@code @Transactional}: el
+ * programador llama a {@link #run()}, y una anotación en {@link #purgar()} no se aplica desde dentro
+ * de la misma clase. Así estuvo hasta el 23/09/2026 y cada corrida moría con «No active transaction
+ * for update or delete query» sin borrar nada.
  */
 @Component
 public class TranscriptRetentionJob {
@@ -44,17 +50,20 @@ public class TranscriptRetentionJob {
     private final AssessmentTurnRepository turns;
     private final VoiceConsentRepository consents;
     private final PlatformSettingsService settings;
+    private final TransactionTemplate enTransaccion;
     private final Clock clock;
 
     public TranscriptRetentionJob(ConfidenceAssessmentRepository assessments,
                                   AssessmentTurnRepository turns,
                                   VoiceConsentRepository consents,
                                   PlatformSettingsService settings,
+                                  PlatformTransactionManager transacciones,
                                   Clock clock) {
         this.assessments = assessments;
         this.turns = turns;
         this.consents = consents;
         this.settings = settings;
+        this.enTransaccion = new TransactionTemplate(transacciones);
         this.clock = clock;
     }
 
@@ -67,8 +76,12 @@ public class TranscriptRetentionJob {
         }
     }
 
-    @Transactional
     public int purgar() {
+        Integer borradas = enTransaccion.execute(estado -> borrarLoQueToca());
+        return borradas == null ? 0 : borradas;
+    }
+
+    private int borrarLoQueToca() {
         Instant limite = clock.instant()
                 .minus(Duration.ofDays(settings.getInt(RETENCION)));
 
