@@ -51,10 +51,11 @@ public class OpenAiTranscriptorDeDictado implements TranscriptorDeDictado {
             @Value("${orion.teaching.dictation.endpoint:https://api.openai.com/v1/audio/transcriptions}") String endpoint,
             @Value("${orion.teaching.dictation.usd-per-minute:0.003}") double dolaresPorMinuto,
             @Value("${orion.ai.usd-to-cop:3101}") long pesosPorDolar,
+            @Value("${orion.teaching.dictation.timeout-seconds:40}") int corteSegundos,
             TeachingAiBudget presupuesto) {
         JdkClientHttpRequestFactory fabrica = new JdkClientHttpRequestFactory(
                 HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(4)).build());
-        fabrica.setReadTimeout(Duration.ofSeconds(40));
+        fabrica.setReadTimeout(Duration.ofSeconds(corteSegundos));
         this.http = RestClient.builder().requestFactory(fabrica).build();
         this.apiKey = apiKey;
         this.modelo = modelo;

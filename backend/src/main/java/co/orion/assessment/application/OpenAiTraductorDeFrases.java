@@ -40,7 +40,6 @@ public class OpenAiTraductorDeFrases implements TraductorDeFrases {
     private static final Logger log = LoggerFactory.getLogger(OpenAiTraductorDeFrases.class);
 
     static final String NAME = "openai-traduccion";
-    private static final String ENDPOINT = "https://api.openai.com/v1/chat/completions";
 
     static final String INSTRUCCIONES = """
             Traduces al español de Colombia lo que dice Meissa, la voz de una academia de idiomas, \
@@ -53,22 +52,26 @@ public class OpenAiTraductorDeFrases implements TraductorDeFrases {
     private final String apiKey;
     private final String model;
     private final String reasoningEffort;
+    private final String endpoint;
     private final AiUsageRecorder uso;
 
     public OpenAiTraductorDeFrases(
             @Value("${OPENAI_API_KEY:}") String apiKey,
             @Value("${orion.assessment.translation.model:gpt-4.1-nano}") String model,
             @Value("${orion.assessment.translation.reasoning-effort:}") String reasoningEffort,
+            @Value("${orion.assessment.translation.endpoint:https://api.openai.com/v1/chat/completions}") String endpoint,
+            @Value("${orion.assessment.translation.timeout-seconds:5}") int corteSegundos,
             AiUsageRecorder uso) {
         // El cliente HTTP del JDK: con HttpURLConnection el corte de lectura no cortaba un POST lento
         // (lo mostró la prueba del acta contra un servidor que tarda).
         JdkClientHttpRequestFactory fabrica = new JdkClientHttpRequestFactory(
                 HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build());
-        fabrica.setReadTimeout(Duration.ofSeconds(5));
+        fabrica.setReadTimeout(Duration.ofSeconds(corteSegundos));
         this.http = RestClient.builder().requestFactory(fabrica).build();
         this.apiKey = apiKey;
         this.model = model;
         this.reasoningEffort = reasoningEffort;
+        this.endpoint = endpoint;
         this.uso = uso;
     }
 
@@ -81,7 +84,7 @@ public class OpenAiTraductorDeFrases implements TraductorDeFrases {
         Map<?, ?> respuesta;
         try {
             respuesta = http.post()
-                    .uri(ENDPOINT)
+                    .uri(endpoint)
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(cuerpo(frase))

@@ -51,10 +51,11 @@ public class OpenAiPracticeGenerator implements PracticeGenerator {
                                    @Value("${orion.practice.model:gpt-5-mini}") String modelo,
                                    @Value("${orion.practice.openai-endpoint:https://api.openai.com/v1/chat/completions}")
                                    String endpoint,
+                                   @Value("${orion.practice.timeout-seconds:60}") int corteSegundos,
                                    PracticeAiBudget presupuesto) {
         JdkClientHttpRequestFactory fabrica = new JdkClientHttpRequestFactory(
                 HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(4)).build());
-        fabrica.setReadTimeout(Duration.ofSeconds(60));
+        fabrica.setReadTimeout(Duration.ofSeconds(corteSegundos));
         this.http = RestClient.builder().requestFactory(fabrica).build();
         this.apiKey = apiKey;
         this.modelo = modelo;
