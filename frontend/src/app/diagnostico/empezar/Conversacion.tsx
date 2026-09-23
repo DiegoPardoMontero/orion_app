@@ -12,7 +12,10 @@ import {
 import { Meissa } from "@/components/Meissa";
 import { Boton } from "@/components/ui";
 
-/** Los turnos del guion (v4): seis de Meissa, y el sexto es el cierre. */
+/**
+ * Las preguntas del guion: seis de Meissa, contando la del saludo. El contador avanza cuando
+ * empieza cada turno suyo y se queda en la sexta durante la despedida.
+ */
 const TURNOS = 6;
 
 const ESTADO: Record<FaseDeMeissa, string> = {
@@ -30,7 +33,7 @@ const ESTADO: Record<FaseDeMeissa, string> = {
  * sin aparecer, porque la gente se corrige al verse escrita y eso arruina justo lo que se mide.
  *
  * <p>La conversación es libre (Pardo, 22/09/2026): Meissa detecta sola cuándo terminaste, no hay
- * botón de «ya terminé». El diagnóstico se cierra al acabar su sexto turno si ya no pregunta nada,
+ * botón de «ya terminé». El diagnóstico se cierra cuando se despide después de su sexta pregunta,
  * o a los dos minutos, lo que llegue antes.
  *
  * <p>Salir nunca pasa en silencio: pide confirmación en una hoja, porque perder dos minutos de
@@ -72,9 +75,10 @@ export function Conversacion({
       onFase: setFase,
       onSubtitulo: setSubtitulo,
       onError: setFallo,
+      onEmpiezaTurnoDeMeissa: (numero) => setTurno(Math.min(TURNOS, numero)),
       onTurnoDeMeissa: (cuantos, preguntaba) => {
-        setTurno(Math.min(TURNOS, cuantos + 1));
-        // El sexto es el cierre: si ya no pregunta nada, se deja un respiro y se pasa al resultado.
+        // Pasada la sexta, un turno sin pregunta es la despedida: se deja un respiro y se pasa al
+        // resultado.
         if (cuantos >= TURNOS && !preguntaba) {
           setTimeout(terminar, 1500);
         }
@@ -123,7 +127,7 @@ export function Conversacion({
             Diagnóstico
           </span>
           <span className="text-[14px] font-semibold tabular-nums text-text-secondary">
-            Turno {turno} de {TURNOS} · {reloj}
+            Pregunta {turno} de {TURNOS} · {reloj}
           </span>
         </div>
         <div

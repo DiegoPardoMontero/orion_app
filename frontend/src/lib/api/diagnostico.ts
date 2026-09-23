@@ -64,12 +64,17 @@ export type FaseDeMeissa = "habla" | "escucha" | "piensa";
 export type ConversacionCallbacks = {
   onTurno: (turno: TurnoMedido) => void;
   onFase: (fase: FaseDeMeissa) => void;
-  /** Lo que Meissa va diciendo, acumulado mientras habla: es lo que se lee (no hay lip-sync). */
+  /** Lo que Meissa va diciendo en ESTE turno, acumulado: es lo que se lee (no hay lip-sync). */
   onSubtitulo: (texto: string) => void;
+  /** Empezó un turno de Meissa: el número de turno, contando el saludo como el primero. */
+  onEmpiezaTurnoDeMeissa?: (numero: number) => void;
   /** Un turno de Meissa terminó de sonar. Lleva cuántos van y si terminó en pregunta. */
   onTurnoDeMeissa: (cuantos: number, preguntaba: boolean) => void;
   onError: (mensaje: string) => void;
 };
+
+/** Un evento del proveedor, con solo lo que este cliente lee de él. */
+export type EventoDeVoz = { type: string; transcript?: string; delta?: string; error?: unknown };
 
 export class ConversacionDeVoz {
   private pc: RTCPeerConnection | null = null;
@@ -83,10 +88,20 @@ export class ConversacionDeVoz {
   private indice = 0;
   private subtitulo = "";
   private hablando = false;
+  private turnosIniciados = 0;
   private turnosDeMeissa = 0;
   private ultimoDeMeissa = "";
 
-  constructor(private readonly cb: ConversacionCallbacks) {}
+  /**
+   * @param enviar a dónde van los mensajes para la sesión. Por defecto, el canal de datos; los
+   *               tests pasan el suyo para ver qué se le habría dicho al proveedor.
+   */
+  constructor(
+    private readonly cb: ConversacionCallbacks,
+    private readonly enviar: (mensaje: object) => void = (m) => {
+      if (this.canal?.readyState === "open") this.canal.send(JSON.stringify(m));
+    },
+  ) {}
 
   async conectar(clientSecret: string, model: string) {
     this.micro = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -100,7 +115,7 @@ export class ConversacionDeVoz {
     this.pc.addTrack(this.micro.getAudioTracks()[0], this.micro);
 
     this.canal = this.pc.createDataChannel("oai-events");
-    this.canal.onmessage = (e) => this.manejar(JSON.parse(e.data));
+    this.canal.onmessage = (e) => this.recibir(JSON.parse(e.data));
 
     const oferta = await this.pc.createOffer();
     await this.pc.setLocalDescription(oferta);
@@ -114,7 +129,7 @@ export class ConversacionDeVoz {
     await this.pc.setRemoteDescription({ type: "answer", sdp: await resp.text() });
 
     // La IA saluda primero: el modelo no arranca solo.
-    this.canal.onopen = () => this.canal?.send(JSON.stringify({ type: "response.create" }));
+    this.canal.onopen = () => this.enviar({ type: "response.create" });
   }
 
   colgar() {
@@ -125,15 +140,45 @@ export class ConversacionDeVoz {
     this.canal = null;
   }
 
-  private manejar(ev: { type: string; transcript?: string; delta?: string; error?: unknown }) {
+  /**
+   * Un evento del proveedor. Público para que los tests lo alimenten sin WebRTC.
+   *
+   * <p><strong>Por WebRTC el audio no pasa por el canal de datos.</strong> El audio llega por la
+   * pista de medios, así que `response.output_audio.delta` —el evento con el que antes se
+   * detectaba que Meissa empezaba a hablar— nunca llega por aquí. Por eso el subtítulo no se
+   * limpiaba jamás (se veía la conversación entera acumulada hasta que el turno terminaba y saltaba
+   * al último) y el contador de preguntas se quedaba en la primera. Ahora el turno nuevo se detecta
+   * con `response.created`, que sí viaja por el canal, y el «está sonando» con
+   * `output_audio_buffer.started`, que existe justamente para WebRTC.
+   */
+  recibir(ev: EventoDeVoz) {
     switch (ev.type) {
+      // Empieza un turno de Meissa: se borra lo anterior antes de que llegue la primera palabra.
+      case "response.created":
+        this.subtitulo = "";
+        this.ultimoDeMeissa = "";
+        this.turnosIniciados++;
+        this.cb.onSubtitulo("");
+        this.cb.onEmpiezaTurnoDeMeissa?.(this.turnosIniciados);
+        break;
+
       case "response.done":
         this.finDeLaIA = performance.now();
         break;
 
+      // Empezó a SONAR. Por WebRTC es este; por WebSocket el audio llega en deltas y sirve igual.
+      case "output_audio_buffer.started":
+      case "response.output_audio.delta":
+        if (!this.hablando) {
+          this.hablando = true;
+          this.cb.onFase("habla");
+        }
+        break;
+
       // Terminó de SONAR, que no es lo mismo que terminar de generarse: hasta aquí el micrófono
-      // no es tuyo todavía.
+      // no es tuyo todavía. `cleared` es cuando la persona la interrumpe: el turno también acabó.
       case "output_audio_buffer.stopped":
+      case "output_audio_buffer.cleared":
         this.finDeLaIA = performance.now();
         if (this.hablando) {
           this.hablando = false;
@@ -151,15 +196,6 @@ export class ConversacionDeVoz {
       case "input_audio_buffer.speech_stopped":
         this.finDelUsuario = performance.now();
         this.cb.onFase("piensa");
-        break;
-
-      case "response.output_audio.delta":
-        if (!this.hablando) {
-          this.hablando = true;
-          this.subtitulo = "";
-          this.cb.onSubtitulo("");
-        }
-        this.cb.onFase("habla");
         break;
 
       case "response.output_audio_transcript.delta":
@@ -193,6 +229,7 @@ export class ConversacionDeVoz {
         const texto = (ev.transcript ?? "").trim();
         if (!texto) break;
         this.ultimoDeMeissa = texto;
+        this.subtitulo = texto;
         this.cb.onSubtitulo(texto);
         this.cb.onTurno({
           turnIndex: this.indice++,
