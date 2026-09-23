@@ -30,7 +30,7 @@ dentro de `/cuenta`).
 
 ## Verificación
 Al 22/09/2026, sobre `master` con la revisión de seguridad y la Parte A del Bloque 10:
-- Backend: `./mvnw verify` (Testcontainers) — **280 unitarios + 475 de integración**, verde.
+- Backend: `./mvnw verify` (Testcontainers) — **280 unitarios + 477 de integración**, verde.
 - Frontend: `next build` + `tsc` + `lint` verdes; **50 tests de Vitest**.
 - **E2E Playwright: 18 de 19**, sobre base recreada (`docker compose down -v`). El que falta sigue
   siendo el paso por la pasarela: exige llaves de *sandbox* de Wompi en el entorno. El del acta
@@ -478,7 +478,8 @@ Solo la Parte A: la práctica entre clases (Parte B) no está construida, y por 
 - Frontera: fuera de `teaching` solo se importan sus eventos (`FronterasDeTeachingTest`).
 - El borrador lo arma `gpt-5-mini` solo con `ORION_VOICE_PROVIDER=openai` y `OPENAI_API_KEY`, las
   mismas del diagnóstico; sin ellas (local y tests) lo arma una regla simple sin red: las notas
-  enteras en «lo que trabajaron» y cada término entre comillas como palabra nueva.
+  enteras en «lo que trabajaron» y cada término entre comillas como palabra nueva. Cuál de los dos
+  está activo se ve en Administración → Sistema, «Borrador del acta (OpenAI)».
 
 ## Revisión de seguridad y permisos (22/09/2026)
 

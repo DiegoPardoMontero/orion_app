@@ -97,6 +97,15 @@ public class SystemStatusService {
                         "openai".equals(voiceProvider) ? "Conversación real" : null,
                         List.of("OPENAI_API_KEY", "ORION_VOICE_PROVIDER")),
 
+                // El acta de clase usa las mismas dos variables. Apagada no falla: el borrador lo
+                // arma una regla simple y el profesor corrige más, que es justo lo que hay que ver.
+                new Integracion("Borrador del acta (OpenAI)",
+                        hay(openAiKey) && "openai".equals(voiceProvider),
+                        "El borrador del acta lo arma una regla simple, sin IA: las notas enteras en "
+                                + "«lo que trabajaron». El profesor puede escribirla igual.",
+                        "openai".equals(voiceProvider) ? "Borrador con IA" : null,
+                        List.of("OPENAI_API_KEY", "ORION_VOICE_PROVIDER")),
+
                 // Entrar con Google, Apple o Facebook: cada botón aparece solo si su proveedor está
                 // aquí encendido. Apple queda apagado hasta que se pague su programa de desarrollador.
                 new Integracion("Entrar con Google", social.configurados().contains("google"),
