@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
 import {
   ArrowRight,
+  BadgeCheck,
   CalendarCheck,
   ChevronRight,
   MessageCircle,
+  NotebookPen,
   Search,
   Sparkles,
   UserRoundSearch,
+  Video,
+  Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import type { CSSProperties } from "react";
@@ -125,6 +129,38 @@ const METODO_PROFESOR = [
     texto: "Dictas tus observaciones en un minuto, revisas el resumen que armamos y lo publicas: los ejercicios de tu estudiante salen de ahí.",
   },
   { letra: "N", palabra: "Navegar", texto: "Defines en qué debe enfocarse hasta la próxima sesión." },
+];
+
+/** Las cuatro cosas que definen Orión Idiomas, en el bloque «Qué es»: todas las hace el producto hoy. */
+const QUE_ES = [
+  {
+    icono: Video,
+    titulo: "En vivo y uno a uno",
+    texto: "Por videollamada, con un profesor que prepara tu clase.",
+    fondo: "bg-accent-peach-soft",
+    tinta: "text-[#8a5a33]",
+  },
+  {
+    icono: BadgeCheck,
+    titulo: "Profesores verificados",
+    texto: "Revisamos sus documentos, su formación y su experiencia.",
+    fondo: "bg-primary-soft",
+    tinta: "text-primary-strong",
+  },
+  {
+    icono: Wallet,
+    titulo: "Pagas clase por clase",
+    texto: "Sin suscripción, sin permanencia y sin renovación automática.",
+    fondo: "bg-accent-lavender-soft",
+    tinta: "text-info",
+  },
+  {
+    icono: NotebookPen,
+    titulo: "Seguimiento en cada clase",
+    texto: "Un resumen de lo que trabajaron y práctica hecha para ti.",
+    fondo: "bg-success-bg",
+    tinta: "text-success",
+  },
 ];
 
 /**
@@ -248,30 +284,47 @@ export default async function PortadaPage() {
       </section>
 
       {/*
-        Qué es Orión Idiomas, dicho sin marketing, y qué hacemos con los datos de quien entra con
-        Google o Facebook. Lo pide la verificación de marca de Google: la página principal tiene que
-        explicar el propósito de la aplicación con su nombre (rechazada el 23/09/2026 por no hacerlo).
-        Lo que se toma de la cuenta es exactamente esto: identificador, correo y nombre.
+        Qué es Orión Idiomas. Lo exige la verificación de marca de Google (aprobada el 23/09/2026):
+        la página principal tiene que explicar el propósito de la aplicación con el mismo nombre
+        de la pantalla de consentimiento. Qué datos toma el inicio de sesión con Google o Facebook
+        está en las preguntas frecuentes, desplegable.
       */}
-      <section id="que-es" aria-labelledby="que-es-titulo" className="mx-auto max-w-4xl scroll-mt-20 px-5 pt-12 text-center lg:px-8 lg:pt-16">
-        <h2 id="que-es-titulo" className="text-[12px] font-bold uppercase tracking-[0.14em] text-primary-strong">
-          Qué es Orión Idiomas
-        </h2>
-        <p className="mx-auto mt-3 max-w-[64ch] text-[16px] leading-relaxed text-text lg:text-[17px]">
-          Orión Idiomas es una plataforma en línea para aprender inglés con clases en vivo, uno a uno, con profesores
-          verificados. Haces un diagnóstico gratis de tu punto de partida, eliges profesor según tu objetivo y tu
-          horario, reservas y pagas cada clase, y la tomas por videollamada. Después de cada clase recibes un resumen
-          de lo que trabajaron y ejercicios de práctica para llegar mejor a la siguiente.
-        </p>
-        <p className="mx-auto mt-3 max-w-[64ch] text-[13.5px] leading-relaxed text-text-secondary">
-          Si entras con Google o Facebook, solo usamos tu nombre, tu correo y el identificador de tu cuenta para crear
-          tu cuenta de Orión Idiomas e iniciar sesión. No publicamos nada en tu nombre ni accedemos a ningún otro dato de
-          tu cuenta.{" "}
-          <Link href="/privacidad" className="font-semibold text-primary-strong underline underline-offset-2">
-            Política de privacidad
-          </Link>
-          .
-        </p>
+      <section id="que-es" aria-labelledby="que-es-titulo" className="mx-auto max-w-6xl scroll-mt-20 px-5 pt-12 lg:px-8 lg:pt-16">
+        <div className="relative overflow-hidden rounded-card bg-[linear-gradient(135deg,var(--color-accent-peach-soft)_0%,var(--color-surface-raised)_55%,var(--color-accent-lavender-soft)_100%)] p-7 shadow-sm lg:p-12">
+          {/* Un resplandor del amanecer en la esquina: la constelación es blanca y aquí no se vería. */}
+          <span aria-hidden="true" className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-primary/15 blur-3xl" />
+          <span aria-hidden="true" className="pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-accent-lavender/40 blur-3xl" />
+          <div className="relative grid gap-9 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-12">
+            <div>
+              <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-primary-strong">Qué es Orión Idiomas</p>
+              <h2 id="que-es-titulo" className="mt-3 text-balance font-display text-[28px] font-bold leading-[1.1] lg:text-[38px]">
+                Tu academia de inglés en línea, con profesores de verdad.
+              </h2>
+              <p className="mt-4 max-w-[52ch] text-[15.5px] leading-relaxed text-text-secondary lg:text-[16.5px]">
+                <strong className="font-semibold text-text">Orión Idiomas</strong> es una plataforma en línea para
+                aprender inglés con clases en vivo, uno a uno. Haces un diagnóstico gratis, eliges profesor según tu
+                objetivo y tu horario, reservas y pagas cada clase, y la tomas por videollamada.
+              </p>
+            </div>
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {QUE_ES.map(({ icono: Icono, titulo, texto, fondo, tinta }, i) => (
+                <li
+                  key={titulo}
+                  className="aparece flex items-start gap-4 rounded-card bg-surface-raised/85 p-4 shadow-sm ring-1 ring-border/60 backdrop-blur-sm sm:block sm:p-5"
+                  style={{ "--i": i } as CSSProperties}
+                >
+                  <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-full ${fondo} ${tinta}`}>
+                    <Icono size={20} strokeWidth={1.9} />
+                  </span>
+                  <div>
+                    <p className="font-display text-[16.5px] font-bold leading-snug sm:mt-3">{titulo}</p>
+                    <p className="mt-1 text-[13.5px] leading-relaxed text-text-secondary">{texto}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
       </section>
 
       {/* — Conoce a los profesores (real, se oculta con <4) — */}

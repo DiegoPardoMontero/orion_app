@@ -174,6 +174,10 @@ const preguntas = (c: PublicFigures): Record<Lista, Pregunta[]> => {
         r: "Por Wompi, con PSE, tarjeta o Nequi. El cobro lo procesa Wompi y los datos de tu tarjeta nunca pasan por los servidores de Orión.",
       },
       {
+        p: "¿Qué datos usan si entro con Google o Facebook?",
+        r: "Solo tu nombre, tu correo y el identificador de tu cuenta, para crear tu cuenta de Orión Idiomas e iniciar sesión. No publicamos nada en tu nombre ni accedemos a ningún otro dato de tu cuenta de Google o Facebook.",
+      },
+      {
         p: "Soy menor de edad, ¿puedo tomar clases?",
         r: "No. Orión es solo para mayores de 18 años: la ley colombiana exige la autorización del representante legal para tratar datos de menores, y ese trámite no existe en la plataforma.",
       },
@@ -201,6 +205,10 @@ const preguntas = (c: PublicFigures): Record<Lista, Pregunta[]> => {
       {
         p: "¿Tengo que seguir una metodología específica?",
         r: "No. Enseñas con tu estilo y tu material. El Método ORION™ es el marco del seguimiento después de la clase, no de la clase misma.",
+      },
+      {
+        p: "¿Qué datos usan si entro con Google o Facebook?",
+        r: "Solo tu nombre, tu correo y el identificador de tu cuenta, para crear tu cuenta de Orión Idiomas e iniciar sesión. No publicamos nada en tu nombre ni accedemos a ningún otro dato de tu cuenta de Google o Facebook.",
       },
       {
         p: "¿Puedo traer a mis propios estudiantes?",
