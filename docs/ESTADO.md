@@ -430,6 +430,16 @@ con las decisiones que tomó Pardo.
   recordado en el navegador. Solo para el dueño de un diagnóstico vivo y con tope de 80 frases;
   la rama en español no se traduce. Antes el subtítulo acumulaba la conversación entera: por
   WebRTC el evento con el que se detectaba el turno nuevo no llega nunca.
+- **Guion v5 de Meissa** (23/09, pedido de Pardo): habla la mitad y pregunta en concreto,
+  siguiendo el hilo de lo que la persona cuenta (a un ingeniero de software le pregunta por el
+  último bug o por cómo verifica una migración). Medido contra el modelo con dos personas fijas:
+  **~20 palabras por turno, contra 42 del v4**, y 24 en el saludo contra 44. Orión se nombra en
+  el saludo, en la despedida y una vez en medio, cuando la pantalla le manda «[Orión now]» antes
+  del cuarto turno: contando sola, lo nombraba en casi todos. A falta de 20 s la pantalla le manda
+  «[20 seconds left]» y ella lo avisa en su siguiente turno, sin interrumpir; a los dos minutos,
+  «[Time is up]»: se despide en cuanto nadie esté hablando y la pantalla cierra al terminar la
+  despedida (corte duro a los 25 s si no llega). Un test comprueba que las tres notas digan lo
+  mismo en la pantalla y en el guion. **El juicio final es de oído**: la prueba fue en texto.
 - **Webhook de JaaS** (V46): 8x8 cuenta quién entró a cada sala, quién sigue dentro y cuánto habló
   cada uno. La antesala ya dice «María te espera» de verdad; el profesor ve en la ficha del
   estudiante qué parte de la palabra tuvo en sus últimas clases juntos; el admin ve en

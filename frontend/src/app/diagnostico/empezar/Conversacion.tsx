@@ -18,6 +18,17 @@ import { Boton } from "@/components/ui";
  */
 const TURNOS = 6;
 
+/**
+ * Las notas que se le mandan a Meissa. Son cadenas exactas que el guion v5 reconoce; un test del
+ * backend comprueba que las dos partes digan lo mismo.
+ */
+const NOTA_ORION = "[Orión now]";
+const NOTA_VEINTE_SEGUNDOS = "[20 seconds left]";
+const NOTA_SE_ACABO = "[Time is up]";
+
+/** Lo que se espera a la despedida después de los dos minutos antes de cerrar igual. */
+const GRACIA_SEGUNDOS = 25;
+
 const ESTADO: Record<FaseDeMeissa, string> = {
   escucha: "te escucha",
   habla: "está hablando",
@@ -34,8 +45,8 @@ const ESTADO: Record<FaseDeMeissa, string> = {
  * sin aparecer, porque la gente se corrige al verse escrita y eso arruina justo lo que se mide.
  *
  * <p>La conversación es libre (Pardo, 22/09/2026): Meissa detecta sola cuándo terminaste, no hay
- * botón de «ya terminé». El diagnóstico se cierra cuando se despide después de su sexta pregunta,
- * o a los dos minutos, lo que llegue antes.
+ * botón de «ya terminé». A falta de veinte segundos Meissa lo avisa en su siguiente turno, y al
+ * llegar a los dos minutos se despide; la pantalla se cierra cuando termina la despedida.
  *
  * <p>Salir nunca pasa en silencio: pide confirmación en una hoja, porque perder dos minutos de
  * exposición por un toque accidental es lo peor que le puede pasar a esta pantalla.
@@ -66,6 +77,8 @@ export function Conversacion({
   const [fallo, setFallo] = useState<string | null>(null);
   const [confirmarSalida, setConfirmarSalida] = useState(false);
   const cerrando = useRef(false);
+  const avisado = useRef(false);
+  const seAcabo = useRef(false);
 
   const terminar = useCallback(() => {
     if (cerrando.current) return;
@@ -109,9 +122,12 @@ export function Conversacion({
           });
       },
       onTurnoDeMeissa: (cuantos, preguntaba) => {
-        // Pasada la sexta, un turno sin pregunta es la despedida: se deja un respiro y se pasa al
-        // resultado.
-        if (cuantos >= TURNOS && !preguntaba) {
+        // Antes de su cuarto turno le toca nombrar a Orión, una vez. Lo dispara la pantalla y no
+        // su propia cuenta: contando sola, lo nombraba en casi todos los turnos.
+        if (cuantos === 3) voz.current?.nota(NOTA_ORION);
+        // Un turno sin pregunta después de la sexta, del aviso o del final es la despedida: se deja
+        // un respiro y se pasa al resultado.
+        if (!preguntaba && (cuantos >= TURNOS || avisado.current || seAcabo.current)) {
           setTimeout(terminar, 1500);
         }
       },
@@ -142,10 +158,20 @@ export function Conversacion({
   const transcurrido = Math.min(segundos, total);
   const reloj = `${Math.floor(transcurrido / 60)}:${String(transcurrido % 60).padStart(2, "0")}`;
 
-  // El corte es duro y lo aplica también el cliente: quedarse esperando a que el proveedor corte
-  // deja a la persona hablando sola.
+  // El tiempo, en tres momentos. A los veinte segundos del final, la nota: Meissa lo dice en su
+  // siguiente turno, sin interrumpir. Al final, la despedida: se pide ya si nadie está hablando, y
+  // si no, en cuanto termine quien habla. Y un corte duro por si la despedida no llega nunca:
+  // quedarse esperando al proveedor deja a la persona hablando sola.
   useEffect(() => {
-    if (segundos >= total) terminar();
+    if (!avisado.current && segundos >= total - 20) {
+      avisado.current = true;
+      voz.current?.nota(NOTA_VEINTE_SEGUNDOS);
+    }
+    if (!seAcabo.current && segundos >= total) {
+      seAcabo.current = true;
+      voz.current?.pedirDespedida(NOTA_SE_ACABO);
+    }
+    if (segundos >= total + GRACIA_SEGUNDOS) terminar();
   }, [segundos, total, terminar]);
 
   return (

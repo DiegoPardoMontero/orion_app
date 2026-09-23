@@ -96,6 +96,8 @@ export class ConversacionDeVoz {
   private turnosIniciados = 0;
   private pendiente = "";
   private frasesDelTurno = 0;
+  private respuestaEnCurso = false;
+  private usuarioHablando = false;
   private turnosDeMeissa = 0;
   private ultimoDeMeissa = "";
 
@@ -139,6 +141,30 @@ export class ConversacionDeVoz {
     this.canal.onopen = () => this.enviar({ type: "response.create" });
   }
 
+  /**
+   * Una nota para Meissa, que ella no lee en voz alta: las que reconoce el guion son el aviso de
+   * tiempo y el momento de nombrar a Orión. Se añade a la conversación y la tiene en cuenta en su
+   * siguiente turno; no la hace hablar.
+   */
+  nota(texto: string) {
+    this.enviar({
+      type: "conversation.item.create",
+      item: { type: "message", role: "system", content: [{ type: "input_text", text: texto }] },
+    });
+  }
+
+  /**
+   * Se acabó el tiempo: la nota de despedida y, si nadie está hablando, que se despida ya. Si la
+   * persona está hablando no se la corta —su silencio dispara el turno de Meissa, que ya lleva la
+   * nota—, y si Meissa está a mitad de un turno, termina el suyo.
+   */
+  pedirDespedida(texto: string) {
+    this.nota(texto);
+    if (!this.respuestaEnCurso && !this.usuarioHablando && !this.hablando) {
+      this.enviar({ type: "response.create" });
+    }
+  }
+
   colgar() {
     this.pc?.close();
     this.micro?.getTracks().forEach((t) => t.stop());
@@ -162,6 +188,7 @@ export class ConversacionDeVoz {
     switch (ev.type) {
       // Empieza un turno de Meissa: se borra lo anterior antes de que llegue la primera palabra.
       case "response.created":
+        this.respuestaEnCurso = true;
         this.subtitulo = "";
         this.ultimoDeMeissa = "";
         this.pendiente = "";
@@ -172,6 +199,7 @@ export class ConversacionDeVoz {
         break;
 
       case "response.done":
+        this.respuestaEnCurso = false;
         this.finDeLaIA = performance.now();
         break;
 
@@ -198,11 +226,13 @@ export class ConversacionDeVoz {
         break;
 
       case "input_audio_buffer.speech_started":
+        this.usuarioHablando = true;
         this.inicioDelUsuario = performance.now();
         this.cb.onFase("escucha");
         break;
 
       case "input_audio_buffer.speech_stopped":
+        this.usuarioHablando = false;
         this.finDelUsuario = performance.now();
         this.cb.onFase("piensa");
         break;

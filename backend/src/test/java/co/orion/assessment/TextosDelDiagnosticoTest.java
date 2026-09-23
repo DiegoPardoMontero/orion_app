@@ -86,7 +86,7 @@ class TextosDelDiagnosticoTest {
     @Test
     @DisplayName("El guion vigente tampoco: es lo que la IA dice en voz alta")
     void elGuionTampoco() throws IOException {
-        String guion = leerDelRepo("backend/src/main/resources/prompts/assessment-scenario-v4.txt");
+        String guion = leerDelRepo("backend/src/main/resources/prompts/assessment-scenario-v5.txt");
         // Solo las líneas que la IA puede decir: las prohibiciones del propio guion NOMBRAN estas
         // frases para prohibirlas, y contarlas ahí sería castigar al archivo por hacer su trabajo.
         String hablado = guion.lines()
@@ -97,6 +97,23 @@ class TextosDelDiagnosticoTest {
 
         for (String frase : NIVEL_MCER) {
             assertThat(quitarNegaciones(hablado)).doesNotContain(frase);
+        }
+    }
+
+    /**
+     * Las notas que la pantalla le manda a Meissa —el tiempo y el momento de nombrar a Orión— son
+     * cadenas exactas que el guion reconoce. Si una cambia de un lado y no del otro, el modelo
+     * recibe una nota que no entiende y la ignora en silencio: se pierde el aviso de los veinte
+     * segundos, o la despedida.
+     */
+    @Test
+    @DisplayName("Las notas que manda la pantalla son exactamente las que conoce el guion")
+    void lasNotasCoinciden() {
+        String guion = leerDelRepo("backend/src/main/resources/prompts/assessment-scenario-v5.txt");
+        String pantalla = leerDelRepo("frontend/src/app/diagnostico/empezar/Conversacion.tsx");
+        for (String nota : List.of("[20 seconds left]", "[Time is up]", "[Orión now]")) {
+            assertThat(guion).as("el guion conoce " + nota).contains("«" + nota + "»");
+            assertThat(pantalla).as("la pantalla manda " + nota).contains("\"" + nota + "\"");
         }
     }
 

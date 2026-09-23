@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 public class ScenarioPrompts {
 
     /** El guion vigente. Subir de versión es cambiar esta constante y dejar el archivo viejo. */
-    static final String VIGENTE = "prompts/assessment-scenario-v4.txt";
+    static final String VIGENTE = "prompts/assessment-scenario-v5.txt";
 
     private static final Map<String, String> NOMBRE_DEL_IDIOMA = Map.of(
             "EN", "inglés",

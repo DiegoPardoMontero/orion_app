@@ -46,6 +46,6 @@ class ScenarioPromptsTest {
     @Test
     @DisplayName("La versión que se registra es la del archivo vigente")
     void laVersionEsLaVigente() {
-        assertThat(prompts.versionVigente()).isEqualTo("assessment-scenario-v4");
+        assertThat(prompts.versionVigente()).isEqualTo("assessment-scenario-v5");
     }
 }

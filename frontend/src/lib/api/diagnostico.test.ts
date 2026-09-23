@@ -96,4 +96,36 @@ describe("ConversacionDeVoz por WebRTC", () => {
       [2, 1, "Tell me more."],
     ]);
   });
+
+  it("una nota va a la conversación como mensaje de sistema, sin hacerla hablar", () => {
+    const { voz, enviados } = cliente();
+
+    voz.nota("[20 seconds left]");
+
+    expect(enviados).toEqual([
+      {
+        type: "conversation.item.create",
+        item: { type: "message", role: "system", content: [{ type: "input_text", text: "[20 seconds left]" }] },
+      },
+    ]);
+  });
+
+  it("al acabarse el tiempo pide la despedida ya si nadie habla, pero no corta a la persona", () => {
+    const enSilencio = cliente();
+    enSilencio.voz.pedirDespedida("[Time is up]");
+    expect(enSilencio.enviados.map((m) => (m as { type: string }).type)).toEqual([
+      "conversation.item.create",
+      "response.create",
+    ]);
+
+    const hablando = cliente();
+    hablando.voz.recibir({ type: "input_audio_buffer.speech_started" });
+    hablando.voz.pedirDespedida("[Time is up]");
+    expect(hablando.enviados.map((m) => (m as { type: string }).type)).toEqual(["conversation.item.create"]);
+
+    const meissaHabla = cliente();
+    meissaHabla.voz.recibir({ type: "response.created" });
+    meissaHabla.voz.pedirDespedida("[Time is up]");
+    expect(meissaHabla.enviados.map((m) => (m as { type: string }).type)).toEqual(["conversation.item.create"]);
+  });
 });
