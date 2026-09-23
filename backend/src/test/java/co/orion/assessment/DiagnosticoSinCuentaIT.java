@@ -164,6 +164,31 @@ class DiagnosticoSinCuentaIT extends ApiIntegrationSupport {
     }
 
     /**
+     * La traducción se carga al presupuesto del diagnóstico, uno solo por función: gastado el del
+     * día, la conversación sigue igual y la línea en español simplemente no aparece.
+     */
+    @SuppressWarnings("rawtypes")
+    @Test
+    @DisplayName("Sin presupuesto del diagnóstico no hay traducción, y la conversación sigue")
+    void sinPresupuestoNoSeTraduce() {
+        String llave = nuevoLead("Eduardo");
+        String id = (String) comoLead(HttpMethod.POST, "/api/v1/assessments", llave,
+                Map.of("languageCode", "EN")).getBody().get("assessmentId");
+        String tope = jdbc.queryForObject(
+                "select value from platform_settings where key = 'assessment_daily_budget_cop'", String.class);
+        jdbc.update("update platform_settings set value = '0' where key = 'assessment_daily_budget_cop'");
+        try {
+            ResponseEntity<Map> r = comoLead(HttpMethod.POST, "/api/v1/assessments/" + id + "/translate", llave,
+                    Map.of("text", "How's your day going?"));
+
+            assertThat(r.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(r.getBody()).containsEntry("translation", null);
+        } finally {
+            jdbc.update("update platform_settings set value = ? where key = 'assessment_daily_budget_cop'", tope);
+        }
+    }
+
+    /**
      * Cada «empezar» entrega una llave del proveedor que se paga, también al retomar uno abierto.
      * Se carga al presupuesto al abrirla —quien pide llaves y no cierra nada consume igual— y hay
      * un tope por persona para que un solo lead no se gaste el día entero.

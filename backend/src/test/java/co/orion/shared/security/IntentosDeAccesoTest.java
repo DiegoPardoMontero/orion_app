@@ -61,4 +61,28 @@ class IntentosDeAccesoTest {
         assertThatCode(() -> intentos.antesDeLogin(desde("10.0.0.10"), "ana@correo.test"))
                 .doesNotThrowAnyException();
     }
+
+    @Test
+    @DisplayName("Traducir: ochenta frases por diagnóstico, y el tope de uno no toca a otro")
+    void traducirTieneTopePorDiagnostico() {
+        java.util.UUID uno = java.util.UUID.randomUUID();
+        for (int i = 0; i < 80; i++) {
+            intentos.antesDeTraducir(uno);
+        }
+
+        assertThatThrownBy(() -> intentos.antesDeTraducir(uno)).isInstanceOf(TooManyRequestsException.class);
+        assertThatCode(() -> intentos.antesDeTraducir(java.util.UUID.randomUUID())).doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("Dictar: cuarenta al día por profesor")
+    void dictarTieneTopePorProfesor() {
+        java.util.UUID maria = java.util.UUID.randomUUID();
+        for (int i = 0; i < 40; i++) {
+            intentos.antesDeDictar(maria);
+        }
+
+        assertThatThrownBy(() -> intentos.antesDeDictar(maria)).isInstanceOf(TooManyRequestsException.class);
+        assertThatCode(() -> intentos.antesDeDictar(java.util.UUID.randomUUID())).doesNotThrowAnyException();
+    }
 }
