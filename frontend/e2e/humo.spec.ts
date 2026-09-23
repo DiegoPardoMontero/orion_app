@@ -320,3 +320,35 @@ test("el admin invita a un profesor; un enlace inválido se rechaza", async ({ p
   await page.goto("/invitacion?token=token-inventado");
   await expect(page.getByRole("heading", { name: "Invitación no válida" })).toBeVisible();
 });
+
+/**
+ * El acta (Bloque 10): María cuenta la clase que se cerró desde que existen las actas, revisa el
+ * borrador y lo publica; Ana lo encuentra en sus clases pasadas y lo lee. Sin IA en local: el
+ * borrador lo arma la regla simple, y cada término entre comillas se vuelve una palabra nueva.
+ */
+test("María escribe y publica el acta de una clase; Ana la lee", async ({ page }) => {
+  await login(page, USERS.maria);
+  await page.waitForURL((u) => !u.pathname.startsWith("/login"));
+  await page.goto("/mis-clases?scope=past");
+  const porEscribir = page.getByRole("region", { name: "Actas por escribir" });
+  await porEscribir.getByRole("link", { name: /Ana Ramírez/ }).first().click();
+
+  await page.locator("#notas").fill("Trabajamos past simple; sigue diciendo 'I go yesterday' y le costó 'used to'.");
+  await page.getByRole("button", { name: "Generar acta" }).click();
+  await expect(page.getByText("Borrador", { exact: true })).toBeVisible();
+  await expect(page.getByText("used to", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Publicar", exact: true }).click();
+  await expect(page.getByText("Publicada", { exact: true })).toBeVisible();
+  await page.goto("/mis-clases?scope=past");
+  await logout(page);
+
+  await login(page, USERS.ana);
+  await page.waitForURL((u) => !u.pathname.startsWith("/login"));
+  await page.goto("/mis-clases?scope=past");
+  const resumenes = page.getByRole("region", { name: "Resúmenes de tus clases" });
+  await resumenes.getByRole("link", { name: /María Gómez/ }).first().click();
+  await expect(page.getByRole("heading", { name: "Resumen de tu clase" })).toBeVisible();
+  await expect(page.getByText(/Trabajamos past simple/)).toBeVisible();
+  // Lo que escribió en crudo es su cuaderno: no llega aquí.
+  await expect(page.getByText("Tus notas originales")).toHaveCount(0);
+});

@@ -29,15 +29,18 @@ dentro de `/cuenta`).
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots), con Rigel de protagonista.
 
 ## Verificación
-Al 08/09/2026, sobre `master` ya con el Bloque 9 mezclado:
-- Backend: `./mvnw verify` (Testcontainers) — **161 unitarios + 380 de integración**, verde.
+Al 22/09/2026, sobre `master` con la revisión de seguridad y la Parte A del Bloque 10:
+- Backend: `./mvnw verify` (Testcontainers) — **280 unitarios + 475 de integración**, verde.
 - Frontend: `next build` + `tsc` + `lint` verdes; **50 tests de Vitest**.
-- **E2E Playwright: 15 de 16**, sobre base recreada (`docker compose down -v`). El que falta sigue
-  siendo el paso por la pasarela: exige llaves de *sandbox* de Wompi en el entorno.
-  Actualizados en el Bloque 9: las tres casillas del registro, y la verificación de correo —que
-  ahora se hace por el camino real, leyendo el enlace del buzón de Mailpit, y no marcando la
-  cuenta por SQL. El `timeout` por test subió a 60 s: estos tests manejan un `next dev` que
-  compila cada ruta la primera vez, y fallar por eso solo enseña a volver a correrlos.
+- **E2E Playwright: 18 de 19**, sobre base recreada (`docker compose down -v`). El que falta sigue
+  siendo el paso por la pasarela: exige llaves de *sandbox* de Wompi en el entorno. El del acta
+  necesita la clase que la semilla local cierra «ahora» (la única posterior a la V48).
+
+Al 08/09/2026, con el Bloque 9 recién mezclado, eran 161 + 380 y 15 de 16. En esa tanda se
+actualizaron las tres casillas del registro y la verificación de correo —que se hace por el camino
+real, leyendo el enlace del buzón de Mailpit, y no marcando la cuenta por SQL—, y el `timeout` por
+test subió a 60 s: estos tests manejan un `next dev` que compila cada ruta la primera vez, y fallar
+por eso solo enseña a volver a correrlos.
 - El build de producción **no** se ha vuelto a recorrer a mano en navegador tras el Bloque 9.
 
 > **Lo que costó ese repaso a mano.** El diálogo de mayoría de edad del Bloque 9 se quedaba puesto
