@@ -15,13 +15,19 @@ import java.util.Set;
  *
  * <p>Tampoco los nombres propios: «Tell me more, Sofía» o «the traffic in Bogotá» son inglés. Se
  * quitan las palabras con mayúscula en mitad de la frase y la del principio cuando va seguida de coma
- * («Sofía, what do you…»), que es como Meissa llama a la persona.
+ * («Sofía, what do you…»), que es como Meissa llama a la persona. Eso deja sin pistas a las frases
+ * cortas en español que empiezan igual («Sí, claro.», «Hola, Sofía.»), y por eso antes se buscan en
+ * el texto entero unas pocas palabras que el inglés no usa.
  */
 public final class IdiomaDeLaFrase {
 
     private static final Set<String> PALABRAS_ESPANOLAS = Set.of(
             "que", "de", "la", "los", "las", "el", "es", "con", "para", "por", "una", "del", "al",
             "cuéntame", "cuentas", "sigamos", "español", "cómo", "qué", "estás", "tu", "muy", "pero");
+
+    /** Basta una: son español sin duda y no son nombres. */
+    private static final Set<String> INEQUIVOCAS = Set.of(
+            "sí", "hola", "gracias", "claro", "bueno", "perfecto", "ajá", "cuéntame", "genial", "vale");
 
     /** Una palabra con mayúscula detrás de otra palabra o de una coma: un nombre propio. */
     private static final String NOMBRE_EN_MEDIO = "(?<=[\\p{L},;:]\\s)\\p{Lu}\\p{L}*";
@@ -34,6 +40,9 @@ public final class IdiomaDeLaFrase {
     public static boolean pareceEspanol(String frase) {
         if (frase == null || frase.isBlank()) {
             return false;
+        }
+        if (Arrays.stream(frase.toLowerCase(Locale.ROOT).split("[^\\p{L}]+")).anyMatch(INEQUIVOCAS::contains)) {
+            return true;
         }
         String sinNombres = frase.replaceAll("(?i)ori[oó]n|meissa", " ")
                 .replaceAll(NOMBRE_EN_MEDIO, " ").replaceAll(NOMBRE_AL_EMPEZAR, " ")

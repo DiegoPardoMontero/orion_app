@@ -31,7 +31,10 @@ class IdiomaDeLaFraseTest {
         assertThat(IdiomaDeLaFrase.pareceEspanol("Tell me more, Sofía.")).isFalse();
         assertThat(IdiomaDeLaFrase.pareceEspanol("Sofía, what do you do at the hospital?")).isFalse();
         assertThat(IdiomaDeLaFrase.pareceEspanol("So you moved from Medellín to Cali, Andrés?")).isFalse();
-        // Y el español con nombres sigue siendo español.
+        // Y el español con nombres sigue siendo español, también el corto que empieza como un vocativo.
+        assertThat(IdiomaDeLaFrase.pareceEspanol("Sí, claro.")).isTrue();
+        assertThat(IdiomaDeLaFrase.pareceEspanol("Hola, Sofía.")).isTrue();
+        assertThat(IdiomaDeLaFrase.pareceEspanol("Ajá, sigue.")).isTrue();
         assertThat(IdiomaDeLaFrase.pareceEspanol("Sofía, cuéntame qué haces en el hospital.")).isTrue();
         assertThat(IdiomaDeLaFrase.pareceEspanol("¿Y cómo es el tráfico en Bogotá?")).isTrue();
     }
