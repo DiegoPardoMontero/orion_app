@@ -209,7 +209,7 @@ public class RecommendationService {
         }
 
         return new Recomendacion(profesor.id(), posicion, ReasonCode.VERIFIED,
-                "Profesor verificado por Orión: documentos, experiencia y entrevista.");
+                "Profesor verificado por Orión: revisamos sus documentos, su formación y su experiencia.");
     }
 
     private static String primerNombre(String nombre) {

@@ -462,8 +462,8 @@ export default async function PortadaPage() {
               </p>
             </div>
             <p className="max-w-[52ch] text-[16px] leading-relaxed text-text-on-night/85 lg:text-[18px]">
-              Aprender inglés no puede depender de la suerte con la que elegiste profesor. En Orión cada profesor
-              pasa por verificación de documentos, experiencia y entrevista antes de publicarse, y lo que ocurre
+              Aprender inglés no puede depender de la suerte con la que elegiste profesor. En Orión revisamos los
+              documentos, la formación y la experiencia de cada profesor antes de publicarlo, y lo que ocurre
               después —reservar, pagar, hablar, dar la clase— vive en un solo sitio. Lo demás es tu tiempo, y no
               lo gastamos.
             </p>
