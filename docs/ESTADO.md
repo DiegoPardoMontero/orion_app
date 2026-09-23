@@ -31,9 +31,9 @@ dentro de `/cuenta`).
 ## Verificación
 Al 23/09/2026, sobre `master` con el Bloque 10 completo (Partes A y B) y su revisión:
 - Backend: `./mvnw verify` (Testcontainers) — **328 unitarios + 501 de integración**, verde.
-- Frontend: `tsc` + `lint` verdes; **70 tests de Vitest**.
-- **E2E Playwright: 20 de 21** (la última, a las 06:38 del 23/09 con todo lo de la noche), sobre
-  base recreada (`docker compose down -v`): el acta escrita,
+- Frontend: `tsc` + `lint` verdes; **77 tests de Vitest**.
+- **E2E Playwright: 21 de 22** (la última, el 23/09 con la portada nueva y el catálogo sin cuenta),
+  sobre base recreada (`docker compose down -v`): el acta escrita,
   editada y publicada, la práctica de Ana con su cierre y lo que ve María, y el acta a mano con la IA
   caída. El que falta sigue siendo el paso por la pasarela: exige llaves de *sandbox* de Wompi en el
   entorno. Los del acta necesitan las clases que la semilla local cierra «ahora» (las únicas
@@ -175,6 +175,32 @@ Rigel estrena **pose de profesor** (birrete, gafas y tiza) para `/registro?rol=p
 
 **Eslogan vigente: «Find your right teacher, learn your way»**, en login, landing, metadatos,
 manifest y pie de los correos.
+
+## Portada de Sofía y catálogo sin cuenta (23/09/2026)
+
+**La portada es la que propuso Sofía**, con las decisiones de Pardo encima (ver la memoria
+`landing-sofia-decisiones`): hero con su titular y el **diagnóstico como acción principal** («Buscar
+profesor» de segunda; «Quiero enseñar» sale del hero), buscador rápido, «Por qué ahora», tres pasos,
+**Método ORION™** (™ y no ®: la marca no está registrada), «Aquí las reglas juegan a tu favor» en
+dos pestañas, bloque del diagnóstico, preguntas frecuentes en dos pestañas, cierre y pie. Se quedan
+«Conoce a los profesores» y «Nosotros»; se va su sección de reclutamiento (la pestaña «Quiero
+enseñar» ya la cubre) y la rejilla de objetivos (la reemplaza el buscador).
+
+- **Lo que la portada no promete**, porque el producto no lo hace: el diagnóstico dura lo que diga
+  Ajustes (2 min) y da un punto de partida y tres profesores, no «tu nivel en 10 minutos»; no hay
+  paquetes; el profesor aprueba el acta, no los ejercicios (salen de ella).
+- **Cifras con fuente**: «hasta 24 % más probabilidad de un trabajo mejor pagado» y «2,2 % de quienes
+  buscan empleo dice tener nivel alto», de Anif, British Council y Uniandes (2025) sobre datos del
+  Servicio Público de Empleo 2019–2024. El «1 de cada 4 vacantes» del borrador no tenía fuente y el
+  55 % que circula en prensa contradice el 5,74 % que la propia Anif midió en 2024.
+- **Buscador rápido**: para qué (Trabajo = negocios y entrevistas, Viaje, Examen certificado,
+  Conversación) y cuándo (Mañana, Tarde, Noche, Fin de semana = sábado y domingo), directo al
+  directorio filtrado. Sin filtro de idioma: hoy solo hay inglés.
+- **El catálogo y el perfil de un profesor se ven sin cuenta.** Ver horarios, reservar y escribir la
+  siguen pidiendo, y al crearla o entrar se vuelve al mismo perfil (`?volver=`, solo rutas de la app).
+  Es lo que hace funcionar el buscador de la portada y el enlace que un profesor comparte en sus redes.
+- El pie enlaza a la sección de cancelaciones de los términos (los documentos legales tienen ahora
+  anclas por encabezado). **Redes sociales: pendientes** hasta que Pardo pase las cuentas.
 
 ## Gamificación · Bloque 8 (04/09/2026)
 Módulo nuevo **`engagement`**, el único que depende de todos y del que no depende nadie: se puede
@@ -681,6 +707,8 @@ su test; lo que cambia el comportamiento o pide una decisión está abajo, en Pe
   `NEXT_PUBLIC_SUPPORT_WHATSAPP`, `NEXT_PUBLIC_SITE_URL`, `ORION_LEGAL_*` y `ORION_ALERTS_TO`
   en Railway.
 - Testimonios de la landing: ocultos hasta tener citas reales de Sofía.
+- **Redes sociales en el pie de la portada**: esperan las cuentas de Pardo; sin ellas no se ponen
+  íconos que no llevan a ningún lado.
 - **El texto del resultado del diagnóstico no lo ha revisado Sofía.** Se desplegó con autorización
   de Pardo (17/09/2026). Es el único momento del producto en que Orión le dice a una persona algo
   sobre sí misma, y si se siente como un juicio la función hace más daño que bien.
