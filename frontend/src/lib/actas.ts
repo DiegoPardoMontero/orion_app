@@ -27,6 +27,8 @@ export type ActaDelProfesor = {
 export type ActaDelEstudiante = {
   id: string;
   bookingId: string;
+  /** Para escribirle: el acta no se responde, se conversa por la mensajería (brief, D3). */
+  professorId: string | null;
   professorName: string | null;
   workedOn: string | null;
   recurringIssues: string | null;

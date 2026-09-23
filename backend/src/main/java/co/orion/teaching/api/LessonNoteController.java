@@ -163,8 +163,11 @@ public class LessonNoteController {
                                   ZonedDateTime publishedAt, ZonedDateTime lastEditedAt) {
     }
 
-    /** Sin crudo, sin edit_ratio, sin origen, sin versión del prompt. */
-    public record ActaDelEstudiante(UUID id, UUID bookingId, String professorName, String workedOn,
+    /**
+     * Sin crudo, sin edit_ratio, sin origen, sin versión del prompt. Con el profesor, eso sí: el acta
+     * no se responde, se le escribe por la mensajería (brief, D3), y para eso hace falta a quién.
+     */
+    public record ActaDelEstudiante(UUID id, UUID bookingId, UUID professorId, String professorName, String workedOn,
                                     String recurringIssues, String nextSteps, List<PalabraView> vocabulary,
                                     ZonedDateTime publishedAt, ZonedDateTime lastEditedAt) {
     }
@@ -180,7 +183,7 @@ public class LessonNoteController {
     private ActaDelEstudiante delEstudiante(Acta a) {
         LessonNote n = a.nota();
         String profe = users.findById(n.getProfessorId()).map(u -> u.getFullName()).orElse(null);
-        return new ActaDelEstudiante(n.getId(), n.getBookingId(), profe, n.getWorkedOn(),
+        return new ActaDelEstudiante(n.getId(), n.getBookingId(), n.getProfessorId(), profe, n.getWorkedOn(),
                 n.getRecurringIssues(), n.getNextSteps(), palabras(a.palabras()),
                 bogota(n.getPublishedAt()), bogota(n.getLastEditedAt()));
     }

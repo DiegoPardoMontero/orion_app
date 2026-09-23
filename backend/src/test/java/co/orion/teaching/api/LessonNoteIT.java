@@ -174,7 +174,8 @@ class LessonNoteIT extends ApiIntegrationSupport {
 
         assertThat(publicar(sesionMaria, borrador.get("id")).getStatusCode()).isEqualTo(HttpStatus.OK);
         Map deAna = get("/api/v1/bookings/" + clase + "/lesson-note", sesionAna, Map.class).getBody();
-        assertThat(deAna).containsKey("workedOn").containsEntry("professorName", "María Gómez");
+        assertThat(deAna).containsKey("workedOn").containsEntry("professorName", "María Gómez")
+                .containsEntry("professorId", maria.getId().toString());
         assertThat(deAna).doesNotContainKeys("rawInput", "editRatio", "origin", "promptVersion", "draftedByAi");
     }
 

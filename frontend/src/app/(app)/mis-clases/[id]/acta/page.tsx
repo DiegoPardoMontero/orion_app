@@ -1,9 +1,9 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, BookOpen, Check, Mic, NotebookPen, Plus, Sparkles, Square, X } from "lucide-react";
+import { ArrowLeft, BookOpen, Check, MessageCircle, Mic, NotebookPen, Plus, Sparkles, Square, X } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { AvisoError, Cargando, Vacio } from "@/components/estados";
 import { Constelacion } from "@/components/marca";
@@ -17,7 +17,8 @@ import {
   type Palabra,
 } from "@/lib/actas";
 import { ApiError, apiFetch, uploadFile } from "@/lib/api/fetch";
-import type { SetDePractica } from "@/lib/practica";
+import type { ConversationSummary } from "@/lib/api/types";
+import { primerNombre, type SetDePractica } from "@/lib/practica";
 import { useMe } from "@/lib/auth/session";
 import { fechaLarga } from "@/lib/format";
 
@@ -592,6 +593,34 @@ function Lectura({ acta }: { acta: ActaDelEstudiante }) {
       )}
 
       <PracticarEsto actaId={acta.id} />
+      {acta.professorId && <Escribirle profesorId={acta.professorId} nombre={acta.professorName} />}
+    </div>
+  );
+}
+
+/**
+ * El acta no se responde (brief, D3): lo que el estudiante quiera decir sobre ella va por la
+ * mensajería. Abre el hilo con su profesor —o reencuentra el que ya había— y salta a él.
+ */
+function Escribirle({ profesorId, nombre }: { profesorId: string; nombre: string | null }) {
+  const router = useRouter();
+  const escribir = useMutation({
+    mutationFn: () =>
+      apiFetch<ConversationSummary>("/api/v1/conversations", { method: "POST", body: { counterpartId: profesorId } }),
+    onSuccess: (conv) => {
+      if (conv.id) router.push(`/mensajes/${conv.id}`);
+    },
+  });
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+      <p className="text-[13.5px] text-text-secondary">
+        ¿Algo que quieras decirle{nombre ? ` a ${primerNombre(nombre)}` : ""} sobre la clase?
+      </p>
+      <Boton variante="contorno" disabled={escribir.isPending} onClick={() => escribir.mutate()}>
+        <MessageCircle size={16} strokeWidth={2} />
+        Escríbele
+      </Boton>
+      {escribir.isError && <AvisoError mensaje={escribir.error.message} />}
     </div>
   );
 }
