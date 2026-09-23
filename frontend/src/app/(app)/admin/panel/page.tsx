@@ -151,6 +151,7 @@ export default function AdminPanelPage() {
 
       <FilaDelDiagnostico />
       <FilaDeLasActas />
+      <FilaDeLaPractica />
 
       {/* 3. Personas y clases */}
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
@@ -495,6 +496,76 @@ function FilaDeLasActas() {
             : resultados.map(([resultado, n]) => `${n} ${resultado}`).join(" · ")}
         </p>
       </Tarjeta>
+    </section>
+  );
+}
+
+type PanelDePractica = {
+  generados: number;
+  completados: number;
+  vencidos: number;
+  fallidos: number;
+  pendientes: number;
+  gastadoHoyCop: number;
+  topeCop: number;
+  encendida: boolean;
+};
+
+/**
+ * La práctica entre clases (Bloque 10, paso C1). La cifra que manda: si vencen más sets de los que
+ * se completan, la práctica no engancha, y hay que mirarla antes de invertir más en ella.
+ */
+function FilaDeLaPractica() {
+  const panel = useQuery({
+    queryKey: ["admin", "practice"],
+    queryFn: () => apiFetch<PanelDePractica>("/api/v1/admin/practice/metrics"),
+    staleTime: 60_000,
+  });
+
+  if (!panel.data) return null;
+  const d = panel.data;
+  const noEngancha = d.vencidos > d.completados;
+
+  return (
+    <section className="mt-8">
+      <h2 className="text-[13px] font-bold uppercase tracking-[0.04em] text-text-secondary">
+        Práctica entre clases
+        {!d.encendida && (
+          <span className="ml-2 rounded-pill bg-warning-bg px-2 py-0.5 text-[11px] normal-case text-warning">
+            apagada
+          </span>
+        )}
+      </h2>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Cifra
+          tono="lavanda"
+          icono={<Sparkles size={18} strokeWidth={2.2} />}
+          valor={String(d.generados)}
+          etiqueta="Ofrecidas"
+          ayuda={`Últimos 30 días · ${d.fallidos} sin ejercicios anclados`}
+        />
+        <Cifra
+          tono="menta"
+          icono={<CheckCircle2 size={18} strokeWidth={2.2} />}
+          valor={String(d.completados)}
+          etiqueta="Completadas"
+          ayuda="Terminadas por el estudiante"
+        />
+        <Cifra
+          tono={noEngancha ? "coral" : "melocoton"}
+          icono={<Hourglass size={18} strokeWidth={2.2} />}
+          valor={String(d.vencidos)}
+          etiqueta="Vencidas sin hacer"
+          ayuda="Si vencen más de las que se completan, la práctica no engancha"
+        />
+        <Cifra
+          tono="neutral"
+          icono={<Wallet size={18} strokeWidth={2.2} />}
+          valor={precioCop(d.gastadoHoyCop)}
+          etiqueta="Gasto de hoy"
+          ayuda={`De ${precioCop(d.topeCop)} de tope diario`}
+        />
+      </div>
     </section>
   );
 }

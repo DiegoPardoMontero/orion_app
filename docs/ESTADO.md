@@ -556,6 +556,9 @@ pedía confirmarlo con Sofía; lo decidió él).
   del estudiante, el profesor ve «Practicó N de M veces esta semana. Le costó…». La racha del panel
   de progreso es ahora la de la gamificación (la misma del cielo y del mapa), que cuenta la práctica.
 - En el navegador: Ana practica lo de su clase, ve su cierre y sus puntos, y María lo ve en la ficha.
+- **Panel (C1)**: en Administración → Panel, la fila «Práctica entre clases»: ofrecidas,
+  completadas y **vencidas sin hacer** en 30 días (si vencen más de las que se completan, se marca:
+  la práctica no engancha), las que no lograron ejercicios anclados y el gasto de hoy contra el tope.
 
 ## Revisión de seguridad y permisos (22/09/2026)
 

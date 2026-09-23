@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import co.orion.identity.persistence.UserRepository;
 import co.orion.practice.application.Material;
+import co.orion.practice.application.PracticeMetrics;
 import co.orion.practice.application.PracticeService;
 import co.orion.practice.application.PracticeService.ConEjercicios;
 import co.orion.practice.domain.PracticeItem;
@@ -39,11 +40,19 @@ public class PracticeController {
     private static final ObjectMapper JSON = new ObjectMapper();
 
     private final PracticeService practica;
+    private final PracticeMetrics metricas;
     private final UserRepository users;
 
-    public PracticeController(PracticeService practica, UserRepository users) {
+    public PracticeController(PracticeService practica, PracticeMetrics metricas, UserRepository users) {
         this.practica = practica;
+        this.metricas = metricas;
         this.users = users;
+    }
+
+    /** Solo admin: la ruta cuelga de {@code /api/v1/admin/**}. */
+    @GetMapping("/api/v1/admin/practice/metrics")
+    public PracticeMetrics.Panel panel() {
+        return metricas.panel();
     }
 
     /** El set vivo del estudiante; 204 si no tiene: la invitación simplemente no aparece. */

@@ -231,6 +231,22 @@ class PracticaIT extends ApiIntegrationSupport {
                 String.class).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
+    @SuppressWarnings("rawtypes")
+    @Test
+    @DisplayName("El panel del admin cuenta sets generados, completados y vencidos; un estudiante no lo ve")
+    void elPanelDelAdmin() {
+        Map set = setListo();
+        post("/api/v1/practice-sets/" + set.get("id") + "/complete", sesionAna, null, Map.class);
+        createUser("admin@orion.test", "Orion Admin", UserRole.ADMIN);
+
+        Map panel = get("/api/v1/admin/practice/metrics", login("admin@orion.test"), Map.class).getBody();
+
+        assertThat(panel).containsEntry("generados", 1).containsEntry("completados", 1)
+                .containsEntry("vencidos", 0).containsEntry("encendida", true);
+        assertThat(get("/api/v1/admin/practice/metrics", sesionAna, String.class).getStatusCode())
+                .isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
     @Test
     @DisplayName("Con la práctica apagada, el acta se publica igual y no se crea ningún set")
     void apagada() {
