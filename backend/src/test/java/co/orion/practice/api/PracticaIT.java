@@ -1,6 +1,7 @@
 package co.orion.practice.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import java.time.Duration;
@@ -18,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -241,6 +243,12 @@ class PracticaIT extends ApiIntegrationSupport {
         await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> assertThat(jdbc.queryForObject(
                 "select count(*) from point_events where source_type = 'PRACTICE' and user_id = ?",
                 Integer.class, ana.getId())).isEqualTo(1));
+        // Y quien lo garantiza es la base, no el servicio (brief, B4 y C2): un segundo punto por el
+        // mismo set no entra ni escrito a mano.
+        assertThatThrownBy(() -> jdbc.update("""
+                insert into point_events (user_id, source_type, source_id, points, occurred_at)
+                values (?, 'PRACTICE', ?::uuid, 15, now())""", ana.getId(), set.get("id")))
+                .isInstanceOf(DataIntegrityViolationException.class);
         // Ana no tiene ninguna clase tomada en su historial de puntos: la semana activa es la práctica.
         assertThat((Integer) get("/api/v1/me/engagement", sesionAna, Map.class).getBody().get("currentStreakWeeks"))
                 .isGreaterThanOrEqualTo(1);
