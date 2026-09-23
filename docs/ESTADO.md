@@ -30,7 +30,7 @@ dentro de `/cuenta`).
 
 ## Verificación
 Al 23/09/2026, sobre `master` con el Bloque 10 completo (Partes A y B) y su revisión:
-- Backend: `./mvnw verify` (Testcontainers) — **319 unitarios + 499 de integración**, verde.
+- Backend: `./mvnw verify` (Testcontainers) — **323 unitarios + 499 de integración**, verde.
 - Frontend: `tsc` + `lint` verdes; **68 tests de Vitest**.
 - **E2E Playwright: 20 de 21**, sobre base recreada (`docker compose down -v`): el acta escrita,
   editada y publicada, la práctica de Ana con su cierre y lo que ve María, y el acta a mano con la IA
@@ -539,9 +539,15 @@ pedía confirmarlo con Sofía; lo decidió él).
 - **Cinco tipos** (completar, corregir, emparejar, ordenar un diálogo, frase propia), generados
   por `gpt-5-mini` y **anclados al acta**: lo que no sale del vocabulario, de los errores
   recurrentes o de lo trabajado se descarta (`ValidadorDeEjercicios`), como mucho dos del mismo
-  tipo, y con menos de dos ejercicios el set queda `FAILED` y no se ofrece nada. Probado contra
-  OpenAI: cuatro de cuatro válidos, variados y anclados, en ~8 s. Sin IA (local y pruebas), un
-  generador determinista que solo usa lo literal del acta.
+  tipo, y con menos de dos ejercicios el set queda `FAILED` y no se ofrece nada. Sin IA (local y
+  pruebas), un generador determinista que solo usa lo literal del acta.
+- **Prompt v2 (23/09).** Con v1, doce generaciones contra OpenAI eligieron siempre los mismos
+  cuatro tipos: el diálogo no salió nunca. Ahora la entrada dice qué tipos pedir —los que el acta
+  alcanza a anclar, rotando por clase el que se queda fuera—, un diálogo que llega ya en orden se
+  desordena en vez de perderse, y la pista entre paréntesis de un término («get used to (+ing)») no
+  impide anclarlo. Con v2: los cinco tipos en seis actas, 23 de 24 ejercicios válidos. En el
+  navegador, con OpenAI de verdad: acta en 3,9 s, set listo 9 s después de publicar, y el diálogo
+  —que ningún estudiante había visto— se ordena y se comprueba bien.
 - **Reglas**: solo su dueño opera el set (404 a cualquier otro), dos intentos por ejercicio
   (después se muestra la respuesta con su explicación), un set vencido no acepta respuestas
   (`practice_set_ttl_days`, 7), y completar dos veces no recalcula ni vuelve a dar puntos. La
