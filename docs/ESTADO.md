@@ -200,7 +200,8 @@ enseñar» ya la cubre) y la rejilla de objetivos (la reemplaza el buscador).
   siguen pidiendo, y al crearla o entrar se vuelve al mismo perfil (`?volver=`, solo rutas de la app).
   Es lo que hace funcionar el buscador de la portada y el enlace que un profesor comparte en sus redes.
 - El pie enlaza a la sección de cancelaciones de los términos (los documentos legales tienen ahora
-  anclas por encabezado). **Redes sociales: pendientes** hasta que Pardo pase las cuentas.
+  anclas por encabezado), y lleva Instagram, TikTok y LinkedIn, que también van al `sameAs` del
+  JSON-LD.
 
 ## Gamificación · Bloque 8 (04/09/2026)
 Módulo nuevo **`engagement`**, el único que depende de todos y del que no depende nadie: se puede
@@ -707,8 +708,6 @@ su test; lo que cambia el comportamiento o pide una decisión está abajo, en Pe
   `NEXT_PUBLIC_SUPPORT_WHATSAPP`, `NEXT_PUBLIC_SITE_URL`, `ORION_LEGAL_*` y `ORION_ALERTS_TO`
   en Railway.
 - Testimonios de la landing: ocultos hasta tener citas reales de Sofía.
-- **Redes sociales en el pie de la portada**: esperan las cuentas de Pardo; sin ellas no se ponen
-  íconos que no llevan a ningún lado.
 - **El texto del resultado del diagnóstico no lo ha revisado Sofía.** Se desplegó con autorización
   de Pardo (17/09/2026). Es el único momento del producto en que Orión le dice a una persona algo
   sobre sí misma, y si se siente como un juicio la función hace más daño que bien.

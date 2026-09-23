@@ -16,3 +16,13 @@ export function whatsappSoporte(mensaje?: string): string | null {
   if (!digitos) return null;
   return `https://wa.me/${digitos}${mensaje ? `?text=${encodeURIComponent(mensaje)}` : ""}`;
 }
+
+/**
+ * Las cuentas de Orión en redes (Pardo, 23/09/2026). Van al pie de la portada y al `sameAs` del
+ * JSON-LD, que es como Google une el sitio con sus perfiles.
+ */
+export const REDES_SOCIALES = [
+  { nombre: "Instagram", url: "https://www.instagram.com/orionidiomascom/" },
+  { nombre: "TikTok", url: "https://www.tiktok.com/@orion.idiomas.com" },
+  { nombre: "LinkedIn", url: "https://www.linkedin.com/company/orion-idiomas/" },
+] as const;

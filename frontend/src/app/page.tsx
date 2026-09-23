@@ -13,6 +13,7 @@ import type { CSSProperties } from "react";
 import { Avatar } from "@/components/Avatar";
 import { Constelacion, Wordmark } from "@/components/marca";
 import { NavPublica } from "@/components/NavPublica";
+import { Redes } from "@/components/Redes";
 import { BuscadorRapido } from "@/components/portada/BuscadorRapido";
 import { PorQueOrion } from "@/components/portada/PorQueOrion";
 import { PreguntasDeLaPortada } from "@/components/PreguntasFrecuentes";
@@ -21,7 +22,7 @@ import { Rigel } from "@/components/Rigel";
 import { serverFetch } from "@/lib/api/server";
 import type { PagedProfessors, ProfessorCard, PublicFigures } from "@/lib/api/types";
 import { minutos } from "@/lib/cifras";
-import { SITE_URL, whatsappSoporte } from "@/lib/config";
+import { REDES_SOCIALES, SITE_URL, whatsappSoporte } from "@/lib/config";
 import { esGratis, tarifaClase } from "@/lib/format";
 
 /**
@@ -175,6 +176,7 @@ export default async function PortadaPage() {
                 name: "Orión Idiomas",
                 url: SITE_URL,
                 description: "Clases de inglés en vivo, uno a uno, con profesores verificados.",
+                sameAs: REDES_SOCIALES.map((red) => red.url),
               },
               {
                 "@type": "WebSite",
@@ -517,6 +519,7 @@ export default async function PortadaPage() {
           <div>
             <Wordmark className="text-[16px] text-primary-strong" />
             <p className="mt-1 text-[13px] italic text-text-muted sm:whitespace-nowrap">Find your right teacher, learn your way.</p>
+            <Redes className="-ml-3 mt-3" />
           </div>
           <nav aria-label="Pie de página" className="flex flex-wrap gap-x-5 gap-y-2 text-[13.5px] font-semibold text-text-secondary">
             <Link href="/#nosotros" className="hover:text-text">
