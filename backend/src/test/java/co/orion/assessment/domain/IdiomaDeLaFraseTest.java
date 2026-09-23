@@ -23,4 +23,16 @@ class IdiomaDeLaFraseTest {
         assertThat(IdiomaDeLaFrase.pareceEspanol("In Orión you'd practise those meetings with a teacher from your field.")).isFalse();
         assertThat(IdiomaDeLaFrase.pareceEspanol("")).isFalse();
     }
+
+    @Test
+    @DisplayName("Un nombre o un lugar con tilde no vuelve español al inglés")
+    void nombresConTilde() {
+        assertThat(IdiomaDeLaFrase.pareceEspanol("What's the traffic like in Bogotá today?")).isFalse();
+        assertThat(IdiomaDeLaFrase.pareceEspanol("Tell me more, Sofía.")).isFalse();
+        assertThat(IdiomaDeLaFrase.pareceEspanol("Sofía, what do you do at the hospital?")).isFalse();
+        assertThat(IdiomaDeLaFrase.pareceEspanol("So you moved from Medellín to Cali, Andrés?")).isFalse();
+        // Y el español con nombres sigue siendo español.
+        assertThat(IdiomaDeLaFrase.pareceEspanol("Sofía, cuéntame qué haces en el hospital.")).isTrue();
+        assertThat(IdiomaDeLaFrase.pareceEspanol("¿Y cómo es el tráfico en Bogotá?")).isTrue();
+    }
 }

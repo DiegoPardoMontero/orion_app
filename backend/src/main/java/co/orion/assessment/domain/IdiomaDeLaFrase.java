@@ -12,12 +12,21 @@ import java.util.Set;
  * y debajo aparecía una traducción de algo que ya se leía en español. Una regla simple basta: el
  * inglés de Meissa no lleva tildes, eñes ni signos de apertura, salvo en «Orión», que se quita
  * antes de mirar. Clase pura, sin Spring.
+ *
+ * <p>Tampoco los nombres propios: «Tell me more, Sofía» o «the traffic in Bogotá» son inglés. Se
+ * quitan las palabras con mayúscula en mitad de la frase y la del principio cuando va seguida de coma
+ * («Sofía, what do you…»), que es como Meissa llama a la persona.
  */
 public final class IdiomaDeLaFrase {
 
     private static final Set<String> PALABRAS_ESPANOLAS = Set.of(
             "que", "de", "la", "los", "las", "el", "es", "con", "para", "por", "una", "del", "al",
             "cuéntame", "cuentas", "sigamos", "español", "cómo", "qué", "estás", "tu", "muy", "pero");
+
+    /** Una palabra con mayúscula detrás de otra palabra o de una coma: un nombre propio. */
+    private static final String NOMBRE_EN_MEDIO = "(?<=[\\p{L},;:]\\s)\\p{Lu}\\p{L}*";
+    /** La primera palabra, con mayúscula y seguida de coma: la persona a la que se le habla. */
+    private static final String NOMBRE_AL_EMPEZAR = "^\\s*\\p{Lu}\\p{L}*(?=,)";
 
     private IdiomaDeLaFrase() {
     }
@@ -26,7 +35,9 @@ public final class IdiomaDeLaFrase {
         if (frase == null || frase.isBlank()) {
             return false;
         }
-        String sinNombres = frase.replaceAll("(?i)ori[oó]n|meissa", " ").toLowerCase(Locale.ROOT);
+        String sinNombres = frase.replaceAll("(?i)ori[oó]n|meissa", " ")
+                .replaceAll(NOMBRE_EN_MEDIO, " ").replaceAll(NOMBRE_AL_EMPEZAR, " ")
+                .toLowerCase(Locale.ROOT);
         if (sinNombres.matches("(?s).*[¿¡ñáéíóú].*")) {
             return true;
         }
