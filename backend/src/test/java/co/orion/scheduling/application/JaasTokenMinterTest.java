@@ -40,7 +40,7 @@ class JaasTokenMinterTest {
         gen.initialize(2048);
         par = gen.generateKeyPair();
         minter = new JaasTokenMinter(new JaasProperties(APP_ID, KEY_ID,
-                Base64.getEncoder().encodeToString(par.getPrivate().getEncoded()), null));
+                Base64.getEncoder().encodeToString(par.getPrivate().getEncoded()), null, null));
     }
 
     private JsonNode parte(String token, int indice) throws Exception {
@@ -109,7 +109,7 @@ class JaasTokenMinterTest {
     @Test
     @DisplayName("Sin credenciales el aula se apaga en vez de emitir un token roto")
     void sinCredencialesNoHayToken() {
-        JaasTokenMinter apagado = new JaasTokenMinter(new JaasProperties(null, null, null, null));
+        JaasTokenMinter apagado = new JaasTokenMinter(new JaasProperties(null, null, null, null, null));
         assertThat(apagado.disponible()).isFalse();
         assertThatThrownBy(() -> apagado.mint("s", "u", "n", "e", null, true,
                 Instant.now(), Instant.now().plusSeconds(60)))
@@ -124,7 +124,7 @@ class JaasTokenMinterTest {
                 + Base64.getMimeEncoder().encodeToString(par.getPrivate().getEncoded())
                         .replace(System.lineSeparator(), "\\n")
                 + "\\n-----END PRIVATE KEY-----";
-        JaasTokenMinter conPem = new JaasTokenMinter(new JaasProperties(APP_ID, KEY_ID, pem, null));
+        JaasTokenMinter conPem = new JaasTokenMinter(new JaasProperties(APP_ID, KEY_ID, pem, null, null));
 
         assertThat(conPem.disponible()).isTrue();
         assertThat(conPem.mint("sala-1", "u", "n", "e", null, false,
@@ -134,7 +134,7 @@ class JaasTokenMinterTest {
     @Test
     @DisplayName("El dominio por defecto es el de JaaS, no el de la instalación pública")
     void elDominioPorDefectoEsJaas() {
-        assertThat(new JaasProperties(APP_ID, KEY_ID, "x", null).domain()).isEqualTo("8x8.vc");
-        assertThat(new JaasProperties(APP_ID, KEY_ID, "x", "  ").domain()).isEqualTo("8x8.vc");
+        assertThat(new JaasProperties(APP_ID, KEY_ID, "x", null, null).domain()).isEqualTo("8x8.vc");
+        assertThat(new JaasProperties(APP_ID, KEY_ID, "x", "  ", null).domain()).isEqualTo("8x8.vc");
     }
 }

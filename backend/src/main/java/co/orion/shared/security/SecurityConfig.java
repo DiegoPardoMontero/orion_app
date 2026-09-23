@@ -53,6 +53,8 @@ public class SecurityConfig {
                         // exigir CSRF solo garantizaría que ningún evento entre nunca. Lo que lo
                         // protege es la firma del propio evento, verificada antes de tocar la base.
                         "/api/v1/webhooks/payments/**",
+                        // Lo mismo con los eventos de la sala de 8x8: los protege su firma.
+                        "/api/v1/webhooks/video/**",
                         // Apple vuelve con un POST desde su dominio: no puede traer nuestro token.
                         // Lo que protege esa vuelta es el `state` de OAuth, que Spring comprueba.
                         "/login/oauth2/code/*",
@@ -68,6 +70,7 @@ public class SecurityConfig {
                 // Entrar con Google, Apple o Facebook: la ida, la vuelta y lo que la rodea.
                 .requestMatchers("/oauth2/**", "/login/oauth2/**", "/api/v1/auth/social/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/webhooks/payments/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/webhooks/video/**").permitAll()
                 .requestMatchers("/api/v1/auth/login").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/register").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/forgot-password").permitAll()
@@ -128,6 +131,9 @@ public class SecurityConfig {
                 // El diagnóstico de un estudiante, para su profesor. El controlador comprueba que
                 // exista reserva entre los dos y responde 404 si no: el de un desconocido no existe.
                 .requestMatchers("/api/v1/professors/me/students/*/assessment").hasRole("PROFESSOR")
+                // Cuánto habló su estudiante en sus clases juntos (webhook de JaaS). El servicio
+                // exige además que haya habido reserva entre los dos.
+                .requestMatchers("/api/v1/professors/me/students/*/classroom").hasRole("PROFESSOR")
                 // El aula. Los dos lados entran; el servicio comprueba que la reserva sea suya y
                 // responde 404 si no lo es, para no confirmarle a un extraño que la clase existe.
                 .requestMatchers(HttpMethod.GET, "/api/v1/bookings/*/classroom")

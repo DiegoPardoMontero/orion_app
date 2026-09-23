@@ -107,6 +107,7 @@ export const NAV_BY_ROLE: Record<Role, NavGroup[]> = {
       titulo: "Operación",
       items: [
         { href: "/admin/reservas", label: "Clases" },
+        { href: "/admin/aula", label: "Aula" },
         { href: "/admin/pagos", label: "Pagos" },
         { href: "/admin/devoluciones", label: "Devoluciones" },
       ],

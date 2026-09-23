@@ -11,6 +11,8 @@ import { apiFetch } from "@/lib/api/fetch";
 import type { GoalResponse } from "@/lib/api/types";
 import { etiquetaObjetivo } from "@/lib/i18n";
 import { NIVEL_ESTUDIANTE, type FichaEstudiante } from "@/lib/gamificacion";
+import { useMe } from "@/lib/auth/session";
+import { fechaCorta } from "@/lib/format";
 
 /**
  * El perfil de un estudiante visto por otra persona.
@@ -127,8 +129,67 @@ function Contenido() {
         </p>
       )}
 
+      <EnClaseContigo estudianteId={id} />
+
       {/* El perfil público NO lleva correo, teléfono, saldo ni con quién ha practicado. No es que
           no se pinten: es que no viajan. */}
     </main>
+  );
+}
+
+type ClaseMedida = {
+  startsAt: string;
+  studentSpeakingMs: number | null;
+  professorSpeakingMs: number | null;
+};
+
+/**
+ * Cuánto habló en sus clases contigo, contado por la sala (webhook de JaaS). Solo lo ve el profesor
+ * que dio esas clases, para preparar la siguiente: si el estudiante casi no habla, la clase es una
+ * exposición y no una conversación. El estudiante no ve esto, y no alimenta nada más.
+ */
+function EnClaseContigo({ estudianteId }: { estudianteId: string }) {
+  const { data: me } = useMe();
+  const clases = useQuery({
+    queryKey: ["professors", "me", "students", estudianteId, "classroom"],
+    queryFn: () => apiFetch<ClaseMedida[]>(`/api/v1/professors/me/students/${estudianteId}/classroom`),
+    enabled: me?.role === "PROFESSOR",
+    retry: false,
+  });
+
+  const medidas = (clases.data ?? []).filter(
+    (c) => c.studentSpeakingMs != null && c.professorSpeakingMs != null && c.studentSpeakingMs + c.professorSpeakingMs > 0,
+  );
+  if (medidas.length === 0) return null;
+
+  const parte = (c: ClaseMedida) =>
+    Math.round((c.studentSpeakingMs! / (c.studentSpeakingMs! + c.professorSpeakingMs!)) * 100);
+  const promedio = Math.round(medidas.reduce((suma, c) => suma + parte(c), 0) / medidas.length);
+
+  return (
+    <section className="mt-5 rounded-card border border-border bg-surface-raised p-5">
+      <h2 className="text-[12px] font-bold uppercase tracking-[0.06em] text-text-secondary">
+        En sus clases contigo
+      </h2>
+      <p className="mt-2 text-[14.5px] leading-relaxed text-text">
+        En {medidas.length === 1 ? "su última clase" : `sus últimas ${medidas.length} clases`} habló, en
+        promedio, <strong>el {promedio} %</strong> del tiempo que se habló.
+      </p>
+      <ul className="mt-3 grid gap-2">
+        {medidas.map((c) => (
+          <li key={c.startsAt} className="flex items-center gap-3 text-[12.5px] text-text-secondary">
+            <span className="w-20 shrink-0">{fechaCorta(c.startsAt)}</span>
+            <span
+              className="h-2 flex-1 overflow-hidden rounded-full bg-surface-sunken"
+              role="img"
+              aria-label={`Habló el ${parte(c)} %`}
+            >
+              <span className="block h-full rounded-full bg-accent-lavender" style={{ width: `${parte(c)}%` }} />
+            </span>
+            <span className="w-10 shrink-0 text-right tabular-nums">{parte(c)} %</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

@@ -88,7 +88,7 @@ class ClassroomServiceTest {
 
     private ClassroomResponse en(Instant ahora, User quien) {
         ClassroomService service = new ClassroomService(bookings, users, profiles, minter,
-                new JaasProperties("app", "app/kid", "x", null), presence,
+                new JaasProperties("app", "app/kid", "x", null, null), presence,
                 Clock.fixed(ahora, ZoneOffset.UTC));
         return service.enter(bookingId, quien);
     }

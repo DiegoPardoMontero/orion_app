@@ -18,10 +18,20 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * una variable de entorno de Railway) o en PEM de varias líneas.
  */
 @ConfigurationProperties(prefix = "orion.jaas")
-public record JaasProperties(String appId, String keyId, String privateKey, String domain) {
+public record JaasProperties(String appId, String keyId, String privateKey, String domain,
+                             String webhookSecret) {
 
     public JaasProperties {
         domain = domain == null || domain.isBlank() ? "8x8.vc" : domain;
+    }
+
+    /**
+     * Si llegan los webhooks: el secreto del endpoint en la consola de JaaS (Webhooks → «Reveal
+     * secret»). Sin él no se puede comprobar quién manda los eventos, y entonces no se procesa
+     * ninguno: la antesala sigue diciendo «aún no ha entrado», que es la única respuesta honesta.
+     */
+    public boolean webhooksConfigurados() {
+        return notBlank(webhookSecret);
     }
 
     public boolean configurado() {

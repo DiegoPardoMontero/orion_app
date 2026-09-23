@@ -119,6 +119,9 @@ orion:
     key-id:      ${JAAS_KEY_ID:}
     private-key: ${JAAS_PRIVATE_KEY:}
     domain:      ${JAAS_DOMAIN:8x8.vc}
+    # El secreto del webhook (consola de JaaS → Webhooks → Reveal secret). Con él, 8x8 cuenta quién
+    # entró a la sala, cuándo, y cuánto habló cada uno; sin él, la antesala no puede saberlo.
+    webhook-secret: ${JAAS_WEBHOOK_SECRET:}
   # Quién responde por Orión. Aparece en los términos, en la política de tratamiento y en la
   # pantalla de ayuda.
   #

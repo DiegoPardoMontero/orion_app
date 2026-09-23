@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import co.orion.admin.api.SystemStatusResponse;
 import co.orion.admin.api.SystemStatusResponse.Integracion;
 import co.orion.identity.application.SocialProviders;
+import co.orion.scheduling.application.JaasProperties;
 import co.orion.scheduling.application.JaasTokenMinter;
 
 /**
@@ -31,9 +32,11 @@ public class SystemStatusService {
     private final String openAiKey;
     private final String voiceProvider;
     private final SocialProviders social;
+    private final JaasProperties jaasProps;
 
     public SystemStatusService(JaasTokenMinter jaas,
                                SocialProviders social,
+                               JaasProperties jaasProps,
                                @Value("${CLOUDINARY_URL:}") String cloudinaryUrl,
                                @Value("${orion.payments.wompi.public-key:}") String wompiPublicKey,
                                @Value("${orion.payments.wompi.integrity-secret:}") String wompiIntegrity,
@@ -45,6 +48,7 @@ public class SystemStatusService {
                                String voiceProvider) {
         this.jaas = jaas;
         this.social = social;
+        this.jaasProps = jaasProps;
         this.cloudinaryUrl = cloudinaryUrl;
         this.wompiPublicKey = wompiPublicKey;
         this.wompiIntegrity = wompiIntegrity;
@@ -64,6 +68,13 @@ public class SystemStatusService {
                         "El aula no abre: «La videollamada no está disponible ahora mismo».",
                         jaas.disponible() ? "Llave RSA cargada" : null,
                         List.of("JAAS_APP_ID", "JAAS_KEY_ID", "JAAS_PRIVATE_KEY")),
+
+                new Integracion("Presencia en el aula (webhook de JaaS)", jaasProps.webhooksConfigurados(),
+                        "La antesala siempre dice «aún no ha entrado», y no hay tiempo hablado ni "
+                                + "puntualidad del profesor.",
+                        jaasProps.webhooksConfigurados()
+                                ? "Endpoint: /api/v1/webhooks/video/jaas" : null,
+                        List.of("JAAS_WEBHOOK_SECRET")),
 
                 new Integracion("Pagos (Wompi)", wompiCompleto,
                         "Reservar responde 422 y ninguna clase se confirma.",

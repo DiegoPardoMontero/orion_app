@@ -420,6 +420,13 @@ con las decisiones que tomó Pardo.
 - **Meissa**, la segunda mascota, en todo el flujo: `/diagnostico` (sin pasos y sin scroll), la
   conversación a pantalla completa con sus estados habla/escucha/piensa y el subtítulo de lo que
   dice, la espera y el cierre. Rigel ya no aparece en el diagnóstico.
+- **Webhook de JaaS** (V46): 8x8 cuenta quién entró a cada sala, quién sigue dentro y cuánto habló
+  cada uno. La antesala ya dice «María te espera» de verdad; el profesor ve en la ficha del
+  estudiante qué parte de la palabra tuvo en sus últimas clases juntos; el admin ve en
+  Administración → Aula el reparto de la palabra y la puntualidad de cada profesor (informativo:
+  no genera sanciones). Firma HMAC verificada sobre el cuerpo tal cual, ventana de cinco minutos,
+  idempotente por la llave de 8x8, y lo que no es de una reserva nuestra o de sus dos participantes
+  se ignora.
 - **«¿Prefieres que te llame una persona?»** (V44): nombre, WhatsApp y su autorización en casilla
   propia. Avisa por correo a la academia (`ORION_LEGAL_CORREO`) y queda en Administración →
   Llamadas, con el chat de WhatsApp a un clic y el botón de marcar atendida.
@@ -464,9 +471,13 @@ con las decisiones que tomó Pardo.
   generoso. Con dos o tres más se mueven con algo que no sea intuición.
 - **Las heurísticas de `SignalExtractor` reconocen lo que aparece en esa única conversación.** Se
   equivocarán en casos que aún no hemos visto; por eso el cálculo usa medianas.
-- **El secreto del webhook de JaaS**: sin él la antesala siempre dice «aún no ha entrado», y no se
-  puede calcular la tardanza del profesor (punto 12 de Sofía) porque no hay registro de a qué hora
-  entró cada uno.
+- **Configurar el webhook de JaaS** (ya construido, 22/09): en la consola de JaaS → Webhooks, un
+  endpoint a `https://orionidiomas.com/api/v1/webhooks/video/jaas` con los eventos
+  `PARTICIPANT_JOINED`, `PARTICIPANT_LEFT` y `SPEAKER_STATS`, y su secreto en Railway como
+  `JAAS_WEBHOOK_SECRET`. Sin eso la antesala sigue diciendo «aún no ha entrado». Ojo: el ejemplo de
+  firma de la documentación de 8x8 no se reproduce a sí mismo; el verificador acepta las dos
+  lecturas naturales del secreto y el primer evento real dirá cuál usan (si llegan 401, mirar el
+  registro).
 - **Rotar la llave de OpenAI**: viajó por la terminal y quedó en el transcript de la sesión.
 - **Cuánto se guardan las solicitudes de llamada ya atendidas**: hoy, indefinidamente. Conviene
   fijar un plazo (y un job que lo cumpla) antes de que se acumulen teléfonos sin finalidad vigente.
