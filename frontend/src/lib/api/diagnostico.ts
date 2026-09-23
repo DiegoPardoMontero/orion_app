@@ -178,8 +178,7 @@ export class ConversacionDeVoz {
   }
 
   colgar() {
-    if (this.reintento) clearTimeout(this.reintento);
-    this.reintento = null;
+    this.cancelarReintento();
     this.pc?.close();
     this.micro?.getTracks().forEach((t) => t.stop());
     this.pc = null;
@@ -202,6 +201,8 @@ export class ConversacionDeVoz {
     switch (ev.type) {
       // Empieza un turno de Meissa: se borra lo anterior antes de que llegue la primera palabra.
       case "response.created":
+        // Ya hay respuesta en camino: un reintento pendiente sería un turno que nadie pidió.
+        this.cancelarReintento();
         this.respuestaEnCurso = true;
         this.subtitulo = "";
         this.ultimoDeMeissa = "";
@@ -242,6 +243,8 @@ export class ConversacionDeVoz {
         break;
 
       case "input_audio_buffer.speech_started":
+        // Habla la persona: su silencio pedirá el turno, no el reintento.
+        this.cancelarReintento();
         this.usuarioHablando = true;
         this.inicioDelUsuario = performance.now();
         this.cb.onFase("escucha");
@@ -314,6 +317,7 @@ export class ConversacionDeVoz {
    * entonces la persona esté hablando (su silencio ya pedirá el turno); a la tercera, se avisa.
    */
   private reintentarRespuesta() {
+    this.cancelarReintento();
     // El turno que no llegó a sonar no cuenta: el contador de preguntas no debe saltarse una.
     this.turnosIniciados = Math.max(0, this.turnosIniciados - 1);
     if (this.reintentos >= REINTENTOS_DE_RESPUESTA) {
@@ -328,6 +332,11 @@ export class ConversacionDeVoz {
         this.enviar({ type: "response.create" });
       }
     }, espera);
+  }
+
+  private cancelarReintento() {
+    if (this.reintento) clearTimeout(this.reintento);
+    this.reintento = null;
   }
 
   /**

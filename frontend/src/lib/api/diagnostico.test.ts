@@ -165,6 +165,33 @@ describe("una respuesta que falla (el límite de tokens por minuto)", () => {
     expect(pedidos(enviados)).toHaveLength(0);
   });
 
+  it("si la persona habla y Meissa le responde antes de la pausa, el reintento ya no sale", () => {
+    vi.useFakeTimers();
+    const { voz, enviados } = cliente();
+
+    voz.recibir({ type: "response.created" });
+    voz.recibir(fallida);
+    vi.advanceTimersByTime(1000);
+    voz.recibir({ type: "input_audio_buffer.speech_started" });
+    voz.recibir({ type: "input_audio_buffer.speech_stopped" });
+    turnoDeMeissa(voz, "Sorry, go on. What happened next?");
+    vi.advanceTimersByTime(10_000);
+
+    expect(pedidos(enviados)).toHaveLength(0);
+  });
+
+  it("una respuesta nueva cancela el reintento pendiente", () => {
+    vi.useFakeTimers();
+    const { voz, enviados } = cliente();
+
+    voz.recibir({ type: "response.created" });
+    voz.recibir(fallida);
+    voz.recibir({ type: "response.created" });
+    vi.advanceTimersByTime(10_000);
+
+    expect(pedidos(enviados)).toHaveLength(0);
+  });
+
   it("a la tercera se avisa, en vez de dejarla callada", () => {
     vi.useFakeTimers();
     const { voz, enviados, errores } = cliente();
