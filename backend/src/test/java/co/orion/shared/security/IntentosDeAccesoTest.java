@@ -16,7 +16,7 @@ import co.orion.shared.error.TooManyRequestsException;
 class IntentosDeAccesoTest {
 
     private final IntentosDeAcceso intentos = new IntentosDeAcceso(
-            Clock.fixed(Instant.parse("2026-09-22T20:00:00Z"), ZoneOffset.UTC), 5, 60, 10, 3, 20, 5, 10);
+            Clock.fixed(Instant.parse("2026-09-22T20:00:00Z"), ZoneOffset.UTC), 5, 60, 10, 3, 20, 5, 10, 80);
 
     private static MockHttpServletRequest desde(String ip) {
         MockHttpServletRequest request = new MockHttpServletRequest();

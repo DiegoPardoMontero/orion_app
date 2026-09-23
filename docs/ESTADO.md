@@ -423,6 +423,13 @@ con las decisiones que tomó Pardo.
 - **Meissa**, la segunda mascota, en todo el flujo: `/diagnostico` (sin pasos y sin scroll), la
   conversación a pantalla completa con sus estados habla/escucha/piensa y el subtítulo de lo que
   dice, la espera y el cierre. Rigel ya no aparece en el diagnóstico.
+- **Subtítulo y traducción** (23/09): el subtítulo se limpia al empezar cada turno de Meissa y
+  la pregunta queda escrita mientras respondes; el contador dice «Pregunta N de 6». Debajo, la
+  **traducción al español frase por frase mientras habla**, con `gpt-4.1-nano` (~1 s por frase,
+  del orden de un peso por diagnóstico, cargado al presupuesto del diagnóstico), ocultable y
+  recordado en el navegador. Solo para el dueño de un diagnóstico vivo y con tope de 80 frases;
+  la rama en español no se traduce. Antes el subtítulo acumulaba la conversación entera: por
+  WebRTC el evento con el que se detectaba el turno nuevo no llega nunca.
 - **Webhook de JaaS** (V46): 8x8 cuenta quién entró a cada sala, quién sigue dentro y cuánto habló
   cada uno. La antesala ya dice «María te espera» de verdad; el profesor ve en la ficha del
   estudiante qué parte de la palabra tuvo en sus últimas clases juntos; el admin ve en

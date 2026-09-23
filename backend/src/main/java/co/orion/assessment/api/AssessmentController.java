@@ -27,6 +27,8 @@ import co.orion.shared.time.BusinessZone;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 /**
  * El diagnóstico de confianza: empezar, alimentar, cerrar y leer. Todo del dueño y de nadie más.
@@ -121,6 +123,27 @@ public class AssessmentController {
                         HttpServletRequest http) {
         assessments.addTurn(quien(principal, http), id, body.turnIndex(), body.speaker(),
                 body.transcript(), body.latencyMs(), body.durationMs());
+    }
+
+    /**
+     * La traducción al español de una frase de Meissa, mientras la dice. {@code translation} nulo
+     * cuando no hay nada que mostrar debajo: sin presupuesto, el proveedor no llegó a tiempo o la
+     * frase ya era español.
+     */
+    @PostMapping("/assessments/{id}/translate")
+    public TraduccionResponse translate(@AuthenticationPrincipal OrionUserDetails principal,
+                                        @PathVariable UUID id,
+                                        @Valid @RequestBody TraducirRequest body,
+                                        HttpServletRequest http) {
+        Evaluado quien = quien(principal, http);
+        intentos.antesDeTraducir(id);
+        return new TraduccionResponse(assessments.traducir(quien, id, body.text().strip()).orElse(null));
+    }
+
+    public record TraducirRequest(@NotBlank @Size(max = 400) String text) {
+    }
+
+    public record TraduccionResponse(String translation) {
     }
 
     @PostMapping("/assessments/{id}/complete")

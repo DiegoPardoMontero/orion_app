@@ -21,6 +21,7 @@ import co.orion.assessment.domain.AssessmentStatus;
 import co.orion.assessment.domain.AssessmentTurn;
 import co.orion.assessment.domain.ConfidenceAssessment;
 import co.orion.assessment.domain.ConfidenceScoreCalculator;
+import co.orion.assessment.domain.IdiomaDeLaFrase;
 import co.orion.assessment.domain.PesosDelPuntaje;
 import co.orion.assessment.domain.Puntaje;
 import co.orion.assessment.domain.Recomendacion;
@@ -79,6 +80,7 @@ public class AssessmentService {
     private final TeachingGoalRepository objetivosDelCatalogo;
     private final PlatformSettingsService settings;
     private final AiUsageRecorder usage;
+    private final TraductorDeFrases traductor;
     private final Clock clock;
 
     public AssessmentService(ConfidenceAssessmentRepository assessments,
@@ -93,6 +95,7 @@ public class AssessmentService {
                              TeachingGoalRepository objetivosDelCatalogo,
                              PlatformSettingsService settings,
                              AiUsageRecorder usage,
+                             TraductorDeFrases traductor,
                              Clock clock) {
         this.assessments = assessments;
         this.turns = turns;
@@ -106,6 +109,7 @@ public class AssessmentService {
         this.objetivosDelCatalogo = objetivosDelCatalogo;
         this.settings = settings;
         this.usage = usage;
+        this.traductor = traductor;
         this.clock = clock;
     }
 
@@ -318,6 +322,20 @@ public class AssessmentService {
             }
         }
         return ResumenDePlantilla.para(nombre, nombres);
+    }
+
+    /**
+     * La traducción al español de una frase de Meissa. Solo para el dueño de un diagnóstico vivo:
+     * es una llamada que se paga, y abierta a cualquiera sería un traductor gratis con nuestra
+     * llave. Sin presupuesto no se traduce —la conversación sigue igual, sin la línea de abajo—.
+     */
+    @Transactional(readOnly = true)
+    public Optional<String> traducir(Evaluado quien, UUID assessmentId, String frase) {
+        miaYViva(quien, assessmentId);
+        if (IdiomaDeLaFrase.pareceEspanol(frase) || !budget.disponible()) {
+            return Optional.empty();
+        }
+        return traductor.alEspanol(quien.actorId(), frase);
     }
 
     @Transactional

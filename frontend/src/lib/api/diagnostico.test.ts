@@ -10,17 +10,19 @@ function cliente() {
   const subtitulos: string[] = [];
   const turnosIniciados: number[] = [];
   const turnosTerminados: { cuantos: number; preguntaba: boolean }[] = [];
+  const frases: { frase: string; turno: number; indice: number }[] = [];
   const cb: ConversacionCallbacks = {
     onTurno: () => undefined,
     onFase: () => undefined,
     onSubtitulo: (t) => subtitulos.push(t),
     onEmpiezaTurnoDeMeissa: (n) => turnosIniciados.push(n),
     onTurnoDeMeissa: (cuantos, preguntaba) => turnosTerminados.push({ cuantos, preguntaba }),
+    onFrase: (frase, turno, indice) => frases.push({ frase, turno, indice }),
     onError: () => undefined,
   };
   const enviados: object[] = [];
   const voz = new ConversacionDeVoz(cb, (m) => enviados.push(m));
-  return { voz, subtitulos, turnosIniciados, turnosTerminados, enviados };
+  return { voz, subtitulos, turnosIniciados, turnosTerminados, frases, enviados };
 }
 
 /** Un turno completo de Meissa como llega por WebRTC: sin un solo delta de audio. */
@@ -67,5 +69,31 @@ describe("ConversacionDeVoz por WebRTC", () => {
     voz.recibir({ type: "output_audio_buffer.cleared" });
 
     expect(turnosTerminados).toHaveLength(1);
+  });
+
+  it("suelta cada frase apenas se cierra, y la última al terminar el turno", () => {
+    const { voz, frases } = cliente();
+
+    turnoDeMeissa(voz, "Logistics, so you're the one everyone calls. What broke this week? Tell me");
+
+    expect(frases).toEqual([
+      { frase: "Logistics, so you're the one everyone calls.", turno: 1, indice: 0 },
+      { frase: "What broke this week?", turno: 1, indice: 1 },
+      { frase: "Tell me", turno: 1, indice: 2 },
+    ]);
+  });
+
+  it("un número con punto no corta la frase, y cada turno numera sus frases desde cero", () => {
+    const { voz, frases } = cliente();
+
+    turnoDeMeissa(voz, "Hi! Classes are 55 minutes.");
+    turnoDeMeissa(voz, "Version 2.5 of your app? Tell me more.");
+
+    expect(frases.map((f) => [f.turno, f.indice, f.frase])).toEqual([
+      [1, 0, "Hi!"],
+      [1, 1, "Classes are 55 minutes."],
+      [2, 0, "Version 2.5 of your app?"],
+      [2, 1, "Tell me more."],
+    ]);
   });
 });

@@ -68,6 +68,11 @@ export type ConversacionCallbacks = {
   onSubtitulo: (texto: string) => void;
   /** Empezó un turno de Meissa: el número de turno, contando el saludo como el primero. */
   onEmpiezaTurnoDeMeissa?: (numero: number) => void;
+  /**
+   * Meissa terminó de decir una frase entera: es lo que se traduce. Llega apenas la frase se
+   * cierra en el texto —que va por delante de la voz—, no al final del turno.
+   */
+  onFrase?: (frase: string, turno: number, indice: number) => void;
   /** Un turno de Meissa terminó de sonar. Lleva cuántos van y si terminó en pregunta. */
   onTurnoDeMeissa: (cuantos: number, preguntaba: boolean) => void;
   onError: (mensaje: string) => void;
@@ -89,6 +94,8 @@ export class ConversacionDeVoz {
   private subtitulo = "";
   private hablando = false;
   private turnosIniciados = 0;
+  private pendiente = "";
+  private frasesDelTurno = 0;
   private turnosDeMeissa = 0;
   private ultimoDeMeissa = "";
 
@@ -157,6 +164,8 @@ export class ConversacionDeVoz {
       case "response.created":
         this.subtitulo = "";
         this.ultimoDeMeissa = "";
+        this.pendiente = "";
+        this.frasesDelTurno = 0;
         this.turnosIniciados++;
         this.cb.onSubtitulo("");
         this.cb.onEmpiezaTurnoDeMeissa?.(this.turnosIniciados);
@@ -201,6 +210,8 @@ export class ConversacionDeVoz {
       case "response.output_audio_transcript.delta":
         this.subtitulo += ev.delta ?? "";
         this.cb.onSubtitulo(this.subtitulo);
+        this.pendiente += ev.delta ?? "";
+        this.soltarFrasesCompletas();
         break;
 
       case "conversation.item.input_audio_transcription.completed": {
@@ -231,6 +242,9 @@ export class ConversacionDeVoz {
         this.ultimoDeMeissa = texto;
         this.subtitulo = texto;
         this.cb.onSubtitulo(texto);
+        // Lo que quedó sin punto final también es una frase: la última del turno.
+        this.soltar(this.pendiente);
+        this.pendiente = "";
         this.cb.onTurno({
           turnIndex: this.indice++,
           speaker: "AI",
@@ -245,5 +259,25 @@ export class ConversacionDeVoz {
         this.cb.onError("Se interrumpió la conversación.");
         break;
     }
+  }
+
+  /**
+   * Corta lo acumulado en frases terminadas. Una frase termina en punto, cierre de pregunta o
+   * exclamación seguidos de espacio: «1.5» o «Mr.» pegado a lo siguiente no la cortan.
+   */
+  private soltarFrasesCompletas() {
+    const fin = /[.!?…]+["')\]]?\s+/g;
+    let desde = 0;
+    let m: RegExpExecArray | null;
+    while ((m = fin.exec(this.pendiente)) !== null) {
+      this.soltar(this.pendiente.slice(desde, m.index + m[0].length));
+      desde = m.index + m[0].length;
+    }
+    this.pendiente = this.pendiente.slice(desde);
+  }
+
+  private soltar(frase: string) {
+    const limpia = frase.trim();
+    if (limpia) this.cb.onFrase?.(limpia, this.turnosIniciados, this.frasesDelTurno++);
   }
 }

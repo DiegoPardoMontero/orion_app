@@ -1,0 +1,26 @@
+package co.orion.assessment.domain;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+class IdiomaDeLaFraseTest {
+
+    @Test
+    @DisplayName("Las frases de la rama en español se reconocen, con tilde o sin ella")
+    void espanol() {
+        assertThat(IdiomaDeLaFrase.pareceEspanol("Sigamos en español, que así me cuentas mejor.")).isTrue();
+        assertThat(IdiomaDeLaFrase.pareceEspanol("¿Y para que lo necesitas en el trabajo?")).isTrue();
+        assertThat(IdiomaDeLaFrase.pareceEspanol("Cuentame que es lo que mas te gusta de la ciudad")).isTrue();
+    }
+
+    @Test
+    @DisplayName("El inglés de Meissa no se confunde, ni siquiera cuando dice «Orión»")
+    void ingles() {
+        assertThat(IdiomaDeLaFrase.pareceEspanol("Hi Ana! I'm Meissa, from Orión.")).isFalse();
+        assertThat(IdiomaDeLaFrase.pareceEspanol("What's the hardest bug you've fixed this month?")).isFalse();
+        assertThat(IdiomaDeLaFrase.pareceEspanol("In Orión you'd practise those meetings with a teacher from your field.")).isFalse();
+        assertThat(IdiomaDeLaFrase.pareceEspanol("")).isFalse();
+    }
+}

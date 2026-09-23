@@ -29,7 +29,8 @@ const ESTADO: Record<FaseDeMeissa, string> = {
  * crema, sin nada que compita con su voz.
  *
  * <p><strong>Lo que Meissa dice va escrito; lo que dices tú, no.</strong> Leer la pregunta ayuda a
- * entenderla, y no hay lip-sync: el subtítulo es lo que se lee. Pero la transcripción propia sigue
+ * entenderla, y no hay lip-sync: el subtítulo es lo que se lee. Debajo, su traducción al español,
+ * frase por frase mientras habla, y ocultable (handoff de Meissa). Pero la transcripción propia sigue
  * sin aparecer, porque la gente se corrige al verse escrita y eso arruina justo lo que se mide.
  *
  * <p>La conversación es libre (Pardo, 22/09/2026): Meissa detecta sola cuándo terminaste, no hay
@@ -55,6 +56,11 @@ export function Conversacion({
   const voz = useRef<ConversacionDeVoz | null>(null);
   const [fase, setFase] = useState<FaseDeMeissa>("piensa");
   const [subtitulo, setSubtitulo] = useState("");
+  // La traducción del turno en curso, frase por frase: `undefined` mientras llega, `null` si no
+  // hay nada que mostrar (la frase ya era español, o no llegó a tiempo).
+  const [traducciones, setTraducciones] = useState<(string | null | undefined)[]>([]);
+  const turnoEnPantalla = useRef(0);
+  const [mostrarTraduccion, setMostrarTraduccion] = useState(leerPreferenciaDeTraduccion);
   const [turno, setTurno] = useState(1);
   const [segundos, setSegundos] = useState(0);
   const [fallo, setFallo] = useState<string | null>(null);
@@ -75,7 +81,33 @@ export function Conversacion({
       onFase: setFase,
       onSubtitulo: setSubtitulo,
       onError: setFallo,
-      onEmpiezaTurnoDeMeissa: (numero) => setTurno(Math.min(TURNOS, numero)),
+      onEmpiezaTurnoDeMeissa: (numero) => {
+        turnoEnPantalla.current = numero;
+        setTraducciones([]);
+        setTurno(Math.min(TURNOS, numero));
+      },
+      onFrase: (frase, turnoDeLaFrase, indice) => {
+        setTraducciones((previas) => {
+          const nuevas = [...previas];
+          nuevas[indice] = undefined;
+          return nuevas;
+        });
+        void apiFetch<{ translation: string | null }>(
+          `/api/v1/assessments/${sesion.assessmentId}/translate`,
+          { method: "POST", body: { text: frase }, redirectOn401: false },
+        )
+          .then((r) => r.translation)
+          .catch(() => null)
+          .then((traduccion) => {
+            // Si Meissa ya pasó a otro turno, esta traducción es de algo que ya no está en pantalla.
+            if (turnoEnPantalla.current !== turnoDeLaFrase) return;
+            setTraducciones((previas) => {
+              const nuevas = [...previas];
+              nuevas[indice] = traduccion;
+              return nuevas;
+            });
+          });
+      },
       onTurnoDeMeissa: (cuantos, preguntaba) => {
         // Pasada la sexta, un turno sin pregunta es la despedida: se deja un respiro y se pasa al
         // resultado.
@@ -162,11 +194,31 @@ export function Conversacion({
               </Boton>
             </>
           ) : (
-            <p lang="en" className="min-h-[3.2em] font-display text-[19px] font-semibold leading-snug text-text">
-              {subtitulo || "…"}
-            </p>
+            <>
+              <p lang="en" className="min-h-[3.2em] font-display text-[19px] font-semibold leading-snug text-text">
+                {subtitulo || "…"}
+              </p>
+              {mostrarTraduccion && traduccionVisible(traducciones) && (
+                <p lang="es" className="mt-2 text-[14px] leading-relaxed text-text-secondary">
+                  {traduccionVisible(traducciones)}
+                </p>
+              )}
+            </>
           )}
         </section>
+        {!fallo && (
+          <button
+            type="button"
+            onClick={() => {
+              const nueva = !mostrarTraduccion;
+              setMostrarTraduccion(nueva);
+              guardarPreferenciaDeTraduccion(nueva);
+            }}
+            className="mx-auto mt-2 min-h-11 px-3 text-[13px] font-semibold text-text-secondary underline decoration-border underline-offset-4 hover:text-text focus-visible:shadow-focus"
+          >
+            {mostrarTraduccion ? "Ocultar traducción" : "Ver traducción al español"}
+          </button>
+        )}
 
         <button
           type="button"
@@ -189,6 +241,38 @@ export function Conversacion({
       </div>
     </main>
   );
+}
+
+/**
+ * Lo que se lee de la traducción: las frases en orden hasta la primera que todavía no llega, para
+ * que nunca aparezca la tercera antes que la segunda. Las que no tienen traducción se saltan.
+ */
+function traduccionVisible(traducciones: (string | null | undefined)[]): string {
+  const listas: string[] = [];
+  for (const t of traducciones) {
+    if (t === undefined) break;
+    if (t) listas.push(t);
+  }
+  return listas.join(" ");
+}
+
+const PREFERENCIA_TRADUCCION = "orion.meissa.traduccion";
+
+/** Se recuerda en el navegador; sin almacenamiento (modo privado), se muestra. */
+function leerPreferenciaDeTraduccion(): boolean {
+  try {
+    return window.localStorage.getItem(PREFERENCIA_TRADUCCION) !== "oculta";
+  } catch {
+    return true;
+  }
+}
+
+function guardarPreferenciaDeTraduccion(mostrar: boolean) {
+  try {
+    window.localStorage.setItem(PREFERENCIA_TRADUCCION, mostrar ? "visible" : "oculta");
+  } catch {
+    // Sin almacenamiento la preferencia dura lo que dure la pantalla, y está bien.
+  }
 }
 
 /** La hoja inferior de «¿Salir?». En un portal, para que ninguna barra de la app quede encima. */

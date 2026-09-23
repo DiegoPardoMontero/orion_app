@@ -39,6 +39,7 @@ public class IntentosDeAcceso {
     private final int maxRecuperacionesPorIp;
     private final int maxDiagnosticosAnonimosPorIp;
     private final int maxSesionesDeVozPorPersona;
+    private final int maxTraduccionesPorDiagnostico;
 
     /**
      * Los topes son configurables porque el valor correcto depende de por dónde entra la gente.
@@ -57,7 +58,8 @@ public class IntentosDeAcceso {
             @Value("${orion.security.rate-limit.password-resets:3}") int maxRecuperacionesPorCorreo,
             @Value("${orion.security.rate-limit.password-resets-per-ip:20}") int maxRecuperacionesPorIp,
             @Value("${orion.security.rate-limit.anonymous-assessments-per-ip:5}") int maxDiagnosticosAnonimosPorIp,
-            @Value("${orion.security.rate-limit.voice-sessions-per-person:10}") int maxSesionesDeVozPorPersona) {
+            @Value("${orion.security.rate-limit.voice-sessions-per-person:10}") int maxSesionesDeVozPorPersona,
+            @Value("${orion.security.rate-limit.translations-per-assessment:80}") int maxTraduccionesPorDiagnostico) {
         this.clock = clock;
         this.maxLoginPorIpYCorreo = maxLoginPorIpYCorreo;
         this.maxLoginPorIp = maxLoginPorIp;
@@ -66,6 +68,7 @@ public class IntentosDeAcceso {
         this.maxRecuperacionesPorIp = maxRecuperacionesPorIp;
         this.maxDiagnosticosAnonimosPorIp = maxDiagnosticosAnonimosPorIp;
         this.maxSesionesDeVozPorPersona = maxSesionesDeVozPorPersona;
+        this.maxTraduccionesPorDiagnostico = maxTraduccionesPorDiagnostico;
     }
 
     public void antesDeLogin(HttpServletRequest request, String email) {
@@ -124,6 +127,15 @@ public class IntentosDeAcceso {
     public void antesDeAbrirVoz(java.util.UUID persona) {
         exigir("voz:" + persona, maxSesionesDeVozPorPersona, VENTANA_DIA, clock.instant(),
                 "Ya intentaste el diagnóstico varias veces hoy. Vuelve mañana.");
+    }
+
+    /**
+     * Dos minutos de Meissa son unas veinte frases. Ochenta por diagnóstico sobran para eso y
+     * cortan a quien use la traducción como un traductor gratis con nuestra llave.
+     */
+    public void antesDeTraducir(java.util.UUID diagnostico) {
+        exigir("traducir:" + diagnostico, maxTraduccionesPorDiagnostico, VENTANA_DIA, clock.instant(),
+                "Ya no hay más traducciones para esta conversación.");
     }
 
     /** El «te llamamos» es público y deja un teléfono a nuestro cargo: cinco por conexión al día. */

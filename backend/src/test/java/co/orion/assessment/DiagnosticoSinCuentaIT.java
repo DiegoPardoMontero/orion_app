@@ -133,6 +133,37 @@ class DiagnosticoSinCuentaIT extends ApiIntegrationSupport {
     }
 
     /**
+     * La traducción de lo que dice Meissa es una llamada que se paga: solo para el dueño de un
+     * diagnóstico vivo. Otro dispositivo no la obtiene, uno cerrado tampoco, y una «frase» de
+     * cuatrocientos caracteres o más no es una frase.
+     */
+    @SuppressWarnings("rawtypes")
+    @Test
+    @DisplayName("La traducción de Meissa: solo para el dueño de un diagnóstico vivo")
+    void laTraduccionEsDelDueno() {
+        String llave = nuevoLead("Eduardo");
+        String id = (String) comoLead(HttpMethod.POST, "/api/v1/assessments", llave,
+                Map.of("languageCode", "EN")).getBody().get("assessmentId");
+        String ruta = "/api/v1/assessments/" + id + "/translate";
+
+        ResponseEntity<Map> traducida = comoLead(HttpMethod.POST, ruta, llave, Map.of("text", "How's your day going?"));
+        assertThat(traducida.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(traducida.getBody()).containsEntry("translation", "[es] How's your day going?");
+        // La rama en español no se traduce a sí misma.
+        assertThat(comoLead(HttpMethod.POST, ruta, llave, Map.of("text", "Sigamos en español, que así me cuentas mejor."))
+                .getBody()).containsEntry("translation", null);
+
+        assertThat(comoLead(HttpMethod.POST, ruta, nuevoLead("Ana"), Map.of("text", "Hi")).getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(comoLead(HttpMethod.POST, ruta, llave, Map.of("text", "x".repeat(401))).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+
+        comoLead(HttpMethod.POST, "/api/v1/assessments/" + id + "/abandon", llave, null);
+        assertThat(comoLead(HttpMethod.POST, ruta, llave, Map.of("text", "Bye!")).getStatusCode())
+                .isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+    }
+
+    /**
      * Cada «empezar» entrega una llave del proveedor que se paga, también al retomar uno abierto.
      * Se carga al presupuesto al abrirla —quien pide llaves y no cierra nada consume igual— y hay
      * un tope por persona para que un solo lead no se gaste el día entero.
