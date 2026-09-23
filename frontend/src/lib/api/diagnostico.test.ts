@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ConversacionDeVoz, traduccionVisible, type ConversacionCallbacks } from "./diagnostico";
 
 /**
@@ -7,6 +7,7 @@ import { ConversacionDeVoz, traduccionVisible, type ConversacionCallbacks } from
  * que funcionar solo con lo que sí viaja por el canal de datos.
  */
 function cliente() {
+  const errores: string[] = [];
   const subtitulos: string[] = [];
   const turnosIniciados: number[] = [];
   const turnosTerminados: { cuantos: number; preguntaba: boolean }[] = [];
@@ -18,11 +19,11 @@ function cliente() {
     onEmpiezaTurnoDeMeissa: (n) => turnosIniciados.push(n),
     onTurnoDeMeissa: (cuantos, preguntaba) => turnosTerminados.push({ cuantos, preguntaba }),
     onFrase: (frase, turno, indice) => frases.push({ frase, turno, indice }),
-    onError: () => undefined,
+    onError: (m) => errores.push(m),
   };
   const enviados: object[] = [];
   const voz = new ConversacionDeVoz(cb, (m) => enviados.push(m));
-  return { voz, subtitulos, turnosIniciados, turnosTerminados, frases, enviados };
+  return { voz, subtitulos, turnosIniciados, turnosTerminados, frases, enviados, errores };
 }
 
 /** Un turno completo de Meissa como llega por WebRTC: sin un solo delta de audio. */
@@ -127,6 +128,66 @@ describe("ConversacionDeVoz por WebRTC", () => {
     meissaHabla.voz.recibir({ type: "response.created" });
     meissaHabla.voz.pedirDespedida("[Time is up]");
     expect(meissaHabla.enviados.map((m) => (m as { type: string }).type)).toEqual(["conversation.item.create"]);
+  });
+});
+
+describe("una respuesta que falla (el límite de tokens por minuto)", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const fallida = { type: "response.done", response: { status: "failed" } };
+  const pedidos = (enviados: object[]) => enviados.filter((m) => (m as { type: string }).type === "response.create");
+
+  it("se vuelve a pedir tras una pausa, y el turno que no sonó no cuenta", () => {
+    vi.useFakeTimers();
+    const { voz, enviados, turnosIniciados } = cliente();
+
+    voz.recibir({ type: "response.created" });
+    voz.recibir(fallida);
+    expect(pedidos(enviados)).toHaveLength(0);
+    vi.advanceTimersByTime(2000);
+    expect(pedidos(enviados)).toHaveLength(1);
+
+    voz.recibir({ type: "response.created" });
+    expect(turnosIniciados).toEqual([1, 1]);
+  });
+
+  it("si la persona está hablando no se pide nada: su silencio ya pedirá el turno", () => {
+    vi.useFakeTimers();
+    const { voz, enviados } = cliente();
+
+    voz.recibir({ type: "response.created" });
+    voz.recibir(fallida);
+    voz.recibir({ type: "input_audio_buffer.speech_started" });
+    vi.advanceTimersByTime(10_000);
+
+    expect(pedidos(enviados)).toHaveLength(0);
+  });
+
+  it("a la tercera se avisa, en vez de dejarla callada", () => {
+    vi.useFakeTimers();
+    const { voz, enviados, errores } = cliente();
+
+    for (let intento = 0; intento < 4; intento++) {
+      voz.recibir({ type: "response.created" });
+      voz.recibir(fallida);
+      vi.advanceTimersByTime(8000);
+    }
+
+    expect(pedidos(enviados)).toHaveLength(3);
+    expect(errores).toHaveLength(1);
+  });
+
+  it("una respuesta interrumpida (cancelled) no se repite", () => {
+    vi.useFakeTimers();
+    const { voz, enviados } = cliente();
+
+    voz.recibir({ type: "response.created" });
+    voz.recibir({ type: "response.done", response: { status: "cancelled" } });
+    vi.advanceTimersByTime(10_000);
+
+    expect(pedidos(enviados)).toHaveLength(0);
   });
 });
 

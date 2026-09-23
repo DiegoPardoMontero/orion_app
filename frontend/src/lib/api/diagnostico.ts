@@ -79,7 +79,17 @@ export type ConversacionCallbacks = {
 };
 
 /** Un evento del proveedor, con solo lo que este cliente lee de él. */
-export type EventoDeVoz = { type: string; transcript?: string; delta?: string; error?: unknown };
+export type EventoDeVoz = {
+  type: string;
+  transcript?: string;
+  delta?: string;
+  error?: unknown;
+  /** En `response.done`: `completed`, `cancelled` (la interrumpieron), `incomplete` o `failed`. */
+  response?: { status?: string };
+};
+
+/** Cuántas veces se vuelve a pedir una respuesta que falló antes de avisar: tras 2, 4 y 8 s. */
+const REINTENTOS_DE_RESPUESTA = 3;
 
 export class ConversacionDeVoz {
   private pc: RTCPeerConnection | null = null;
@@ -100,6 +110,8 @@ export class ConversacionDeVoz {
   private usuarioHablando = false;
   private turnosDeMeissa = 0;
   private ultimoDeMeissa = "";
+  private reintentos = 0;
+  private reintento: ReturnType<typeof setTimeout> | null = null;
 
   /**
    * @param enviar a dónde van los mensajes para la sesión. Por defecto, el canal de datos; los
@@ -166,6 +178,8 @@ export class ConversacionDeVoz {
   }
 
   colgar() {
+    if (this.reintento) clearTimeout(this.reintento);
+    this.reintento = null;
     this.pc?.close();
     this.micro?.getTracks().forEach((t) => t.stop());
     this.pc = null;
@@ -201,6 +215,8 @@ export class ConversacionDeVoz {
       case "response.done":
         this.respuestaEnCurso = false;
         this.finDeLaIA = performance.now();
+        if (ev.response?.status === "failed") this.reintentarRespuesta();
+        else if (ev.response?.status === "completed") this.reintentos = 0;
         break;
 
       // Empezó a SONAR. Por WebRTC es este; por WebSocket el audio llega en deltas y sirve igual.
@@ -289,6 +305,29 @@ export class ConversacionDeVoz {
         this.cb.onError("Se interrumpió la conversación.");
         break;
     }
+  }
+
+  /**
+   * Una respuesta que falló —casi siempre el límite de tokens por minuto de la organización, que se
+   * alcanza con dos o tres diagnósticos a la vez— no traía sonido ni aviso: Meissa se callaba y la
+   * persona se quedaba esperando. Se vuelve a pedir tras una pausa que crece, salvo que para
+   * entonces la persona esté hablando (su silencio ya pedirá el turno); a la tercera, se avisa.
+   */
+  private reintentarRespuesta() {
+    // El turno que no llegó a sonar no cuenta: el contador de preguntas no debe saltarse una.
+    this.turnosIniciados = Math.max(0, this.turnosIniciados - 1);
+    if (this.reintentos >= REINTENTOS_DE_RESPUESTA) {
+      this.cb.onError("Meissa se quedó sin voz un momento. Intenta de nuevo en un minuto.");
+      return;
+    }
+    const espera = 2000 * 2 ** this.reintentos;
+    this.reintentos++;
+    this.reintento = setTimeout(() => {
+      this.reintento = null;
+      if (!this.respuestaEnCurso && !this.usuarioHablando && !this.hablando) {
+        this.enviar({ type: "response.create" });
+      }
+    }, espera);
   }
 
   /**
