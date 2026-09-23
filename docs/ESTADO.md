@@ -30,9 +30,10 @@ dentro de `/cuenta`).
 
 ## Verificación
 Al 23/09/2026, sobre `master` con el Bloque 10 completo (Partes A y B) y su revisión:
-- Backend: `./mvnw verify` (Testcontainers) — **326 unitarios + 499 de integración**, verde.
+- Backend: `./mvnw verify` (Testcontainers) — **326 unitarios + 500 de integración**, verde.
 - Frontend: `tsc` + `lint` verdes; **70 tests de Vitest**.
-- **E2E Playwright: 20 de 21**, sobre base recreada (`docker compose down -v`): el acta escrita,
+- **E2E Playwright: 20 de 21** (la última, a las 06:38 del 23/09 con todo lo de la noche), sobre
+  base recreada (`docker compose down -v`): el acta escrita,
   editada y publicada, la práctica de Ana con su cierre y lo que ve María, y el acta a mano con la IA
   caída. El que falta sigue siendo el paso por la pasarela: exige llaves de *sandbox* de Wompi en el
   entorno. Los del acta necesitan las clases que la semilla local cierra «ahora» (las únicas
@@ -615,6 +616,12 @@ venían de antes. Todos quedaron arreglados, cada uno con su test. Los más seri
   ejercicios con la pista entre paréntesis que el evaluador nunca daría por buenos; un reintento de
   Meissa pendiente podía hacerla hablar sin que nadie se lo pidiera; y frases cortas en español
   («Sí, claro.», «Hola, Sofía.») pasaban por inglés. Arreglados, cada uno con su test.
+- **El acta en la purga.** El brief pide que el estudiante pueda pedir el borrado del acta «como
+  cualquier otro dato suyo». Ya se iba con la cuenta y con la clase (FK en cascada, también su
+  práctica), pero la vista previa que el admin confirma no lo decía: ahora lista las actas y los sets
+  de práctica. **La descarga** de sus datos sigue siendo la de siempre para todo, el acta incluida:
+  una solicitud «Consulta sobre mis datos personales» en soporte (10 días hábiles), que se atiende a
+  mano; no hay exportación automática.
 
 ## Revisión de seguridad y permisos (22/09/2026)
 
