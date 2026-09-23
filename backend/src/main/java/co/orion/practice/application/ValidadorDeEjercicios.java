@@ -70,9 +70,14 @@ public final class ValidadorDeEjercicios {
                     String t = norma(g.terminoFuente());
                     List<String> opciones = new ArrayList<>();
                     p.path("options").forEach(o -> opciones.add(norma(o.asText())));
+                    // Anclar al acta admite la pista entre paréntesis; que se pueda acertar, no: entre
+                    // las opciones tiene que estar la esperada tal como la compara el Evaluador.
+                    Set<String> comoLasCompara = new HashSet<>();
+                    p.path("options").forEach(o -> comoLasCompara.add(Evaluador.normalizar(o.asText())));
                     yield terminos.contains(t) && t.equals(norma(g.expected()))
                             && p.path("sentence").asText("").contains("___")
-                            && opciones.size() >= 2 && opciones.size() <= 4 && opciones.contains(t);
+                            && opciones.size() >= 2 && opciones.size() <= 4 && opciones.contains(t)
+                            && comoLasCompara.contains(Evaluador.normalizar(g.expected()));
                 }
                 case MATCH_MEANING -> {
                     JsonNode esperado = JSON.readTree(g.expected());
@@ -84,9 +89,15 @@ public final class ValidadorDeEjercicios {
                     p.path("meanings").forEach(x -> ofrecidos.add(Evaluador.normalizar(x.asText())));
                     Set<String> esperados = new HashSet<>();
                     esperado.forEach(x -> esperados.add(Evaluador.normalizar(x.asText())));
+                    // Y las claves de la respuesta son los términos que se muestran, tal como los compara
+                    // el Evaluador: la pantalla arma la respuesta con los términos del payload.
+                    Set<String> mostrados = new HashSet<>();
+                    p.path("terms").forEach(x -> mostrados.add(Evaluador.normalizar(x.asText())));
+                    Set<String> claves = new HashSet<>();
+                    esperado.fieldNames().forEachRemaining(k -> claves.add(Evaluador.normalizar(k)));
                     yield ts.size() >= 2 && ts.size() <= 5 && terminos.containsAll(ts)
                             && p.path("meanings").size() == ts.size() && esperado.size() == ts.size()
-                            && ts.stream().allMatch(t -> tieneClave(esperado, t)) && esperados.equals(ofrecidos);
+                            && claves.equals(mostrados) && esperados.equals(ofrecidos);
                 }
                 case FIX_SENTENCE -> !vacio(material.recurringIssues()) && !vacio(p.path("sentence").asText(null))
                         && !vacio(g.expected()) && !norma(g.expected()).equals(norma(p.path("sentence").asText()));
@@ -107,15 +118,6 @@ public final class ValidadorDeEjercicios {
         }
     }
 
-    private static boolean tieneClave(JsonNode objeto, String terminoNormalizado) {
-        var nombres = objeto.fieldNames();
-        while (nombres.hasNext()) {
-            if (norma(nombres.next()).equals(terminoNormalizado)) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     private static boolean vacio(String s) {
         return s == null || s.isBlank();

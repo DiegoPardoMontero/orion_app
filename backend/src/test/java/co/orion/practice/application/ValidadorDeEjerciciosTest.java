@@ -81,6 +81,30 @@ class ValidadorDeEjerciciosTest {
         assertThat(ValidadorDeEjercicios.validos(List.of(escribir), conPista, 4)).hasSize(1);
     }
 
+    /**
+     * Anclar al acta admite la pista entre paréntesis, pero el Evaluador compara sin quitarla: si la
+     * esperada la trae y las opciones no, ninguna opción sería correcta.
+     */
+    @Test
+    @DisplayName("Con la pista entre paréntesis, solo pasa lo que el Evaluador puede dar por bueno")
+    void pistaYEvaluador() {
+        Material conPista = new Material("EN", "x", null, null,
+                List.of(new Material.Termino("get used to (+ing)", "acostumbrarse a"),
+                        new Material.Termino("deadline", "fecha límite")), null, null);
+        String opciones = "{\"sentence\":\"I can't ___ waking up early.\",\"options\":[\"get used to\",\"used to\"]}";
+        Generado huecoBien = new Generado(PracticeItemType.FILL_BLANK, "Completa.", opciones, "get used to",
+                "Así se dice.", "get used to (+ing)");
+        Generado huecoImposible = new Generado(PracticeItemType.FILL_BLANK, "Completa.", opciones,
+                "get used to (+ing)", "Así se dice.", "get used to (+ing)");
+        Generado unirImposible = new Generado(PracticeItemType.MATCH_MEANING, "Une.",
+                "{\"terms\":[\"get used to (+ing)\",\"deadline\"],\"meanings\":[\"acostumbrarse a\",\"fecha límite\"]}",
+                "{\"get used to\":\"acostumbrarse a\",\"deadline\":\"fecha límite\"}", "Las dos de clase.", null);
+
+        assertThat(ValidadorDeEjercicios.validos(List.of(huecoBien), conPista, 4)).hasSize(1);
+        assertThat(ValidadorDeEjercicios.validos(List.of(huecoImposible), conPista, 4)).isEmpty();
+        assertThat(ValidadorDeEjercicios.validos(List.of(unirImposible), conPista, 4)).isEmpty();
+    }
+
     @Test
     @DisplayName("Un ejercicio mal formado se descarta él solo, no el set entero")
     void malFormado() {
