@@ -12,14 +12,14 @@ import { Wordmark } from "./marca";
 /**
  * Cabecera pública del marketplace. Isla cliente porque cambia según la sesión: con sesión ofrece
  * "Ir a mi panel"; sin ella, "Iniciar sesión" + "Crear cuenta". Consulta /auth/me de forma OPCIONAL
- * (401 = anónimo, sin redirigir) reusando la misma queryKey que `HeroCta` para no pedirlo dos veces.
+ * (401 = anónimo, sin redirigir) reusando la misma queryKey que `EnsenaCta` para no pedirlo dos veces.
  *
- * "Encuentra un profesor" lleva a /profesores (el marketplace vive en la zona autenticada: un
- * anónimo cae en /login). Las demás entradas son anclas de la portada, salvo "Enseña en Orión".
+ * "Encuentra un profesor" lleva a /profesores, que se ve sin cuenta desde el 23/09/2026 (reservar
+ * sí la pide). Las demás entradas son anclas de la portada, salvo "Enseña en Orión".
  */
 const ENLACES = [
   { href: "/profesores", label: "Encuentra un profesor" },
-  { href: "/#idiomas", label: "Idiomas" },
+  { href: "/#metodo", label: "Método ORION" },
   { href: "/#como-funciona", label: "Cómo funciona" },
   { href: "/ensena-con-orion", label: "Enseña en Orión" },
   { href: "/#nosotros", label: "Nosotros" },

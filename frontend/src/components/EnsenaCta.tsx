@@ -12,7 +12,7 @@ import { type Me } from "@/lib/auth/session";
  * ajusta el copy y deja al recién registrado en su postulación en vez de en el buscador. Postularse
  * siempre exige cuenta: la postulación cuelga de un usuario.
  */
-export function EnsenaCta({ className = "" }: { className?: string }) {
+export function EnsenaCta({ className = "", etiqueta }: { className?: string; etiqueta?: string }) {
   const { data: me } = useQuery({
     queryKey: ["auth", "me", "landing"],
     queryFn: () => apiFetch<Me>("/api/v1/auth/me", { redirectOn401: false }),
@@ -21,7 +21,7 @@ export function EnsenaCta({ className = "" }: { className?: string }) {
   });
 
   const href = me ? "/aplicacion" : "/registro?rol=profesor";
-  const texto = me ? "Empieza tu postulación" : "Crea tu cuenta y postúlate";
+  const texto = me ? "Empieza tu postulación" : (etiqueta ?? "Crea tu cuenta y postúlate");
 
   return (
     <Link

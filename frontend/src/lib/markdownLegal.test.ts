@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseInline, parseMarkdown } from "./markdownLegal";
+import { parseInline, parseMarkdown, anclaDe } from "./markdownLegal";
 
 describe("parseInline", () => {
   it("deja el texto plano intacto", () => {
@@ -86,5 +86,12 @@ describe("parseMarkdown", () => {
 
   it("ignora las líneas en blanco sobrantes", () => {
     expect(parseMarkdown("\n\n\n## Solo\n\n\n")).toHaveLength(1);
+  });
+});
+
+describe("anclaDe", () => {
+  it("un encabezado numerado da un ancla sin número ni tildes", () => {
+    expect(anclaDe([{ tipo: "texto", texto: "7. Cancelaciones y reprogramación" }])).toBe("cancelaciones-y-reprogramacion");
+    expect(anclaDe([{ tipo: "texto", texto: "Qué datos tratamos" }])).toBe("que-datos-tratamos");
   });
 });

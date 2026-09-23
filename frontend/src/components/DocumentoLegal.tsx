@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Fragment } from "react";
 import type { Bloque, Inline } from "@/lib/markdownLegal";
-import { parseMarkdown } from "@/lib/markdownLegal";
+import { anclaDe, parseMarkdown } from "@/lib/markdownLegal";
 
 export type DocumentoLegalData = {
   code: string;
@@ -47,7 +47,7 @@ function BloqueLegal({ bloque }: { bloque: Bloque }) {
   switch (bloque.tipo) {
     case "titulo":
       return bloque.nivel === 2 ? (
-        <h2 className="mt-9 font-display text-[20px] font-bold leading-snug lg:text-[22px]">
+        <h2 id={anclaDe(bloque.contenido)} className="mt-9 scroll-mt-24 font-display text-[20px] font-bold leading-snug lg:text-[22px]">
           <Inlines contenido={bloque.contenido} />
         </h2>
       ) : (

@@ -51,7 +51,7 @@ test.describe("Diagnóstico de confianza", () => {
   }) => {
     // 1 · La portada lleva al diagnóstico, y la puerta lleva a hablar: sin cuenta y sin pasos.
     await page.goto("/");
-    await page.getByRole("link", { name: "Empezar mi diagnóstico" }).first().click();
+    await page.getByRole("link", { name: "Hacer mi diagnóstico gratis" }).first().click();
     await expect(page).toHaveURL(/\/diagnostico$/);
     await page.getByRole("link", { name: "Empezar con Meissa" }).click();
     await expect(page).toHaveURL(/\/diagnostico\/empezar/);

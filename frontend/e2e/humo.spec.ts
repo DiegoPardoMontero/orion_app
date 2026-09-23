@@ -316,14 +316,25 @@ test("recuperar contraseña: pide enlace y rechaza un token inválido", async ({
   await expect(page.getByText(/no es válido|expiró/i)).toBeVisible();
 });
 
-test("la landing pública lleva al registro en un clic", async ({ page }) => {
+/**
+ * La portada de Sofía (23/09/2026): el buscador rápido lleva al directorio ya filtrado y sin pedir
+ * cuenta —«Trabajo» son negocios y entrevistas; «Fin de semana», sábado y domingo—, y crear la
+ * cuenta sigue a un clic desde la cabecera.
+ */
+test("la portada: del buscador al directorio sin cuenta, y a crear la cuenta en un clic", async ({ page }) => {
   await page.goto("/");
-  // El titular dice qué es Orión (22/09/2026). El botón "Crea tu cuenta" de la fila del hero (isla
-  // HeroCta, anónimo) sigue siendo el enlace del funnel hacia /registro.
-  await expect(
-    page.getByRole("heading", { name: /academia de inglés especializada/i }),
-  ).toBeVisible();
-  await page.getByRole("link", { name: "Crea tu cuenta" }).first().click();
+  await expect(page.getByRole("heading", { name: "Encuentra tu profesor. Aprende a tu manera." })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Hacer mi diagnóstico gratis" }).first()).toBeVisible();
+
+  await page.getByRole("radio", { name: "Trabajo" }).click();
+  await page.getByRole("radio", { name: "Fin de semana" }).click();
+  await page.getByRole("link", { name: "Ver profesores disponibles" }).click();
+  await expect(page).toHaveURL(/\/profesores\?goal=BUSINESS&goal=INTERVIEW&day=SATURDAY&day=SUNDAY/);
+  await expect(page.getByRole("heading", { name: "Profesores" })).toBeVisible();
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page.getByRole("link", { name: "Crear cuenta" }).click();
   await expect(page).toHaveURL(/\/registro/);
 });
 

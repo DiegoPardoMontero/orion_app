@@ -166,7 +166,7 @@ export default function LoginPage() {
           <div className="mt-5 flex items-start gap-3 rounded-base border border-border bg-surface-sunken px-4 py-3.5">
             <GraduationCap size={18} strokeWidth={1.75} className="mt-0.5 shrink-0 text-primary" />
             <p className="text-[13px] leading-relaxed text-text-secondary">
-              ¿Enseñas idiomas?{" "}
+              ¿Enseñas inglés?{" "}
               <Link
                 href="/registro?rol=profesor"
                 className="font-bold text-primary-strong hover:underline"

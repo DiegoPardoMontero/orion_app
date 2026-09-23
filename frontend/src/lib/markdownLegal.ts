@@ -130,3 +130,20 @@ export function parseMarkdown(fuente: string): Bloque[] {
 
   return bloques;
 }
+
+/**
+ * El ancla de un encabezado, para enlazar a una sección desde fuera: «7. Cancelaciones y
+ * reprogramación» es `#cancelaciones-y-reprogramacion`. Sin el número, que puede moverse si se
+ * inserta una sección antes, y sin tildes.
+ */
+export function anclaDe(contenido: Inline[]): string {
+  return contenido
+    .map((i) => i.texto)
+    .join("")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/^\s*\d+[.)]?\s*/, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}

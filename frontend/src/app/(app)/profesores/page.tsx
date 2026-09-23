@@ -123,8 +123,8 @@ export default function ProfesoresPage() {
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_INICIALES);
   const [hojaAbierta, setHojaAbierta] = useState(false);
 
-  // Filtros iniciales desde la URL (el buscador del hero y las landings por idioma enlazan aquí con
-  // ?language=&goal=&level=&schedule=). Se lee una sola vez al montar, en cliente, para no chocar
+  // Filtros iniciales desde la URL (el buscador de la portada y las landings por idioma enlazan aquí
+  // con ?language=&goal=&level=&schedule=&day=; «Fin de semana» llega como sábado y domingo). Se lee una sola vez al montar, en cliente, para no chocar
   // con la hidratación. `schedule` llevaba tiempo viajando sin que nadie lo recogiera, porque el
   // backend no filtraba por franja horaria; ahora sí, y por fin significa algo.
   useEffect(() => {
@@ -133,9 +133,10 @@ export default function ProfesoresPage() {
     const goals = params.getAll("goal").filter(Boolean);
     const levels = params.getAll("level").filter(Boolean);
     const schedule = params.get("schedule");
+    const days = params.getAll("day").filter((d) => DIAS.some((dia) => dia.valor === d));
     const franja: Franja =
       schedule === "MORNING" || schedule === "AFTERNOON" || schedule === "EVENING" ? schedule : "";
-    if (!language && goals.length === 0 && levels.length === 0 && !franja) return;
+    if (!language && goals.length === 0 && levels.length === 0 && !franja && days.length === 0) return;
     // Siembra única desde la URL al montar; a partir de aquí manda el usuario. El setState en el
     // efecto es deliberado (sincronizar con un sistema externo: la query string) y solo corre una vez.
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -145,6 +146,7 @@ export default function ProfesoresPage() {
       goals: goals.length > 0 ? goals : prev.goals,
       levels: levels.length > 0 ? levels : prev.levels,
       schedule: franja || prev.schedule,
+      days: days.length > 0 ? days : prev.days,
     }));
   }, []);
 
