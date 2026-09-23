@@ -30,8 +30,8 @@ dentro de `/cuenta`).
 
 ## Verificación
 Al 23/09/2026, sobre `master` con el Bloque 10 completo (Partes A y B) y su revisión:
-- Backend: `./mvnw verify` (Testcontainers) — **323 unitarios + 499 de integración**, verde.
-- Frontend: `tsc` + `lint` verdes; **68 tests de Vitest**.
+- Backend: `./mvnw verify` (Testcontainers) — **326 unitarios + 499 de integración**, verde.
+- Frontend: `tsc` + `lint` verdes; **70 tests de Vitest**.
 - **E2E Playwright: 20 de 21**, sobre base recreada (`docker compose down -v`): el acta escrita,
   editada y publicada, la práctica de Ana con su cierre y lo que ve María, y el acta a mano con la IA
   caída. El que falta sigue siendo el paso por la pasarela: exige llaves de *sandbox* de Wompi en el
@@ -609,6 +609,12 @@ venían de antes. Todos quedaron arreglados, cada uno con su test. Los más seri
   y lo cobraba.
 - **Traducción de Meissa**: una frase en inglés con un nombre o un lugar con tilde («Tell me more,
   Sofía», «the traffic in Bogotá») se tomaba por español y no se traducía.
+- **Una segunda revisión, sobre los propios arreglos**, encontró cuatro más: un 400 del proveedor
+  (por el contenido de un acta) se trataba como caída, así que ese set no gastaba nunca sus intentos
+  y, siendo el más viejo, frenaba la generación de todos los demás; el validador relajado aceptaba
+  ejercicios con la pista entre paréntesis que el evaluador nunca daría por buenos; un reintento de
+  Meissa pendiente podía hacerla hablar sin que nadie se lo pidiera; y frases cortas en español
+  («Sí, claro.», «Hola, Sofía.») pasaban por inglés. Arreglados, cada uno con su test.
 
 ## Revisión de seguridad y permisos (22/09/2026)
 
