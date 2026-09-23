@@ -29,12 +29,16 @@ dentro de `/cuenta`).
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots), con Rigel de protagonista.
 
 ## Verificación
-Al 22/09/2026, sobre `master` con la revisión de seguridad y la Parte A del Bloque 10:
-- Backend: `./mvnw verify` (Testcontainers) — **280 unitarios + 477 de integración**, verde.
-- Frontend: `next build` + `tsc` + `lint` verdes; **50 tests de Vitest**.
-- **E2E Playwright: 18 de 19**, sobre base recreada (`docker compose down -v`). El que falta sigue
-  siendo el paso por la pasarela: exige llaves de *sandbox* de Wompi en el entorno. El del acta
-  necesita la clase que la semilla local cierra «ahora» (la única posterior a la V48).
+Al 23/09/2026, sobre `master` con el Bloque 10 completo (Partes A y B) y su revisión:
+- Backend: `./mvnw verify` (Testcontainers) — **319 unitarios + 499 de integración**, verde.
+- Frontend: `tsc` + `lint` verdes; **68 tests de Vitest**.
+- **E2E Playwright: 20 de 21**, sobre base recreada (`docker compose down -v`): el acta escrita,
+  editada y publicada, la práctica de Ana con su cierre y lo que ve María, y el acta a mano con la IA
+  caída. El que falta sigue siendo el paso por la pasarela: exige llaves de *sandbox* de Wompi en el
+  entorno. Los del acta necesitan las clases que la semilla local cierra «ahora» (las únicas
+  posteriores a la V48).
+
+Al 22/09/2026, con la revisión de seguridad y la Parte A, eran 280 + 477, 50 de Vitest y 18 de 19.
 
 Al 08/09/2026, con el Bloque 9 recién mezclado, eran 161 + 380 y 15 de 16. En esa tanda se
 actualizaron las tres casillas del registro y la verificación de correo —que se hace por el camino
@@ -561,6 +565,45 @@ pedía confirmarlo con Sofía; lo decidió él).
   completadas y **vencidas sin hacer** en 30 días (si vencen más de las que se completan, se marca:
   la práctica no engancha), las que no lograron ejercicios anclados y el gasto de hoy contra el tope.
 
+## Revisión de lo construido en la noche del 22 al 23/09/2026
+
+Una revisión de solo lectura de todo lo de esa noche (traducción, v5, dictado, C1, Parte B)
+encontró diez defectos, y buscar el patrón del primero por todo el backend encontró otros tres que
+venían de antes. Todos quedaron arreglados, cada uno con su test. Los más serios:
+
+- **Las dos retenciones del diagnóstico nunca habían corrido.** `LeadRetentionJob` y
+  `TranscriptRetentionJob` tenían la transacción en el método que llamaba el propio `run()`, y una
+  llamada dentro de la misma clase se salta el proxy de Spring: cada madrugada morían con «No active
+  transaction for update or delete query». Ni se borraban los leads sin reclamar a los 30 días ni
+  se limpiaban las transcripciones al vencer el plazo o al revocar el consentimiento. Los tests
+  llamaban a `purgar()` directamente y por eso pasaban. Ahora la transacción va por
+  `TransactionTemplate`, y los tests entran por `run()`, como el programador de tareas. **La
+  primera corrida en producción se pone al día sola** (borra todo lo vencido de una vez).
+- **El cierre automático de clases** tenía el mismo defecto, y es el job del que depende que el
+  profesor cobre. El cierre y la liberación del pago iban cada uno en su transacción —si la segunda
+  fallaba, la clase quedaba cerrada con el dinero retenido y el job ya no volvía a pasar por ella— y
+  `LessonCompletedEvent` salía sin transacción: una clase cerrada por el job, y no por el profesor,
+  no le daba sus puntos al estudiante. Ahora cada clase se cierra en una sola transacción, como
+  decía su comentario. Se buscó el mismo patrón en todo el backend: no queda otro caso.
+- **El recordatorio del acta** tenía el mismo defecto: marcaba la clase como recordada y el aviso
+  —que sale después del commit, y sin transacción no hay commit— se perdía. Como no insiste nunca,
+  no le llegaba a ningún profesor.
+- **Una caída de OpenAI ya no deja sin práctica a nadie.** Un timeout o un 5xx contaba como intento
+  de generación, y con el trabajo cada minuto, tres minutos de caída marcaban FAILED todos los sets
+  pendientes. Ahora el set sigue pendiente sin gastar intento, la corrida se detiene, y el gasto se
+  escribe en su propia transacción (antes un rollback lo borraba y el tope no lo veía).
+- **Práctica**: la frase propia con un término con guion (`check-in`, `T-shirt`) o con pista entre
+  paréntesis ya se puede acertar; «emparejar» se descarta si el modelo parafrasea un significado
+  (no habría forma de acertar); en «corregir», las otras correcciones válidas ya no viajan mientras
+  el ejercicio está abierto; y terminar un set exige haber respondido todos (422): los puntos y la
+  semana de racha son por practicar, no por llamar al endpoint.
+- **Pantallas**: la invitación dejaba ver un set ya terminado hasta recargar (el 204 de
+  `/me/practice` no es un dato para TanStack); un dictado largo podía pasar las notas de 2.000
+  caracteres y «Generar acta» fallaba sin decir por qué; salir a mitad de un dictado igual lo subía
+  y lo cobraba.
+- **Traducción de Meissa**: una frase en inglés con un nombre o un lugar con tilde («Tell me more,
+  Sofía», «the traffic in Bogotá») se tomaba por español y no se traducía.
+
 ## Revisión de seguridad y permisos (22/09/2026)
 
 Recorrido de todo el backend y el frontend: autorización por endpoint, IDOR, CSRF, cookies,
@@ -608,7 +651,9 @@ su test; lo que cambia el comportamiento o pide una decisión está abajo, en Pe
 - ~~Los textos legales no los ha revisado un abogado.~~ **Revisados**: Pardo confirma el 22/09/2026
   que un abogado los leyó y están bien. Queda un dato para la próxima versión: la sección 4 de la
   política (con quién se comparten los datos) no nombra a OpenAI, que recibe la voz del
-  diagnóstico, ni a 8x8, que aloja las clases.
+  diagnóstico, ni a 8x8, que aloja las clases. Desde el 23/09 OpenAI recibe además el dictado del
+  profesor (su voz), sus notas de la clase y el contenido del acta publicada, del que sale la
+  práctica; nunca el nombre ni el correo del estudiante, pero sí lo que el profesor diga de él.
 - **Retracto sin flujo propio**: ver el Bloque 9. Se atiende por ticket, a mano.
 - **Subida de fotos y documentos en local**: exige `CLOUDINARY_URL` en el entorno. Sin ella la API
   responde 503 con un mensaje legible (antes era un 500 sin explicación), pero el wizard de
@@ -638,8 +683,9 @@ su test; lo que cambia el comportamiento o pide una decisión está abajo, en Pe
 - **Límite de tasa de OpenAI**: la organización tiene 40.000 tokens por minuto en el modelo de
   voz, y cada respuesta de Meissa gasta unos 2.800 porque relee el guion entero. Con dos o tres
   diagnósticos a la vez se alcanza, y entonces la respuesta llega como `response.done` con estado
-  `failed`: el navegador no lo trata, así que Meissa simplemente se calla. Visto el 22/09 en la
-  prueba del guion v4.
+  `failed`. Visto el 22/09 en la prueba del guion v4. **Desde el 23/09 el navegador lo trata**: la
+  vuelve a pedir tras 2, 4 y 8 s y, a la tercera, avisa con su botón de reintentar, en vez de dejar a
+  Meissa callada. El límite sigue ahí: subirlo es pedírselo a OpenAI (sube solo con el gasto).
 - **El avatar personalizado solo lo ve su dueño.** Que otros lo vean en sus listas exige embeber la
   personalización en dos DTOs y añade una consulta a los endpoints que pintan listas.
 - **Bloque 10**: de la Parte A, una desviación consciente: el acta se escribe en su propia pantalla
