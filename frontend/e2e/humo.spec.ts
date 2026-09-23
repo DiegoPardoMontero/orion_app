@@ -146,6 +146,30 @@ test("un estudiante nuevo se registra desde el login y aterriza dentro", async (
   await expect(page.getByRole("heading", { name: "Profesores" })).toBeVisible();
 });
 
+/**
+ * Sin cuenta (decisión del 23/09/2026): el catálogo y el perfil de un profesor se ven —es el enlace
+ * que el profesor comparte en sus redes—, y reservar pide entrar; al entrar, se vuelve al mismo
+ * perfil, ya con su agenda.
+ */
+test("sin cuenta se ven los profesores; al entrar para reservar, vuelve al mismo perfil", async ({ page }) => {
+  await page.goto("/profesores");
+  await page.getByRole("link", { name: /Ver agenda/ }).first().click();
+  await page.waitForURL(/\/profesores\/[0-9a-f-]+$/);
+  const perfil = new URL(page.url()).pathname;
+  await expect(page.getByText("Reserva tu clase")).toBeVisible();
+
+  await page.getByRole("link", { name: "Ya tengo cuenta" }).click();
+  await expect(page).toHaveURL(/\/login\?volver=/);
+  await page.waitForLoadState("networkidle");
+  await page.locator("#email").fill(USERS.ana.email);
+  await page.locator("#password").fill(USERS.ana.pass);
+  await page.getByRole("button", { name: "Entrar" }).click();
+
+  await page.waitForURL((u) => u.pathname === perfil);
+  await expect(page.getByText("Cupos disponibles")).toBeVisible();
+  await logout(page);
+});
+
 test("un estudiante edita su perfil y persiste", async ({ page }) => {
   await login(page, USERS.ana);
   // Esperar a que el login termine (sesión establecida) antes de navegar, o /cuenta rebota a login.

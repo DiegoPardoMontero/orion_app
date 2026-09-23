@@ -41,6 +41,8 @@ import type {
   SlotsResponse,
 } from "@/lib/api/types";
 import { useMe } from "@/lib/auth/session";
+import { entrarYVolver } from "@/lib/auth/volver";
+import { primerNombre } from "@/lib/practica";
 import {
   diaBogota,
   esGratis,
@@ -65,9 +67,13 @@ export default function AgendaProfesorPage() {
   const esDesktop = useMediaQuery("(min-width: 1024px)");
   const { data: me } = useMe();
   const cifras = useCifras();
+  // El perfil se ve sin cuenta (es el enlace que el profesor comparte); los horarios, reservar y
+  // escribir, no: sin sesión esas llamadas ni se hacen, y en su lugar se invita a crear la cuenta.
+  const conSesion = !!me;
+  const aqui = `/profesores/${id}`;
 
-  // Abrir (o reencontrar) la conversación con este profesor y saltar a su hilo. Un usuario anónimo
-  // —que en teoría no llega hasta aquí, porque la ruta es del estudiante— iría a iniciar sesión.
+  // Abrir (o reencontrar) la conversación con este profesor y saltar a su hilo. Sin cuenta, primero
+  // se crea, y al terminar se vuelve a este perfil.
   const abrirConversacion = useMutation({
     mutationFn: () =>
       apiFetch<ConversationSummary>("/api/v1/conversations", {
@@ -99,6 +105,7 @@ export default function AgendaProfesorPage() {
   const cupos = useQuery({
     queryKey: ["slots", id],
     queryFn: () => apiFetch<SlotsResponse>(`/api/v1/professors/${id}/slots`),
+    enabled: conSesion,
   });
 
   // El saldo a favor se descuenta antes de cobrar, así que el desglose se puede anticipar aquí
@@ -149,7 +156,8 @@ export default function AgendaProfesorPage() {
 
   const errorReserva = reservar.error instanceof ApiError ? reservar.error.message : null;
 
-  if (profesor.isPending || cupos.isPending) {
+  // Sin sesión la consulta de cupos está apagada y en TanStack v5 eso es «pendiente» para siempre.
+  if (profesor.isPending || (conSesion && cupos.isPending)) {
     return (
       <main className="mx-auto w-full max-w-md px-7 py-6 lg:max-w-[1180px] lg:px-12 lg:py-8">
         <Cargando filas={4} />
@@ -365,7 +373,7 @@ export default function AgendaProfesorPage() {
                 disabled={abrirConversacion.isPending}
                 onClick={() => {
                   if (!me) {
-                    router.push("/login");
+                    router.push(entrarYVolver("/registro", aqui));
                     return;
                   }
                   abrirConversacion.mutate();
@@ -486,7 +494,9 @@ export default function AgendaProfesorPage() {
 
         {/* Columna de agenda */}
         <section className="mt-5 lg:mt-6 lg:rounded-card lg:bg-surface-raised lg:p-9 lg:shadow-lg">
-          {cupos.isError ? (
+          {!conSesion ? (
+            <ReservarConCuenta nombre={detalle.fullName ?? null} aqui={aqui} />
+          ) : cupos.isError ? (
             <ErrorCarga mensaje="No pudimos cargar la agenda." onReintentar={() => void cupos.refetch()} />
           ) : esDesktop ? (
             <div className="space-y-5">
@@ -555,6 +565,35 @@ export default function AgendaProfesorPage() {
 
       <SeccionResenas profesorId={id} />
     </main>
+  );
+}
+
+/**
+ * Lo que ve quien llega sin cuenta —por el buscador de la portada o por el enlace del profesor— donde
+ * iría la agenda: los horarios y la reserva piden cuenta, y al crearla o entrar vuelve aquí mismo.
+ */
+function ReservarConCuenta({ nombre, aqui }: { nombre: string | null; aqui: string }) {
+  const quien = nombre ? primerNombre(nombre) : "este profesor";
+  return (
+    <Bloque tono="melocoton" titulo="Reserva tu clase" icono={<Calendar size={16} strokeWidth={1.75} />}>
+      <p className="text-[14.5px] leading-relaxed">
+        Crea tu cuenta gratis para ver los horarios de {quien} y reservar. Pagas solo la clase que reservas.
+      </p>
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <Link
+          href={entrarYVolver("/registro", aqui)}
+          className="inline-flex min-h-11 flex-1 items-center justify-center rounded-pill bg-primary px-5 text-[15px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus"
+        >
+          Crear mi cuenta gratis
+        </Link>
+        <Link
+          href={entrarYVolver("/login", aqui)}
+          className="inline-flex min-h-11 flex-1 items-center justify-center rounded-pill border-[1.5px] border-border px-5 text-[15px] font-bold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
+        >
+          Ya tengo cuenta
+        </Link>
+      </div>
+    </Bloque>
   );
 }
 

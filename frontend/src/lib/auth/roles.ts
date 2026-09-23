@@ -194,6 +194,15 @@ const ACCESS: { prefix: string; roles: Role[] }[] = [
 ];
 
 /**
+ * Lo que se ve sin cuenta: el catálogo y el perfil de cada profesor (decisión del 23/09/2026). Así
+ * funcionan el buscador de la portada y el enlace que un profesor comparte en sus redes. Ver horarios,
+ * reservar y escribir siguen pidiendo cuenta: esas llamadas del backend están tras sesión.
+ */
+export function esRutaPublica(pathname: string): boolean {
+  return /^\/profesores(\/[^/]+)?\/?$/.test(pathname);
+}
+
+/**
  * La guarda del cliente es comodidad, no seguridad: quien la salte se topa igual con el 403 del
  * backend, que es quien de verdad decide. Aquí solo evitamos enseñar una pantalla que no aplica.
  */

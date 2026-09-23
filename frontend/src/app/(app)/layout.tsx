@@ -41,6 +41,7 @@ import { Boton } from "@/components/ui";
 import { useMiAplicacion } from "@/lib/aplicacion";
 import {
   canAccess,
+  esRutaPublica,
   HOME_BY_ROLE,
   NAV_BY_ROLE,
   TABS_BY_ROLE,
@@ -52,6 +53,7 @@ import { useLogout, useMe } from "@/lib/auth/session";
 import { useCerrarConEscape } from "@/lib/useCerrarConEscape";
 import { useMensajesNoLeidos } from "@/lib/mensajeria";
 import { MiAvatar } from "@/components/gamificacion/MiAvatar";
+import { NavPublica } from "@/components/NavPublica";
 
 /** Cada ruta lleva su ícono; el activo va relleno para no marcarse solo por color. */
 const ICONO: Record<string, LucideIcon> = {
@@ -113,15 +115,27 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const tieneMensajeria = me?.role === "STUDENT" || me?.role === "PROFESSOR";
   const noLeidosMensajes = useMensajesNoLeidos(tieneMensajeria);
 
+  // El catálogo y el perfil de un profesor se ven sin cuenta: ahí, sin sesión, no se salta al login.
+  const publica = esRutaPublica(pathname);
+
   useEffect(() => {
     if (isError) {
-      router.replace("/login");
+      if (!publica) router.replace("/login");
       return;
     }
     if (me && !allowed) {
       router.replace(HOME_BY_ROLE[me.role]);
     }
-  }, [isError, me, allowed, router]);
+  }, [isError, me, allowed, router, publica]);
+
+  if (isError && publica) {
+    return (
+      <div className="flex min-h-dvh flex-col">
+        <NavPublica />
+        <div className="flex-1">{children}</div>
+      </div>
+    );
+  }
 
   if (isPending || !me || !allowed) {
     return (

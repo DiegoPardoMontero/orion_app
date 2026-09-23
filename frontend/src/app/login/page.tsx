@@ -10,6 +10,7 @@ import { Rigel } from "@/components/Rigel";
 import { BotonPrincipal, Campo, Spinner } from "@/components/ui";
 import { ApiError } from "@/lib/api/fetch";
 import { destinoAlEntrar } from "@/lib/auth/roles";
+import { destinoSeguro, entrarYVolver } from "@/lib/auth/volver";
 import { useLogin } from "@/lib/auth/session";
 import { BotonesSociales } from "@/components/BotonesSociales";
 
@@ -24,8 +25,14 @@ export default function LoginPage() {
     event.preventDefault();
     login.mutate(
       { email, password },
-      // Cada rol aterriza donde le sirve: el estudiante a explorar, la profesora a sus clases.
-      { onSuccess: (me) => router.replace(destinoAlEntrar(me.role)) },
+      // Cada rol aterriza donde le sirve: el estudiante a explorar, la profesora a sus clases. Y el
+      // estudiante que venía de reservar en un perfil, de vuelta a ese perfil.
+      {
+        onSuccess: (me) => {
+          const volver = destinoSeguro(new URLSearchParams(window.location.search).get("volver"));
+          router.replace(volver && me.role === "STUDENT" ? volver : destinoAlEntrar(me.role));
+        },
+      },
     );
   }
 
@@ -143,9 +150,15 @@ export default function LoginPage() {
 
           <p className="mt-6 text-center text-[13px] text-text-secondary">
             ¿Primera vez?{" "}
-            <Link href="/registro" className="font-bold text-primary-strong hover:underline">
-              Crea tu cuenta
-            </Link>
+            <Suspense
+              fallback={
+                <Link href="/registro" className="font-bold text-primary-strong hover:underline">
+                  Crea tu cuenta
+                </Link>
+              }
+            >
+              <EnlaceARegistro />
+            </Suspense>
           </p>
 
           {/* El profesor que llega aquí por el boca a boca no tiene por qué saber que el camino
@@ -187,5 +200,18 @@ function AvisoSocial() {
     <div className="mt-4">
       <AvisoError mensaje={MOTIVO_SOCIAL[motivo] ?? MOTIVO_SOCIAL.error} />
     </div>
+  );
+}
+
+/** «Crea tu cuenta» conserva a dónde volver: quien venía de un perfil vuelve a él tras registrarse. */
+function EnlaceARegistro() {
+  const volver = destinoSeguro(useSearchParams().get("volver"));
+  return (
+    <Link
+      href={volver ? entrarYVolver("/registro", volver) : "/registro"}
+      className="font-bold text-primary-strong hover:underline"
+    >
+      Crea tu cuenta
+    </Link>
   );
 }

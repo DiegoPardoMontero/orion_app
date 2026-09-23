@@ -11,6 +11,7 @@ import { Rigel, type RigelPose } from "@/components/Rigel";
 import { BotonPrincipal, Campo, Segmento, Spinner } from "@/components/ui";
 import { ApiError } from "@/lib/api/fetch";
 import { destinoAlEntrar } from "@/lib/auth/roles";
+import { destinoSeguro, entrarYVolver } from "@/lib/auth/volver";
 import { useRegister } from "@/lib/auth/session";
 import { fuerzaClave } from "@/lib/password";
 import { Consentimiento } from "@/components/Consentimiento";
@@ -66,7 +67,10 @@ function Registro() {
 
   // ?rol=profesor llega desde la portada, el login y "Enseña en Orión". Es solo el valor inicial:
   // quien caiga aquí por error cambia de pestaña sin tener que volver atrás.
-  const rolInicial = useSearchParams().get("rol");
+  const params = useSearchParams();
+  const rolInicial = params.get("rol");
+  // Quien venía de reservar en un perfil sin cuenta vuelve a ese perfil (solo si viene a aprender).
+  const volver = destinoSeguro(params.get("volver"));
   const [intencion, setIntencion] = useState<Intencion>(
     rolInicial === "profesor" ? "ensenar" : "aprender",
   );
@@ -115,7 +119,7 @@ function Registro() {
         // buscador. Sin esto un profesor recién registrado aterrizaría en el marketplace de
         // estudiantes a buscarse a sí mismo.
         onSuccess: (me) =>
-          router.replace(intencion === "ensenar" ? "/aplicacion" : destinoAlEntrar(me.role)),
+          router.replace(intencion === "ensenar" ? "/aplicacion" : (volver ?? destinoAlEntrar(me.role))),
       },
     );
   }
@@ -331,7 +335,7 @@ function Registro() {
 
           <p className="mt-6 text-center text-[13px] text-text-secondary">
             ¿Ya tienes cuenta?{" "}
-            <Link href="/login" className="font-bold text-primary-strong hover:underline">
+            <Link href={volver ? entrarYVolver("/login", volver) : "/login"} className="font-bold text-primary-strong hover:underline">
               Entra
             </Link>
           </p>

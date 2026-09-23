@@ -38,11 +38,20 @@ export const meQueryKey = ["auth", "me"] as const;
  * todas las pantallas la leen de la caché. Al hacer login o logout invalidamos esa clave y
  * Query la vuelve a pedir sola.
  */
+/**
+ * Quién soy. Sin sesión, la respuesta es un 401 y se queda como error, sin saltar al login: el
+ * catálogo y el perfil de un profesor se ven sin cuenta, y la guarda de la zona privada ya manda al
+ * login cuando la ruta no es pública.
+ */
 export function useMe() {
   return useQuery({
     queryKey: meQueryKey,
-    queryFn: () => apiFetch<Me>("/api/v1/auth/me"),
+    queryFn: () => apiFetch<Me>("/api/v1/auth/me", { redirectOn401: false }),
     retry: false,
+    // Sin esto, cada componente que monta useMe vuelve a preguntar tras el 401, y como sin datos la
+    // consulta vuelve a «pendiente», la guarda mostraba «Cargando…», desmontaba la página, el 401
+    // la volvía a montar… en bucle. Entrar o salir ya actualizan esta consulta a mano.
+    retryOnMount: false,
   });
 }
 
