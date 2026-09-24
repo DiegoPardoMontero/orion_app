@@ -57,6 +57,7 @@ import { etiquetaNivel, etiquetaObjetivo } from "@/lib/i18n";
 import { aplicarSaldo } from "@/lib/saldo";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import { minutos, useCifras } from "@/lib/cifras";
+import { paisConBandera } from "@/lib/paises";
 
 export default function AgendaProfesorPage() {
   // En Next 16 los params de página son una Promise; en un client component se leen con este hook.
@@ -513,7 +514,7 @@ export default function AgendaProfesorPage() {
               {(detalle.city || detalle.countryCode) && (
                 <div className="flex items-start gap-2 text-text-secondary">
                   <MapPin size={15} strokeWidth={1.75} className="mt-0.5 shrink-0 text-text-muted" />
-                  <dd>{[detalle.city, detalle.countryCode].filter(Boolean).join(", ")}</dd>
+                  <dd>{[detalle.city, paisConBandera(detalle.countryCode)].filter(Boolean).join(", ")}</dd>
                 </div>
               )}
               {detalle.yearsExperience != null && detalle.yearsExperience > 0 && (

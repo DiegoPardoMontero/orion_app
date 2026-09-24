@@ -39,6 +39,7 @@ import { DOC_TIPOS, etiquetaDocumento, etiquetaFaltante, MI_APLICACION_KEY } fro
 import { useMe } from "@/lib/auth/session";
 import { etiquetaNivel, etiquetaObjetivo, NIVELES } from "@/lib/i18n";
 import { estadoBio, estadoTitular } from "@/lib/perfil-profesor";
+import { SelectorDePais } from "@/components/SelectorDePais";
 
 type LangEdit = { code: string; isNative: boolean; levels: string[] };
 
@@ -444,7 +445,7 @@ function Wizard({
               </div>
               <div className="col-span-2 sm:col-span-1">
                 <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="country">País</label>
-                <Campo id="country" type="text" maxLength={2} value={countryCode} onChange={(e) => setCountryCode(e.target.value.toUpperCase())} placeholder="CO" className="mt-1.5 uppercase" />
+                <SelectorDePais id="country" value={countryCode} onChange={setCountryCode} className="mt-1.5" />
               </div>
               <div className="col-span-2 sm:col-span-1">
                 <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="years">Años de experiencia</label>

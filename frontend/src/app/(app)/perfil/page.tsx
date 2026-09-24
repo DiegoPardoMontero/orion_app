@@ -20,6 +20,7 @@ import { precioCop } from "@/lib/format";
 import { etiquetaNivel, NIVELES } from "@/lib/i18n";
 import { estadoBio, estadoTitular } from "@/lib/perfil-profesor";
 import { minutos, useCifras } from "@/lib/cifras";
+import { SelectorDePais } from "@/components/SelectorDePais";
 
 /** El idioma tal como lo edita el profesor: código + si es nativo + niveles que enseña. */
 type LangEdit = { code: string; isNative: boolean; levels: string[] };
@@ -373,15 +374,7 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
           <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="country">
             País
           </label>
-          <Campo
-            id="country"
-            type="text"
-            maxLength={2}
-            value={countryCode}
-            onChange={(e) => setCountryCode(e.target.value.toUpperCase())}
-            placeholder="CO"
-            className="mt-1.5 uppercase"
-          />
+          <SelectorDePais id="country" value={countryCode} onChange={setCountryCode} className="mt-1.5" />
         </div>
         <div className="col-span-2 sm:col-span-1">
           <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="years">

@@ -21,6 +21,7 @@ import { esGratis, tarifaClase } from "@/lib/format";
 import { etiquetaNivel, NIVELES, t } from "@/lib/i18n";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import { Rigel } from "@/components/Rigel";
+import { paisConBandera } from "@/lib/paises";
 
 type Orden = "RELEVANCE" | "PRICE_ASC" | "PRICE_DESC";
 
@@ -694,7 +695,7 @@ function BotonAvanzado({
   );
 }
 function TarjetaProfesor({ profesor }: { profesor: ProfessorCard }) {
-  const ubicacion = [profesor.city, profesor.countryCode].filter(Boolean).join(", ");
+  const ubicacion = [profesor.city, paisConBandera(profesor.countryCode)].filter(Boolean).join(", ");
 
   return (
     <div className="flex h-full flex-col rounded-card bg-surface-raised p-5 shadow-md transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-lg">

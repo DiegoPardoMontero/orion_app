@@ -30,6 +30,7 @@ import type {
 import { estadoAplicacion, etiquetaDocumento, etiquetaEvento } from "@/lib/aplicacion";
 import { fechaCorta, horaBogota, precioCop } from "@/lib/format";
 import { etiquetaNivel, etiquetaObjetivo } from "@/lib/i18n";
+import { paisConBandera } from "@/lib/paises";
 
 type Tab = "enviados" | "publico";
 
@@ -308,7 +309,7 @@ function DatosEnviados({
       </Bloque>
 
       <Bloque titulo="Experiencia">
-        <Dato etiqueta="Ciudad" valor={[perfil.city, perfil.countryCode].filter(Boolean).join(", ") || undefined} />
+        <Dato etiqueta="Ciudad" valor={[perfil.city, paisConBandera(perfil.countryCode)].filter(Boolean).join(", ") || undefined} />
         <Dato
           etiqueta="Años de experiencia"
           valor={perfil.yearsExperience != null ? String(perfil.yearsExperience) : undefined}
@@ -449,7 +450,7 @@ function PerfilPublico({
           {(perfil.city || perfil.countryCode) && (
             <div className="flex items-start gap-2 text-text-secondary">
               <MapPin size={15} strokeWidth={1.75} className="mt-0.5 shrink-0 text-text-muted" />
-              <dd>{[perfil.city, perfil.countryCode].filter(Boolean).join(", ")}</dd>
+              <dd>{[perfil.city, paisConBandera(perfil.countryCode)].filter(Boolean).join(", ")}</dd>
             </div>
           )}
           {perfil.yearsExperience != null && perfil.yearsExperience > 0 && (
