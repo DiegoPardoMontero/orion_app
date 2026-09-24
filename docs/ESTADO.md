@@ -30,6 +30,17 @@ dentro de `/cuenta`).
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots), con Rigel de protagonista.
 
 ## Verificación
+Al 24/09/2026, con la segunda tanda del Bloque 11 (pasos 12–18: escritorio ancho, recordar la
+práctica, país con bandera, la franja del perfil del profesor, horarios dentro del perfil, Rigel en
+el hero del celular e «Invitar estudiantes»):
+- Backend: `./mvnw verify` — **376 unitarios + 572 de integración**, verde.
+- Frontend: `tsc` + `lint` verdes; **118 tests de Vitest**.
+- **E2E Playwright: 23 de 23** sobre base recreada, con el enlace corto del profesor abierto sin
+  cuenta: 20 en la corrida completa y las 3 de la práctica al repetirlas, después de arreglar una
+  carrera vieja de esa prueba (respondía el ejercicio de escucha antes de que el navegador decidiera
+  que no tiene voz en inglés). Las pantallas nuevas, además,
+  revisadas en capturas a 390 y a 1280.
+
 Al 24/09/2026 por la noche, con el refinamiento del Bloque 11 (pasos 1–10):
 - Backend: `./mvnw verify` — **373 unitarios + 564 de integración**, verde.
 - Frontend: `tsc` + `lint` verdes; **115 tests de Vitest**.
@@ -720,9 +731,32 @@ están en [`orion-bloque-11-refinamiento.md`](./briefs/orion-bloque-11-refinamie
   tarifa), la misma comisión, una por pareja por índice, solo para quien aún no tiene clases con
   él. La marca vieja de los ensayos del admin pasó a llamarse `is_rehearsal`.
 
-**Pendiente de esta tanda** (pasos 12–18 del brief): escritorio más ancho, recordar la práctica en
-más sitios, país con lista y bandera en la postulación, la franja de ficha para el profesor, fusionar
-Disponibilidad con el perfil, Rigel visible en el hero del celular e «Invitar estudiantes».
+**Segunda tanda** (pasos 12–18 del brief, pedidos el mismo día):
+- **Escritorio**: las pantallas usan el ancho como «Mensajes» —del lateral al borde, hasta `5xl`—
+  en lugar de una columna angosta al centro.
+- **Recordar la práctica sin invadir** (V64): una tarjeta compacta en «Mis clases» y en «Buscar
+  profesor» mientras haya un set listo o a medias, que se oculta con su ✕ hasta el siguiente set; y
+  **un solo** aviso en la campana, dos días después de estar lista, si nadie la empezó y le queda
+  tiempo (`practice_sets.reminded_at`). Sin correo ni aviso al dispositivo.
+- **País con lista y bandera** en la postulación y en el perfil del profesor: todos los países del
+  mundo con su nombre en español (`Intl.DisplayNames`) y la bandera como emoji, los más frecuentes
+  arriba. Se sigue guardando el código ISO. Windows no dibuja banderas como emoji: ahí sale el
+  código de dos letras, y el nombre igual.
+- **La franja para el profesor aprobado**, igual a la de la ficha del estudiante: foto, titular,
+  descripción, tarifa, idiomas, horarios y publicar (`GET /me/profile/pending`, lo decide
+  `scheduling.PerfilDelProfesor`). Franja de Rigel en todas las pantallas menos su perfil (se cierra
+  por un día), campana el día 1 y 3 contados desde la aprobación y correo el día 2 (reusa
+  `profile_reminders` de la V58). Si ya está publicado y con horarios, el texto pide terminar el
+  perfil en vez de decir que «no recibe estudiantes».
+- **Horarios dentro del perfil**: «Mi perfil» tiene dos pestañas, «Perfil público» y «Mis
+  horarios»; `/disponibilidad` redirige a la segunda (los enlaces y correos viejos siguen sirviendo).
+  En la barra del celular «Horarios» se cambió por **«Desempeño»**, que no tenía entrada ahí.
+- **Rigel en el hero del celular**, lo primero que se ve, antes del titular.
+- **«Invitar estudiantes»** (V63): un enlace corto propio (`/p/maria-gomez`) que lleva a su perfil
+  público —se ve sin cuenta, y al crearla para reservar vuelve a él—, un mensaje ya escrito que se
+  puede cambiar (menciona la clase de prueba si la ofrece) y botones para WhatsApp, Facebook,
+  LinkedIn, X, Telegram, correo, compartir desde el celular y copiar. Instagram y TikTok no dejan
+  compartir un enlace desde afuera: se copia el mensaje.
 
 ## La práctica, rediseñada y gamificada (24/09/2026)
 
