@@ -1,7 +1,8 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BadgeCheck, Check, Eye, Plus, Sparkles, X } from "lucide-react";
+import { BadgeCheck, Check, Eye, Plus, Sparkles, UserPlus, X } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { CambiarFoto } from "@/components/CambiarFoto";
 import { bordeSegun, ContadorPalabras } from "@/components/ContadorPalabras";
@@ -204,6 +205,16 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
     <main className="mx-auto w-full max-w-md px-5 py-5 lg:max-w-2xl">
       <h1 className="font-display text-h1 font-bold">Mi perfil</h1>
       <p className="mt-1 text-[12.5px] text-text-secondary">Esto es lo que ven los estudiantes.</p>
+      <Link
+        href="/invitar"
+        className="mt-4 flex min-h-11 items-center justify-between gap-3 rounded-card bg-accent-lavender-soft px-4 py-3 text-[13.5px] transition-colors hover:bg-info-bg focus-visible:shadow-focus"
+      >
+        <span className="flex items-center gap-2 font-semibold text-text">
+          <UserPlus size={16} strokeWidth={2} className="shrink-0 text-[#5e4a8a]" />
+          Invita a tus estudiantes con tu enlace
+        </span>
+        <span className="shrink-0 text-[12.5px] font-bold text-primary-strong">Compartir</span>
+      </Link>
 
       {/* Las reglas de cancelación y las preguntas frecuentes viven en Ayuda (24/09/2026): son
           documentación, y en el perfil obligaban a pasar por ellas para cambiar la tarifa. */}

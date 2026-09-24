@@ -48,6 +48,15 @@ public class MyProfileController {
         return profileService.setTrial(principal.user().getId(), body.acceptsTrial(), body.trialPriceCop());
     }
 
+    public record InviteLinkResponse(String slug) {
+    }
+
+    /** El nombre corto de su enlace para invitar estudiantes: /p/{slug}. Se crea la primera vez. */
+    @GetMapping("/invite-link")
+    public InviteLinkResponse inviteLink(@AuthenticationPrincipal OrionUserDetails principal) {
+        return new InviteLinkResponse(profileService.enlaceParaInvitar(principal.user().getId()));
+    }
+
     public record TrialRequest(boolean acceptsTrial,
                                @PositiveOrZero Long trialPriceCop) {
     }

@@ -91,6 +91,10 @@ public class ProfessorProfile {
     @Column(name = "trial_price_cop")
     private Long trialPriceCop;
 
+    /** El nombre corto de su enlace para invitar (V63): «maria-gomez». Nulo hasta que lo pide. */
+    @Column(name = "public_slug", length = 60)
+    private String publicSlug;
+
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
@@ -260,6 +264,17 @@ public class ProfessorProfile {
 
     public Long getTrialPriceCop() {
         return trialPriceCop;
+    }
+
+    public String getPublicSlug() {
+        return publicSlug;
+    }
+
+    /** Se asigna una vez: un enlace ya compartido no puede dejar de funcionar. */
+    public void assignPublicSlug(String slug) {
+        if (this.publicSlug == null) {
+            this.publicSlug = slug;
+        }
     }
 
     /**

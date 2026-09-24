@@ -61,6 +61,15 @@ public class ProfessorsController {
         return search.search(criteria, sort, page, size);
     }
 
+    public record ProfessorBySlugResponse(UUID id) {
+    }
+
+    /** El enlace para invitar, /p/{slug}, resuelto al profesor. Público, como su perfil. */
+    @GetMapping("/by-slug/{slug}")
+    public ProfessorBySlugResponse bySlug(@PathVariable String slug) {
+        return new ProfessorBySlugResponse(profiles.profesorDelEnlace(slug));
+    }
+
     @GetMapping("/{id}")
     public ProfessorDetail detail(@PathVariable UUID id) {
         return profiles.publicDetail(id);

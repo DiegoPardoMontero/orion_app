@@ -27,6 +27,7 @@ import co.orion.identity.api.UpdateProfileRequest;
 import co.orion.identity.domain.ProfessorGoal;
 import co.orion.identity.domain.ProfessorLanguage;
 import co.orion.identity.domain.ProfessorLanguageLevel;
+import co.orion.identity.domain.EnlaceParaInvitar;
 import co.orion.identity.domain.ProfessorProfile;
 import co.orion.identity.domain.User;
 import co.orion.identity.persistence.ProfessorGoalRepository;
@@ -196,6 +197,34 @@ public class ProfessorProfileService {
 
     private static String pesos(long cop) {
         return "$" + NumberFormat.getIntegerInstance(Locale.forLanguageTag("es-CO")).format(cop);
+    }
+
+    /**
+     * El nombre corto de su enlace para invitar (V63), creándolo la primera vez: su nombre sin tildes
+     * y, si ya lo tiene otro profesor, con «-2», «-3»… Una vez asignado no cambia.
+     */
+    @Transactional
+    public String enlaceParaInvitar(UUID professorId) {
+        ProfessorProfile profile = profiles.findByIdWithUser(professorId)
+                .orElseGet(() -> createEmptyProfileFor(professorId));
+        if (profile.getPublicSlug() == null) {
+            String base = EnlaceParaInvitar.slugDe(profile.getUser().getFullName());
+            String candidato = base;
+            for (int n = 2; profiles.existsByPublicSlug(candidato); n++) {
+                candidato = base + "-" + n;
+            }
+            profile.assignPublicSlug(candidato);
+            profiles.saveAndFlush(profile);
+        }
+        return profile.getPublicSlug();
+    }
+
+    /** El profesor de un enlace para invitar. 404 si no existe o si su perfil no está publicado. */
+    @Transactional(readOnly = true)
+    public UUID profesorDelEnlace(String slug) {
+        return profiles.findPublishedBySlug(slug == null ? "" : slug.trim().toLowerCase(Locale.ROOT))
+                .map(ProfessorProfile::getUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Profesor no encontrado"));
     }
 
     @Transactional(readOnly = true)

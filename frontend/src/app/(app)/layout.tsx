@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   KeyRound,
   LifeBuoy,
+  UserPlus,
   LogOut,
   MessageCircle,
   HeartPulse,
@@ -74,6 +75,7 @@ const ICONO: Record<string, LucideIcon> = {
   "/logros": Sparkles,
   "/disponibilidad": CalendarClock,
   "/perfil": User,
+  "/invitar": UserPlus,
   "/aplicacion/estado": GraduationCap,
   "/aplicacion": GraduationCap,
   "/admin/usuarios": Users,
@@ -87,7 +89,7 @@ const ICONO: Record<string, LucideIcon> = {
 };
 
 /** Rutas del profesor que exigen postulación APPROVED; si no, se muestra un aviso en vez de la UI. */
-const RUTAS_PROFESOR_APROBADO = ["/disponibilidad", "/perfil"];
+const RUTAS_PROFESOR_APROBADO = ["/disponibilidad", "/perfil", "/invitar"];
 
 const ETIQUETA_ROL: Record<Role, string> = {
   STUDENT: "Estudiante",
@@ -611,6 +613,16 @@ function MenuUsuario({
             </div>
             {/* La barra inferior de móvil está topada en cinco entradas y ya está llena, así que
                 Ayuda cuelga de aquí: sin esto solo sería alcanzable escribiendo la URL. */}
+            {me.role === "PROFESSOR" && (
+              <Link
+                href="/invitar"
+                onClick={() => setAbierto(false)}
+                className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-[13px] font-semibold text-text hover:bg-surface-sunken"
+              >
+                <UserPlus size={15} strokeWidth={1.75} />
+                Invitar estudiantes
+              </Link>
+            )}
             <Link
               href="/ayuda"
               onClick={() => setAbierto(false)}

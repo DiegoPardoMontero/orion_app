@@ -232,6 +232,23 @@ test("María ofrece una clase de prueba gratis y una estudiante nueva la reserva
 });
 
 /**
+ * Invitar estudiantes (24/09/2026): María toma su enlace corto y quien lo abre, sin cuenta, llega a
+ * su perfil.
+ */
+test("María invita con su enlace corto y lleva a su perfil sin cuenta", async ({ page }) => {
+  await login(page, USERS.maria);
+  await page.goto("/invitar");
+  await expect(page.getByRole("heading", { name: "Invitar estudiantes" })).toBeVisible();
+  const enlace = (await page.locator("main p .select-all").innerText()).trim();
+  expect(enlace).toMatch(/\/p\/maria-gomez$/);
+  await logout(page);
+
+  await page.goto(new URL(enlace).pathname);
+  await page.waitForURL(/\/profesores\/[0-9a-f-]+$/);
+  await expect(page.getByRole("heading", { name: "María Gómez" }).first()).toBeVisible();
+});
+
+/**
  * Sin cuenta (decisión del 23/09/2026): el catálogo y el perfil de un profesor se ven —es el enlace
  * que el profesor comparte en sus redes—, y reservar pide entrar; al entrar, se vuelve al mismo
  * perfil, ya con su agenda.

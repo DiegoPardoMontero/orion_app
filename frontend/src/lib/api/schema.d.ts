@@ -1668,6 +1668,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/professors/by-slug/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["bySlug"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/practice-sets/{id}": {
         parameters: {
             query?: never;
@@ -1772,6 +1788,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["ratePreview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/profile/invite-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["inviteLink"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3945,6 +3977,10 @@ export interface components {
             /** Format: int32 */
             dias?: number;
         };
+        ProfessorBySlugResponse: {
+            /** Format: uuid */
+            id?: string;
+        };
         CategoryOption: {
             code?: string;
             label?: string;
@@ -3999,6 +4035,9 @@ export interface components {
             lessons?: number;
             /** Format: date-time */
             lastLessonAt?: string;
+        };
+        InviteLinkResponse: {
+            slug?: string;
         };
         Movement: {
             source?: string;
@@ -7350,6 +7389,28 @@ export interface operations {
             };
         };
     };
+    bySlug: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ProfessorBySlugResponse"];
+                };
+            };
+        };
+    };
     uno: {
         parameters: {
             query?: never;
@@ -7494,6 +7555,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["RateBreakdownResponse"];
+                };
+            };
+        };
+    };
+    inviteLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["InviteLinkResponse"];
                 };
             };
         };

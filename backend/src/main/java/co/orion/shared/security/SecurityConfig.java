@@ -91,6 +91,8 @@ public class SecurityConfig {
                 // Lista y detalle públicos; los cupos (/professors/{id}/slots) siguen tras sesión.
                 .requestMatchers(HttpMethod.GET, "/api/v1/professors").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/professors/*").permitAll()
+                // El enlace para invitar lo abre cualquiera, como el perfil al que lleva.
+                .requestMatchers(HttpMethod.GET, "/api/v1/professors/by-slug/*").permitAll()
                 // La clase de prueba se consulta con sesión: depende de quién pregunta.
                 .requestMatchers(HttpMethod.GET, "/api/v1/professors/*/trial").hasRole("STUDENT")
                 // Las reseñas de un profesor son parte de su perfil público (dos segmentos: /*/reviews

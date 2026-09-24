@@ -47,4 +47,10 @@ public interface ProfessorProfileRepository
 
     /** Cuántos profesores están publicados en el marketplace. */
     long countByPublishedTrue();
+
+    boolean existsByPublicSlug(String publicSlug);
+
+    /** El profesor de un enlace para invitar, si está publicado. */
+    @Query("select p from ProfessorProfile p where p.publicSlug = :slug and p.published = true")
+    Optional<ProfessorProfile> findPublishedBySlug(@Param("slug") String slug);
 }

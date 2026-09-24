@@ -95,6 +95,8 @@ export const NAV_BY_ROLE: Record<Role, NavGroup[]> = {
       titulo: "Mi cuenta",
       items: [
         { href: "/perfil", label: "Perfil público" },
+        // Su enlace para compartir, a la vista (24/09/2026): dentro del perfil nadie lo encontraba.
+        { href: "/invitar", label: "Invitar estudiantes" },
         { href: "/ayuda", label: "Ayuda" },
       ],
     },
@@ -190,6 +192,7 @@ const ACCESS: { prefix: string; roles: Role[] }[] = [
   { prefix: "/mensajes", roles: ["STUDENT", "PROFESSOR"] },
   { prefix: "/disponibilidad", roles: ["PROFESSOR"] },
   { prefix: "/perfil", roles: ["PROFESSOR"] },
+  { prefix: "/invitar", roles: ["PROFESSOR"] },
   // La postulación a profesor: la abre un estudiante que quiere enseñar o un profesor recién
   // creado por el admin que aún no completa su perfil. El admin revisa desde /admin/aplicaciones.
   { prefix: "/aplicacion", roles: ["STUDENT", "PROFESSOR", "TEACHER_APPLICANT"] },
