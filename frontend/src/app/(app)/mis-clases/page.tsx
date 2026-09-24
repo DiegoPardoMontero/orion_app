@@ -66,7 +66,7 @@ function Contenido() {
   const esProfesor = me?.role === "PROFESSOR";
 
   return (
-    <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-3xl lg:px-12 lg:py-8">
+    <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-5xl lg:px-12 lg:py-8">
       <Suspense fallback={null}>
         <BannerReserva />
       </Suspense>

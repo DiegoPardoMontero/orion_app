@@ -58,7 +58,7 @@ function Contenido() {
 
   if (perfil.isPending) {
     return (
-      <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-2xl lg:px-12">
+      <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-4xl lg:px-12">
         <Cargando filas={3} />
       </main>
     );
@@ -66,7 +66,7 @@ function Contenido() {
 
   if (perfil.isError || !perfil.data) {
     return (
-      <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-2xl lg:px-12">
+      <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-4xl lg:px-12">
         <Vacio
           titulo="No encontramos este perfil"
           texto="Puede que no exista o que su dueño lo tenga en privado."
@@ -78,7 +78,7 @@ function Contenido() {
   const ficha = perfil.data;
 
   return (
-    <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-2xl lg:px-12 lg:py-8">
+    <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-4xl lg:px-12 lg:py-8">
       <Link
         href="/mis-clases"
         className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-text-secondary transition-colors hover:text-text focus-visible:shadow-focus"

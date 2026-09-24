@@ -6,7 +6,7 @@ import { HiloSoporte } from "@/components/HiloSoporte";
 export default function HiloAyudaPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = use(params);
   return (
-    <main className="mx-auto w-full max-w-3xl px-5 py-8 lg:px-8">
+    <main className="mx-auto w-full max-w-3xl px-5 py-8 lg:max-w-5xl lg:px-12">
       <HiloSoporte code={code} />
     </main>
   );

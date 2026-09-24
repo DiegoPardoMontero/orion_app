@@ -38,7 +38,7 @@ export default function GananciasPage() {
   });
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-6">
+    <main className="mx-auto max-w-4xl px-6 py-6 lg:max-w-5xl lg:px-12 lg:py-8">
       <h1 className="font-display text-h1 font-bold">Mis ganancias</h1>
       <p className="mt-1 text-[13.5px] text-text-secondary">
         Orión cobra al estudiante y te transfiere lo tuyo cuando la clase ya se dictó.

@@ -51,7 +51,7 @@ export default function AyudaPage() {
   const [abriendo, setAbriendo] = useState(false);
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-5 py-8 lg:px-8">
+    <main className="mx-auto w-full max-w-3xl px-5 py-8 lg:max-w-5xl lg:px-12">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="font-display text-h1 font-bold">Ayuda</h1>

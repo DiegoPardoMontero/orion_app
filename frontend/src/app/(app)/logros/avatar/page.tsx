@@ -66,14 +66,14 @@ export default function PersonalizarAvatarPage() {
 
   if (cosmeticos.isPending || ficha.isPending || resumen.isPending) {
     return (
-      <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-3xl lg:px-12">
+      <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-5xl lg:px-12">
         <Cargando filas={3} />
       </main>
     );
   }
   if (cosmeticos.isError || !cosmeticos.data || !ficha.data || !resumen.data) {
     return (
-      <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-3xl lg:px-12">
+      <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-5xl lg:px-12">
         <ErrorCarga mensaje="No pudimos cargar tus piezas." onReintentar={() => void cosmeticos.refetch()} />
       </main>
     );
@@ -98,7 +98,7 @@ export default function PersonalizarAvatarPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-3xl lg:px-12 lg:py-8">
+    <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-5xl lg:px-12 lg:py-8">
       <h1 className="font-display text-h1 font-bold">Tu avatar</h1>
       <p className="mt-1 text-[14px] text-text-secondary">
         Tu foto no cambia: lo que cambia es lo que la rodea.

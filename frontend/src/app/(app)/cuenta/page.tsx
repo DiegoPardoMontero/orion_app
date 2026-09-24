@@ -131,7 +131,7 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
     SECCIONES.some((s) => s.clave === pedida) || pedida === "cielo" ? (pedida as Seccion) : (ANTIGUAS[pedida] ?? "resumen");
 
   return (
-    <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-3xl lg:px-12 lg:py-8">
+    <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-5xl lg:px-12 lg:py-8">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="font-display text-h1 font-bold">Mi perfil</h1>
         <Link href="/cuenta?seccion=resumen#puntos" className="rounded-pill focus-visible:shadow-focus">

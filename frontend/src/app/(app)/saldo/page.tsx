@@ -43,7 +43,7 @@ export default function SaldoPage() {
 
   if (saldo.isPending || pagos.isPending) {
     return (
-      <main className="mx-auto max-w-3xl px-6 py-6">
+      <main className="mx-auto max-w-3xl px-6 py-6 lg:max-w-5xl lg:px-12 lg:py-8">
         <Cargando filas={4} />
       </main>
     );
@@ -51,7 +51,7 @@ export default function SaldoPage() {
 
   if (saldo.isError || pagos.isError) {
     return (
-      <main className="mx-auto max-w-3xl px-6 py-6">
+      <main className="mx-auto max-w-3xl px-6 py-6 lg:max-w-5xl lg:px-12 lg:py-8">
         <ErrorCarga
           mensaje="No pudimos cargar tus pagos."
           onReintentar={() => {
@@ -66,7 +66,7 @@ export default function SaldoPage() {
   const creditos = saldo.data.credits;
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-6">
+    <main className="mx-auto max-w-3xl px-6 py-6 lg:max-w-5xl lg:px-12 lg:py-8">
       <h1 className="font-display text-h1 font-bold">Pagos y saldo</h1>
 
       <div className="mt-4">

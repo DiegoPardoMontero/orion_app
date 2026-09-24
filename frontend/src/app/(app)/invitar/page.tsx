@@ -37,7 +37,7 @@ export default function InvitarPage() {
 
   if (!me || perfil.isPending || corto.isPending) {
     return (
-      <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-3xl lg:px-12">
+      <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-5xl lg:px-12">
         <Cargando filas={3} />
       </main>
     );
@@ -89,7 +89,7 @@ function Invitar({ enlace, publicado, mensajeInicial }: { enlace: string; public
   ];
 
   return (
-    <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-3xl lg:px-12 lg:py-8">
+    <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-5xl lg:px-12 lg:py-8">
       <h1 className="font-display text-h1 font-bold">Invitar estudiantes</h1>
       <p className="mt-1 text-[14px] text-text-secondary">
         Tu enlace lleva a tu perfil: tus horarios, tu tarifa y tus reseñas. Quien llega por él crea su cuenta y reserva

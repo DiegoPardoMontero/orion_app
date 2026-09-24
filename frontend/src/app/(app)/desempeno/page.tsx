@@ -29,14 +29,14 @@ export default function DesempenoPage() {
 
   if (datos.isPending) {
     return (
-      <main className="mx-auto max-w-3xl px-6 py-6">
+      <main className="mx-auto max-w-3xl px-6 py-6 lg:max-w-5xl lg:px-12 lg:py-8">
         <Cargando filas={4} />
       </main>
     );
   }
   if (datos.isError) {
     return (
-      <main className="mx-auto max-w-3xl px-6 py-6">
+      <main className="mx-auto max-w-3xl px-6 py-6 lg:max-w-5xl lg:px-12 lg:py-8">
         <ErrorCarga mensaje="No pudimos cargar tu desempeño." onReintentar={() => void datos.refetch()} />
       </main>
     );
@@ -48,7 +48,7 @@ export default function DesempenoPage() {
   const sinDatos = d.lessonsCompleted === 0 && d.ratingCount === 0;
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-6">
+    <main className="mx-auto max-w-3xl px-6 py-6 lg:max-w-5xl lg:px-12 lg:py-8">
       <h1 className="font-display text-h1 font-bold">Mi desempeño</h1>
       <p className="mt-1 text-[13.5px] text-text-secondary">
         Sobre tus últimos {d.windowDays} días. Se recalcula cada noche.
