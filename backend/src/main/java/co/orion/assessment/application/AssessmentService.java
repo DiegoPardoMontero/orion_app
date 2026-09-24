@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import co.orion.assessment.domain.AssessmentMode;
 import co.orion.assessment.domain.AssessmentRecommendation;
+import co.orion.assessment.domain.AssessmentCompletedEvent;
 import co.orion.assessment.domain.AssessmentStatus;
 import co.orion.assessment.domain.AssessmentTurn;
 import co.orion.assessment.domain.ConfidenceAssessment;
@@ -81,6 +83,7 @@ public class AssessmentService {
     private final PlatformSettingsService settings;
     private final AiUsageRecorder usage;
     private final TraductorDeFrases traductor;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
 
     public AssessmentService(ConfidenceAssessmentRepository assessments,
@@ -96,6 +99,7 @@ public class AssessmentService {
                              PlatformSettingsService settings,
                              AiUsageRecorder usage,
                              TraductorDeFrases traductor,
+                             ApplicationEventPublisher events,
                              Clock clock) {
         this.assessments = assessments;
         this.turns = turns;
@@ -110,6 +114,7 @@ public class AssessmentService {
         this.settings = settings;
         this.usage = usage;
         this.traductor = traductor;
+        this.events = events;
         this.clock = clock;
     }
 
@@ -293,6 +298,9 @@ public class AssessmentService {
         }
 
         ConfidenceAssessment guardada = assessments.save(evaluacion);
+        if (!quien.esLead() && guardada.getStatus() == AssessmentStatus.COMPLETED) {
+            events.publishEvent(new AssessmentCompletedEvent(quien.userId()));
+        }
         List<Recomendacion> tres = recommender.para(evaluacion.getLanguageCode(), nivel, metas);
         recommendations.saveAll(tres.stream()
                 .map(r -> new AssessmentRecommendation(assessmentId, r)).toList());

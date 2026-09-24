@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -16,6 +17,7 @@ import co.orion.engagement.domain.Achievement;
 import co.orion.engagement.domain.Cosmetic;
 import co.orion.engagement.domain.CosmeticId;
 import co.orion.engagement.domain.CosmeticKind;
+import co.orion.engagement.domain.PointEvent;
 import co.orion.engagement.domain.StreakCalculator;
 import co.orion.engagement.domain.StreakProtection;
 import co.orion.engagement.domain.UserAchievement;
@@ -26,11 +28,15 @@ import co.orion.engagement.persistence.StreakProtectionRepository;
 import co.orion.engagement.persistence.UserAchievementRepository;
 import co.orion.identity.application.StudentProfileService;
 import co.orion.identity.persistence.StudentProfileRepository;
+import co.orion.identity.persistence.UserRepository;
+import co.orion.messaging.persistence.ConversationRepository;
+import co.orion.reputation.persistence.ReviewRepository;
 import co.orion.scheduling.domain.BookingStatus;
 import co.orion.scheduling.domain.LearningProgress;
 import co.orion.scheduling.domain.LearningProgress.Tomada;
 import co.orion.scheduling.persistence.BookingRepository;
 import co.orion.shared.error.UnprocessableException;
+import co.orion.shared.time.FechasEnPalabras;
 
 /**
  * Lo que el estudiante lee de su gamificación: puntos, racha, estrellas y cosméticos.
@@ -53,6 +59,9 @@ public class EngagementQueryService {
     private final CosmeticRepository cosmetics;
     private final StudentProfileRepository studentProfiles;
     private final StudentProfileService studentProfileService;
+    private final UserRepository users;
+    private final ConversationRepository conversations;
+    private final ReviewRepository reviews;
     private final Clock clock;
 
     public EngagementQueryService(BookingRepository bookings,
@@ -63,6 +72,9 @@ public class EngagementQueryService {
                                   CosmeticRepository cosmetics,
                                   StudentProfileRepository studentProfiles,
                                   StudentProfileService studentProfileService,
+                                  UserRepository users,
+                                  ConversationRepository conversations,
+                                  ReviewRepository reviews,
                                   Clock clock) {
         this.bookings = bookings;
         this.achievements = achievements;
@@ -72,6 +84,9 @@ public class EngagementQueryService {
         this.cosmetics = cosmetics;
         this.studentProfiles = studentProfiles;
         this.studentProfileService = studentProfileService;
+        this.users = users;
+        this.conversations = conversations;
+        this.reviews = reviews;
         this.clock = clock;
     }
 
@@ -81,6 +96,17 @@ public class EngagementQueryService {
 
     public record LogroConEstado(Achievement achievement, int progress, boolean unlocked,
                                  Instant unlockedAt) {
+    }
+
+    /**
+     * Un movimiento del libro, con lo que hace falta para contarlo en una línea: el nombre del
+     * logro, o el del profe de la clase, la reseña o la conversación. {@code detalle} es nulo si no
+     * hay nada que añadir («Terminaste una práctica»).
+     */
+    public record Movimiento(String source, int points, Instant occurredAt, String detalle) {
+    }
+
+    public record MisPuntos(long total, List<Movimiento> recientes) {
     }
 
     public record CosmeticoConEstado(Cosmetic cosmetic, boolean unlocked, String unlockCondition,
@@ -105,6 +131,45 @@ public class EngagementQueryService {
                 nivelDelSello(encendidos),
                 encendidos.size(),
                 achievements.findByActiveTrueOrderByDisplayOrderAsc().size());
+    }
+
+    /** El total, y lo último que dio puntos. Solo lectura: se suma del libro cada vez. */
+    @Transactional(readOnly = true)
+    public MisPuntos puntos(UUID studentId) {
+        List<PointEvent> ultimos = pointEvents.findTop8ByUserIdOrderByOccurredAtDesc(studentId);
+        Map<UUID, String> logroPorOrigen = achievements.findAll().stream().collect(Collectors.toMap(
+                a -> UUID.nameUUIDFromBytes((studentId + ":" + a.getCode()).getBytes()),
+                Achievement::getName, (a, b) -> a));
+        List<Movimiento> recientes = ultimos.stream()
+                .map(e -> new Movimiento(e.getSourceType(), e.getPoints(), e.getOccurredAt(),
+                        detalle(e, logroPorOrigen)))
+                .toList();
+        return new MisPuntos(pointEvents.totalPointsOf(studentId), recientes);
+    }
+
+    /** El total a secas: lo que se enseña junto al nombre. */
+    @Transactional(readOnly = true)
+    public long totalDe(UUID studentId) {
+        return pointEvents.totalPointsOf(studentId);
+    }
+
+    private String detalle(PointEvent e, Map<UUID, String> logroPorOrigen) {
+        if (e.getSourceId() == null) {
+            return null;
+        }
+        if ("ACHIEVEMENT".equals(e.getSourceType())) {
+            return logroPorOrigen.get(e.getSourceId());
+        }
+        // De la clase, la reseña o la conversación, lo que se cuenta es con quién.
+        Optional<UUID> profe = switch (e.getSourceType()) {
+            case "LESSON", "PUNCTUAL" -> bookings.findById(e.getSourceId()).map(b -> b.getProfessorId());
+            case "REVIEW" -> reviews.findById(e.getSourceId()).map(r -> r.getProfessorId());
+            case "MESSAGE" -> conversations.findById(e.getSourceId()).map(c -> c.getProfessorId());
+            default -> Optional.empty();
+        };
+        return profe.flatMap(users::findById)
+                .map(u -> FechasEnPalabras.primerNombre(u.getFullName()))
+                .orElse(null);
     }
 
     /**

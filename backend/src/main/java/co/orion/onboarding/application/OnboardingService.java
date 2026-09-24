@@ -4,7 +4,9 @@ import java.sql.Timestamp;
 import java.time.Clock;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.UUID;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +16,7 @@ import co.orion.identity.application.ProfessorAccessService;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.onboarding.domain.OnboardingStep;
+import co.orion.onboarding.domain.OnboardingStepCompletedEvent;
 import co.orion.shared.error.UnprocessableException;
 
 /**
@@ -33,13 +36,15 @@ public class OnboardingService {
     private final JdbcTemplate jdbc;
     private final PlatformSettingsService settings;
     private final ProfessorAccessService acceso;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
 
     public OnboardingService(JdbcTemplate jdbc, PlatformSettingsService settings,
-                             ProfessorAccessService acceso, Clock clock) {
+                             ProfessorAccessService acceso, ApplicationEventPublisher events, Clock clock) {
         this.jdbc = jdbc;
         this.settings = settings;
         this.acceso = acceso;
+        this.events = events;
         this.clock = clock;
     }
 
@@ -80,10 +85,21 @@ public class OnboardingService {
         if (!paso.esDe(quien.getRole())) {
             throw new UnprocessableException("Ese paso de la bienvenida no es de tu tipo de cuenta.");
         }
-        jdbc.update("""
+        int nuevas = jdbc.update("""
                 insert into onboarding_steps (user_id, step, completed_at) values (?, ?, ?)
                 on conflict (user_id, step) do nothing
                 """, quien.getId(), paso.name(), Timestamp.from(clock.instant()));
+        if (nuevas > 0) {
+            events.publishEvent(new OnboardingStepCompletedEvent(quien.getId(), paso));
+        }
+    }
+
+    /** Si esa persona ya terminó ese paso. */
+    @Transactional(readOnly = true)
+    public boolean completo(UUID userId, OnboardingStep paso) {
+        return Boolean.TRUE.equals(jdbc.queryForObject(
+                "select exists (select 1 from onboarding_steps where user_id = ? and step = ?)",
+                Boolean.class, userId, paso.name()));
     }
 
     private Video video(User quien, boolean visto) {

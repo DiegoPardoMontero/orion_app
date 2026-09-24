@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, CalendarDays, Clock, Flame, Trophy, Video } from "lucide-react";
+import { ArrowRight, CalendarDays, Clock, Flame, Sparkles, Trophy, Video } from "lucide-react";
 import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
 import { Constelacion } from "@/components/marca";
@@ -9,6 +9,7 @@ import { Rigel, type RigelPose } from "@/components/Rigel";
 import { apiFetch } from "@/lib/api/fetch";
 import type { Engagement, MapaRacha, SemanaRacha } from "@/lib/gamificacion";
 import { diaBogota, fechaCorta, horaBogota } from "@/lib/format";
+import { cifraDePuntos } from "@/lib/puntos";
 
 type ProximaClase = {
   id: string;
@@ -187,16 +188,30 @@ export function PanelProgreso() {
               {saludo.debajo}
             </p>
 
-            {/* El fuego solo aparece cuando hay racha: encendido sin nada detrás no significaría nada. */}
-            {data.currentStreakWeeks >= 1 && (
-              <span className="mt-3 inline-flex items-center gap-1.5 rounded-pill bg-night/35 py-1.5 pl-2 pr-3.5 text-[13px] font-bold text-on-primary backdrop-blur-sm">
-                <span className="llama grid h-6 w-6 shrink-0 place-items-center rounded-full bg-gradient-to-b from-[#ffc189] to-[#e8503a]">
-                  <Flame size={13} strokeWidth={2.4} className="text-[#5a2436]" />
+            <div className="mt-3 flex flex-wrap gap-2">
+              {/* El fuego solo aparece cuando hay racha: encendido sin nada detrás no significaría nada. */}
+              {data.currentStreakWeeks >= 1 && (
+                <span className="inline-flex items-center gap-1.5 rounded-pill bg-night/35 py-1.5 pl-2 pr-3.5 text-[13px] font-bold text-on-primary backdrop-blur-sm">
+                  <span className="llama grid h-6 w-6 shrink-0 place-items-center rounded-full bg-gradient-to-b from-[#ffc189] to-[#e8503a]">
+                    <Flame size={13} strokeWidth={2.4} className="text-[#5a2436]" />
+                  </span>
+                  {data.currentStreakWeeks}{" "}
+                  {data.currentStreakWeeks === 1 ? "semana en racha" : "semanas en racha"}
                 </span>
-                {data.currentStreakWeeks}{" "}
-                {data.currentStreakWeeks === 1 ? "semana en racha" : "semanas en racha"}
-              </span>
-            )}
+              )}
+              {/* Los puntos, siempre: son la cifra que va con el nombre en todas partes. */}
+              {engagement && (
+                <Link
+                  href="/cuenta?seccion=resumen#puntos"
+                  className="inline-flex items-center gap-1.5 rounded-pill bg-night/35 py-1.5 pl-2 pr-3.5 text-[13px] font-bold text-on-primary tabular-nums backdrop-blur-sm transition-colors hover:bg-night/50 focus-visible:shadow-focus"
+                >
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-rigel">
+                    <Sparkles size={13} strokeWidth={2.4} className="text-rigel-ink" />
+                  </span>
+                  {cifraDePuntos(engagement.points)} puntos
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </div>

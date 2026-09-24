@@ -11,6 +11,7 @@ import { TarjetaDiagnostico } from "@/components/gamificacion/TarjetaDiagnostico
 import { MiFicha, QuienLoVe } from "@/components/gamificacion/MiFicha";
 import { InvitacionAPracticar } from "@/components/InvitacionAPracticar";
 import { PanelProgreso } from "@/components/PanelProgreso";
+import { MisPuntosChip, TarjetaPuntos } from "@/components/Puntos";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
 import { PhoneInput } from "@/components/PhoneInput";
 import { BotonPrincipal, Campo } from "@/components/ui";
@@ -131,7 +132,12 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
 
   return (
     <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-3xl lg:px-12 lg:py-8">
-      <h1 className="font-display text-h1 font-bold">Mi perfil</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="font-display text-h1 font-bold">Mi perfil</h1>
+        <Link href="/cuenta?seccion=resumen#puntos" className="rounded-pill focus-visible:shadow-focus">
+          <MisPuntosChip />
+        </Link>
+      </div>
       <p className="mt-1 text-[14px] text-text-secondary">
         Cómo vas y los datos con los que coordinas tus clases.
       </p>
@@ -153,6 +159,7 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
           <div className="mt-8">
             <MiCielo />
           </div>
+          <TarjetaPuntos />
           <div className="mt-8">
             <TarjetaDiagnostico />
           </div>

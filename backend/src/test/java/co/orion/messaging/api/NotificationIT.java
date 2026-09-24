@@ -109,10 +109,11 @@ class NotificationIT extends ApiIntegrationSupport {
         assertThat(mariaFeed[0].title()).contains("Ana");
         assertThat(mariaFeed[0].read()).isFalse();
 
-        // Ana, que la envió, no recibe notificación.
+        // Ana, que la envió, no recibe aviso de su propio mensaje. Sí puede recibir el de «Primer
+        // mensaje», que desde el 24/09 se enciende en el acto.
         NotificationResponse[] anaFeed = get(
                 "/api/v1/me/notifications", anaSession, NotificationResponse[].class).getBody();
-        assertThat(anaFeed).isEmpty();
+        assertThat(anaFeed).noneMatch(n -> n.type().equals("MESSAGE"));
     }
 
     @Test

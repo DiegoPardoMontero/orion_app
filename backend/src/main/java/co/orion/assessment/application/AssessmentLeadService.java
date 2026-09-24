@@ -13,10 +13,12 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import co.orion.assessment.domain.AssessmentLead;
+import co.orion.assessment.domain.AssessmentCompletedEvent;
 import co.orion.assessment.domain.AssessmentStatus;
 import co.orion.assessment.domain.ConfidenceAssessment;
 import co.orion.assessment.domain.VoiceConsent;
@@ -48,16 +50,19 @@ public class AssessmentLeadService {
     private final AssessmentLeadRepository leads;
     private final ConfidenceAssessmentRepository assessments;
     private final VoiceConsentRepository consents;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
     private final SecureRandom random = new SecureRandom();
 
     public AssessmentLeadService(AssessmentLeadRepository leads,
                                  ConfidenceAssessmentRepository assessments,
                                  VoiceConsentRepository consents,
+                                 ApplicationEventPublisher events,
                                  Clock clock) {
         this.leads = leads;
         this.assessments = assessments;
         this.consents = consents;
+        this.events = events;
         this.clock = clock;
     }
 
@@ -119,6 +124,9 @@ public class AssessmentLeadService {
 
         lead.claim(cuenta.getId(), ahora);
         leads.save(lead);
+        if (suyos.stream().anyMatch(e -> e.getStatus() == AssessmentStatus.COMPLETED)) {
+            events.publishEvent(new AssessmentCompletedEvent(cuenta.getId()));
+        }
         log.info("Lead {} reclamado por la cuenta {} con {} diagnóstico(s).",
                 lead.getId(), cuenta.getId(), suyos.size());
     }

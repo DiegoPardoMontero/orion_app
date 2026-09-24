@@ -36,6 +36,11 @@ public class MyEngagementController {
         return MyEngagementResponse.from(engagement.resumen(principal.user().getId()));
     }
 
+    @GetMapping("/points")
+    public MyPointsResponse puntos(@AuthenticationPrincipal OrionUserDetails principal) {
+        return MyPointsResponse.from(engagement.puntos(principal.user().getId()));
+    }
+
     @GetMapping("/achievements")
     public List<AchievementResponse> logros(@AuthenticationPrincipal OrionUserDetails principal) {
         return engagement.logros(principal.user().getId()).stream()

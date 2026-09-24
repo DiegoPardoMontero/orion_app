@@ -6,8 +6,10 @@ import Link from "next/link";
 import { useState } from "react";
 import { CambiarFoto } from "@/components/CambiarFoto";
 import { AvatarOrion } from "@/components/gamificacion/AvatarOrion";
+import { ChipPuntos } from "@/components/Puntos";
 import { EstrellaLogro } from "@/components/gamificacion/EstrellaLogro";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
+import { misPuntosKey } from "@/lib/puntos";
 import type { GoalResponse, LanguageResponse } from "@/lib/api/types";
 import {
   estadoDe,
@@ -85,7 +87,10 @@ export function MiFicha() {
         />
 
         <div className="min-w-0 flex-1 text-center sm:text-left">
-          <p className="font-display text-[17px] font-bold">{ficha.data.fullName}</p>
+          <p className="flex flex-wrap items-center justify-center gap-2 font-display text-[17px] font-bold sm:justify-start">
+            {ficha.data.fullName}
+            {resumen.data && <ChipPuntos total={resumen.data.points} compacto />}
+          </p>
           <p className="mt-0.5 text-[13px] text-text-secondary">
             {ficha.data.selfDeclaredLevel
               ? NIVEL_ESTUDIANTE[ficha.data.selfDeclaredLevel]
@@ -127,6 +132,7 @@ export function MiFicha() {
           void queryClient.invalidateQueries({ queryKey: ["me", "student-profile"] });
           void queryClient.invalidateQueries({ queryKey: ["me", "achievements"] });
           void queryClient.invalidateQueries({ queryKey: ["me", "engagement"] });
+          void queryClient.invalidateQueries({ queryKey: misPuntosKey });
         }}
       />
 
@@ -135,7 +141,15 @@ export function MiFicha() {
         titulo="Quién más la ve"
         texto="Tú decides si otros estudiantes de Orión también pueden abrirla."
       />
-      <Privacidad ficha={ficha.data} onCambio={() => void ficha.refetch()} />
+      <Privacidad
+        ficha={ficha.data}
+        onCambio={() => {
+          void ficha.refetch();
+          // Hacerla visible da puntos la primera vez: que el chip lo diga sin recargar.
+          void queryClient.invalidateQueries({ queryKey: misPuntosKey });
+          void queryClient.invalidateQueries({ queryKey: ["me", "engagement"] });
+        }}
+      />
     </section>
   );
 }

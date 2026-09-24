@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import { Suspense } from "react";
 import { Cargando, Vacio } from "@/components/estados";
 import { AvatarOrion } from "@/components/gamificacion/AvatarOrion";
+import { ChipPuntos } from "@/components/Puntos";
 import { apiFetch } from "@/lib/api/fetch";
 import type { GoalResponse } from "@/lib/api/types";
 import { etiquetaObjetivo } from "@/lib/i18n";
@@ -37,6 +38,13 @@ function Contenido() {
   const perfil = useQuery({
     queryKey: ["student-profile", id],
     queryFn: () => apiFetch<FichaEstudiante>(`/api/v1/students/${id}/profile`),
+    retry: false,
+  });
+
+  // Sus puntos, con la misma regla de visibilidad que la ficha: si no se ve la ficha, tampoco esto.
+  const puntos = useQuery({
+    queryKey: ["student-points", id],
+    queryFn: () => apiFetch<{ total: number }>(`/api/v1/students/${id}/points`),
     retry: false,
   });
 
@@ -96,6 +104,7 @@ function Contenido() {
             {ficha.primaryLanguage ? ` · ${ficha.primaryLanguage}` : ""}
           </p>
         )}
+        {puntos.data && <ChipPuntos total={puntos.data.total} className="mt-2.5" />}
       </div>
 
       {ficha.motivation && (

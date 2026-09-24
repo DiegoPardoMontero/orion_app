@@ -167,14 +167,14 @@ public class SecurityConfig {
                 // y la abren los dos roles, porque las capas de visibilidad las aplica el servicio.
                 .requestMatchers("/api/v1/me/student-profile", "/api/v1/me/student-profile/**")
                         .hasRole("STUDENT")
-                .requestMatchers("/api/v1/students/*/profile")
+                .requestMatchers("/api/v1/students/*/profile", "/api/v1/students/*/points")
                         .hasAnyRole("STUDENT", "PROFESSOR", "ADMIN")
                 // La bienvenida: el video y los recorridos. El servicio comprueba que el paso sea del rol.
                 .requestMatchers("/api/v1/me/onboarding", "/api/v1/me/onboarding/**")
                         .hasAnyRole("STUDENT", "PROFESSOR")
                 // La gamificación es del estudiante: mide lo que él ha recorrido.
                 .requestMatchers("/api/v1/me/engagement", "/api/v1/me/achievements",
-                        "/api/v1/me/cosmetics", "/api/v1/me/streak").hasRole("STUDENT")
+                        "/api/v1/me/cosmetics", "/api/v1/me/streak", "/api/v1/me/points").hasRole("STUDENT")
                 // La asistencia la registra quien dio la clase.
                 .requestMatchers(HttpMethod.POST, "/api/v1/bookings/*/attendance").hasRole("PROFESSOR")
                 // Reseñar una clase es del estudiante; reportar una reseña, del profesor reseñado.

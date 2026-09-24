@@ -39,6 +39,7 @@ import { Bienvenida } from "@/components/bienvenida/Bienvenida";
 import { Encendido } from "@/components/gamificacion/Encendido";
 import { FranjaDeFicha } from "@/components/FranjaDeFicha";
 import { Wordmark } from "@/components/marca";
+import { MisPuntosChip } from "@/components/Puntos";
 import { Boton } from "@/components/ui";
 import { useMiAplicacion } from "@/lib/aplicacion";
 import {
@@ -323,6 +324,11 @@ function MobileHeader({ me }: { me: { fullName: string; email: string; role: Rol
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-surface-sunken bg-surface px-5 lg:hidden">
       <Wordmark className="text-[16px] text-primary" />
       <div className="flex items-center gap-1">
+        {me.role === "STUDENT" && (
+          <Link href="/cuenta?seccion=resumen#puntos" className="mr-1 rounded-pill focus-visible:shadow-focus">
+            <MisPuntosChip compacto />
+          </Link>
+        )}
         <CampanaNotificaciones />
         <MenuUsuario me={me} posicion="abajo" />
       </div>
@@ -562,7 +568,10 @@ function MenuUsuario({
         <MiAvatar size={36} />
         <span className="min-w-0">
           <span className="block truncate text-[13px] font-bold text-text">{me.fullName}</span>
-          <span className="block truncate text-[11px] text-text-muted">{ETIQUETA_ROL[me.role]}</span>
+          <span className="flex items-center gap-1.5 truncate text-[11px] text-text-muted">
+            {ETIQUETA_ROL[me.role]}
+            {me.role === "STUDENT" && <MisPuntosChip compacto />}
+          </span>
         </span>
       </button>
     );
@@ -590,6 +599,15 @@ function MenuUsuario({
             <div className="border-b border-surface-sunken px-4 py-3">
               <p className="truncate text-[13px] font-bold text-text">{me.fullName}</p>
               <p className="truncate text-[11.5px] text-text-muted">{me.email}</p>
+              {me.role === "STUDENT" && (
+                <Link
+                  href="/cuenta?seccion=resumen#puntos"
+                  onClick={() => setAbierto(false)}
+                  className="mt-2 inline-flex rounded-pill focus-visible:shadow-focus"
+                >
+                  <MisPuntosChip />
+                </Link>
+              )}
             </div>
             {/* La barra inferior de móvil está topada en cinco entradas y ya está llena, así que
                 Ayuda cuelga de aquí: sin esto solo sería alcanzable escribiendo la URL. */}

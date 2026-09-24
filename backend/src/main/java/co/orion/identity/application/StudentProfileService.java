@@ -140,7 +140,14 @@ public class StudentProfileService {
             profile.disablePublicProfile();
         }
         profiles.save(profile);
+        events.publishEvent(new StudentProfileUpdatedEvent(userId));
         return fichaDe(profile);
+    }
+
+    /** Si su ficha está visible para los demás estudiantes. */
+    @Transactional(readOnly = true)
+    public boolean esPublica(UUID userId) {
+        return profiles.findById(userId).map(StudentProfile::isPublicProfile).orElse(false);
     }
 
     /**

@@ -1,6 +1,7 @@
 package co.orion.engagement.application;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -16,11 +17,14 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import co.orion.assessment.domain.AssessmentStatus;
+import co.orion.assessment.persistence.ConfidenceAssessmentRepository;
 import co.orion.catalog.application.PlatformSettingsService;
 import co.orion.engagement.domain.Achievement;
 import co.orion.engagement.domain.AchievementEvaluators;
 import co.orion.engagement.domain.AchievementInput;
 import co.orion.engagement.domain.AchievementUnlockedEvent;
+import co.orion.engagement.domain.PointSource;
 import co.orion.engagement.domain.PracticeTally;
 import co.orion.engagement.domain.StreakCalculator;
 import co.orion.engagement.domain.StreakProtectedEvent;
@@ -34,7 +38,10 @@ import co.orion.engagement.persistence.UserAchievementRepository;
 import co.orion.identity.application.StudentProfileService;
 import co.orion.identity.persistence.ProfessorProfileRepository;
 import co.orion.identity.persistence.StudentGoalRepository;
+import co.orion.messaging.persistence.ConversationRepository;
 import co.orion.messaging.persistence.MessageRepository;
+import co.orion.onboarding.application.OnboardingService;
+import co.orion.onboarding.domain.OnboardingStep;
 import co.orion.reputation.persistence.ReviewRepository;
 import co.orion.scheduling.domain.Booking;
 import co.orion.scheduling.domain.BookingModality;
@@ -42,6 +49,7 @@ import co.orion.scheduling.domain.BookingStatus;
 import co.orion.scheduling.domain.LearningProgress;
 import co.orion.scheduling.domain.LearningProgress.Tomada;
 import co.orion.scheduling.persistence.BookingRepository;
+import co.orion.scheduling.persistence.RoomParticipations;
 import co.orion.shared.time.BusinessZone;
 
 /**
@@ -60,18 +68,21 @@ import co.orion.shared.time.BusinessZone;
 public class AchievementService {
 
     /** Puntos por clase completada, del brief. Los del logro salen del catálogo. */
-    private static final int PUNTOS_POR_CLASE = 25;
-    private static final int PUNTOS_POR_RESENA = 20;
+    private static final int PUNTOS_POR_CLASE = PointSource.LESSON.points();
+    private static final int PUNTOS_POR_RESENA = PointSource.REVIEW.points();
 
-    private static final String FUENTE_CLASE = "LESSON";
-    static final String FUENTE_PRACTICA = "PRACTICE";
+    private static final String FUENTE_CLASE = PointSource.LESSON.name();
+    static final String FUENTE_PRACTICA = PointSource.PRACTICE.name();
     /** Lo que promete el cierre de la práctica (brief, B5.3): «+15 puntos». */
-    static final int PUNTOS_PRACTICA = 15;
+    static final int PUNTOS_PRACTICA = PointSource.PRACTICE.points();
     /** El bono de una constelación perfecta: todo al primer intento (24/09/2026). */
-    static final String FUENTE_PRACTICA_PERFECTA = "PRACTICE_PERFECT";
-    static final int PUNTOS_PRACTICA_PERFECTA = 5;
-    private static final String FUENTE_RESENA = "REVIEW";
-    private static final String FUENTE_LOGRO = "ACHIEVEMENT";
+    static final String FUENTE_PRACTICA_PERFECTA = PointSource.PRACTICE_PERFECT.name();
+    static final int PUNTOS_PRACTICA_PERFECTA = PointSource.PRACTICE_PERFECT.points();
+    private static final String FUENTE_RESENA = PointSource.REVIEW.name();
+    private static final String FUENTE_LOGRO = PointSource.ACHIEVEMENT.name();
+
+    /** Hasta cuándo se llega «a tiempo» al aula: cinco minutos de gracia sobre la hora. */
+    static final Duration A_TIEMPO = Duration.ofMinutes(5);
 
     private static final String AJUSTE_GRATUITAS = "gamification_count_free_lessons";
 
@@ -87,6 +98,10 @@ public class AchievementService {
     private final StreakProtectionRepository protections;
     private final PracticeTallyRepository tallies;
     private final PlatformSettingsService settings;
+    private final ConversationRepository conversations;
+    private final RoomParticipations salas;
+    private final ConfidenceAssessmentRepository diagnosticos;
+    private final OnboardingService bienvenida;
     private final ApplicationEventPublisher events;
     private final Clock clock;
 
@@ -102,6 +117,10 @@ public class AchievementService {
                               StreakProtectionRepository protections,
                               PracticeTallyRepository tallies,
                               PlatformSettingsService settings,
+                              ConversationRepository conversations,
+                              RoomParticipations salas,
+                              ConfidenceAssessmentRepository diagnosticos,
+                              OnboardingService bienvenida,
                               ApplicationEventPublisher events,
                               Clock clock) {
         this.bookings = bookings;
@@ -116,6 +135,10 @@ public class AchievementService {
         this.protections = protections;
         this.tallies = tallies;
         this.settings = settings;
+        this.conversations = conversations;
+        this.salas = salas;
+        this.diagnosticos = diagnosticos;
+        this.bienvenida = bienvenida;
         this.events = events;
         this.clock = clock;
     }
@@ -128,8 +151,30 @@ public class AchievementService {
     public void onLessonCompleted(UUID studentId, UUID bookingId, Instant when) {
         if (cuentaParaGamificacion(bookingId)) {
             concederSiEsNueva(studentId, FUENTE_CLASE, bookingId, PUNTOS_POR_CLASE, when);
+            if (llegoATiempo(studentId, bookingId)) {
+                conceder(studentId, PointSource.PUNCTUAL, bookingId, when);
+            }
         }
         reevaluar(studentId);
+    }
+
+    /**
+     * Un mensaje nuevo. Si lo escribió el estudiante, su primera vez con ese profe da puntos —uno por
+     * conversación, no por mensaje: escribir «hola» veinte veces no es recorrer nada— y enciende
+     * «Primer mensaje» en el acto, en vez de esperar a que otra cosa dispare un recálculo. El saludo
+     * automático al reservar no cuenta: no lo escribió nadie.
+     */
+    @Transactional
+    public void onMessagePosted(UUID messageId) {
+        messages.findById(messageId)
+                .filter(m -> !m.isAutomated() && !m.isSystem() && m.getSenderId() != null)
+                .ifPresent(m -> conversations.findById(m.getConversationId())
+                        .filter(c -> m.getSenderId().equals(c.getStudentId()))
+                        .ifPresent(c -> {
+                            conceder(c.getStudentId(), PointSource.MESSAGE, c.getId(),
+                                    m.getCreatedAt() != null ? m.getCreatedAt() : clock.instant());
+                            reevaluar(c.getStudentId());
+                        }));
     }
 
     @Transactional
@@ -167,7 +212,6 @@ public class AchievementService {
         bookings.findById(bookingId).ifPresent(b -> reevaluar(b.getStudentId()));
     }
 
-    /** Los hechos que solo mueven logros y no dan puntos directos. */
     /**
      * Una práctica terminada: sus puntos (una vez por set, por el índice único del libro), el bono si
      * fue perfecta, lo que cuenta para los logros de práctica y, como cuenta para la racha, la
@@ -234,6 +278,40 @@ public class AchievementService {
                 .orElse(true);
     }
 
+    /**
+     * Entró al aula a más tardar cinco minutos después de la hora. Lo cuenta JaaS: sin su webhook no
+     * hay dato, y sin dato no se conceden (tampoco se castiga nada: son puntos, no asistencia).
+     */
+    private boolean llegoATiempo(UUID studentId, UUID bookingId) {
+        return bookings.findById(bookingId)
+                .map(b -> salas.de(bookingId).stream()
+                        .filter(p -> studentId.equals(p.userId()) && p.primeraEntrada() != null)
+                        .anyMatch(p -> !p.primeraEntrada().isAfter(b.getStartsAt().plus(A_TIEMPO))))
+                .orElse(false);
+    }
+
+    /**
+     * Lo que da puntos una sola vez en la vida: la ficha visible, el diagnóstico, el recorrido. Se
+     * mira en cada reevaluación y el origen es el propio estudiante, así que el índice único del libro
+     * hace que la segunda vez no cuente. Volver a poner la ficha privada no los quita: el libro no
+     * borra.
+     */
+    private void puntosDeUnaVez(UUID studentId, Instant ahora) {
+        if (studentProfiles.esPublica(studentId)) {
+            conceder(studentId, PointSource.PROFILE_PUBLIC, studentId, ahora);
+        }
+        if (diagnosticos.existsByUserIdAndStatus(studentId, AssessmentStatus.COMPLETED)) {
+            conceder(studentId, PointSource.DIAGNOSTIC, studentId, ahora);
+        }
+        if (bienvenida.completo(studentId, OnboardingStep.TOUR_STUDENT)) {
+            conceder(studentId, PointSource.TOUR, studentId, ahora);
+        }
+    }
+
+    private void conceder(UUID userId, PointSource fuente, UUID sourceId, Instant when) {
+        concederSiEsNueva(userId, fuente.name(), sourceId, fuente.points(), when);
+    }
+
     private void concederSiEsNueva(UUID userId, String fuente, UUID sourceId, int puntos, Instant when) {
         if (sourceId != null && pointEvents.existsBySourceTypeAndSourceId(fuente, sourceId)) {
             return;
@@ -255,6 +333,7 @@ public class AchievementService {
 
     private void reevaluar(UUID studentId, boolean anunciar) {
         Instant ahora = clock.instant();
+        puntosDeUnaVez(studentId, ahora);
         AchievementInput input = fotoDe(studentId, ahora);
 
         // Las protecciones que el cálculo decidió gastar se persisten aquí: el cálculo es puro y

@@ -10,6 +10,7 @@ import { Cierre } from "@/components/practica/Cierre";
 import { Juego } from "@/components/practica/Juego";
 import { EstadoDelSet, Inicio } from "@/components/practica/Portada";
 import { apiFetch } from "@/lib/api/fetch";
+import { misPuntosKey } from "@/lib/puntos";
 import type { Ejercicio, SetDePractica } from "@/lib/practica";
 
 /**
@@ -52,6 +53,7 @@ function Contenido() {
       queryClient.setQueryData(["practice-set", id], s);
       queryClient.invalidateQueries({ queryKey: ["me", "practice"] });
       queryClient.invalidateQueries({ queryKey: ["me", "engagement"] });
+      queryClient.invalidateQueries({ queryKey: misPuntosKey });
       // Si terminar encendió un logro, la estrella se celebra aquí mismo (brief, B5.3): la celebración
       // mira los logros, y sin esto no se enteraba hasta volver a cargar el perfil.
       queryClient.invalidateQueries({ queryKey: ["me", "achievements"] });

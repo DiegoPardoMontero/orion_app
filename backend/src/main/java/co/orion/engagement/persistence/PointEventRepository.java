@@ -19,6 +19,8 @@ public interface PointEventRepository extends JpaRepository<PointEvent, UUID> {
 
     List<PointEvent> findByUserIdOrderByOccurredAtDesc(UUID userId);
 
+    List<PointEvent> findTop8ByUserIdOrderByOccurredAtDesc(UUID userId);
+
     List<PointEvent> findByUserIdAndSourceType(UUID userId, String sourceType);
 
     void deleteByUserId(UUID userId);

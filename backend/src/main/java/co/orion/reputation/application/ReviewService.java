@@ -13,6 +13,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,6 +27,7 @@ import co.orion.reputation.api.PublicReviewResponse;
 import co.orion.reputation.api.ReportedReviewResponse;
 import co.orion.reputation.domain.ProfessorMetrics;
 import co.orion.reputation.domain.Review;
+import co.orion.reputation.domain.ReviewCreatedEvent;
 import co.orion.reputation.persistence.ProfessorMetricsRepository;
 import co.orion.reputation.persistence.ReviewRepository;
 import co.orion.scheduling.domain.Booking;
@@ -56,17 +58,20 @@ public class ReviewService {
     private final ProfessorMetricsRepository metrics;
     private final BookingRepository bookings;
     private final UserRepository users;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
 
     public ReviewService(ReviewRepository reviews,
                          ProfessorMetricsRepository metrics,
                          BookingRepository bookings,
                          UserRepository users,
+                         ApplicationEventPublisher events,
                          Clock clock) {
         this.reviews = reviews;
         this.metrics = metrics;
         this.bookings = bookings;
         this.users = users;
+        this.events = events;
         this.clock = clock;
     }
 
@@ -97,6 +102,8 @@ public class ReviewService {
         }
 
         recompute(booking.getProfessorId(), now);
+        events.publishEvent(new ReviewCreatedEvent(review.getId(), bookingId, student.getId(),
+                booking.getProfessorId(), rating, now));
         return review;
     }
 

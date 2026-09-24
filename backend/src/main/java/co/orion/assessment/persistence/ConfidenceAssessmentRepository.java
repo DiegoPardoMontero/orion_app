@@ -45,4 +45,7 @@ public interface ConfidenceAssessmentRepository extends JpaRepository<Confidence
     List<UUID> idsOlderThan(@Param("limite") Instant limite);
 
     long countByStartedAtGreaterThanEqual(Instant desde);
+
+    /** Si esa cuenta tiene algún diagnóstico en ese estado. Para los puntos del diagnóstico. */
+    boolean existsByUserIdAndStatus(UUID userId, AssessmentStatus status);
 }

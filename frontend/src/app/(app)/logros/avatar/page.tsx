@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
 import { AvatarOrion } from "@/components/gamificacion/AvatarOrion";
+import { ChipPuntos } from "@/components/Puntos";
 import { Boton, Spinner } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import { useMe } from "@/lib/auth/session";
@@ -103,7 +104,7 @@ export default function PersonalizarAvatarPage() {
         Tu foto no cambia: lo que cambia es lo que la rodea.
       </p>
 
-      <div className="mt-6 flex justify-center">
+      <div className="mt-6 flex flex-col items-center gap-3">
         <AvatarOrion
           nombre={me?.fullName ?? ""}
           fotoUrl={ficha.data.photoUrl}
@@ -114,6 +115,7 @@ export default function PersonalizarAvatarPage() {
           accesorios={puestos}
           size={150}
         />
+        <ChipPuntos total={resumen.data.points} />
       </div>
 
       <Grupo titulo="Órbita" piezas={de("FRAME")} elegido={marcoPuesto} onElegir={setFrame} />

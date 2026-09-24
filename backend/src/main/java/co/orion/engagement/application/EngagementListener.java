@@ -1,5 +1,7 @@
 package co.orion.engagement.application;
 
+import java.util.UUID;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -8,9 +10,16 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import co.orion.assessment.domain.AssessmentCompletedEvent;
 import co.orion.identity.domain.StudentProfileUpdatedEvent;
+import co.orion.identity.domain.UserRole;
+import co.orion.identity.persistence.UserRepository;
 import co.orion.lifecycle.domain.LessonCompletedEvent;
+import co.orion.messaging.application.MessagePostedEvent;
+import co.orion.onboarding.domain.OnboardingStep;
+import co.orion.onboarding.domain.OnboardingStepCompletedEvent;
 import co.orion.practice.domain.PracticeCompletedEvent;
+import co.orion.reputation.domain.ReviewCreatedEvent;
 import co.orion.scheduling.domain.BookingCompletedEvent;
 import co.orion.scheduling.domain.BookingCreatedEvent;
 
@@ -32,9 +41,11 @@ public class EngagementListener {
     private static final Logger log = LoggerFactory.getLogger(EngagementListener.class);
 
     private final AchievementService achievements;
+    private final UserRepository users;
 
-    public EngagementListener(AchievementService achievements) {
+    public EngagementListener(AchievementService achievements, UserRepository users) {
         this.achievements = achievements;
+        this.users = users;
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -75,6 +86,43 @@ public class EngagementListener {
         seguro(() -> achievements.onPracticeCompleted(event.studentId(), event.setId(), event.completedAt(),
                         event.perfecta(), event.escuchaAcertada(), event.segundaOportunidad()),
                 "práctica terminada " + event.setId());
+    }
+
+    /** Calificar la clase da sus puntos y enciende «Primera reseña» en el acto. */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void on(ReviewCreatedEvent event) {
+        seguro(() -> achievements.onReviewCreated(event.studentId(), event.reviewId(), event.createdAt()),
+                "reseña " + event.reviewId());
+    }
+
+    /** El primer mensaje del estudiante a cada profe da puntos y enciende «Primer mensaje». */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void on(MessagePostedEvent event) {
+        seguro(() -> achievements.onMessagePosted(event.messageId()), "mensaje " + event.messageId());
+    }
+
+    /** El diagnóstico con Meissa da puntos una vez. Solo a estudiantes: son los únicos que los hacen. */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void on(AssessmentCompletedEvent event) {
+        if (esEstudiante(event.userId())) {
+            seguro(() -> achievements.onSomethingHappened(event.userId()), "diagnóstico de " + event.userId());
+        }
+    }
+
+    /** Terminar el recorrido del estudiante da puntos una vez. Los pasos del profesor no. */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void on(OnboardingStepCompletedEvent event) {
+        if (event.step() == OnboardingStep.TOUR_STUDENT) {
+            seguro(() -> achievements.onSomethingHappened(event.userId()), "recorrido de " + event.userId());
+        }
+    }
+
+    private boolean esEstudiante(UUID userId) {
+        return users.findById(userId).map(u -> u.getRole() == UserRole.STUDENT).orElse(false);
     }
 
     private void seguro(Runnable accion, String que) {
