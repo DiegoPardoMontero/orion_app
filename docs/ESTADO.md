@@ -670,6 +670,41 @@ como la videollamada.
   ni la traducción repetida al revés (esta última también se limpia en código). En 12 corridas:
   todo en español, la inyección ignorada y el vocabulario limpio.
 
+## La práctica, rediseñada y gamificada (24/09/2026)
+
+Pardo pidió ejercicios más interactivos, cinco distintos por set y en varias categorías, correcciones
+y logros muy gamificados, y que el profesor vea lo que hizo su estudiante. La parte visual viene de
+Claude Design (prompt entregado; se espera la carpeta «Diseño Práctica»); esto es la lógica.
+
+- **Diez tipos en cinco categorías** (V52): Palabras (Parejas, Completa), Frases (Corrige, Caza el
+  error, Arma la frase), Conversación (Ordena la conversación, Responde en el chat), Escucha
+  (Escucha y elige, Escucha y escribe) y Tu turno (Tu frase). Cada set trae **cinco ejercicios de
+  cinco categorías**, uno de cada tipo, en ese orden. `practice_items_per_set` pasó de 4 a 5.
+- **Escucha con la voz del dispositivo** (síntesis de voz del navegador: no cuesta nada), normal y
+  más despacio. Sin voz en inglés, el ejercicio se **salta sin contar** como acierto ni fallo
+  (`skipped_at`). En «Escucha y escribe» se perdona una letra.
+- **Generación v5**: el código elige los tipos —uno por categoría que el acta alcanza a anclar,
+  rotando según la clase— y pide dos de repuesto, para que la revisión o el validador puedan
+  descartar sin dejar el set en cuatro. La revisión (`practice-check-v2`) resuelve también los tipos
+  nuevos. Contra OpenAI, en tres actas distintas, cada ronda dio cinco de cinco categorías.
+- **Gamificación** (V53):
+  - portada del set con Rigel y la constelación apagada;
+  - Rigel que reacciona en cada ejercicio (señala, espera, celebra, anima);
+  - la racha dentro del set («¡Tres seguidas!»);
+  - el cierre con la constelación completa;
+  - **+15 puntos**, y **+5 por constelación perfecta** (todo al primer intento).
+  - Familia nueva de logros **«Práctica»** en «Mi cielo»: Primera constelación, Constelación
+    perfecta, Cinco y Veinte constelaciones, Oído fino (10 de escucha acertados) y Segunda
+    oportunidad (10 al segundo intento). engagement guarda lo que necesita en su propia tabla
+    (`practice_tallies`), alimentada por el evento: sigue sin leer las tablas de la práctica.
+- **El profesor ve lo que hizo su estudiante** (V54; decisión de Pardo que cambia el «nunca las
+  respuestas» del brief, B5.4):
+  - debajo del acta, «Cómo le fue a Ana»: cuántos al primer intento, al segundo, mostrados y
+    saltados, y cada ejercicio con su primera respuesta, la segunda y el resultado;
+  - en la ficha del estudiante, el historial de prácticas.
+  - **El estudiante lo sabe**: la portada de su práctica dice «María verá cómo te fue, así
+    prepara tu próxima clase».
+
 ## Revisión de lo construido en la noche del 22 al 23/09/2026
 
 Una revisión de solo lectura de todo lo de esa noche (traducción, v5, dictado, C1, Parte B)
