@@ -146,6 +146,18 @@ class OpenAiPracticeGeneratorTest {
     }
 
     @Test
+    @DisplayName("La pista viaja aparte de la explicación")
+    void laPista() {
+        var leidos = OpenAiPracticeGenerator.leer("""
+                {"items":[{"type":"FILL_BLANK","prompt":"Completa.","payload":{"sentence":"I ___ swim.","options":["used to","use"]},
+                           "expected":"used to","hint":"Hablas de un hábito del pasado.","explanation":"Used to: solía.",
+                           "sourceTerm":"used to"}]}""");
+
+        assertThat(leidos.getFirst().pista()).isEqualTo("Hablas de un hábito del pasado.");
+        assertThat(leidos.getFirst().explicacion()).isEqualTo("Used to: solía.");
+    }
+
+    @Test
     @DisplayName("Las fichas de una frase que llegan ya en orden se desordenan")
     void fichasEnOrden() {
         String fichas = "[\"Where\",\"is\",\"my\",\"luggage\",\"?\"]";

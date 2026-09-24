@@ -53,7 +53,7 @@ class TextosDelActaTest {
 
     private static final List<String> PROMPTS = List.of(
             "backend/src/main/resources/prompts/lesson-note-v3.txt",
-            "backend/src/main/resources/prompts/practice-v5.txt",
+            "backend/src/main/resources/prompts/practice-v6.txt",
             "backend/src/main/resources/prompts/practice-check-v2.txt");
 
     @Test

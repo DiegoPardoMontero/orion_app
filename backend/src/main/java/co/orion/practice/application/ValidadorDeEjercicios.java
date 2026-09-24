@@ -71,7 +71,8 @@ public final class ValidadorDeEjercicios {
         // Los largos son los de la tabla: algo que no cabe tumbaría el set entero al guardarlo.
         if (vacio(g.prompt()) || g.prompt().length() > 600 || vacio(g.explicacion()) || g.explicacion().length() > 400
                 || (g.expected() != null && g.expected().length() > 600)
-                || (g.terminoFuente() != null && g.terminoFuente().length() > 120)) {
+                || (g.terminoFuente() != null && g.terminoFuente().length() > 120)
+                || (g.pista() != null && g.pista().length() > 400)) {
             return false;
         }
         try {

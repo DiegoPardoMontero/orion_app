@@ -275,7 +275,7 @@ function EjercicioActual({
       {resultado && !resultado.correct && (
         <div className="mt-4 rounded-base bg-warning-bg px-4 py-3 text-[14px] text-warning" aria-live="polite">
           <p>
-            <strong>Casi.</strong> {resultado.item.explanation}
+            <strong>Casi.</strong> {resultado.closed ? resultado.item.explanation : resultado.item.hint}
           </p>
           {resultado.closed && resultado.item.expected && (
             <p className="mt-1">

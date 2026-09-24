@@ -114,4 +114,15 @@ class EvaluadorTest {
         assertThat(Evaluador.esCorrecta(PracticeItemType.DICTATION, "{}", frase, "Here is my bording pas")).isFalse();
         assertThat(Evaluador.esCorrecta(PracticeItemType.DICTATION, "{}", "tip", "top")).isFalse();
     }
+
+    @Test
+    @DisplayName("La contracción no es un error: I'm 30 vale por I am 30, y Here's por Here is")
+    void contracciones() {
+        String payload = "{\"sentence\":\"I have 30 years.\",\"accepted\":[\"I am 30 years old.\"]}";
+        assertThat(Evaluador.esCorrecta(PracticeItemType.FIX_SENTENCE, payload, "I am 30.", "I'm 30")).isTrue();
+        assertThat(Evaluador.esCorrecta(PracticeItemType.FIX_SENTENCE, payload, "I am 30.", "I'm 30 years old.")).isTrue();
+        assertThat(Evaluador.esCorrecta(PracticeItemType.DICTATION, "{}", "Here is my boarding pass.",
+                "Here's my boarding pass")).isTrue();
+        assertThat(Evaluador.esCorrecta(PracticeItemType.FIX_SENTENCE, payload, "I am 30.", "I have 30")).isFalse();
+    }
 }

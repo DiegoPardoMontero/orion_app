@@ -28,8 +28,19 @@ public interface PracticeGenerator {
         }
     }
 
-    /** Un ejercicio tal como sale del generador; {@code payload} y {@code expected} en JSON o texto. */
+    /**
+     * Un ejercicio tal como sale del generador; {@code payload} y {@code expected} en JSON o texto.
+     *
+     * @param pista lo que se muestra en el «Casi…»: ayuda a acertar sin dar la respuesta. La
+     *              explicación, en cambio, se muestra al cerrar el ejercicio (24/09/2026, diseño).
+     */
     record Generado(PracticeItemType tipo, String prompt, String payload, String expected, String explicacion,
-                    String terminoFuente) {
+                    String terminoFuente, String pista) {
+
+        /** Sin pista: el «Casi…» muestra la explicación, como antes. */
+        public Generado(PracticeItemType tipo, String prompt, String payload, String expected, String explicacion,
+                 String terminoFuente) {
+            this(tipo, prompt, payload, expected, explicacion, terminoFuente, null);
+        }
     }
 }

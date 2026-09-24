@@ -39,7 +39,8 @@ public class GeneradorSinIa implements PracticeGenerator {
             frases.add(new Generado(PracticeItemType.WRITE_SENTENCE,
                     "Escribe una frase tuya usando «" + t.term() + "».",
                     JSON.createObjectNode().put("term", t.term()).toString(), null,
-                    "Cualquier frase tuya que use «" + t.term() + "» vale: lo que importa es usarla.", t.term()));
+                    "Cualquier frase tuya que use «" + t.term() + "» vale: lo que importa es usarla.", t.term(),
+                    "Escríbela toda en inglés, con «" + t.term() + "» adentro."));
         }
         // Escuchar el primer término: lo único de escucha que se puede anclar sin inventar nada.
         List<Generado> escucha = terminos.stream().limit(1).map(GeneradorSinIa::dictado).toList();
@@ -88,13 +89,15 @@ public class GeneradorSinIa implements PracticeGenerator {
             opciones.add(termino);
         }
         return new Generado(PracticeItemType.FILL_BLANK, "Completa la frase de tu clase.", payload.toString(),
-                termino, "Aquí va «" + termino + "», como lo trabajaron en clase.", termino);
+                termino, "Aquí va «" + termino + "», como lo trabajaron en clase.", termino,
+                "Es una de las palabras nuevas de tu clase: búscala en tu resumen.");
     }
 
     private static Generado dictado(Material.Termino t) {
         return new Generado(PracticeItemType.DICTATION, "Escucha y escribe lo que dice Meissa.",
                 JSON.createObjectNode().put("say", t.term()).toString(), t.term(),
-                "Es «" + t.term() + "», una de las expresiones de tu clase.", t.term());
+                "Es «" + t.term() + "», una de las expresiones de tu clase.", t.term(),
+                "Escúchala otra vez, más despacio.");
     }
 
     private static Generado emparejar(List<Material.Termino> pares) {

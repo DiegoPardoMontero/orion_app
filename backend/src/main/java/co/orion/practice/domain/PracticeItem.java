@@ -53,6 +53,10 @@ public class PracticeItem {
     @Column(name = "source_term", length = 120, updatable = false)
     private String sourceTerm;
 
+    /** La pista del «Casi…»: ayuda a acertar sin dar la respuesta. Nula en los sets de antes. */
+    @Column(length = 400, updatable = false)
+    private String hint;
+
     @Column(length = 600)
     private String answer;
 
@@ -77,6 +81,11 @@ public class PracticeItem {
 
     public PracticeItem(UUID practiceSetId, int itemIndex, PracticeItemType itemType, String prompt,
                         String payload, String expected, String explanation, String sourceTerm) {
+        this(practiceSetId, itemIndex, itemType, prompt, payload, expected, explanation, sourceTerm, null);
+    }
+
+    public PracticeItem(UUID practiceSetId, int itemIndex, PracticeItemType itemType, String prompt,
+                        String payload, String expected, String explanation, String sourceTerm, String hint) {
         this.practiceSetId = practiceSetId;
         this.itemIndex = (short) itemIndex;
         this.itemType = itemType;
@@ -85,6 +94,7 @@ public class PracticeItem {
         this.expected = expected;
         this.explanation = explanation;
         this.sourceTerm = sourceTerm;
+        this.hint = hint;
     }
 
     /**
@@ -110,6 +120,35 @@ public class PracticeItem {
         this.answeredAt = ahora;
     }
 
+    /**
+     * Parejas, par por par (diseño del 24/09/2026): cada par se comprueba al unirlo. Uno que va se
+     * queda unido sin gastar intento; uno que no va gasta un intento. Con todos unidos, acertado —al
+     * primer intento si no falló ninguno—; sin intentos, se muestra lo que faltaba.
+     *
+     * @param unidos los pares ya unidos, en JSON, con el nuevo si fue
+     * @param fallo  el par que no fue, en JSON, para que el profesor vea qué intentó
+     */
+    public void pareja(boolean va, boolean completa, String unidos, String fallo, int maxIntentos, Instant ahora) {
+        if (itemType != PracticeItemType.MATCH_MEANING) {
+            throw new UnprocessableException("Solo las parejas se unen de a una.");
+        }
+        if (cerrado(maxIntentos)) {
+            throw new UnprocessableException("Este ejercicio ya está cerrado. Sigue con el próximo.");
+        }
+        this.answer = unidos;
+        this.answeredAt = ahora;
+        if (!va) {
+            if (attempts == 0) {
+                this.firstAnswer = fallo;
+            }
+            this.attempts++;
+            this.correct = false;
+        } else if (completa) {
+            this.attempts++;
+            this.correct = true;
+        }
+    }
+
     /** Terminado: acertado, sin intentos o saltado. Se muestra la respuesta y se sigue. */
     public boolean cerrado(int maxIntentos) {
         return Boolean.TRUE.equals(correct) || attempts >= maxIntentos || skippedAt != null;
@@ -126,12 +165,16 @@ public class PracticeItem {
     }
 
     /**
-     * Una constelación perfecta: todo lo que se respondió, al primer intento. Lo saltado por falta de
-     * voz no la rompe, pero un set entero saltado no es perfecto.
+     * Una constelación perfecta: todos al primer intento. Uno saltado también la apaga (diseño,
+     * 24/09/2026): no cuenta como error, pero tampoco como estrella a la primera.
      */
     public static boolean perfecta(List<PracticeItem> items) {
-        List<PracticeItem> respondidos = items.stream().filter(i -> i.skippedAt == null).toList();
-        return !respondidos.isEmpty() && respondidos.stream().allMatch(PracticeItem::alPrimerIntento);
+        return !items.isEmpty() && items.stream().allMatch(PracticeItem::alPrimerIntento);
+    }
+
+    /** Lo que costó: resuelto al segundo intento o mostrado. Es lo que va a «Para repasar» y «Le costó». */
+    public boolean costo(int maxIntentos) {
+        return alSegundoIntento() || (cerrado(maxIntentos) && Boolean.FALSE.equals(correct) && skippedAt == null);
     }
 
     /**
@@ -158,6 +201,7 @@ public class PracticeItem {
     public String getExpected() { return expected; }
     public String getExplanation() { return explanation; }
     public String getSourceTerm() { return sourceTerm; }
+    public String getHint() { return hint; }
     public String getAnswer() { return answer; }
     public String getFirstAnswer() { return firstAnswer; }
     public Boolean getCorrect() { return correct; }

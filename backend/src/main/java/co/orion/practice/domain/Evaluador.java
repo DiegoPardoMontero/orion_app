@@ -57,14 +57,14 @@ public final class Evaluador {
         try {
             return switch (tipo) {
                 case FILL_BLANK -> normalizar(respuesta).equals(normalizar(expected));
-                case FIX_SENTENCE -> aceptadas(payload, expected).contains(normalizar(respuesta));
+                case FIX_SENTENCE -> aceptadas(payload, expected).contains(sinContracciones(normalizar(respuesta)));
                 case MATCH_MEANING -> pares(JSON.readTree(respuesta)).equals(pares(JSON.readTree(expected)));
                 case ORDER_DIALOGUE -> lineas(JSON.readTree(respuesta)).equals(lineas(JSON.readTree(expected)));
                 case WRITE_SENTENCE -> usaElTermino(JSON.readTree(payload).path("term").asText(""), respuesta);
                 case SPOT_ERROR -> Integer.parseInt(respuesta.strip()) == JSON.readTree(expected).path("index").asInt(-1);
                 case BUILD_SENTENCE -> lineas(JSON.readTree(respuesta)).equals(lineas(JSON.readTree(expected)));
                 case CHOOSE_REPLY, LISTEN_CHOOSE -> normalizar(respuesta).equals(normalizar(expected));
-                case DICTATION -> casiIgual(soloPalabras(respuesta), soloPalabras(expected));
+                case DICTATION -> casiIgual(sinContracciones(soloPalabras(respuesta)), sinContracciones(soloPalabras(expected)));
             };
         } catch (Exception ex) {
             // Una respuesta que no se puede leer (un JSON roto desde el cliente) es incorrecta, no un 500.
@@ -84,11 +84,37 @@ public final class Evaluador {
 
     private static List<String> aceptadas(String payload, String expected) throws Exception {
         List<String> todas = new ArrayList<>();
-        todas.add(normalizar(expected));
+        todas.add(sinContracciones(normalizar(expected)));
         for (JsonNode otra : JSON.readTree(payload).path("accepted")) {
-            todas.add(normalizar(otra.asText()));
+            todas.add(sinContracciones(normalizar(otra.asText())));
         }
         return todas;
+    }
+
+    /** «I'm 30» y «I am 30» son la misma respuesta: la contracción no es un error (diseño, 24/09/2026). */
+    private static final Map<String, String> CONTRACCIONES = Map.ofEntries(
+            Map.entry("i'm", "i am"), Map.entry("you're", "you are"), Map.entry("we're", "we are"),
+            Map.entry("they're", "they are"), Map.entry("it's", "it is"), Map.entry("that's", "that is"),
+            Map.entry("there's", "there is"), Map.entry("here's", "here is"), Map.entry("what's", "what is"),
+            Map.entry("where's", "where is"), Map.entry("let's", "let us"), Map.entry("i've", "i have"),
+            Map.entry("you've", "you have"), Map.entry("we've", "we have"), Map.entry("they've", "they have"),
+            Map.entry("i'll", "i will"), Map.entry("you'll", "you will"), Map.entry("we'll", "we will"),
+            Map.entry("they'll", "they will"), Map.entry("i'd", "i would"), Map.entry("don't", "do not"),
+            Map.entry("doesn't", "does not"), Map.entry("didn't", "did not"), Map.entry("can't", "cannot"),
+            Map.entry("won't", "will not"), Map.entry("isn't", "is not"), Map.entry("aren't", "are not"),
+            Map.entry("wasn't", "was not"), Map.entry("weren't", "were not"), Map.entry("haven't", "have not"),
+            Map.entry("hasn't", "has not"), Map.entry("hadn't", "had not"), Map.entry("shouldn't", "should not"),
+            Map.entry("wouldn't", "would not"), Map.entry("couldn't", "could not"));
+
+    static String sinContracciones(String normalizado) {
+        StringBuilder sb = new StringBuilder();
+        for (String palabra : normalizado.split(" ")) {
+            if (!sb.isEmpty()) {
+                sb.append(' ');
+            }
+            sb.append(CONTRACCIONES.getOrDefault(palabra, palabra));
+        }
+        return sb.toString().replace("can not", "cannot");
     }
 
     private static Map<String, String> pares(JsonNode objeto) {

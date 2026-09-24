@@ -453,4 +453,50 @@ class PracticaIT extends ApiIntegrationSupport {
                 select achievement_code from user_achievements where user_id = ? and unlocked_at is not null""",
                 String.class, ana.getId())).contains("practica-primera").doesNotContain("practica-perfecta");
     }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    @Test
+    @DisplayName("Tras un fallo va la pista, no la explicación; cerrado, la explicación")
+    void laPistaYLaExplicacion() {
+        Map set = setListo();
+        Map hueco = ((List<Map>) set.get("items")).stream().filter(i -> "FILL_BLANK".equals(i.get("type")))
+                .findFirst().orElseThrow();
+        String ruta = "/api/v1/practice-items/" + hueco.get("id") + "/answer";
+
+        Map casi = (Map) post(ruta, sesionAna, Map.of("answer", "no sé"), Map.class).getBody().get("item");
+        assertThat(casi).containsEntry("explanation", null);
+        assertThat((String) casi.get("hint")).contains("búscala en tu resumen");
+
+        Map cerrado = (Map) post(ruta, sesionAna, Map.of("answer", "tampoco"), Map.class).getBody().get("item");
+        assertThat(cerrado).containsEntry("hint", null);
+        assertThat(cerrado.get("explanation")).isNotNull();
+        assertThat(cerrado.get("expected")).isNotNull();
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    @Test
+    @DisplayName("Parejas de a una: el par que va se queda unido sin gastar intento; el que no, gasta uno")
+    void parejasDeAUna() {
+        Map set = setListo();
+        UUID setId = UUID.fromString((String) set.get("id"));
+        UUID pareja = jdbc.queryForObject("""
+                insert into practice_items (practice_set_id, item_index, item_type, prompt, payload, expected, explanation)
+                values (?, 9, 'MATCH_MEANING', 'Une.',
+                        '{"terms":["used to","deadline","strength"],"meanings":["fecha límite","fortaleza","solía"]}'::jsonb,
+                        '{"used to":"solía","deadline":"fecha límite","strength":"fortaleza"}', 'Son las de tu clase.')
+                returning id""", UUID.class, setId);
+        String ruta = "/api/v1/practice-items/" + pareja + "/pair";
+
+        Map va = post(ruta, sesionAna, Map.of("term", "used to", "meaning", "solía"), Map.class).getBody();
+        assertThat(va).containsEntry("pairCorrect", true).containsEntry("closed", false).containsEntry("attemptsLeft", 2);
+        Map noVa = post(ruta, sesionAna, Map.of("term", "deadline", "meaning", "fortaleza"), Map.class).getBody();
+        assertThat(post(ruta, sesionAna, Map.of("term", "used to", "meaning", "solía"), Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+        assertThat(noVa).containsEntry("pairCorrect", false).containsEntry("attemptsLeft", 1);
+        post(ruta, sesionAna, Map.of("term", "strength", "meaning", "fortaleza"), Map.class);
+        Map fin = post(ruta, sesionAna, Map.of("term", "deadline", "meaning", "fecha límite"), Map.class).getBody();
+
+        assertThat(fin).containsEntry("pairCorrect", true).containsEntry("closed", true);
+        assertThat((Map) fin.get("item")).containsEntry("correct", true).containsEntry("attempts", 2);
+    }
 }

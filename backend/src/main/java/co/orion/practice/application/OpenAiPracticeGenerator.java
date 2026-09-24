@@ -53,7 +53,7 @@ public class OpenAiPracticeGenerator implements PracticeGenerator {
 
     private static final Logger log = LoggerFactory.getLogger(OpenAiPracticeGenerator.class);
     private static final ObjectMapper JSON = new ObjectMapper();
-    static final String PROMPT = "prompts/practice-v5.txt";
+    static final String PROMPT = "prompts/practice-v6.txt";
     static final String REVISION = "prompts/practice-check-v2.txt";
 
     /** Los que tienen una sola respuesta correcta: los que la revisión puede resolver y comparar. */
@@ -267,7 +267,8 @@ public class OpenAiPracticeGenerator implements PracticeGenerator {
             ArrayNode aceptadas = copia.has("accepted") && copia.get("accepted").isArray()
                     ? (ArrayNode) copia.get("accepted") : copia.putArray("accepted");
             aceptadas.add(respuesta.strip());
-            return new Generado(g.tipo(), g.prompt(), copia.toString(), g.expected(), g.explicacion(), g.terminoFuente());
+            return new Generado(g.tipo(), g.prompt(), copia.toString(), g.expected(), g.explicacion(), g.terminoFuente(),
+                    g.pista());
         } catch (IOException ex) {
             return g;
         }
@@ -395,7 +396,8 @@ public class OpenAiPracticeGenerator implements PracticeGenerator {
                         esperado.isNull() || esperado.isMissingNode() ? null
                                 : esperado.isTextual() ? esperado.asText() : esperado.toString(),
                         item.path("explanation").asText(null),
-                        item.path("sourceTerm").isTextual() ? item.path("sourceTerm").asText() : null));
+                        item.path("sourceTerm").isTextual() ? item.path("sourceTerm").asText() : null,
+                        item.path("hint").isTextual() ? item.path("hint").asText() : null));
             }
         } catch (IOException ex) {
             return List.of();

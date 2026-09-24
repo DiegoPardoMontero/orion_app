@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +28,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import co.orion.catalog.application.PlatformSettingsService;
 import co.orion.identity.domain.User;
@@ -34,6 +36,7 @@ import co.orion.identity.persistence.StudentProfileRepository;
 import co.orion.practice.domain.Evaluador;
 import co.orion.practice.domain.PracticeCompletedEvent;
 import co.orion.practice.domain.PracticeItem;
+import co.orion.practice.domain.PracticeItemType;
 import co.orion.practice.domain.PracticeSet;
 import co.orion.practice.domain.PracticeSetStatus;
 import co.orion.practice.persistence.PracticeItemRepository;
@@ -68,19 +71,22 @@ public class PracticeService {
     private final PracticeGenerator generador;
     private final PlatformSettingsService settings;
     private final StudentProfileRepository perfiles;
+    private final RevisorDeFrases revisor;
     private final ApplicationEventPublisher eventos;
     private final TransactionTemplate cadaUnoEnSuTransaccion;
     private final Clock clock;
 
     public PracticeService(PracticeSetRepository sets, PracticeItemRepository items, BookingRepository bookings,
                            PracticeGenerator generador, PlatformSettingsService settings, StudentProfileRepository perfiles,
-                           ApplicationEventPublisher eventos, PlatformTransactionManager transacciones, Clock clock) {
+                           RevisorDeFrases revisor, ApplicationEventPublisher eventos,
+                           PlatformTransactionManager transacciones, Clock clock) {
         this.sets = sets;
         this.items = items;
         this.bookings = bookings;
         this.generador = generador;
         this.settings = settings;
         this.perfiles = perfiles;
+        this.revisor = revisor;
         this.eventos = eventos;
         this.cadaUnoEnSuTransaccion = new TransactionTemplate(transacciones);
         this.cadaUnoEnSuTransaccion.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -162,7 +168,7 @@ public class PracticeService {
             for (int i = 0; i < validos.size(); i++) {
                 PracticeGenerator.Generado g = validos.get(i);
                 items.save(new PracticeItem(set.getId(), i, g.tipo(), g.prompt(), g.payload(), g.expected(),
-                        g.explicacion(), g.terminoFuente()));
+                        g.explicacion(), g.terminoFuente(), Pistas.segura(g)));
             }
             // Un minuto por ejercicio, y nunca menos de dos: es lo que se promete en la invitación.
             set.listo(validos.size(), Math.max(2, validos.size()));
@@ -229,8 +235,9 @@ public class PracticeService {
         set.exigirVivo(clock.instant());
         set.empezar(clock.instant());
         int max = settings.getInt("practice_max_attempts");
-        boolean correcto = Evaluador.esCorrecta(ejercicio.getItemType(), ejercicio.getPayload(),
-                ejercicio.getExpected(), respuesta);
+        boolean correcto = ejercicio.getItemType() == PracticeItemType.WRITE_SENTENCE
+                ? fraseAceptada(estudiante, ejercicio, respuesta)
+                : Evaluador.esCorrecta(ejercicio.getItemType(), ejercicio.getPayload(), ejercicio.getExpected(), respuesta);
         ejercicio.responder(recortar(respuesta), correcto, max, clock.instant());
         items.save(ejercicio);
         sets.save(set);
@@ -248,6 +255,48 @@ public class PracticeService {
         ejercicio.saltar(settings.getInt("practice_max_attempts"), clock.instant());
         sets.save(set);
         return items.save(ejercicio);
+    }
+
+    public record ResultadoDePareja(PracticeItem ejercicio, boolean va, boolean cerrado, int intentosQueQuedan) {
+    }
+
+    /**
+     * Unir un par en Parejas. Un par que va se queda unido; uno que no va gasta un intento. Unir de
+     * nuevo algo ya unido es 422: la pantalla no lo ofrece.
+     */
+    @Transactional
+    public ResultadoDePareja unirPareja(User estudiante, UUID ejercicioId, String termino, String significado) {
+        PracticeItem ejercicio = items.findById(ejercicioId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ejercicio no encontrado"));
+        PracticeSet set = suyo(estudiante, ejercicio.getPracticeSetId());
+        set.exigirVivo(clock.instant());
+        set.empezar(clock.instant());
+        int max = settings.getInt("practice_max_attempts");
+        Map<String, String> esperados = new LinkedHashMap<>();
+        ObjectNode unidos;
+        try {
+            JSON.readTree(ejercicio.getExpected()).fields()
+                    .forEachRemaining(e -> esperados.put(Evaluador.normalizar(e.getKey()), e.getValue().asText()));
+            unidos = ejercicio.getAnswer() != null && ejercicio.getAnswer().startsWith("{")
+                    ? (ObjectNode) JSON.readTree(ejercicio.getAnswer()) : JSON.createObjectNode();
+        } catch (JsonProcessingException | RuntimeException ex) {
+            throw new UnprocessableException("Este ejercicio no se puede unir de a una.");
+        }
+        boolean yaUnido = unidos.has(termino) || StreamSupport.stream(unidos.spliterator(), false)
+                .anyMatch(v -> Evaluador.normalizar(v.asText()).equals(Evaluador.normalizar(significado)));
+        if (yaUnido) {
+            throw new UnprocessableException("Esa ya está unida. Elige otra.");
+        }
+        String correcto = esperados.get(Evaluador.normalizar(termino));
+        boolean va = correcto != null && Evaluador.normalizar(correcto).equals(Evaluador.normalizar(significado));
+        if (va) {
+            unidos.put(termino, significado);
+        }
+        String fallo = JSON.createObjectNode().put(termino, significado).toString();
+        ejercicio.pareja(va, unidos.size() == esperados.size(), unidos.toString(), fallo, max, clock.instant());
+        items.save(ejercicio);
+        sets.save(set);
+        return new ResultadoDePareja(ejercicio, va, ejercicio.cerrado(max), Math.max(0, max - ejercicio.getAttempts()));
     }
 
     /**
@@ -278,15 +327,38 @@ public class PracticeService {
         return new ConEjercicios(set, suyos);
     }
 
+    /**
+     * «Tu frase»: la revisa la IA —inglés con sentido que usa el término o una flexión—, y si no hay
+     * quién revise, la regla de siempre (el término, en una frase de cuatro palabras o más).
+     */
+    private boolean fraseAceptada(User estudiante, PracticeItem ejercicio, String respuesta) {
+        boolean porRegla = Evaluador.esCorrecta(PracticeItemType.WRITE_SENTENCE, ejercicio.getPayload(), null, respuesta);
+        if (respuesta == null || respuesta.isBlank()) {
+            return false;
+        }
+        String termino;
+        try {
+            termino = JSON.readTree(ejercicio.getPayload()).path("term").asText("");
+        } catch (JsonProcessingException ex) {
+            return porRegla;
+        }
+        return revisor.acepta(estudiante.getId(), termino, recortar(respuesta)).orElse(porRegla);
+    }
+
     /** Cuántos intentos tiene cada ejercicio (ajuste {@code practice_max_attempts}). */
     public int maxIntentos() {
         return settings.getInt("practice_max_attempts");
     }
 
+    /** Las terminadas y las vencidas, con sus ejercicios: «Mi cielo» dice cuáles fueron perfectas. */
     @Transactional(readOnly = true)
-    public List<PracticeSet> historial(User estudiante) {
-        return sets.findByStudentIdAndStatusInOrderByCreatedAtDesc(estudiante.getId(),
+    public List<ConEjercicios> historial(User estudiante) {
+        List<PracticeSet> suyos = sets.findByStudentIdAndStatusInOrderByCreatedAtDesc(estudiante.getId(),
                 List.of(PracticeSetStatus.COMPLETED, PracticeSetStatus.EXPIRED));
+        Map<UUID, List<PracticeItem>> porSet = suyos.isEmpty() ? Map.of()
+                : items.findByPracticeSetIdIn(suyos.stream().map(PracticeSet::getId).toList()).stream()
+                        .collect(Collectors.groupingBy(PracticeItem::getPracticeSetId));
+        return suyos.stream().map(s -> new ConEjercicios(s, porSet.getOrDefault(s.getId(), List.of()))).toList();
     }
 
     /* ---------------- lo que ve el profesor ---------------- */
@@ -322,7 +394,7 @@ public class PracticeService {
         Map<String, Long> fallos = new LinkedHashMap<>();
         if (!recientes.isEmpty()) {
             items.findByPracticeSetIdIn(recientes.stream().map(PracticeSet::getId).toList()).stream()
-                    .filter(i -> Boolean.FALSE.equals(i.getCorrect()))
+                    .filter(i -> i.costo(maxIntentos()))
                     .map(i -> i.getSourceTerm() != null ? i.getSourceTerm() : nombreDelTipo(i))
                     .forEach(t -> fallos.merge(t, 1L, Long::sum));
         }

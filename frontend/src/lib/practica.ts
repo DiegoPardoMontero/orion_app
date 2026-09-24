@@ -42,6 +42,9 @@ export type Ejercicio = {
   closed: boolean;
   /** Saltado porque el dispositivo no tenía voz en inglés: cerrado, pero ni acierto ni fallo. */
   skipped: boolean;
+  /** La pista del «Casi…»: llega tras un fallo, con el ejercicio abierto. */
+  hint: string | null;
+  /** Llega con el ejercicio cerrado: acertado, mostrado o saltado. */
   explanation: string | null;
   expected: string | null;
   answer: string | null;

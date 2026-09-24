@@ -67,8 +67,13 @@ public class PracticeController {
 
     @GetMapping("/api/v1/me/practice/history")
     public List<SetView> historial(@AuthenticationPrincipal OrionUserDetails principal) {
-        return practica.historial(principal.user()).stream()
-                .map(s -> vista(new ConEjercicios(s, List.of()))).toList();
+        // Sin los ejercicios, que la lista no necesita; con «perfect», que «Mi cielo» sí.
+        return practica.historial(principal.user()).stream().map(c -> {
+            SetView v = vista(c);
+            return new SetView(v.id(), v.status(), v.lessonNoteId(), v.bookingId(), v.classStartsAt(), v.professorName(),
+                    v.workedOn(), v.vocabularyCount(), v.estimatedMinutes(), v.itemCount(), v.correctCount(), v.expiresAt(),
+                    v.completedAt(), List.of(), v.perfect());
+        }).toList();
     }
 
     @GetMapping("/api/v1/practice-sets/{id}")
@@ -86,6 +91,14 @@ public class PracticeController {
                                 @Valid @RequestBody RespuestaRequest body) {
         PracticeService.Resultado r = practica.responder(principal.user(), id, body.answer());
         return new ResultView(r.correcto(), r.cerrado(), r.intentosQueQuedan(), item(r.ejercicio(), r.cerrado()));
+    }
+
+    /** Unir un par en Parejas: el que va se queda unido; el que no va gasta un intento. */
+    @PostMapping("/api/v1/practice-items/{id}/pair")
+    public PairView unirPareja(@AuthenticationPrincipal OrionUserDetails principal, @PathVariable UUID id,
+                               @Valid @RequestBody ParejaRequest body) {
+        PracticeService.ResultadoDePareja r = practica.unirPareja(principal.user(), id, body.term(), body.meaning());
+        return new PairView(r.va(), r.cerrado(), r.intentosQueQuedan(), item(r.ejercicio(), r.cerrado()));
     }
 
     /** Saltar un ejercicio de escucha: el dispositivo no tiene voz en inglés. No cuenta como error. */
@@ -172,9 +185,13 @@ public class PracticeController {
     public record RespuestaRequest(@NotNull @Size(max = 600) String answer) {
     }
 
+    /**
+     * @param hint        la pista del «Casi…»: viaja solo tras un fallo con el ejercicio aún abierto
+     * @param explanation viaja con el ejercicio cerrado (acertado, mostrado o saltado)
+     */
     public record ItemView(UUID id, int index, String type, String category, String prompt, String payload,
-                           int attempts, Boolean correct, boolean closed, boolean skipped, String explanation,
-                           String expected, String answer) {
+                           int attempts, Boolean correct, boolean closed, boolean skipped, String hint,
+                           String explanation, String expected, String answer) {
     }
 
     public record SetView(UUID id, String status, UUID lessonNoteId, String bookingId, ZonedDateTime classStartsAt,
@@ -184,6 +201,13 @@ public class PracticeController {
     }
 
     public record ResultView(boolean correct, boolean closed, int attemptsLeft, ItemView item) {
+    }
+
+    public record ParejaRequest(@NotNull @Size(max = 120) String term, @NotNull @Size(max = 300) String meaning) {
+    }
+
+    /** @param pairCorrect si ese par iba */
+    public record PairView(boolean pairCorrect, boolean closed, int attemptsLeft, ItemView item) {
     }
 
     private SetView vista(ConEjercicios c) {
@@ -202,17 +226,18 @@ public class PracticeController {
     }
 
     /**
-     * La explicación viaja en cuanto hubo un intento: es la pista del «Casi…» antes de intentar otra
-     * vez (brief, B5.2). La respuesta esperada, solo con el ejercicio cerrado sin acertar.
+     * Tras un fallo va la pista del «Casi…» (brief, B5.2); cerrado, la explicación. La respuesta
+     * esperada, solo con el ejercicio cerrado sin acertar.
      */
     private static ItemView item(PracticeItem i, boolean cerrado) {
         boolean acerto = Boolean.TRUE.equals(i.getCorrect());
-        // Saltado también muestra la explicación: el estudiante no llegó a intentarlo, pero la merece.
-        boolean mostrarExplicacion = i.getAttempts() > 0 || i.getSkippedAt() != null;
+        // Tras un fallo, con el ejercicio abierto, va la pista (o la explicación, en los sets de antes de
+        // la pista). Cerrado —acertado, mostrado o saltado—, la explicación.
+        boolean casi = !cerrado && i.getAttempts() > 0;
         return new ItemView(i.getId(), i.getItemIndex(), i.getItemType().name(), i.getItemType().categoria().name(),
                 i.getPrompt(), payload(i, cerrado), i.getAttempts(), i.getCorrect(), cerrado, i.getSkippedAt() != null,
-                mostrarExplicacion ? i.getExplanation() : null, cerrado && !acerto ? i.getExpected() : null,
-                i.getAnswer());
+                casi ? (i.getHint() != null ? i.getHint() : i.getExplanation()) : null,
+                cerrado ? i.getExplanation() : null, cerrado && !acerto ? i.getExpected() : null, i.getAnswer());
     }
 
     /**
