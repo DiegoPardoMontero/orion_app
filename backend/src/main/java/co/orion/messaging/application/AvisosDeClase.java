@@ -16,6 +16,7 @@ import co.orion.identity.persistence.UserRepository;
 import co.orion.lifecycle.domain.ClassReminderDueEvent;
 import co.orion.lifecycle.domain.LessonCompletedEvent;
 import co.orion.practice.domain.PracticeReadyEvent;
+import co.orion.practice.domain.PracticeReminderDueEvent;
 import co.orion.reputation.domain.ReviewCreatedEvent;
 import co.orion.reputation.persistence.ReviewRepository;
 import co.orion.scheduling.domain.BookingCompletedEvent;
@@ -137,6 +138,17 @@ public class AvisosDeClase {
                 "Tu práctica está lista ✦",
                 event.itemCount() + " ejercicios de tu clase con " + nombre(event.professorId())
                         + ", unos " + Math.max(2, event.itemCount()) + " minutos. Suma a tu racha.",
+                "/practica/" + event.setId()));
+    }
+
+    /** A los dos días sin empezarla, una vez y solo en la campana (el de «lista» ya sonó). */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void on(PracticeReminderDueEvent event) {
+        seguro("recordar la práctica " + event.setId(), () -> notifications.create(event.studentId(),
+                "PRACTICE_REMINDER", "Tu práctica con " + nombre(event.professorId()) + " sigue esperándote",
+                event.itemCount() + " ejercicios, unos " + Math.max(2, event.itemCount())
+                        + " minutos. Cuando la termines, suma a tu racha y a tus puntos.",
                 "/practica/" + event.setId()));
     }
 

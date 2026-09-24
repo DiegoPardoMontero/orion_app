@@ -28,6 +28,7 @@ import co.orion.TestcontainersConfiguration;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.practice.application.PracticeService;
+import co.orion.practice.application.RecordatorioDePractica;
 import co.orion.scheduling.TestBookings;
 import co.orion.scheduling.domain.BookingModality;
 import co.orion.scheduling.persistence.BookingRepository;
@@ -56,6 +57,9 @@ class PracticaIT extends ApiIntegrationSupport {
 
     @Autowired
     private PracticeService practica;
+
+    @Autowired
+    private RecordatorioDePractica recordatorio;
 
     private User maria;
     private User ana;
@@ -129,6 +133,21 @@ class PracticaIT extends ApiIntegrationSupport {
 
         assertThat(set).containsEntry("status", "PENDING").containsEntry("professorName", "María Gómez");
         assertThat((List) set.get("items")).isEmpty();
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Test
+    @DisplayName("Una práctica lista y sin empezar se recuerda una vez, a los dos días, solo en la campana")
+    void seRecuerdaUnaVez() {
+        Map set = setListo();
+        String id = (String) set.get("id");
+        assertThat(recordatorio.recordar()).isZero();
+
+        jdbc.update("update practice_sets set created_at = now() - interval '3 days' where id = ?::uuid", id);
+        assertThat(recordatorio.recordar()).isEqualTo(1);
+        assertThat(recordatorio.recordar()).isZero();
+        await().atMost(Duration.ofSeconds(5)).until(() -> jdbc.queryForObject(
+                "select count(*) from notifications where type = 'PRACTICE_REMINDER'", Integer.class) == 1);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})

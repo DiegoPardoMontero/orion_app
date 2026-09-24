@@ -32,6 +32,7 @@ import { diaBogota, fechaCorta, fechaYRango, precioCop, rangoHoras } from "@/lib
 import { useElegibilidadRetracto, useRetractarse } from "@/lib/retracto";
 import { horas, minutos, useCifras } from "@/lib/cifras";
 import { AvisoDelRecorrido } from "@/components/bienvenida/AvisoDelRecorrido";
+import { RecordatorioDePractica } from "@/components/InvitacionAPracticar";
 
 type Scope = "upcoming" | "past";
 type Vista = "agenda" | "calendario";
@@ -102,6 +103,7 @@ function Contenido() {
         <ListaDeActas esProfesor={esProfesor} />
       )}
       <AvisoDelRecorrido />
+      {!esProfesor && <RecordatorioDePractica className="mt-4" />}
       {scope === "upcoming" && esProfesor && <AvisoDeActas onVer={() => setScope("past")} />}
 
       <div className="mt-4">

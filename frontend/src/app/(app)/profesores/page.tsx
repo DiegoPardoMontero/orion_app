@@ -20,8 +20,10 @@ import type {
 import { esGratis, tarifaClase } from "@/lib/format";
 import { etiquetaNivel, NIVELES, t } from "@/lib/i18n";
 import { useMediaQuery } from "@/lib/useMediaQuery";
+import { useMe } from "@/lib/auth/session";
 import { Rigel } from "@/components/Rigel";
 import { paisConBandera } from "@/lib/paises";
+import { RecordatorioDePractica } from "@/components/InvitacionAPracticar";
 
 type Orden = "RELEVANCE" | "PRICE_ASC" | "PRICE_DESC";
 
@@ -121,6 +123,8 @@ function construirQs(f: Filtros, page: number): string {
 
 export default function ProfesoresPage() {
   const esDesktop = useMediaQuery("(min-width: 1024px)");
+  // El catálogo se ve también sin cuenta: lo de la práctica solo aplica a un estudiante.
+  const { data: me } = useMe();
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_INICIALES);
   const [hojaAbierta, setHojaAbierta] = useState(false);
 
@@ -229,6 +233,9 @@ export default function ProfesoresPage() {
       {/* La lista necesita su propio encabezado: el h1 ahora es el del banner, y sin esto los
           resultados quedaban colgando sin título — para un lector de pantalla, sin nada que los
           nombre. */}
+      {/* La práctica pendiente también se recuerda aquí, donde el estudiante entra (24/09/2026). */}
+      {me?.role === "STUDENT" && <RecordatorioDePractica className="mt-5" />}
+
       <h2 className="mt-6 font-display text-h3 font-bold">Profesores</h2>
       <p className="mt-1 text-[14px] text-text-secondary">
         Elige con quién quieres practicar y reserva tu clase.

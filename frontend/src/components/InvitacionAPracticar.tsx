@@ -1,7 +1,9 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { X } from "lucide-react";
 import Link from "next/link";
+import { useState, useSyncExternalStore } from "react";
 import { Constelacion, formaDe } from "@/components/practica/Constelacion";
 import { apiFetch } from "@/lib/api/fetch";
 import {
@@ -180,6 +182,58 @@ export function InvitacionDelActa({ actaId }: { actaId: string }) {
     null;
   if (!s) return null;
   return <Compacta set={s} />;
+}
+
+/**
+ * La práctica pendiente, recordada fuera del perfil (24/09/2026: «en otras partes, no solo cuando
+ * entra a sus clases; no TAN invasivo»): la versión compacta arriba de «Mis clases» y de «Buscar
+ * profesor», solo si está lista o a medias. Se cierra con la X hasta que llegue la siguiente.
+ */
+export function RecordatorioDePractica({ className = "" }: { className?: string }) {
+  const practica = usePracticaViva();
+  const cerrada = useSyncExternalStore(suscribirCierre, leerCierre, () => "cerrada-en-servidor");
+  const [cerradaAhora, setCerradaAhora] = useState<string | null>(null);
+  const s = practica.data;
+  if (!s || (s.status !== "READY" && s.status !== "IN_PROGRESS")) return null;
+  if (cerrada === s.id || cerrada === "cerrada-en-servidor" || cerradaAhora === s.id) return null;
+
+  const cerrar = () => {
+    try {
+      window.localStorage.setItem(CIERRE, s.id);
+    } catch {
+      // Sin almacenamiento se cierra solo en esta visita.
+    }
+    setCerradaAhora(s.id);
+  };
+
+  return (
+    <div className={`relative ${className}`}>
+      <Compacta set={s} />
+      <button
+        type="button"
+        onClick={cerrar}
+        aria-label="Ocultar hasta la próxima práctica"
+        title="Ocultar hasta la próxima práctica"
+        className="absolute -right-1.5 -top-1.5 grid h-8 w-8 place-items-center rounded-full bg-surface-raised text-text-secondary shadow-sm hover:text-text focus-visible:shadow-focus"
+      >
+        <X size={15} strokeWidth={2.2} />
+      </button>
+    </div>
+  );
+}
+
+const CIERRE = "orion.practica.recordatorio-cerrado";
+
+function suscribirCierre(): () => void {
+  return () => {};
+}
+
+function leerCierre(): string | null {
+  try {
+    return window.localStorage.getItem(CIERRE);
+  } catch {
+    return null;
+  }
 }
 
 function Compacta({ set: s }: { set: SetDePractica }) {
