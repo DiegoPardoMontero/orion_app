@@ -92,15 +92,21 @@ class CatalogoGamificacionIT {
                         .isTrue());
     }
 
-    /** Un inicial por familia visible: nadie arranca con el avatar sin definir. */
+    /**
+     * Dos iniciales por familia (V59): nadie arranca con el avatar sin definir, y desde el primer
+     * día hay algo que elegir. De accesorios, uno: elegir entre ponérselo o no.
+     */
     @Test
-    void hayUnInicialPorFamilia() {
+    void hayDosInicialesPorFamilia() {
         for (CosmeticKind kind : List.of(CosmeticKind.FRAME, CosmeticKind.PALETTE, CosmeticKind.SKY)) {
             assertThat(cosmetics.findByKindOrderByDisplayOrderAsc(kind))
                     .as("iniciales de %s", kind)
                     .filteredOn(Cosmetic::isDefaultPiece)
-                    .hasSize(1);
+                    .hasSize(2);
         }
+        assertThat(cosmetics.findByKindOrderByDisplayOrderAsc(CosmeticKind.ACCESSORY))
+                .filteredOn(Cosmetic::isDefaultPiece)
+                .hasSize(1);
     }
 
     /** Los tres accesorios llevan zona y los demás no. Lo dice el CHECK. */

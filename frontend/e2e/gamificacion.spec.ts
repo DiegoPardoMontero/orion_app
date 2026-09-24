@@ -109,7 +109,7 @@ test("Ana equipa una pieza desbloqueada y sigue puesta al recargar", async ({ pa
   const pieza = (nombre: string) =>
     page.locator("button").filter({ has: page.getByText(nombre, { exact: true }) });
 
-  // «Órbita» se desbloquea con la primera clase, que Ana ya tiene en la semilla.
+  // «Órbita» viene desde el primer día (V59): dos de cada cosa, para que haya qué elegir.
   await expect(pieza("Órbita")).toBeEnabled();
   await pieza("Órbita").click();
   await page.getByRole("button", { name: "Guardar" }).click();

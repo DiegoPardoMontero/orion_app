@@ -187,6 +187,18 @@ class EngagementApiIT extends ApiIntegrationSupport {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     }
 
+    /** Dos de cada cosa desde el primer día (V59): hay algo que elegir antes de la primera clase. */
+    @Test
+    void desdeElInicioHayDosDeCadaCosa() {
+        var cosmeticos = get("/api/v1/me/cosmetics", anaSession, CosmeticResponse[].class).getBody();
+        for (String tipo : List.of("FRAME", "PALETTE", "SKY")) {
+            assertThat(cosmeticos).filteredOn(c -> c.kind().equals(tipo) && c.unlocked()).as(tipo).hasSize(2);
+        }
+        assertThat(put("/api/v1/me/cosmetics", anaSession, new EquipCosmeticsRequest("orbita", "lavanda", "bruma",
+                List.of(new EquipCosmeticsRequest.Accessory("z1", "base-orbita"))), Void.class).getStatusCode())
+                .isEqualTo(HttpStatus.NO_CONTENT);
+    }
+
     /**
      * Confiar en que el frontend solo muestre lo desbloqueado es cómo alguien se pone la corona con
      * un `curl`. Esta es la comprobación que manda.
@@ -216,13 +228,13 @@ class EngagementApiIT extends ApiIntegrationSupport {
         Booking clase = claseTomada(LocalDate.of(2026, 7, 20));
         motor.onLessonCompleted(ana.getId(), clase.getId(), FROZEN_NOW);
 
-        // «Órbita» se desbloquea con la primera clase.
+        // La paleta «Durazno» se desbloquea con la primera clase («Órbita» ya viene desde el inicio, V59).
         put("/api/v1/me/cosmetics", anaSession,
-                new EquipCosmeticsRequest("orbita", "trazo", "crema", List.of()), Void.class);
+                new EquipCosmeticsRequest("trazo", "durazno", "crema", List.of()), Void.class);
 
         var cosmeticos = get("/api/v1/me/cosmetics", anaSession, CosmeticResponse[].class).getBody();
         assertThat(cosmeticos)
-                .filteredOn(c -> c.code().equals("orbita") && c.kind().equals("FRAME"))
+                .filteredOn(c -> c.code().equals("durazno") && c.kind().equals("PALETTE"))
                 .singleElement()
                 .satisfies(c -> {
                     assertThat(c.unlocked()).isTrue();
