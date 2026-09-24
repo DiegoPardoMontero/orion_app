@@ -48,7 +48,9 @@ class TextosDelActaTest {
             "frontend/src/app/(app)/admin/sistema/EnsayoDelActa.tsx",
             "frontend/src/components/bienvenida/Bienvenida.tsx",
             "frontend/src/components/bienvenida/ConoceOrion.tsx",
-            "frontend/src/components/bienvenida/Reproductor.tsx",
+            "frontend/src/components/bienvenida/VideoBienvenida.tsx",
+            "frontend/src/components/bienvenida/Recorrido.tsx",
+            "frontend/src/components/bienvenida/AvisoDelRecorrido.tsx",
             "frontend/src/lib/recorrido.ts");
 
     private static final List<String> PROMPTS = List.of(
