@@ -226,10 +226,11 @@ function FilaDeEnsayo({ ensayo: e }: { ensayo: Ensayo }) {
 
 function EstadoDelActa({ ensayo: e }: { ensayo: Ensayo }) {
   if (e.acta === null) return <Badge tono="neutral">Acta: sin escribir</Badge>;
-  if (e.acta === "DRAFT") return <Badge tono="lavanda">Acta: borrador{e.actaConIa ? " con IA" : ""}</Badge>;
+  if (e.acta === "DRAFT") return <Badge tono="lavanda">Acta: en borrador</Badge>;
   return (
     <Badge tono="menta" punto>
-      Acta publicada{e.actaConIa ? " · IA" : " · a mano"}
+      {/* «Del borrador» y no «con IA»: sin OpenAI, el borrador también existe (lo arma la regla local). */}
+      Acta publicada{e.actaConIa ? " · del borrador" : " · a mano"}
     </Badge>
   );
 }
@@ -246,9 +247,9 @@ function EstadoDeLaPractica({ ensayo: e }: { ensayo: Ensayo }) {
         </Badge>
       );
     case "READY":
-      return <Badge tono="coral">Práctica lista · {e.ejercicios} ejercicios</Badge>;
+      return <Badge tono="lavanda">Práctica lista · {e.ejercicios} ejercicios</Badge>;
     case "IN_PROGRESS":
-      return <Badge tono="coral">Práctica en curso</Badge>;
+      return <Badge tono="melocoton">Práctica en curso</Badge>;
     case "COMPLETED":
       return (
         <Badge tono="menta" punto>
