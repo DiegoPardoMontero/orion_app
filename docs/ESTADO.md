@@ -815,12 +815,10 @@ su test; lo que cambia el comportamiento o pide una decisión está abajo, en Pe
     tocar: su listener y el cálculo de semanas activas.
   - Un set con menos de dos ejercicios anclados queda `FAILED` al **tercer** intento, no al primero:
     hasta tres llamadas por set, porque el modelo a veces falla en una y acierta en la siguiente.
-  - **Para decidir:** el brief (D7) deja que la IA vea nivel y objetivo del estudiante, y el perfil
-    los tiene (`self_declared_level` y `motivation`, texto libre de 280). El acta manda el nivel pero
-    el objetivo en nulo, y la práctica no recibe ninguno de los dos. Mandarlos afinaría los
-    ejercicios, pero el objetivo es más dato personal hacia OpenAI —la motivación la escribe el
-    estudiante— y conviene que lo decida Pardo, con la política de datos. El idioma va como código
-    («FR»), no como nombre, salvo el inglés.
+  - **D7, decidido por Pardo el 23/09: sí.** La IA ve el nivel (`self_declared_level`) y el
+    objetivo (`motivation`) del estudiante, en el acta y en la práctica, como contexto y nunca como
+    contenido. El objetivo es más dato personal hacia OpenAI: cuenta para el pendiente de nombrar a
+    OpenAI en la política de datos. El idioma va como código («FR»), no como nombre, salvo el inglés.
   - El diálogo se acepta de 3 a 6 líneas (el prompt pide 4 o 5, como el brief).
   - Tras un JSON inválido del acta hay un reintento, así que la espera puede pasar de 25 s; y el
     profesor ve un único aviso neutro para IA apagada, sin presupuesto o caída (cero mensajes técnicos).
