@@ -119,6 +119,20 @@ class PracticaIT extends ApiIntegrationSupport {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Test
+    @DisplayName("Mientras se prepara, la práctica ya se ofrece como «preparando», sin ejercicios")
+    void preparandose() {
+        actaPublicada(NOTAS);
+        await().atMost(Duration.ofSeconds(5)).until(() ->
+                jdbc.queryForObject("select count(*) from practice_sets", Integer.class) == 1);
+
+        Map set = get("/api/v1/me/practice", sesionAna, Map.class).getBody();
+
+        assertThat(set).containsEntry("status", "PENDING").containsEntry("professorName", "María Gómez");
+        assertThat((List) set.get("items")).isEmpty();
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    @Test
     @DisplayName("Publicar el acta encola el set; el trabajo lo deja listo con ejercicios anclados, uno de cada tipo")
     void delActaALaPractica() {
         Map set = setListo();
@@ -421,11 +435,17 @@ class PracticaIT extends ApiIntegrationSupport {
                     UUID.fromString((String) item.get("id")));
             String respuesta = "WRITE_SENTENCE".equals(item.get("type"))
                     ? "When I was a kid I used to play football every day." : esperada;
-            assertThat(post("/api/v1/practice-items/" + item.get("id") + "/answer", sesionAna,
-                    Map.of("answer", respuesta), Map.class).getBody()).containsEntry("correct", true);
+            Map r = post("/api/v1/practice-items/" + item.get("id") + "/answer", sesionAna,
+                    Map.of("answer", respuesta), Map.class).getBody();
+            assertThat(r).containsEntry("correct", true);
+            // Cerrado, acertado también trae lo esperado: en «caza el error» es la frase bien dicha.
+            assertThat((Map) r.get("item")).containsEntry("expected", esperada);
         }
 
         post("/api/v1/practice-sets/" + set.get("id") + "/complete", sesionAna, null, Map.class);
+        List<Map> historial = get("/api/v1/me/practice/history", sesionAna, List.class).getBody();
+        assertThat(historial).hasSize(1);
+        assertThat((List) historial.getFirst().get("items")).hasSize(((List) set.get("items")).size());
 
         assertThat(jdbc.queryForObject("""
                 select sum(points) from point_events

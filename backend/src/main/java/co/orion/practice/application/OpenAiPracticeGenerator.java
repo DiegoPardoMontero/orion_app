@@ -53,7 +53,7 @@ public class OpenAiPracticeGenerator implements PracticeGenerator {
 
     private static final Logger log = LoggerFactory.getLogger(OpenAiPracticeGenerator.class);
     private static final ObjectMapper JSON = new ObjectMapper();
-    static final String PROMPT = "prompts/practice-v6.txt";
+    static final String PROMPT = "prompts/practice-v7.txt";
     static final String REVISION = "prompts/practice-check-v2.txt";
 
     /** Los que tienen una sola respuesta correcta: los que la revisión puede resolver y comparar. */
@@ -373,6 +373,18 @@ public class OpenAiPracticeGenerator implements PracticeGenerator {
         return elegidos;
     }
 
+    /**
+     * En «Tu frase» no hay respuesta exacta: lo esperado es un ejemplo, que se muestra solo si no le
+     * sale. Un ejemplo sin el término, o largo, enseñaría otra cosa: se descarta y el ejercicio queda
+     * sin ejemplo, que es como estaba antes de v7.
+     */
+    static String ejemploQueSirve(String payload, String ejemplo) {
+        if (ejemplo == null || ejemplo.isBlank() || ejemplo.length() > 200) {
+            return null;
+        }
+        return Evaluador.esCorrecta(PracticeItemType.WRITE_SENTENCE, payload, null, ejemplo) ? ejemplo.strip() : null;
+    }
+
     static List<Generado> leer(String contenido) {
         List<Generado> salida = new ArrayList<>();
         if (contenido == null) {
@@ -392,9 +404,12 @@ public class OpenAiPracticeGenerator implements PracticeGenerator {
                     case BUILD_SENTENCE -> desordenado(item.path("payload"), esperado, "tiles");
                     default -> item.path("payload");
                 };
-                salida.add(new Generado(tipo, item.path("prompt").asText(null), payload.toString(),
-                        esperado.isNull() || esperado.isMissingNode() ? null
-                                : esperado.isTextual() ? esperado.asText() : esperado.toString(),
+                String esperada = esperado.isNull() || esperado.isMissingNode() ? null
+                        : esperado.isTextual() ? esperado.asText() : esperado.toString();
+                if (tipo == PracticeItemType.WRITE_SENTENCE) {
+                    esperada = ejemploQueSirve(payload.toString(), esperada);
+                }
+                salida.add(new Generado(tipo, item.path("prompt").asText(null), payload.toString(), esperada,
                         item.path("explanation").asText(null),
                         item.path("sourceTerm").isTextual() ? item.path("sourceTerm").asText() : null,
                         item.path("hint").isTextual() ? item.path("hint").asText() : null));

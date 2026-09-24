@@ -62,6 +62,12 @@ public class PracticeService {
     private static final Logger log = LoggerFactory.getLogger(PracticeService.class);
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final List<PracticeSetStatus> VIVOS = List.of(PracticeSetStatus.READY, PracticeSetStatus.IN_PROGRESS);
+    /**
+     * Lo que se le ofrece al estudiante: lo vivo y lo que se está preparando, que la invitación muestra
+     * como «Estamos preparando tu práctica» (diseño del 24/09/2026). Lo que falló no se ofrece nunca.
+     */
+    private static final List<PracticeSetStatus> OFRECIDOS = List.of(PracticeSetStatus.PENDING,
+            PracticeSetStatus.READY, PracticeSetStatus.IN_PROGRESS);
     /** Tras tres intentos sin dos ejercicios anclados, el set queda FAILED y no se ofrece. */
     static final int INTENTOS_DE_GENERACION = 3;
 
@@ -205,7 +211,7 @@ public class PracticeService {
             return Optional.empty();
         }
         return sets.findFirstByStudentIdAndStatusInAndExpiresAtAfterOrderByCreatedAtDesc(
-                        estudiante.getId(), VIVOS, clock.instant())
+                        estudiante.getId(), OFRECIDOS, clock.instant())
                 .map(s -> new ConEjercicios(s, items.findByPracticeSetIdOrderByItemIndexAsc(s.getId())));
     }
 

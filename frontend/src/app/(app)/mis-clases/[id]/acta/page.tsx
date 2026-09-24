@@ -7,6 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { AvisoError, Cargando, Vacio } from "@/components/estados";
 import { Constelacion } from "@/components/marca";
+import { InvitacionDelActa } from "@/components/InvitacionAPracticar";
 import { EjerciciosDelActa } from "@/components/practica/EjerciciosDelActa";
 import { Badge, Bloque, Boton, Spinner, Tarjeta } from "@/components/ui";
 import {
@@ -19,7 +20,7 @@ import {
 } from "@/lib/actas";
 import { ApiError, apiFetch, uploadFile } from "@/lib/api/fetch";
 import type { ConversationSummary } from "@/lib/api/types";
-import { primerNombre, type SetDePractica } from "@/lib/practica";
+import { primerNombre } from "@/lib/practica";
 import { useMe } from "@/lib/auth/session";
 import { fechaLarga } from "@/lib/format";
 
@@ -596,7 +597,7 @@ function Lectura({ acta }: { acta: ActaDelEstudiante }) {
         </Bloque>
       )}
 
-      <PracticarEsto actaId={acta.id} />
+      <InvitacionDelActa actaId={acta.id} />
       {acta.professorId && <Escribirle profesorId={acta.professorId} nombre={acta.professorName} />}
     </div>
   );
@@ -626,27 +627,5 @@ function Escribirle({ profesorId, nombre }: { profesorId: string; nombre: string
       </Boton>
       {escribir.isError && <AvisoError mensaje={escribir.error.message} />}
     </div>
-  );
-}
-
-/**
- * La puerta a la práctica (Parte B). Solo aparece si el set de esta acta está vivo: mientras se
- * genera, si venció o si la práctica está apagada, el botón no existe.
- */
-function PracticarEsto({ actaId }: { actaId: string }) {
-  const practica = useQuery({
-    queryKey: ["me", "practice"],
-    queryFn: async () => (await apiFetch<SetDePractica | undefined>("/api/v1/me/practice")) ?? null,
-    staleTime: 60_000,
-  });
-  if (!practica.data || practica.data.lessonNoteId !== actaId) return null;
-  return (
-    <Link
-      href={`/practica/${practica.data.id}`}
-      className="inline-flex min-h-11 items-center gap-2 rounded-pill bg-primary px-6 text-[15px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus"
-    >
-      <Sparkles size={16} strokeWidth={2} />
-      Practicar esto
-    </Link>
   );
 }

@@ -5,9 +5,11 @@
  *    estados; solo cambian ojos, boca y lo que pasa alrededor del aura.
  *  - Orden de pintado obligatorio: aura → cuerpo → brillo → mejillas → ojos → boca → brazos →
  *    guantes → costuras → indicadores (barras, puntos, destello).
- *  - Solo en el flujo del diagnóstico. Nunca junto a Rigel, nunca celebra ni saluda, nunca «bob»:
- *    su movimiento es el aura.
- *  - Mínimo 120 px de alto: el aura necesita aire.
+ *  - Es la que pronuncia: en el diagnóstico y en los ejercicios de escucha de la práctica, donde
+ *    reemplaza a Rigel (handoff de práctica, §12). Nunca junto a Rigel, nunca celebra ni saluda,
+ *    nunca «bob»: su movimiento es el aura.
+ *  - Mínimo 120 px de alto, salvo en la fila del ejercicio en el celular (72 px, como Rigel en esa
+ *    misma fila): ahí la burbuja de al lado dice lo que el aura no alcanza a decir.
  */
 
 export type MeissaEstado = "escucha" | "habla" | "piensa" | "cierre";

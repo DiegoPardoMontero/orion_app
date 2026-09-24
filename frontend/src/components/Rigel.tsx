@@ -13,7 +13,18 @@ import type { CSSProperties, ReactNode } from "react";
  *    utilitarias (admin, disponibilidad, tablas).
  */
 
-export type RigelPose = "saludo" | "celebracion" | "guia" | "espera" | "animo" | "profe";
+export type RigelPose =
+  | "saludo"
+  | "celebracion"
+  | "guia"
+  | "espera"
+  | "animo"
+  | "profe"
+  // Las tres de la práctica (handoff `design_handoff_orion_practica`, §12): brinca con la racha,
+  // piensa mientras se comprueba una respuesta y muestra el sello de un logro nuevo.
+  | "racha"
+  | "atento"
+  | "sello";
 export type RigelTono = "dorado" | "durazno";
 
 const TONOS: Record<RigelTono, Record<string, string>> = {
@@ -44,6 +55,9 @@ const ETIQUETA: Record<RigelPose, string> = {
   espera: "Rigel, la mascota de Orión, esperando",
   animo: "Rigel, la mascota de Orión, animándote",
   profe: "Rigel, la mascota de Orión, vestido de profesor",
+  racha: "Rigel, la mascota de Orión, brincando por la racha",
+  atento: "Rigel, la mascota de Orión, pensando",
+  sello: "Rigel, la mascota de Orión, mostrando un sello",
 };
 
 export function Rigel({
@@ -70,12 +84,25 @@ export function Rigel({
   return (
     <svg
       viewBox="0 0 200 210"
-      className={`rigel-bob ${className}`}
+      // Con la racha brinca; en las demás poses flota.
+      className={`${pose === "racha" ? "rigel-brinco" : "rigel-bob"} ${className}`}
       style={vars}
       role={decorativo ? undefined : "img"}
       aria-label={decorativo ? undefined : ETIQUETA[pose]}
       aria-hidden={decorativo || undefined}
     >
+      {/* La racha levanta a Rigel del suelo: su sombra y tres rayas de impulso quedan abajo. */}
+      {pose === "racha" && (
+        <>
+          <ellipse cx={100} cy={200} rx={46} ry={6} fill="var(--rg-arm)" opacity={0.12} />
+          <g stroke="var(--color-accent-peach)" strokeWidth={5} strokeLinecap="round">
+            <line x1={70} y1={188} x2={64} y2={200} />
+            <line x1={100} y1={190} x2={100} y2={204} />
+            <line x1={130} y1={188} x2={136} y2={200} />
+          </g>
+        </>
+      )}
+
       {/* piernas y zapatos */}
       <g stroke="var(--rg-arm)" strokeWidth={7} strokeLinecap="round">
         <line x1={86} y1={142} x2={83} y2={167} />
@@ -114,7 +141,7 @@ export function Rigel({
 /* ---- Ojos ---- */
 
 function Ojos({ pose, crema }: { pose: RigelPose; crema: string }) {
-  if (pose === "celebracion") {
+  if (pose === "celebracion" || pose === "racha" || pose === "sello") {
     // Arcos felices.
     return (
       <g stroke="var(--rg-dark)" strokeWidth={5} strokeLinecap="round" fill="none">
@@ -132,20 +159,22 @@ function Ojos({ pose, crema }: { pose: RigelPose; crema: string }) {
       </g>
     );
   }
-  // Ojos abiertos. En "guía" las pupilas miran a la derecha (+3). En "profe" van tras las gafas.
-  const dx = pose === "guia" ? 3 : 0;
+  // Ojos abiertos. En "guía" las pupilas miran a la derecha (+3); en "atento", arriba a la derecha,
+  // como quien busca la respuesta. En "profe" van tras las gafas.
+  const dx = pose === "guia" ? 3 : pose === "atento" ? 4 : 0;
+  const dy = pose === "atento" ? -3 : 0;
   return (
     <g className="rigel-eyes">
-      <circle cx={85 + dx} cy={91} r={10} fill="var(--rg-dark)" />
-      <circle cx={115 + dx} cy={91} r={10} fill="var(--rg-dark)" />
-      <circle cx={81.5 + dx} cy={87} r={3.4} fill={crema} />
-      <circle cx={111.5 + dx} cy={87} r={3.4} fill={crema} />
+      <circle cx={85 + dx} cy={91 + dy} r={10} fill="var(--rg-dark)" />
+      <circle cx={115 + dx} cy={91 + dy} r={10} fill="var(--rg-dark)" />
+      <circle cx={81.5 + dx} cy={87 + dy} r={3.4} fill={crema} />
+      <circle cx={111.5 + dx} cy={87 + dy} r={3.4} fill={crema} />
       <path
-        d={`M${86.5 + dx} 91.5l1.1 2.6 2.8.2-2.1 1.8.6 2.7-2.4-1.5-2.4 1.5.6-2.7-2.1-1.8 2.8-.2z`}
+        d={`M${86.5 + dx} ${91.5 + dy}l1.1 2.6 2.8.2-2.1 1.8.6 2.7-2.4-1.5-2.4 1.5.6-2.7-2.1-1.8 2.8-.2z`}
         fill={crema}
       />
       <path
-        d={`M${116.5 + dx} 91.5l1.1 2.6 2.8.2-2.1 1.8.6 2.7-2.4-1.5-2.4 1.5.6-2.7-2.1-1.8 2.8-.2z`}
+        d={`M${116.5 + dx} ${91.5 + dy}l1.1 2.6 2.8.2-2.1 1.8.6 2.7-2.4-1.5-2.4 1.5.6-2.7-2.1-1.8 2.8-.2z`}
         fill={crema}
       />
     </g>
@@ -155,7 +184,11 @@ function Ojos({ pose, crema }: { pose: RigelPose; crema: string }) {
 /* ---- Boca ---- */
 
 function Boca({ pose }: { pose: RigelPose }) {
-  if (pose === "celebracion") {
+  if (pose === "atento") {
+    // Una «o» pequeña: está pensando, no juzgando.
+    return <ellipse cx={104} cy={110} rx={5} ry={6} fill="#5A2436" />;
+  }
+  if (pose === "celebracion" || pose === "racha" || pose === "sello") {
     return (
       <>
         <path d="M83,100 Q100,132 117,100 Q100,111 83,100 Z" fill="#5A2436" />
@@ -305,6 +338,54 @@ function Brazos({ pose }: { pose: RigelPose }) {
     );
   }
 
+  if (pose === "racha") {
+    // Los dos brazos bien arriba: más alto que al celebrar.
+    return (
+      <>
+        <path d="M62,84 L44,40" stroke="var(--rg-arm)" strokeWidth={7} strokeLinecap="round" fill="none" />
+        <Guante cx={42} cy={32} r={12} tx={34} ty={38} tr={5} />
+        <path d="M138,84 L156,40" stroke="var(--rg-arm)" strokeWidth={7} strokeLinecap="round" fill="none" />
+        <Guante cx={158} cy={32} r={12} tx={166} ty={38} tr={5} />
+      </>
+    );
+  }
+
+  if (pose === "atento") {
+    // La mano al mentón y tres puntos que laten: está comprobando.
+    return (
+      <>
+        <BrazoIzquierdoReposo />
+        <path d="M140,118 Q146,132 122,126" stroke="var(--rg-arm)" strokeWidth={7} strokeLinecap="round" fill="none" />
+        <Guante cx={118} cy={126} r={11} tx={112} ty={118} tr={5} />
+        <g fill="#7A4A8C">
+          <circle className="meissa-dot" cx={150} cy={54} r={3.2} />
+          <circle className="meissa-dot" cx={162} cy={42} r={4.2} style={{ animationDelay: ".3s" }} />
+          <circle className="meissa-dot" cx={176} cy={30} r={5.4} style={{ animationDelay: ".6s" }} />
+        </g>
+      </>
+    );
+  }
+
+  if (pose === "sello") {
+    // Sostiene con las dos manos un sello durazno con una estrella: el logro que acaba de ganar.
+    return (
+      <>
+        <path d="M60,116 L80,146" stroke="var(--rg-arm)" strokeWidth={7} strokeLinecap="round" fill="none" />
+        <path d="M140,116 L120,146" stroke="var(--rg-arm)" strokeWidth={7} strokeLinecap="round" fill="none" />
+        <circle cx={100} cy={160} r={30} fill="var(--color-accent-peach)" stroke="var(--rg-arm)" strokeWidth={4} />
+        <polygon
+          points="100,142 105,154 118,155 108,163 111,176 100,169 89,176 92,163 82,155 95,154"
+          fill="var(--rg-crema)"
+          stroke="var(--rg-arm)"
+          strokeWidth={2.5}
+          strokeLinejoin="round"
+        />
+        <Guante cx={78} cy={150} r={12} tx={84} ty={158} tr={5} />
+        <Guante cx={122} cy={150} r={12} tx={116} ty={158} tr={5} />
+      </>
+    );
+  }
+
   if (pose === "profe") {
     return (
       <>
@@ -348,7 +429,7 @@ function BrazosDetras({ pose }: { pose: RigelPose }) {
 /* ---- Destellos (celebración) y «z» de sueño (espera) ---- */
 
 function Extras({ pose }: { pose: RigelPose }) {
-  if (pose === "celebracion") {
+  if (pose === "celebracion" || pose === "racha") {
     return (
       <g fill="var(--color-accent-peach)">
         <Destello cx={38} cy={44} r={7} delay="0s" />

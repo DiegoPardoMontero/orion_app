@@ -158,6 +158,19 @@ class OpenAiPracticeGeneratorTest {
     }
 
     @Test
+    @DisplayName("«Tu frase» trae un ejemplo con el término; uno sin él se descarta y el ejercicio sigue")
+    void elEjemploDeTuFrase() {
+        var leidos = OpenAiPracticeGenerator.leer("""
+                {"items":[{"type":"WRITE_SENTENCE","prompt":"Escribe.","payload":{"term":"layover"},
+                           "expected":"I have a short layover in Bogotá.","explanation":"x","sourceTerm":"layover"},
+                          {"type":"WRITE_SENTENCE","prompt":"Escribe.","payload":{"term":"luggage"},
+                           "expected":"My bags are heavy.","explanation":"x","sourceTerm":"luggage"}]}""");
+
+        assertThat(leidos).extracting(PracticeGenerator.Generado::expected)
+                .containsExactly("I have a short layover in Bogotá.", null);
+    }
+
+    @Test
     @DisplayName("Las fichas de una frase que llegan ya en orden se desordenan")
     void fichasEnOrden() {
         String fichas = "[\"Where\",\"is\",\"my\",\"luggage\",\"?\"]";

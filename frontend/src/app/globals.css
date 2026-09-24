@@ -136,6 +136,79 @@
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
 
+  /* — Práctica gamificada (handoff design_handoff_orion_practica, §7) —
+     Se agregan solo los que faltaban, con los nombres del handoff; los que ya existían con otro
+     nombre (coral = primary, noche = night, crema = surface…) conviven como alias para que el
+     código de la práctica se lea igual que la especificación. El radio de tarjeta del handoff
+     (22 px) no pisa el del sistema (24 px): va como --radius-tarjeta. */
+  --color-coral: #e8503a;
+  --color-coral-hover: #c0341f;
+  --color-coral-soft: #fde4e0;
+  --color-coral-ink: #c93a26;
+  --color-noche: #2e1e4e;
+  --color-noche-hover: #3e2c66;
+  --color-ink: #33203b;
+  --color-ink-2: #5e4e6b;
+  --color-ink-3: #7a6b85;
+  --color-ink-body: #3e2c47;
+  --color-crema: #fff6ee;
+  --color-arena: #f4eae0;
+  --color-line: #e3d6ca;
+  --color-line-soft: #f1e4d8;
+  --color-lavanda: #b9a7e6;
+  --color-lavanda-soft: #efe9f9;
+  --color-lavanda-ink: #5e4a8a;
+  --color-durazno: #ffc189;
+  --color-durazno-soft: #ffe9d6;
+  --color-durazno-ink: #8a4a1f;
+  --color-rigel: #ffce3a;
+  --color-rigel-edge: #e9a800;
+  --color-rigel-soft: #fff1c9;
+  --color-rigel-ink: #6e500c;
+  --color-meissa: #c9b9f4;
+  --color-ok-bg: #def3e7;
+  --color-ok-line: #8ccba7;
+  --color-ok-panel-line: #a9dabd;
+  --color-ok-ink: #1f5238;
+  --color-ok-icon: #2e6b4a;
+  --color-casi-bg: #ffebc7;
+  --color-casi-line: #e9a23b;
+  --color-casi-panel-line: #f2c170;
+  --color-casi-ink: #6b440a;
+  --color-casi-icon: #f2b34c;
+  --color-shown-bg: #f3eefb;
+  --color-shown-line: #9b87d6;
+  --color-shown-panel-line: #d5caf0;
+  --color-shown-ink: #4a3a75;
+  --color-shown-icon: #5e4a8a;
+  --color-disabled-bg: #eadfd4;
+  --color-disabled-ink: #6e5f78;
+  --color-hueco-line: #c9b8a8;
+  --color-cat-palabras: #ffe9d6;
+  --color-cat-palabras-ink: #8a4a1f;
+  --color-cat-frases: #e6e1ef;
+  --color-cat-frases-ink: #2e1e4e;
+  --color-cat-conversacion: #fde4e0;
+  --color-cat-conversacion-ink: #a8321f;
+  --color-cat-escucha: #efe9f9;
+  --color-cat-escucha-ink: #5e4a8a;
+  --color-cat-tuturno: #fff1c9;
+  --color-cat-tuturno-ink: #6e500c;
+  --radius-tarjeta: 22px;
+  --radius-panel: 20px;
+  --radius-ficha: 14px;
+  --radius-pareja: 16px;
+  --radius-sub: 18px;
+  --shadow-card: 0 16px 40px -20px rgb(51 32 59 / 0.3);
+  --shadow-bubble: 0 6px 18px -10px rgb(51 32 59 / 0.3);
+  --shadow-ficha: 0 2px 0 #e3d6ca;
+  --shadow-ficha-lift: 0 12px 22px -10px rgb(51 32 59 / 0.5);
+  --shadow-cta: 0 10px 24px -8px rgb(232 80 58 / 0.6);
+  --shadow-frame: 0 20px 50px rgb(51 32 59 / 0.18);
+  --ease-out-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-draw: cubic-bezier(0.65, 0, 0.35, 1);
+
   /* — Layout — */
   --tab-min: 44px;
   --header-h: 64px;
@@ -352,6 +425,19 @@ body {
 }
 .rigel-bob {
   animation: bob 3.6s ease-in-out infinite;
+}
+/* Con la racha, Rigel brinca 10 px en vez de flotar (handoff de práctica, §11). */
+@keyframes rigel-brinco {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+}
+.rigel-brinco {
+  animation: rigel-brinco 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
 }
 .rigel-wave {
   animation: wave 2.4s ease-in-out infinite;
@@ -725,3 +811,127 @@ body {
 .racha-entra {
   animation: racha-entra 320ms var(--ease-out) both;
 }
+
+/* ---------------------------------------------------------------------------
+ * Práctica gamificada (handoff design_handoff_orion_practica, §11). Con menos movimiento, la regla
+ * global de arriba deja todo en su estado final.
+ * --------------------------------------------------------------------------- */
+
+/* El foco de la práctica es el del handoff: anillo noche de 3 px, a 3 px. Los campos de texto
+   tienen el suyo (borde noche y halo lavanda), y dos anillos juntos no se leen. */
+.practica :focus-visible:not(textarea) {
+  outline: 3px solid var(--color-noche);
+  outline-offset: 3px;
+  box-shadow: none;
+}
+
+@keyframes pr-punto {
+  0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-3px); }
+}
+.pr-punto { animation: pr-punto 1.2s ease-in-out infinite; }
+
+@keyframes pr-giro { to { transform: rotate(360deg); } }
+.pr-giro { animation: pr-giro 0.8s linear infinite; }
+
+/* Un par que no va: sacudida 0, −6, 6, −4, 4, 0, dos veces. */
+@keyframes pr-sacudida {
+  0%, 50%, 100% { transform: translateX(0); }
+  10%, 60% { transform: translateX(-6px); }
+  20%, 70% { transform: translateX(6px); }
+  30%, 80% { transform: translateX(-4px); }
+  40%, 90% { transform: translateX(4px); }
+}
+.pr-sacudida { animation: pr-sacudida 360ms ease-in-out; }
+
+/* Par unido, ficha que aterriza: 1 → 1,04 → 1. */
+@keyframes pr-pop {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+.pr-pop { animation: pr-pop 240ms var(--ease-back); }
+
+/* La racha crece: 1 → 1,12 → 1. */
+@keyframes pr-racha {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+.pr-racha { animation: pr-racha 300ms var(--ease-back); }
+
+/* «Así es.» sube 12 px y aparece; «Casi…» entra igual pero más lento. */
+@keyframes pr-panel {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+.pr-panel-ok { animation: pr-panel 220ms ease-out both; }
+.pr-panel-casi { animation: pr-panel 320ms ease-out both; }
+
+/* Un mensaje que llega al chat, desde su esquina. */
+@keyframes pr-burbuja {
+  from { transform: translateY(8px) scale(0.92); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+.pr-burbuja-ellos { animation: pr-burbuja 260ms var(--ease-back) both; transform-origin: bottom left; }
+.pr-burbuja-tu { animation: pr-burbuja 260ms var(--ease-back) both; transform-origin: bottom right; }
+
+/* El siguiente ejercicio entra 24 px desde la derecha. */
+@keyframes pr-entra {
+  from { transform: translateX(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+.pr-entra { animation: pr-entra 320ms ease-in-out both; }
+
+@keyframes pr-aparece {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.pr-aparece { animation: pr-aparece 200ms ease-out both; }
+
+/* La hoja de «¿Sigues luego?» sube desde abajo en el celular. */
+@keyframes pr-hoja {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+.pr-hoja { animation: pr-hoja 260ms var(--ease-out-soft) both; }
+
+/* Constelación: la estrella que se enciende, su anillo, la que sigue y las líneas del final. */
+@keyframes pr-encender {
+  0% { transform: scale(0.4); opacity: 0.3; }
+  55% { transform: scale(1.35); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.pr-encender {
+  animation: pr-encender 600ms var(--ease-back) both;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes pr-estallido {
+  0% { transform: scale(0.3); opacity: 0.9; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+.pr-estallido {
+  animation: pr-estallido 900ms cubic-bezier(0.2, 0.7, 0.2, 1) 200ms both;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes pr-pulso {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.35); opacity: 0; }
+}
+.pr-pulso {
+  animation: pr-pulso 1.8s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes pr-trazo {
+  from { stroke-dashoffset: var(--largo); }
+  to { stroke-dashoffset: 0; }
+}
+.pr-trazo { animation: pr-trazo 380ms var(--ease-draw) both; }
+
+/* «Preparando…»: el punto lavanda late. */
+@keyframes pr-late {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+.pr-late { animation: pr-late 1.2s ease-in-out infinite; }

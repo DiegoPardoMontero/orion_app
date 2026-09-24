@@ -170,6 +170,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
    */
   const enClase = /^\/mis-clases\/[^/]+\/aula$/.test(pathname);
 
+  /**
+   * Practicar, en el celular, también va sin cabecera ni barra inferior (handoff de práctica, §8): es
+   * un flujo enfocado de cinco minutos, y la salida es «Salir y seguir luego», que avisa que se
+   * guardó. En escritorio el lateral se queda: ahí no estorba y orienta.
+   */
+  const practicando = /^\/practica\/[^/]+$/.test(pathname);
+
   if (enClase) {
     return (
       <>
@@ -184,7 +191,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <Sidebar me={me} grupos={nav} pathname={pathname} noLeidosMensajes={noLeidosMensajes} />
 
       <div className="flex min-h-dvh flex-1 flex-col">
-        <MobileHeader me={me} />
+        {!practicando && <MobileHeader me={me} />}
         {/* Barra y no diálogo: la tarea está a medias en el buzón, y bloquear la app no la acerca.
             Quien de verdad la necesita es quien va a reservar, y ahí el backend responde 422. */}
         {!me.emailVerified && (
@@ -193,10 +200,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             ensena={me.role === "PROFESSOR" || me.role === "TEACHER_APPLICANT"}
           />
         )}
-        <div className="flex-1 pb-24 lg:pb-0">
+        <div className={`flex-1 lg:pb-0 ${practicando ? "" : "pb-24"}`}>
           {rutaProtegida ? <GateProfesor aplic={aplic}>{children}</GateProfesor> : children}
         </div>
-        <TabBar nav={TABS_BY_ROLE[me.role]} pathname={pathname} noLeidosMensajes={noLeidosMensajes} />
+        {!practicando && <TabBar nav={TABS_BY_ROLE[me.role]} pathname={pathname} noLeidosMensajes={noLeidosMensajes} />}
       </div>
 
       {/* La celebración vive en el armazón y no en una pantalla: una estrella se enciende cuando

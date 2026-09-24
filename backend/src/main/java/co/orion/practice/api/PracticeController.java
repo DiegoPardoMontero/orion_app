@@ -67,13 +67,9 @@ public class PracticeController {
 
     @GetMapping("/api/v1/me/practice/history")
     public List<SetView> historial(@AuthenticationPrincipal OrionUserDetails principal) {
-        // Sin los ejercicios, que la lista no necesita; con «perfect», que «Mi cielo» sí.
-        return practica.historial(principal.user()).stream().map(c -> {
-            SetView v = vista(c);
-            return new SetView(v.id(), v.status(), v.lessonNoteId(), v.bookingId(), v.classStartsAt(), v.professorName(),
-                    v.workedOn(), v.vocabularyCount(), v.estimatedMinutes(), v.itemCount(), v.correctCount(), v.expiresAt(),
-                    v.completedAt(), List.of(), v.perfect());
-        }).toList();
+        // Con los ejercicios, ya cerrados: la constelación de cada set —en «Mi cielo» y al pie del
+        // resumen de la clase— se pinta con lo que pasó en cada estrella.
+        return practica.historial(principal.user()).stream().map(c -> vista(c)).toList();
     }
 
     @GetMapping("/api/v1/practice-sets/{id}")
@@ -226,18 +222,17 @@ public class PracticeController {
     }
 
     /**
-     * Tras un fallo va la pista del «Casi…» (brief, B5.2); cerrado, la explicación. La respuesta
-     * esperada, solo con el ejercicio cerrado sin acertar.
+     * Tras un fallo va la pista del «Casi…» (brief, B5.2); cerrado, la explicación y la respuesta
+     * esperada. Acertado también: en «caza el error» es la frase bien dicha que se muestra al acertar.
      */
     private static ItemView item(PracticeItem i, boolean cerrado) {
-        boolean acerto = Boolean.TRUE.equals(i.getCorrect());
         // Tras un fallo, con el ejercicio abierto, va la pista (o la explicación, en los sets de antes de
         // la pista). Cerrado —acertado, mostrado o saltado—, la explicación.
         boolean casi = !cerrado && i.getAttempts() > 0;
         return new ItemView(i.getId(), i.getItemIndex(), i.getItemType().name(), i.getItemType().categoria().name(),
                 i.getPrompt(), payload(i, cerrado), i.getAttempts(), i.getCorrect(), cerrado, i.getSkippedAt() != null,
                 casi ? (i.getHint() != null ? i.getHint() : i.getExplanation()) : null,
-                cerrado ? i.getExplanation() : null, cerrado && !acerto ? i.getExpected() : null, i.getAnswer());
+                cerrado ? i.getExplanation() : null, cerrado ? i.getExpected() : null, i.getAnswer());
     }
 
     /**

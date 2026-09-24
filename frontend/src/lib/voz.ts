@@ -52,7 +52,8 @@ export function useVozEnIngles() {
       const frase = new SpeechSynthesisUtterance(texto);
       frase.voice = voz;
       frase.lang = voz.lang;
-      frase.rate = lento ? 0.65 : 0.95;
+      // 0,95 normal y 0,7 despacio (handoff de práctica, §9.5).
+      frase.rate = lento ? 0.7 : 0.95;
       frase.onstart = () => setHablando(true);
       frase.onend = () => setHablando(false);
       frase.onerror = () => setHablando(false);
@@ -61,7 +62,13 @@ export function useVozEnIngles() {
     [voz],
   );
 
+  const callar = useCallback(() => {
+    if (!("speechSynthesis" in globalThis)) return;
+    window.speechSynthesis.cancel();
+    setHablando(false);
+  }, []);
+
   /** `undefined`: todavía se está averiguando; `false`: no hay voz en inglés. */
   const disponible = voz === undefined ? undefined : voz !== null;
-  return { disponible, hablar, hablando };
+  return { disponible, hablar, hablando, callar };
 }

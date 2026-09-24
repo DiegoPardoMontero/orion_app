@@ -52,7 +52,8 @@ export type Ejercicio = {
 
 export type SetDePractica = {
   id: string;
-  status: "READY" | "IN_PROGRESS" | "COMPLETED" | "EXPIRED";
+  /** PENDING: el acta ya salió y la práctica se está generando (tarda cerca de un minuto). */
+  status: "PENDING" | "READY" | "IN_PROGRESS" | "COMPLETED" | "EXPIRED";
   lessonNoteId: string;
   bookingId: string | null;
   classStartsAt: string | null;
@@ -234,4 +235,163 @@ export function resumirLoTrabajado(texto: string | null): string | null {
 export function palabrasNuevas(n: number): string {
   const numeros = ["", "una", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez", "once", "doce"];
   return n === 1 ? "una palabra nueva" : `${numeros[n] ?? n} palabras nuevas`;
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * La pantalla de ejercicio (handoff design_handoff_orion_practica): la constelación, la racha, las
+ * categorías y los textos fijos de la interfaz. Lo que cambia de un set a otro —frases, opciones,
+ * pistas, explicaciones— sale del acta; esto es solo lo que la interfaz dice siempre igual.
+ * ---------------------------------------------------------------------------------------------- */
+
+/** Cómo quedó un ejercicio en la constelación. */
+export type EstrellaDelEjercicio = "off" | "actual" | "primero" | "segundo" | "mostrada" | "saltada";
+
+export function estrellaDe(e: Pick<Ejercicio, "closed" | "correct" | "attempts" | "skipped">): EstrellaDelEjercicio {
+  if (e.skipped) return "saltada";
+  if (e.correct === true && e.closed) return e.attempts <= 1 ? "primero" : "segundo";
+  if (e.closed) return "mostrada";
+  return "off";
+}
+
+/** Las estrellas del set, en orden; la del ejercicio en pantalla va como «actual» si sigue abierto. */
+export function estrellasDe(items: Ejercicio[], actualId?: string | null): EstrellaDelEjercicio[] {
+  return [...items]
+    .sort((a, b) => a.index - b.index)
+    .map((i) => {
+      const e = estrellaDe(i);
+      return e === "off" && i.id === actualId ? "actual" : e;
+    });
+}
+
+/**
+ * La racha dentro del set, leída en la constelación: suma cada estrella al primer intento; una al
+ * segundo o una mostrada la cortan; una saltada no suma ni corta (§9.7).
+ */
+export function rachaDe(estrellas: EstrellaDelEjercicio[]): number {
+  let racha = 0;
+  for (const e of estrellas) {
+    if (e === "primero") racha++;
+    else if (e === "segundo" || e === "mostrada") racha = 0;
+  }
+  return racha;
+}
+
+export const TEXTO_RACHA: Record<number, string> = { 3: "¡Tres seguidas!", 4: "¡Cuatro seguidas!", 5: "¡Las cinco seguidas!" };
+
+/** La instrucción de cada tipo, la que dice Rigel (o Meissa) al empezar. */
+export function instruccionDe(e: Ejercicio): string {
+  switch (e.type) {
+    case "MATCH_MEANING":
+      return "Une cada palabra con su significado.";
+    case "FILL_BLANK":
+      return "Elige la palabra que va en el hueco.";
+    case "FIX_SENTENCE":
+      return "Esta frase salió en tu clase. Escríbela bien.";
+    case "SPOT_ERROR":
+      return "Toca la palabra que está mal.";
+    case "BUILD_SENTENCE":
+      return "Arma la frase en inglés tocando las fichas en orden.";
+    case "ORDER_DIALOGUE":
+      return "Pon la conversación en orden. Arrastra o usa las flechas.";
+    case "CHOOSE_REPLY":
+      return "Te escribieron. Elige qué responder.";
+    case "LISTEN_CHOOSE":
+      return "Escúchame y elige qué significa.";
+    case "DICTATION":
+      return "Escúchame y escribe la frase.";
+    case "WRITE_SENTENCE": {
+      const termino = leerPayload<{ term?: string }>(e).term;
+      return termino ? `Escribe una frase tuya con «${termino}».` : "Escribe una frase tuya en inglés.";
+    }
+  }
+}
+
+/** Lo que va en la pastilla de «Sigue: …» y en la lista del inicio. */
+export const NOMBRE_DE_TIPO = NOMBRE_DEL_TIPO;
+
+/** Un número del 1 al 5 en palabras, para los textos que se leen en voz alta. */
+const NUMERO = ["cero", "una", "dos", "tres", "cuatro", "cinco", "seis", "siete"];
+const ORDINAL = ["", "primera", "segunda", "tercera", "cuarta", "quinta", "sexta", "séptima"];
+
+export function numeroEnPalabras(n: number): string {
+  return NUMERO[n] ?? String(n);
+}
+
+export function ordinalFemenino(n: number): string {
+  return ORDINAL[n] ?? `${n}.ª`;
+}
+
+/**
+ * El toast del regreso (§10.7): cuántas estrellas ya estaban encendidas. «Primeras» solo si lo son:
+ * con una saltada en medio, ya no son las primeras.
+ */
+export function textoDelRegreso(items: Ejercicio[]): string {
+  const cerrados = items.filter((i) => i.closed);
+  const encendidas = cerrados.filter((i) => !i.skipped).length;
+  if (encendidas === 0) return "Arrancas en este mismo ejercicio.";
+  const seguidas = encendidas === cerrados.length;
+  if (encendidas === 1) return seguidas ? "Tu primera estrella ya está encendida." : "Ya tienes una estrella encendida.";
+  return seguidas
+    ? `Tus ${numeroEnPalabras(encendidas)} primeras estrellas ya están encendidas.`
+    : `Ya tienes ${numeroEnPalabras(encendidas)} estrellas encendidas.`;
+}
+
+const MES_CORTO = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+
+function partesBogota(iso: string, dia: "long" | "short") {
+  const partes = new Intl.DateTimeFormat("es-CO", {
+    timeZone: "America/Bogota",
+    weekday: dia,
+    day: "numeric",
+    month: "numeric",
+  }).formatToParts(new Date(iso));
+  const valor = (t: string) => partes.find((p) => p.type === t)?.value ?? "";
+  return { semana: valor("weekday").replace(".", ""), dia: valor("day"), mes: MES_CORTO[Number(valor("month")) - 1] ?? "" };
+}
+
+/** «miércoles 23 sep»: como el handoff escribe el día de la clase. */
+export function diaDeLaClase(iso: string): string {
+  const p = partesBogota(iso, "long");
+  return `${p.semana} ${p.dia} ${p.mes}`;
+}
+
+/** «jue 1 oct»: el vencimiento, en corto. */
+export function diaCorto(iso: string): string {
+  const p = partesBogota(iso, "short");
+  return `${p.semana} ${p.dia} ${p.mes}`;
+}
+
+/** «miércoles»: solo el día de la semana, para «Del miércoles con María». */
+export function diaDeLaSemana(iso: string): string {
+  return partesBogota(iso, "long").semana;
+}
+
+/** Lo trabajado como título: «Check-in en el hotel». */
+export function tituloDelSet(s: Pick<SetDePractica, "workedOn">): string | null {
+  const t = resumirLoTrabajado(s.workedOn);
+  return t ? t.charAt(0).toUpperCase() + t.slice(1) : null;
+}
+
+/** «María», o «tu profe» cuando no se sabe quién. */
+export function nombreDelProfe(s: Pick<SetDePractica, "professorName">, mayuscula = false): string {
+  if (s.professorName) return primerNombre(s.professorName);
+  return mayuscula ? "Tu profe" : "tu profe";
+}
+
+/** Una línea de diálogo «Sam: Hi!» partida en quién habla y qué dice. */
+export function partirLinea(linea: string): { quien: string | null; texto: string } {
+  const m = /^\s*([^:]{1,24}):\s*(.+)$/.exec(linea);
+  return m ? { quien: m[1].trim(), texto: m[2].trim() } : { quien: null, texto: linea };
+}
+
+/** Las palabras de la frase bien dicha que no estaban en la original: van resaltadas (§4 del copy). */
+export function palabrasNuevasDe(original: string[], corregida: string): Set<number> {
+  const limpia = (w: string) => w.toLowerCase().replace(/[^\p{L}\p{N}']/gu, "");
+  const antes = new Set(original.map(limpia).filter(Boolean));
+  const nuevas = new Set<number>();
+  corregida.split(/\s+/).forEach((w, i) => {
+    const l = limpia(w);
+    if (l && !antes.has(l)) nuevas.add(i);
+  });
+  return nuevas;
 }

@@ -401,11 +401,79 @@ test("María escribe y publica el acta de una clase; Ana la lee", async ({ page 
   const resumenes = page.getByRole("region", { name: "Resúmenes de tus clases" });
   await resumenes.getByRole("link", { name: /María Gómez/ }).first().click();
   await expect(page.getByRole("heading", { name: "Resumen de tu clase" })).toBeVisible();
-  await expect(page.getByText(/Trabajamos past simple/)).toBeVisible();
+  // «Trabajamos past simple; sigue…» es el acta; la invitación de abajo lo resume sin el punto y coma.
+  await expect(page.getByText(/Trabajamos past simple; sigue/)).toBeVisible();
   await expect(page.getByText("La próxima: condicionales.")).toBeVisible();
   // Lo que escribió en crudo es su cuaderno: no llega aquí.
   await expect(page.getByText("Tus notas originales")).toHaveCount(0);
 });
+
+/**
+ * Responde el ejercicio que esté en pantalla, sea del tipo que sea. `vuelta` 0 es el primer intento y
+ * 1 el segundo: en el segundo se elige otra cosa, porque lo mismo ya se sabe que no era.
+ */
+async function responder(page: Page, vuelta: number) {
+  const comprobar = page.getByRole("button", { name: "Comprobar" });
+  const seguir = page.getByRole("button", { name: "Seguir", exact: true });
+  const casi = page.getByRole("button", { name: "Intentar otra vez" });
+  const listo = async () => (await comprobar.getAttribute("aria-disabled")) !== "true";
+
+  const parejas = page.getByRole("group", { name: "Palabras en inglés" });
+  if (await parejas.isVisible()) {
+    // Cada término con el primer significado libre: los que no van gastan intento, y a los dos fallos
+    // se muestran los que faltaban.
+    for (let k = 0; k < 6 && !(await seguir.isVisible()); k++) {
+      if (await casi.isVisible()) await casi.click();
+      const termino = parejas.locator("button:not([aria-disabled])").first();
+      const significado = page
+        .getByRole("group", { name: "Significados en español" })
+        .locator("button:not([aria-disabled])")
+        .first();
+      if (!(await termino.isVisible())) break;
+      await termino.click();
+      await significado.click();
+      await expect(termino.or(seguir).or(casi).first()).toBeVisible();
+      await page.waitForTimeout(300);
+    }
+    return;
+  }
+
+  const campo = page.locator("textarea:not([disabled])");
+  if (await campo.isVisible()) {
+    const etiqueta = await page.locator("label:has(textarea) > span").first().textContent();
+    if (etiqueta === "Tu frase") {
+      const termino = (await page.getByText(/^Escribe una frase tuya con «/).first().textContent())?.match(/«(.+)»/)?.[1] ?? "used to";
+      await campo.fill(vuelta === 0 ? `Last year I ${termino} every weekend with my friends.` : `I think ${termino} is useful at work.`);
+    } else {
+      await campo.fill(vuelta === 0 ? "used to" : "I used to go there.");
+    }
+  } else if (await page.getByRole("radiogroup", { name: "Opciones" }).isVisible()) {
+    const opciones = page.getByRole("radio");
+    await (vuelta === 0 ? opciones.first() : opciones.last()).click();
+  } else if (await page.getByRole("list", { name: "Conversación para ordenar" }).isVisible()) {
+    await page.getByRole("button", { name: /^Bajar:/ }).nth(vuelta).click();
+  } else if (await page.getByRole("group", { name: "Respuestas sugeridas" }).isVisible()) {
+    const sugeridas = page.getByRole("group", { name: "Respuestas sugeridas" }).locator("button:not([aria-hidden])");
+    await expect(sugeridas.first()).not.toHaveAttribute("aria-disabled", "true");
+    await (vuelta === 0 ? sugeridas.first() : sugeridas.last()).click();
+  } else {
+    // Fichas (completa, arma la frase) o palabras (caza el error): se tocan hasta poder comprobar.
+    const grupo = page.getByRole("group", { name: /^(Fichas|Palabras de la frase)$/ });
+    const fichas = grupo.getByRole("button");
+    for (let k = 0; k < 12 && !(await listo()); k++) {
+      const n = await fichas.count();
+      if (n === 0) break;
+      await fichas.nth(vuelta === 0 ? 0 : n - 1).click();
+    }
+    if (!(await listo())) {
+      // Arma la frase, segundo intento: las fichas vuelven puestas como estaban. Se saca la primera y
+      // se pone al final, y así el orden ya es otro.
+      await page.getByRole("group", { name: /^Tu frase/ }).getByRole("button").first().click();
+      await fichas.first().click();
+    }
+  }
+  await comprobar.click();
+}
 
 /**
  * La práctica (Bloque 10, Parte B), de punta a punta con el generador sin IA: del acta que María
@@ -419,65 +487,53 @@ test("Ana practica lo de su clase y María lo ve en su ficha", async ({ page }) 
   await page.getByRole("region", { name: "Resúmenes de tus clases" }).getByRole("link", { name: /María Gómez/ }).first().click();
   await page.waitForURL(/\/acta$/);
 
-  // El set se genera en segundo plano (cada 3 s en local): la puerta aparece cuando está listo.
-  const practicar = page.getByRole("link", { name: "Practicar esto" });
+  // El set se genera en segundo plano (cada 3 s en local): al pie del resumen, «Practicar» aparece
+  // cuando está listo (antes, «Estamos preparando tu práctica»).
+  const practicar = page.getByRole("link", { name: /^(Practicar|Seguir)$/ });
   await expect(async () => {
     await page.reload();
     await expect(practicar).toBeVisible({ timeout: 2000 });
   }).toPass({ timeout: 30_000 });
   await practicar.click();
-  // La portada: de qué clase sale, cuánto dura y la constelación apagada. (Si una corrida anterior
-  // ya lo empezó, se entra directo al ejercicio.)
+  // El inicio: de qué clase sale, la constelación por encender y el aviso de que María lo verá.
+  // (Si una corrida anterior ya lo empezó, se entra directo al ejercicio.)
   const empezar = page.getByRole("button", { name: "Empezar" });
-  await expect(empezar.or(page.getByRole("img", { name: /estrellas encendidas/ })).first()).toBeVisible();
+  await expect(empezar.or(page.getByRole("button", { name: "Salir y seguir luego" })).first()).toBeVisible();
   if (await empezar.isVisible()) {
-    await expect(page.getByRole("img", { name: /0 de \d estrellas encendidas/ })).toBeVisible();
-    await expect(page.getByText(/verá cómo te fue/)).toBeVisible();
+    await expect(page.getByRole("img", { name: "Tu constelación, por encender" }).first()).toBeVisible();
+    await expect(page.getByText(/María verá cómo te fue/).first()).toBeVisible();
     await empezar.click();
   }
 
-  // Un ejercicio por pantalla, hasta que no quede ninguno abierto.
-  const verComo = page.getByRole("button", { name: "Ver cómo me fue" });
-  const saltar = page.getByRole("button", { name: "Saltar este" });
-  const dictado = page.getByPlaceholder("Escribe lo que oíste");
+  // Un ejercicio por pantalla, hasta el cierre. Se responde lo que haya en pantalla; si sale «Casi…»,
+  // se intenta distinto y el ejercicio se cierra de un modo u otro.
+  const cierre = page.getByRole("heading", { name: /bien usados|Constelación perfecta/ });
   for (let i = 0; i < 8; i++) {
-    // Cada vuelta espera a que el ejercicio esté en pantalla antes de decidir cómo responderlo.
-    await expect(
-      page.getByRole("radiogroup").or(page.getByPlaceholder("Tu frase")).or(dictado).or(saltar).or(verComo),
-    ).toBeVisible();
-    if (await verComo.isVisible()) break;
+    const seguir = page.getByRole("button", { name: "Seguir", exact: true });
+    const saltar = page.getByRole("button", { name: "Saltar este" });
+    await expect(page.getByRole("button", { name: "Comprobar" }).or(seguir).or(saltar).or(cierre).first()).toBeVisible({
+      timeout: 15_000,
+    });
+    if (await cierre.isVisible()) break;
     // El navegador de pruebas no suele traer voz en inglés: el de escucha se salta, sin contar como error.
     if (await saltar.isVisible()) {
       await saltar.click();
-      await page.waitForTimeout(800);
-      continue;
+    } else if (!(await seguir.isVisible())) {
+      await responder(page, 0);
+      const otraVez = page.getByRole("button", { name: "Intentar otra vez" });
+      await expect(seguir.or(otraVez)).toBeVisible({ timeout: 10_000 });
+      if (await otraVez.isVisible()) {
+        await expect(page.getByText("Casi…")).toBeVisible();
+        await otraVez.click();
+        await responder(page, 1);
+      }
     }
-    const opciones = page.getByRole("radio");
-    if ((await opciones.count()) > 0) {
-      await opciones.first().click();
-    } else if (await dictado.isVisible()) {
-      await dictado.fill("used to");
-    } else {
-      const termino = (await page.locator("main p[lang='en']").first().textContent())?.trim() ?? "used to";
-      await page.getByPlaceholder("Tu frase").fill(`Last year I ${termino} every weekend with my friends.`);
-    }
-    await page.getByRole("button", { name: "Comprobar" }).click();
-    const otraVez = page.getByRole("button", { name: "Intentar otra vez" });
-    const siguiente = page.getByRole("button", { name: "Siguiente" });
-    await expect(page.getByText("Así es.").or(otraVez).or(siguiente)).toBeVisible();
-    if (await otraVez.isVisible()) {
-      await otraVez.click();
-      if ((await page.getByRole("radio").count()) > 0) await page.getByRole("radio").last().click();
-      await page.getByRole("button", { name: "Comprobar" }).click();
-      await expect(page.getByText("Así es.").or(siguiente)).toBeVisible();
-    }
-    if (await siguiente.isVisible()) await siguiente.click();
-    // Un acierto se queda en pantalla un momento, para leer la explicación, y avanza solo.
-    await expect(page.getByText("Así es.")).toHaveCount(0, { timeout: 6000 });
+    await seguir.click();
+    // La transición (la estrella que se enciende) tapa la pantalla un momento y se va sola.
+    await expect(seguir).toHaveCount(0, { timeout: 5000 });
   }
-  await page.getByRole("button", { name: "Ver cómo me fue" }).click();
-  await expect(page.getByRole("heading", { name: /bien usados|Constelación perfecta/ })).toBeVisible();
-  await expect(page.getByRole("img", { name: "Constelación completa" })).toBeVisible();
+  await expect(cierre).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("img", { name: /^Constelación: \d de \d estrellas encendidas/ })).toBeVisible();
   await expect(page.getByText("+15 puntos por practicar")).toBeVisible();
   await page.goto("/mis-clases");
   await logout(page);
