@@ -39,6 +39,7 @@ import { AvisoMayoriaDeEdad } from "@/components/AvisoMayoriaDeEdad";
 import { Bienvenida } from "@/components/bienvenida/Bienvenida";
 import { Encendido } from "@/components/gamificacion/Encendido";
 import { FranjaDeFicha } from "@/components/FranjaDeFicha";
+import { FranjaDelPerfil } from "@/components/FranjaDelPerfil";
 import { Wordmark } from "@/components/marca";
 import { MisPuntosChip } from "@/components/Puntos";
 import { Boton } from "@/components/ui";
@@ -210,6 +211,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <FranjaDeFicha />
           </Suspense>
         )}
+        {/* Lo mismo para el profesor aprobado, hasta que tenga horarios y su perfil completo y publicado. */}
+        {me.role === "PROFESSOR" && aplic.aprobado && <FranjaDelPerfil />}
         <div className={`flex-1 lg:pb-0 ${practicando ? "" : "pb-24"}`}>
           {rutaProtegida ? <GateProfesor aplic={aplic}>{children}</GateProfesor> : children}
         </div>
