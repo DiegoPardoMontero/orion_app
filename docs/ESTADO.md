@@ -35,8 +35,8 @@ práctica, país con bandera, la franja del perfil del profesor, horarios dentro
 el hero del celular e «Invitar estudiantes»):
 - Backend: `./mvnw verify` — **376 unitarios + 572 de integración**, verde.
 - Frontend: `tsc` + `lint` verdes; **118 tests de Vitest**.
-- **E2E Playwright: 23 de 23** sobre base recreada, con el enlace corto del profesor abierto sin
-  cuenta: 20 en la corrida completa y las 3 de la práctica al repetirlas, después de arreglar una
+- **E2E Playwright: 23 de 24** sobre base recreada (la que falta es la de Wompi, que pide llaves de
+  *sandbox*), con el enlace corto del profesor abierto sin cuenta: 20 en la corrida completa y las 3 de la práctica al repetirlas, después de arreglar una
   carrera vieja de esa prueba (respondía el ejercicio de escucha antes de que el navegador decidiera
   que no tiene voz en inglés). Las pantallas nuevas, además,
   revisadas en capturas a 390 y a 1280.
