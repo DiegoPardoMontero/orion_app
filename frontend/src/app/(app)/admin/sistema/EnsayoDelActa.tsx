@@ -28,7 +28,8 @@ type Ensayos = { ensayos: Ensayo[]; avisos: string[] };
 
 const CLAVE_CORREOS = "orion.ensayo.correos";
 
-function correosGuardados(): { estudiante: string; profesor: string } {
+/** Los correos del último ensayo, del aula o del acta: se prueban casi siempre con las mismas cuentas. */
+export function correosGuardados(): { estudiante: string; profesor: string } {
   try {
     const crudo = localStorage.getItem(CLAVE_CORREOS);
     if (crudo) return JSON.parse(crudo);
@@ -36,6 +37,14 @@ function correosGuardados(): { estudiante: string; profesor: string } {
     // Sin almacenamiento el formulario arranca vacío, y ya.
   }
   return { estudiante: "", profesor: "" };
+}
+
+export function guardarCorreos(estudiante: string, profesor: string) {
+  try {
+    localStorage.setItem(CLAVE_CORREOS, JSON.stringify({ estudiante: estudiante.trim(), profesor: profesor.trim() }));
+  } catch {
+    // Recordar los correos es una comodidad; si no se puede, no pasa nada.
+  }
 }
 
 /**
@@ -66,11 +75,7 @@ export function EnsayoDelActa() {
         body: { studentEmail: estudiante.trim(), professorEmail: profesor.trim() },
       }),
     onSuccess: () => {
-      try {
-        localStorage.setItem(CLAVE_CORREOS, JSON.stringify({ estudiante: estudiante.trim(), profesor: profesor.trim() }));
-      } catch {
-        // Recordar los correos es una comodidad; si no se puede, no pasa nada.
-      }
+      guardarCorreos(estudiante, profesor);
       void cliente.invalidateQueries({ queryKey: ["admin", "ensayos"] });
     },
   });

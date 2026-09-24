@@ -7,7 +7,7 @@ import { AlertTriangle, CheckCircle2, ExternalLink, XCircle } from "lucide-react
 import { apiFetch, ApiError } from "@/lib/api/fetch";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
 import { Boton, Campo, Tarjeta } from "@/components/ui";
-import { EnsayoDelActa } from "./EnsayoDelActa";
+import { correosGuardados, EnsayoDelActa, guardarCorreos } from "./EnsayoDelActa";
 
 type Integracion = {
   nombre: string;
@@ -115,8 +115,8 @@ export default function SistemaPage() {
  * distintas, porque lo que hay que ver es que el profesor entra como anfitrión y el estudiante no.
  */
 function EnsayoDelAula() {
-  const [estudiante, setEstudiante] = useState("");
-  const [profesor, setProfesor] = useState("");
+  const [estudiante, setEstudiante] = useState(() => correosGuardados().estudiante);
+  const [profesor, setProfesor] = useState(() => correosGuardados().profesor);
   const [cuando, setCuando] = useState(() => {
     // Por defecto, ahora mismo: la sala abre 10 minutos antes, así que se entra de inmediato.
     const d = new Date(Date.now() - new Date().getTimezoneOffset() * 60000);
@@ -133,6 +133,7 @@ function EnsayoDelAula() {
           startsAt: cuando,
         },
       }),
+    onSuccess: () => guardarCorreos(estudiante, profesor),
   });
 
   return (
