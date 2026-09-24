@@ -6,10 +6,11 @@ Resumen vivo de qué hay construido y desplegado. Se actualiza al cerrar cada pa
 
 **Backend** (Spring Boot 4.1, `co.orion`): identidad + sesión, disponibilidad + `SlotCalculator`,
 reservas, asistencia, notificaciones por correo (con `.ics` + link a Google Calendar), panel admin
-(usuarios, reservas, métricas). **Migraciones Flyway V1–V28.**
+(usuarios, reservas, métricas). **Migraciones Flyway V1–V51.**
 
 Módulos: `identity`, `scheduling`, `catalog`, `billing`, `messaging`, `notifications`, `reputation`,
-`lifecycle`, `admin`, `engagement`, `legal`, `support`, `shared`. La dependencia que sorprende es `identity → reputation`
+`lifecycle`, `admin`, `engagement`, `legal`, `support`, `assessment`, `teaching`, `practice`,
+`onboarding`, `shared`. La dependencia que sorprende es `identity → reputation`
 (el perfil público muestra la calificación), y por eso existe `lifecycle`: es el único sitio que
 necesita reserva, pago e historial a la vez. `engagement` es el contrario: depende de casi todos y
 nadie depende de él, así que se puede borrar entero sin tocar el marketplace.
@@ -29,10 +30,15 @@ dentro de `/cuenta`).
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots), con Rigel de protagonista.
 
 ## Verificación
-Al 23/09/2026, sobre `master` con el Bloque 10 completo (Partes A y B) y su revisión:
-- Backend: `./mvnw verify` (Testcontainers) — **328 unitarios + 501 de integración**, verde.
-- Frontend: `tsc` + `lint` verdes; **77 tests de Vitest**.
-- **E2E Playwright: 21 de 22** (la última, el 23/09 con la portada nueva y el catálogo sin cuenta),
+Al 24/09/2026, con el Bloque 10 afinado para el lanzamiento a profesores (ensayo, vista de los
+ejercicios, bienvenida y recorridos, acta v3, práctica v4 con revisión):
+- Backend: `./mvnw verify` (Testcontainers) — **344 unitarios + 519 de integración**, verde.
+- Frontend: `tsc` + `lint` verdes; **90 tests de Vitest**.
+- **E2E Playwright: 22 de 23**, con el recorrido del estudiante nuevo y el ensayo del acta desde
+  Sistema. Además, el Bloque 10 entero recorrido en el navegador con OpenAI de verdad.
+
+Al 23/09/2026, con el Bloque 10 completo (Partes A y B) y su revisión, eran 328 + 501, 77 de Vitest
+y 21 de 22 (la última, el 23/09 con la portada nueva y el catálogo sin cuenta),
   sobre base recreada (`docker compose down -v`): el acta escrita,
   editada y publicada, la práctica de Ana con su cierre y lo que ve María, y el acta a mano con la IA
   caída. El que falta sigue siendo el paso por la pasarela: exige llaves de *sandbox* de Wompi en el
