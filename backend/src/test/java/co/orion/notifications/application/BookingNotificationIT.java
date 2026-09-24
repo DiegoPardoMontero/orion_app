@@ -189,7 +189,7 @@ class BookingNotificationIT extends ApiIntegrationSupport {
         assertThat((String) saludo.get("body")).startsWith("¡Hola, Ana! ⭐ Soy María")
                 .contains("primera clase").contains("miércoles 15 de julio a las 9:00 AM");
         assertThat(jdbc.queryForObject(
-                "select count(*) from notifications where user_id = ? and type = 'BOOKING_CREATED'", Integer.class,
+                "select count(*) from notifications where user_id = ? and type = 'BOOKING_RECEIVED'", Integer.class,
                 maria.getId())).isEqualTo(1);
         await().atMost(java.time.Duration.ofSeconds(5)).until(() -> jdbc.queryForObject(
                 "select count(*) from notifications where user_id = ? and type in ('BOOKING_CREATED', 'MESSAGE')",

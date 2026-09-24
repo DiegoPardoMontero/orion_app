@@ -4,10 +4,12 @@ import java.time.Clock;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import co.orion.messaging.domain.Notification;
+import co.orion.messaging.domain.NotificationCreatedEvent;
 import co.orion.messaging.persistence.NotificationRepository;
 import co.orion.shared.error.ResourceNotFoundException;
 
@@ -16,16 +18,20 @@ import co.orion.shared.error.ResourceNotFoundException;
 public class NotificationService {
 
     private final NotificationRepository notifications;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
 
-    public NotificationService(NotificationRepository notifications, Clock clock) {
+    public NotificationService(NotificationRepository notifications, ApplicationEventPublisher events, Clock clock) {
         this.notifications = notifications;
+        this.events = events;
         this.clock = clock;
     }
 
     @Transactional
     public Notification create(UUID userId, String type, String title, String body, String linkPath) {
-        return notifications.save(new Notification(userId, type, title, body, linkPath));
+        Notification creada = notifications.save(new Notification(userId, type, title, body, linkPath));
+        events.publishEvent(new NotificationCreatedEvent(userId, type, title, body, linkPath));
+        return creada;
     }
 
     @Transactional(readOnly = true)

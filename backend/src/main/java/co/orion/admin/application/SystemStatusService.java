@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import co.orion.admin.api.SystemStatusResponse;
 import co.orion.admin.api.SystemStatusResponse.Integracion;
 import co.orion.identity.application.SocialProviders;
+import co.orion.notifications.application.Vapid;
 import co.orion.scheduling.application.JaasProperties;
 import co.orion.scheduling.application.JaasTokenMinter;
 
@@ -33,10 +34,12 @@ public class SystemStatusService {
     private final String voiceProvider;
     private final SocialProviders social;
     private final JaasProperties jaasProps;
+    private final Vapid vapid;
 
     public SystemStatusService(JaasTokenMinter jaas,
                                SocialProviders social,
                                JaasProperties jaasProps,
+                               Vapid vapid,
                                @Value("${CLOUDINARY_URL:}") String cloudinaryUrl,
                                @Value("${orion.payments.wompi.public-key:}") String wompiPublicKey,
                                @Value("${orion.payments.wompi.integrity-secret:}") String wompiIntegrity,
@@ -49,6 +52,7 @@ public class SystemStatusService {
         this.jaas = jaas;
         this.social = social;
         this.jaasProps = jaasProps;
+        this.vapid = vapid;
         this.cloudinaryUrl = cloudinaryUrl;
         this.wompiPublicKey = wompiPublicKey;
         this.wompiIntegrity = wompiIntegrity;
@@ -90,6 +94,12 @@ public class SystemStatusService {
                 new Integracion("Correo (Resend)", hay(resendKey),
                         "No sale ningún correo: ni verificación, ni confirmación de clase.",
                         null, List.of("RESEND_API_KEY")),
+
+                new Integracion("Avisos en el dispositivo (Web Push)", vapid.disponible(),
+                        "Nadie puede activar los avisos en el celular o el escritorio: los recordatorios"
+                                + " llegan solo a la campana y al correo. Las claves se generan una vez con"
+                                + " «npx web-push generate-vapid-keys».",
+                        null, List.of("ORION_VAPID_PUBLIC_KEY", "ORION_VAPID_PRIVATE_KEY", "ORION_VAPID_SUBJECT")),
 
                 new Integracion("Diagnóstico de voz (OpenAI)",
                         hay(openAiKey) && "openai".equals(voiceProvider),

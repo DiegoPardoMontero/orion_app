@@ -6,6 +6,46 @@
  */
 const CACHE = "orion-v1";
 
+/*
+ * Avisos en el dispositivo (Web Push). El backend manda {title, body, url, tag}, cifrado; el
+ * navegador lo descifra antes de entregarlo aquí. `tag` agrupa: un segundo aviso del mismo tipo
+ * reemplaza al anterior en vez de apilarse.
+ */
+self.addEventListener("push", (event) => {
+  let aviso = { title: "Orión", body: "", url: "/", tag: "orion" };
+  try {
+    aviso = { ...aviso, ...event.data.json() };
+  } catch {
+    // Sin cuerpo legible, igual se muestra algo: un push silencioso haría que el navegador lo castigue.
+  }
+  event.waitUntil(
+    self.registration.showNotification(aviso.title, {
+      body: aviso.body,
+      tag: aviso.tag,
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      data: { url: aviso.url },
+    }),
+  );
+});
+
+/* Tocar el aviso lleva a su pantalla: a una pestaña de Orión que ya esté abierta, o a una nueva. */
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const pedido = new URL(event.notification.data?.url || "/", self.location.origin);
+  // Solo dentro de Orión: un aviso nunca abre otra página.
+  const destino = pedido.origin === self.location.origin ? pedido.href : self.location.origin + "/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((ventanas) => {
+      const abierta = ventanas.find((v) => v.url.startsWith(self.location.origin));
+      if (abierta) {
+        return abierta.focus().then((v) => (v && "navigate" in v ? v.navigate(destino) : undefined));
+      }
+      return self.clients.openWindow(destino);
+    }),
+  );
+});
+
 self.addEventListener("install", () => {
   self.skipWaiting();
 });

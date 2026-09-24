@@ -16,6 +16,7 @@ import {
   useNotificacionesNoLeidas,
 } from "@/lib/mensajeria";
 import { useCerrarConEscape } from "@/lib/useCerrarConEscape";
+import { AvisosEnEsteDispositivo } from "@/components/AvisosEnEsteDispositivo";
 
 /** Momento relativo compacto para el panel: hora si es de hoy, si no la fecha corta. */
 function cuando(iso: string | undefined): string {
@@ -250,6 +251,7 @@ export function CampanaNotificaciones({
                 ))}
               </ul>
             </div>
+            <AvisosEnEsteDispositivo />
           </div>
         </>,
         document.body,

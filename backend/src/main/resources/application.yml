@@ -158,6 +158,14 @@ orion:
       interval-ms: ${ORION_ALERTS_WATCHDOG_INTERVAL_MS:900000}
       # Un retraso al arrancar evita avisar de procesos que todavía no han tenido su turno.
       initial-delay-ms: ${ORION_ALERTS_WATCHDOG_INITIAL_DELAY_MS:900000}
+  # Avisos en el dispositivo (Web Push, 24/09/2026). Sin las dos claves no se ofrecen y todo sigue
+  # por la campana y el correo. Se generan una sola vez con `npx web-push generate-vapid-keys` y van
+  # SOLO por variable de entorno: cambiarlas invalida todas las suscripciones.
+  push:
+    vapid:
+      public-key: ${ORION_VAPID_PUBLIC_KEY:}
+      private-key: ${ORION_VAPID_PRIVATE_KEY:}
+      subject: ${ORION_VAPID_SUBJECT:mailto:diegopardomontero@gmail.com}
   mail:
     from: ${ORION_MAIL_FROM:no-reply@orion.local}
     # Transporte del correo: 'smtp' (Mailpit en local) o 'resend' (API HTTP en prod, porque Railway

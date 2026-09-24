@@ -190,6 +190,9 @@ public class SecurityConfig {
                 // Las notificaciones in-app son de cualquier usuario autenticado (cae en anyRequest,
                 // pero se deja explícito por claridad junto al resto del Bloque 3).
                 .requestMatchers("/api/v1/me/notifications", "/api/v1/me/notifications/**").authenticated()
+                // Los avisos en el dispositivo: cada quien suscribe, apaga y prueba los suyos.
+                .requestMatchers("/api/v1/push/config", "/api/v1/me/push-subscriptions",
+                        "/api/v1/me/push-subscriptions/**").authenticated()
                 // Soporte: cualquiera que esté dentro. Un profesor que no puede reclamar
                 // formalmente su pago es un problema que vuelve por otro lado, y peor.
                 .requestMatchers("/api/v1/me/support", "/api/v1/me/support/**").authenticated()

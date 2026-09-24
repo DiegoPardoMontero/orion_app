@@ -48,7 +48,7 @@ public class AvisosDeReserva {
         notifications.create(b.getStudentId(), "BOOKING_CREATED",
                 "Tu clase con " + nombre(b.getProfessorId()) + " quedó agendada",
                 capital(cuando) + ". Entras desde «Mis clases» a la hora de la clase.", enlace);
-        notifications.create(b.getProfessorId(), "BOOKING_CREATED",
+        notifications.create(b.getProfessorId(), "BOOKING_RECEIVED",
                 "Nueva clase con " + nombre(b.getStudentId()),
                 capital(cuando) + ". Ya está en tu agenda.", enlace);
     }
@@ -69,7 +69,10 @@ public class AvisosDeReserva {
             String titulo = destino.equals(quien)
                     ? "Cancelaste tu clase con " + nombre(otro)
                     : nombre(otro) + " canceló la clase";
-            notifications.create(destino, "BOOKING_CANCELLED", titulo, "Era el " + cuando + ".", enlace);
+            // Tipos distintos porque solo uno de los dos avisos suena en el dispositivo: el de quien se
+            // enteró, no la confirmación de lo que uno mismo acaba de hacer.
+            notifications.create(destino, destino.equals(quien) ? "BOOKING_CANCELLED_SELF" : "BOOKING_CANCELLED",
+                    titulo, "Era el " + cuando + ".", enlace);
         }
     }
 
