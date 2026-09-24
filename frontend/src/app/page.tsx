@@ -234,7 +234,7 @@ export default async function PortadaPage() {
       {/* — 1. Hero: el diagnóstico SÍ o SÍ (Pardo, 23/09/2026) — */}
       <header className="gradient-dawn relative overflow-hidden">
         <Constelacion className="pointer-events-none absolute -right-10 top-6 h-[220px] w-[220px] opacity-60 lg:h-[360px] lg:w-[360px]" />
-        <div className="relative mx-auto max-w-6xl px-5 pb-20 pt-12 lg:px-8 lg:pb-24 lg:pt-16">
+        <div className="relative mx-auto max-w-6xl px-5 pb-20 pt-8 lg:px-8 lg:pb-24 lg:pt-16">
           <div className="grid gap-10 lg:grid-cols-[1.35fr_1fr] lg:items-center">
             <div>
               <h1 className="max-w-[18ch] text-balance font-display text-[36px] font-bold leading-[1.06] text-on-primary lg:text-[56px]">
@@ -271,8 +271,10 @@ export default async function PortadaPage() {
                 ✦ Sin permanencia · Sin renovación automática · Profesores verificados
               </p>
             </div>
-            <div className="hidden justify-center lg:flex lg:justify-end">
-              <Rigel pose="saludo" className="h-[280px] w-auto drop-shadow-2xl" />
+            {/* Rigel va en el celular también, y primero que todo (Pardo, 24/09/2026: «ES VITAL que
+                aparezca»). En escritorio sigue a la derecha del titular. */}
+            <div className="order-first -mb-4 flex justify-center lg:order-none lg:mb-0 lg:justify-end">
+              <Rigel pose="saludo" className="h-[168px] w-auto drop-shadow-2xl sm:h-[200px] lg:h-[280px]" />
             </div>
           </div>
         </div>
