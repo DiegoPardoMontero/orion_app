@@ -139,6 +139,9 @@ class PracticaIT extends ApiIntegrationSupport {
 
         assertThat(set).containsEntry("status", "READY").containsEntry("itemCount", 3)
                 .containsEntry("professorName", "María Gómez");
+        // Y se le avisa: la práctica lista ya no espera a que Ana entre a sus clases (24/09/2026).
+        await().atMost(Duration.ofSeconds(5)).until(() -> jdbc.queryForObject(
+                "select count(*) from notifications where type = 'PRACTICE_READY'", Integer.class) == 1);
         List<Map> items = (List<Map>) set.get("items");
         assertThat(items).hasSize(3);
         // Abierto, el ejercicio no trae la respuesta esperada ni la explicación.

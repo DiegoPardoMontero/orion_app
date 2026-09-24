@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import co.orion.admin.application.CorreoDePrueba;
 import co.orion.admin.application.RehearsalService;
 import co.orion.admin.application.SystemStatusService;
 import co.orion.scheduling.application.TestClassService;
@@ -32,12 +33,14 @@ public class SystemStatusController {
     private final SystemStatusService status;
     private final TestClassService testClasses;
     private final RehearsalService ensayos;
+    private final CorreoDePrueba correoDePrueba;
 
     public SystemStatusController(SystemStatusService status, TestClassService testClasses,
-                                  RehearsalService ensayos) {
+                                  RehearsalService ensayos, CorreoDePrueba correoDePrueba) {
         this.status = status;
         this.testClasses = testClasses;
         this.ensayos = ensayos;
+        this.correoDePrueba = correoDePrueba;
     }
 
     @GetMapping("/status")
@@ -83,6 +86,19 @@ public class SystemStatusController {
     @GetMapping("/rehearsals")
     public RehearsalService.Ensayos rehearsals() {
         return ensayos.recientes();
+    }
+
+    /**
+     * Un correo de verdad, por el transporte de verdad, a la dirección del admin o a la que escriba.
+     * Responde 200 también cuando falla: el fallo es el resultado que se vino a buscar.
+     */
+    @PostMapping("/test-email")
+    public CorreoDePrueba.Resultado testEmail(@AuthenticationPrincipal OrionUserDetails principal,
+                                             @Valid @RequestBody(required = false) TestEmailRequest body) {
+        return correoDePrueba.enviar(principal.user(), body == null ? null : body.to());
+    }
+
+    public record TestEmailRequest(@Email String to) {
     }
 
     public record RehearsalRequest(@NotBlank @Email String studentEmail, @NotBlank @Email String professorEmail) {

@@ -8,11 +8,13 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import co.orion.catalog.application.PlatformSettingsService;
 import co.orion.reputation.domain.ProfessorSanction;
+import co.orion.reputation.domain.SanctionChangedEvent;
 import co.orion.reputation.domain.SanctionState;
 import co.orion.reputation.domain.SanctionType;
 import co.orion.reputation.persistence.ProfessorSanctionRepository;
@@ -45,15 +47,18 @@ public class SanctionService {
     private final ProfessorSanctionRepository sanctions;
     private final ProfessorAbsenceRepository absences;
     private final PlatformSettingsService settings;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
 
     public SanctionService(ProfessorSanctionRepository sanctions,
                            ProfessorAbsenceRepository absences,
                            PlatformSettingsService settings,
+                           ApplicationEventPublisher events,
                            Clock clock) {
         this.sanctions = sanctions;
         this.absences = absences;
         this.settings = settings;
+        this.events = events;
         this.clock = clock;
     }
 
@@ -81,6 +86,9 @@ public class SanctionService {
 
         log.info("Sanción {} para el profesor {} ({}) — {}",
                 type, professorId, state, reason);
+        if (state == SanctionState.ACTIVE) {
+            avisar(sanction, false);
+        }
         return sanction;
     }
 
@@ -126,18 +134,26 @@ public class SanctionService {
         } catch (IllegalStateException ex) {
             throw new ConflictException(ex.getMessage());
         }
-        return sanctions.save(sanction);
+        ProfessorSanction confirmada = sanctions.save(sanction);
+        avisar(confirmada, false);
+        return confirmada;
     }
 
     @Transactional
     public ProfessorSanction revoke(UUID sanctionId, UUID adminId) {
         ProfessorSanction sanction = require(sanctionId);
+        // Una propuesta descartada no se anuncia: el profesor nunca supo de ella.
+        boolean regia = sanction.getState() == SanctionState.ACTIVE;
         try {
             sanction.revoke(adminId, clock.instant());
         } catch (IllegalStateException ex) {
             throw new ConflictException(ex.getMessage());
         }
-        return sanctions.save(sanction);
+        ProfessorSanction revocada = sanctions.save(sanction);
+        if (regia) {
+            avisar(revocada, true);
+        }
+        return revocada;
     }
 
     /** Sanción manual del admin. Es la única vía para cerrar una cuenta. */
@@ -152,8 +168,16 @@ public class SanctionService {
         if (reason == null || reason.isBlank()) {
             throw new UnprocessableException("Una sanción necesita un motivo escrito");
         }
-        return sanctions.save(new ProfessorSanction(
+        ProfessorSanction aplicada = sanctions.save(new ProfessorSanction(
                 professorId, type, reason.trim(), SanctionState.ACTIVE, clock.instant(), adminId));
+        avisar(aplicada, false);
+        return aplicada;
+    }
+
+    /** «Toda sanción se le notifica»: la que empieza a regir y la que se levanta. */
+    private void avisar(ProfessorSanction sanction, boolean levantada) {
+        events.publishEvent(new SanctionChangedEvent(sanction.getId(), sanction.getProfessorId(),
+                sanction.getType(), sanction.getReason(), levantada));
     }
 
     private ProfessorSanction require(UUID sanctionId) {

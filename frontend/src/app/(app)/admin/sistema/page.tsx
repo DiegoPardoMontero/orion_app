@@ -101,9 +101,67 @@ export default function SistemaPage() {
         ))}
       </div>
 
+      <CorreoDePrueba />
       <EnsayoDelAula />
       <EnsayoDelActa />
     </main>
+  );
+}
+
+type ResultadoCorreo = { enviado: boolean; para: string; via: string; detalle: string };
+
+/**
+ * Un correo de verdad por el transporte de verdad (24/09/2026). «Configurada» arriba solo dice que
+ * la variable existe; que el correo llegue a Gmail —y no a spam— solo se sabe mandando uno.
+ */
+function CorreoDePrueba() {
+  const [para, setPara] = useState("");
+  const enviar = useMutation({
+    mutationFn: () =>
+      apiFetch<ResultadoCorreo>("/api/v1/admin/system/test-email", {
+        method: "POST",
+        body: para.trim() ? { to: para.trim() } : {},
+      }),
+  });
+
+  return (
+    <section className="mt-8">
+      <h2 className="font-display text-h3 font-bold">Correo de prueba</h2>
+      <p className="mt-1 text-[13px] leading-relaxed text-text-secondary">
+        Sale por el mismo camino y con la misma plantilla que los correos de reservas, recordatorios y
+        soporte. Si no escribes una dirección, llega a la tuya.
+      </p>
+      <Tarjeta className="mt-3">
+        <label className="block">
+          <span className="text-[12.5px] font-bold text-text-secondary">Enviar a (opcional)</span>
+          <Campo
+            type="email"
+            value={para}
+            onChange={(e) => setPara(e.target.value)}
+            placeholder="tu correo de Gmail, por ejemplo"
+            className="mt-1.5"
+          />
+        </label>
+        {enviar.error instanceof ApiError && (
+          <div className="mt-3">
+            <AvisoError mensaje={enviar.error.message} />
+          </div>
+        )}
+        <Boton variante="primario" className="mt-4" disabled={enviar.isPending} onClick={() => enviar.mutate()}>
+          {enviar.isPending ? "Enviando…" : "Enviar correo de prueba"}
+        </Boton>
+        {enviar.data && (
+          <div className={`mt-4 rounded-card p-4 ${enviar.data.enviado ? "bg-success-bg" : "bg-error-bg"}`}>
+            <p className={`text-[13.5px] font-bold ${enviar.data.enviado ? "text-success" : "text-error"}`}>
+              {enviar.data.enviado ? `Enviado a ${enviar.data.para}` : `No salió hacia ${enviar.data.para}`}
+            </p>
+            <p className="mt-1 text-[13px] text-text-secondary">
+              {enviar.data.detalle} <span className="text-text-muted">· vía {enviar.data.via}</span>
+            </p>
+          </div>
+        )}
+      </Tarjeta>
+    </section>
   );
 }
 

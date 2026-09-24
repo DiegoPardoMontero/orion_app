@@ -40,7 +40,9 @@ public class JobWatchdog {
             new Vigilado("payment-expiry", "Expiración de reservas", Duration.ofMinutes(30),
                     "Los cupos sin pagar se quedan bloqueados y nadie más puede reservarlos."),
             new Vigilado("professor-metrics", "Métricas y ranking", Duration.ofHours(30),
-                    "El orden del buscador se queda congelado en el de ayer."));
+                    "El orden del buscador se queda congelado en el de ayer."),
+            new Vigilado("class-reminders", "Recordatorios de clase", Duration.ofMinutes(30),
+                    "Nadie recibe el aviso de su clase de mañana ni el de una hora antes."));
 
     private final JobRunRegistry runs;
     private final AlertService alerts;

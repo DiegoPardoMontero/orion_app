@@ -7,9 +7,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import co.orion.billing.domain.PayoutPaidEvent;
 import co.orion.billing.domain.Payment;
 import co.orion.billing.domain.Payout;
 import co.orion.billing.domain.PayoutItem;
@@ -35,15 +37,18 @@ public class PayoutService {
     private final PayoutRepository payouts;
     private final PayoutItemRepository items;
     private final PaymentRepository payments;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
 
     public PayoutService(PayoutRepository payouts,
                          PayoutItemRepository items,
                          PaymentRepository payments,
+                         ApplicationEventPublisher events,
                          Clock clock) {
         this.payouts = payouts;
         this.items = items;
         this.payments = payments;
+        this.events = events;
         this.clock = clock;
     }
 
@@ -82,7 +87,10 @@ public class PayoutService {
         Payout payout = payouts.findById(payoutId)
                 .orElseThrow(() -> new ResourceNotFoundException("Liquidación no encontrada"));
         payout.markPaid(reference, clock.instant());
-        return payouts.save(payout);
+        Payout pagada = payouts.save(payout);
+        events.publishEvent(new PayoutPaidEvent(pagada.getId(), pagada.getProfessorId(), pagada.getAmountCop(),
+                pagada.getPeriodStart(), pagada.getPeriodEnd()));
+        return pagada;
     }
 
     @Transactional(readOnly = true)

@@ -86,3 +86,20 @@ cerrado de este bloque: lo que no está aquí no se construye.
 9. Recorrido idéntico al diseño, moviéndose entre pantallas.
 10. Clase de prueba.
 11. Documento de todos los flujos, ESTADO y manual.
+
+## Segunda tanda (24/09, tarde) — después de todo lo anterior
+
+Pardo, textual en lo esencial:
+
+12. **Escritorio**: «los menús más pegados a la derecha, como la pestaña de Mensajes»: usar mejor
+    la pantalla en escritorio (las pantallas centradas y angostas desperdician el ancho).
+13. **Recordar la práctica** en otras partes de la plataforma, no solo al entrar a sus clases. «No
+    TAN invasivo», pero que se recuerde dentro de la plataforma.
+14. **Postulación del profe**: el país, de una lista desplegable, con su emoji (bandera).
+15. **Ficha del profe**: lo mismo que la del estudiante (franja, avisos, correo), hasta que llene su
+    disponibilidad, complete su perfil y lo publique.
+16. **Fusionar «Disponibilidad»** con lo demás del profesor (su perfil).
+17. **Landing en el celular**: Rigel no se ve en el hero. «ES VITAL que aparezca (incluso antes que
+    todo)».
+18. **«Invitar estudiantes»** en vez del enlace propio del profe: que genere un link para compartir
+    en redes o mandarlo directamente a sus estudiantes.

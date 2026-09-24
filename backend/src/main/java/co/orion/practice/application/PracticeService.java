@@ -35,6 +35,7 @@ import co.orion.identity.domain.User;
 import co.orion.identity.persistence.StudentProfileRepository;
 import co.orion.practice.domain.Evaluador;
 import co.orion.practice.domain.PracticeCompletedEvent;
+import co.orion.practice.domain.PracticeReadyEvent;
 import co.orion.practice.domain.PracticeItem;
 import co.orion.practice.domain.PracticeItemType;
 import co.orion.practice.domain.PracticeSet;
@@ -179,6 +180,8 @@ public class PracticeService {
             // Un minuto por ejercicio, y nunca menos de dos: es lo que se promete en la invitación.
             set.listo(validos.size(), Math.max(2, validos.size()));
             sets.save(set);
+            eventos.publishEvent(new PracticeReadyEvent(set.getId(), set.getStudentId(), set.getProfessorId(),
+                    validos.size()));
             return true;
         }
         if (set.getGenerationAttempts() >= INTENTOS_DE_GENERACION) {

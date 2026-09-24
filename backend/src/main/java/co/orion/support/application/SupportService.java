@@ -6,12 +6,14 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import co.orion.scheduling.persistence.BookingRepository;
 import co.orion.shared.error.ResourceNotFoundException;
 import co.orion.shared.error.UnprocessableException;
+import co.orion.support.domain.SupportAnsweredEvent;
 import co.orion.support.domain.SupportMessage;
 import co.orion.support.domain.SupportTicket;
 import co.orion.support.domain.TicketCategory;
@@ -36,16 +38,19 @@ public class SupportService {
     private final SupportTicketRepository tickets;
     private final SupportMessageRepository messages;
     private final BookingRepository bookings;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
     private final SecureRandom random = new SecureRandom();
 
     public SupportService(SupportTicketRepository tickets,
                           SupportMessageRepository messages,
                           BookingRepository bookings,
+                          ApplicationEventPublisher events,
                           Clock clock) {
         this.tickets = tickets;
         this.messages = messages;
         this.bookings = bookings;
+        this.events = events;
         this.clock = clock;
     }
 
@@ -115,6 +120,8 @@ public class SupportService {
         messages.save(new SupportMessage(ticket.getId(), authorId, body));
         if (esAdmin) {
             ticket.markAnswered();
+            events.publishEvent(new SupportAnsweredEvent(ticket.getId(), ticket.getCode(), ticket.getUserId(),
+                    ticket.getSubject()));
         } else {
             ticket.markReopened();
         }

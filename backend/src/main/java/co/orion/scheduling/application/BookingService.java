@@ -20,6 +20,7 @@ import co.orion.identity.persistence.UserRepository;
 import co.orion.scheduling.domain.Booking;
 import co.orion.scheduling.domain.BookingCancelledEvent;
 import co.orion.scheduling.domain.BookingCreatedEvent;
+import co.orion.scheduling.domain.BookingExpiredEvent;
 import co.orion.scheduling.domain.BookingModality;
 import co.orion.scheduling.domain.BookingStatus;
 import co.orion.scheduling.domain.SlotCalculator;
@@ -195,6 +196,7 @@ public class BookingService {
                 .ifPresent(booking -> {
                     booking.expire();
                     bookings.save(booking);
+                    events.publishEvent(new BookingExpiredEvent(booking.getId()));
                 });
     }
 

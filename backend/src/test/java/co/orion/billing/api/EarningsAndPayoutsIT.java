@@ -1,9 +1,11 @@
 package co.orion.billing.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.time.Clock;
 import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -225,6 +227,11 @@ class EarningsAndPayoutsIT extends ApiIntegrationSupport {
         EarningsResponse after = earnings(mariaSession);
         assertThat(after.payableCop()).isZero();
         assertThat(after.transferredCop()).isEqualTo(EARNINGS_COP);
+
+        // Y se entera sin entrar a mirar (24/09/2026): «Te pagamos $ …» en su campana.
+        await().atMost(Duration.ofSeconds(5)).until(() -> jdbc.queryForObject(
+                "select count(*) from notifications where user_id = ? and type = 'PAYOUT_PAID'", Integer.class,
+                maria.getId()) == 1);
     }
 
     /** Una clase que no ocurrió no se le paga a nadie: la liquidación solo mira lo liberado. */
