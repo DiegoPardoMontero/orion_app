@@ -311,7 +311,7 @@ function GateProfesor({
 }
 
 /** Cabecera móvil: 64 px, logotipo coral + menú de usuario. Sobre superficie clara. */
-function MobileHeader({ me }: { me: { fullName: string; email: string; role: Role; photoUrl?: string | null } }) {
+function MobileHeader({ me }: { me: { fullName: string; email: string; role: Role; photoUrl?: string | null; hasPassword?: boolean } }) {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-surface-sunken bg-surface px-5 lg:hidden">
       <Wordmark className="text-[16px] text-primary" />
@@ -386,7 +386,7 @@ function Sidebar({
   pathname,
   noLeidosMensajes,
 }: {
-  me: { fullName: string; email: string; role: Role; photoUrl?: string | null };
+  me: { fullName: string; email: string; role: Role; photoUrl?: string | null; hasPassword?: boolean };
   grupos: NavGroup[];
   pathname: string;
   noLeidosMensajes: number;
@@ -527,7 +527,7 @@ function MenuUsuario({
   me,
   posicion,
 }: {
-  me: { fullName: string; email: string; role: Role; photoUrl?: string | null };
+  me: { fullName: string; email: string; role: Role; photoUrl?: string | null; hasPassword?: boolean };
   posicion: "abajo" | "arriba";
 }) {
   const router = useRouter();
@@ -603,7 +603,7 @@ function MenuUsuario({
               className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-[13px] font-semibold text-text hover:bg-surface-sunken"
             >
               <KeyRound size={15} strokeWidth={1.75} />
-              Cambiar contraseña
+              {me.hasPassword === false ? "Crear una contraseña" : "Cambiar contraseña"}
             </button>
             <button
               type="button"

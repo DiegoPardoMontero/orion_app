@@ -1,134 +1,116 @@
 package co.orion.identity.api;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * Guarda la solicitud de autorización de Apple en una cookie firmada en vez de en la sesión.
+ * Guarda la solicitud de autorización en una cookie firmada, y no en la sesión. Para todos los
+ * proveedores desde el 24/09/2026 (antes solo Apple).
  *
- * <p><strong>Por qué.</strong> Apple devuelve a la persona con un POST desde su dominio
- * ({@code response_mode=form_post}), y la cookie de sesión es SameSite=Lax: en un POST entre
- * sitios el navegador no la manda, la sesión llega vacía y Spring no encuentra la solicitud que
- * él mismo guardó. Esta cookie va con SameSite=None para sobrevivir a ese POST, y por eso mismo va
- * <strong>firmada</strong> (HMAC con una llave que nace con cada arranque) y dura cinco minutos:
- * nadie puede fabricarla ni alterarla, y la de un arranque anterior simplemente no vale.
+ * <p><strong>Por qué.</strong> En la sesión en memoria, la solicitud se perdía con cada reinicio o
+ * despliegue del backend —quien estaba en la pantalla de Google volvía a «No pudimos entrar»—, y
+ * la sesión guarda una sola: un segundo clic o una segunda pestaña pisaban la primera, que volvía
+ * sin encontrar la suya. Ahora hay <strong>una cookie por solicitud</strong>, con el nombre sacado
+ * de su {@code state}, y la firma usa una llave estable ({@link FirmaSocial}).
  *
- * <p>Nunca se deserializa con la serialización de Java: el contenido viene del navegador, y
- * deserializar objetos arbitrarios de una cookie es una puerta a ejecutar código. Es JSON de campos
- * de texto, reconstruido a mano.
+ * <p>Apple devuelve a la persona con un POST desde su dominio, y en un POST entre sitios el
+ * navegador solo manda cookies SameSite=None: por eso en producción van con None (y Secure). Por
+ * eso mismo van firmadas y duran diez minutos.
  */
 class SignedCookieAuthorizationRequestRepository
         implements AuthorizationRequestRepository<OAuth2AuthorizationRequest> {
 
-    static final String COOKIE = "ORION_OAUTH2_APPLE";
-    private static final Duration VIDA = Duration.ofMinutes(5);
-    private static final ObjectMapper JSON = new ObjectMapper();
+    static final String PREFIJO = "ORION_OAUTH2_";
+    private static final Duration VIDA = Duration.ofMinutes(10);
 
-    private final byte[] llave = new byte[32];
+    private final FirmaSocial firma;
     private final boolean segura;
     private final Clock clock;
 
-    SignedCookieAuthorizationRequestRepository(boolean segura, Clock clock) {
-        new SecureRandom().nextBytes(llave);
+    SignedCookieAuthorizationRequestRepository(FirmaSocial firma, boolean segura, Clock clock) {
+        this.firma = firma;
         this.segura = segura;
         this.clock = clock;
     }
 
     @Override
     public OAuth2AuthorizationRequest loadAuthorizationRequest(HttpServletRequest request) {
-        String valor = leer(request);
-        if (valor == null) {
+        String state = request.getParameter(OAuth2ParameterNames.STATE);
+        if (state == null || state.isBlank()) {
             return null;
         }
-        int punto = valor.lastIndexOf('.');
-        if (punto < 0) {
+        Guardada g = firma.desempaquetar(leer(request, nombre(state)), Guardada.class);
+        // Firmada, pero de otra solicitud o vencida: tampoco vale.
+        if (g == null || !state.equals(g.state())
+                || clock.instant().isAfter(Instant.ofEpochSecond(g.emitida()).plus(VIDA))) {
             return null;
         }
-        String cuerpo = valor.substring(0, punto);
-        try {
-            // Cualquier cosa rara —base64 roto, firma que no cuadra, JSON ajeno— es «no hay
-            // solicitud», nunca un 500: la cookie viene del navegador y puede traer lo que sea.
-            byte[] firma = Base64.getUrlDecoder().decode(valor.substring(punto + 1));
-            if (!MessageDigest.isEqual(firma, hmac(cuerpo))) {
-                return null;
-            }
-            Guardada g = JSON.readValue(Base64.getUrlDecoder().decode(cuerpo), Guardada.class);
-            if (clock.instant().isAfter(Instant.ofEpochSecond(g.emitida()).plus(VIDA))) {
-                return null;
-            }
-            return OAuth2AuthorizationRequest.authorizationCode()
-                    .authorizationUri(g.authorizationUri())
-                    .clientId(g.clientId())
-                    .redirectUri(g.redirectUri())
-                    .scopes(Set.copyOf(g.scopes()))
-                    .state(g.state())
-                    .additionalParameters(p -> p.putAll(g.additionalParameters()))
-                    .attributes(a -> a.putAll(g.attributes()))
-                    .authorizationRequestUri(g.authorizationRequestUri())
-                    .build();
-        } catch (Exception ex) {
-            return null;
-        }
+        return OAuth2AuthorizationRequest.authorizationCode()
+                .authorizationUri(g.authorizationUri())
+                .clientId(g.clientId())
+                .redirectUri(g.redirectUri())
+                .scopes(Set.copyOf(g.scopes()))
+                .state(g.state())
+                .additionalParameters(p -> p.putAll(g.additionalParameters()))
+                .attributes(a -> a.putAll(g.attributes()))
+                .authorizationRequestUri(g.authorizationRequestUri())
+                .build();
     }
 
     @Override
     public void saveAuthorizationRequest(OAuth2AuthorizationRequest solicitud, HttpServletRequest request,
                                          HttpServletResponse response) {
         if (solicitud == null) {
-            borrar(response);
+            String state = request.getParameter(OAuth2ParameterNames.STATE);
+            if (state != null) {
+                borrar(response, nombre(state));
+            }
             return;
         }
         Guardada g = new Guardada(solicitud.getAuthorizationUri(), solicitud.getClientId(),
                 solicitud.getRedirectUri(), List.copyOf(solicitud.getScopes()), solicitud.getState(),
                 comoTexto(solicitud.getAdditionalParameters()), comoTexto(solicitud.getAttributes()),
                 solicitud.getAuthorizationRequestUri(), clock.instant().getEpochSecond());
-        try {
-            String cuerpo = Base64.getUrlEncoder().withoutPadding().encodeToString(JSON.writeValueAsBytes(g));
-            String valor = cuerpo + "." + Base64.getUrlEncoder().withoutPadding().encodeToString(hmac(cuerpo));
-            response.addHeader(HttpHeaders.SET_COOKIE, cookie(valor, VIDA).toString());
-        } catch (Exception ex) {
-            throw new IllegalStateException("No se pudo guardar la solicitud de Apple", ex);
-        }
+        response.addHeader(HttpHeaders.SET_COOKIE,
+                cookie(nombre(solicitud.getState()), firma.empaquetar(g), VIDA).toString());
     }
 
     @Override
     public OAuth2AuthorizationRequest removeAuthorizationRequest(HttpServletRequest request,
                                                                  HttpServletResponse response) {
         OAuth2AuthorizationRequest solicitud = loadAuthorizationRequest(request);
-        borrar(response);
+        if (solicitud != null) {
+            borrar(response, nombre(solicitud.getState()));
+        }
         return solicitud;
     }
 
-    private void borrar(HttpServletResponse response) {
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie("", Duration.ZERO).toString());
+    static String nombre(String state) {
+        return PREFIJO + FirmaSocial.huella(state);
+    }
+
+    private void borrar(HttpServletResponse response, String nombre) {
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie(nombre, "", Duration.ZERO).toString());
     }
 
     /** SameSite=None exige Secure. En local (http) no hay Apple posible, así que ahí va Lax. */
-    private ResponseCookie cookie(String valor, Duration vida) {
-        return ResponseCookie.from(COOKIE, valor)
+    private ResponseCookie cookie(String nombre, String valor, Duration vida) {
+        return ResponseCookie.from(nombre, valor)
                 .httpOnly(true)
                 .secure(segura)
                 .sameSite(segura ? "None" : "Lax")
@@ -137,26 +119,16 @@ class SignedCookieAuthorizationRequestRepository
                 .build();
     }
 
-    private static String leer(HttpServletRequest request) {
+    private static String leer(HttpServletRequest request, String nombre) {
         if (request.getCookies() == null) {
             return null;
         }
         for (Cookie c : request.getCookies()) {
-            if (COOKIE.equals(c.getName()) && !c.getValue().isBlank()) {
+            if (nombre.equals(c.getName()) && !c.getValue().isBlank()) {
                 return c.getValue();
             }
         }
         return null;
-    }
-
-    private byte[] hmac(String contenido) {
-        try {
-            Mac mac = Mac.getInstance("HmacSHA256");
-            mac.init(new SecretKeySpec(llave, "HmacSHA256"));
-            return mac.doFinal(contenido.getBytes(StandardCharsets.UTF_8));
-        } catch (Exception ex) {
-            throw new IllegalStateException("HMAC no disponible", ex);
-        }
     }
 
     private static Map<String, String> comoTexto(Map<String, Object> mapa) {

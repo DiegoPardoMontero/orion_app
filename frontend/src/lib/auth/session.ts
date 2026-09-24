@@ -25,6 +25,11 @@ export type Me = {
    */
   adultConfirmed: boolean;
   /**
+   * Si la contraseña la eligió la persona. Falso en quien entró con Google: ahí «Cambiar
+   * contraseña» se vuelve «Crear una contraseña», sin pedir la actual (24/09/2026).
+   */
+  hasPassword?: boolean;
+  /**
    * Si el correo está comprobado. Junto con `adultConfirmed`, son las dos condiciones que hacen
    * falta para reservar; el backend las vuelve a comprobar en BookingService, que es donde mandan.
    */

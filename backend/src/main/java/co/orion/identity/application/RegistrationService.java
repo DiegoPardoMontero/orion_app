@@ -64,6 +64,7 @@ public class RegistrationService {
         random.nextBytes(secreto);
         User user = new User(email, passwordEncoder.encode(HexFormat.of().formatHex(secreto)),
                 fullName, UserRole.STUDENT);
+        user.replacePasswordWithUnknown(user.getPasswordHash());
         user.confirmAdulthood(clock.instant());
         if (emailVerified) {
             user.markEmailVerified(clock.instant());

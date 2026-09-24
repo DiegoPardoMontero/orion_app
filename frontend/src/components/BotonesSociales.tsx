@@ -1,7 +1,9 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useState, useSyncExternalStore } from "react";
 import { apiFetch } from "@/lib/api/fetch";
+import { esNavegadorDeApp } from "@/lib/navegador";
 import { DESDE_KEY, INTENCION_KEY } from "@/lib/auth/roles";
 
 type Proveedor = "google" | "microsoft" | "apple" | "facebook";
@@ -36,9 +38,19 @@ export function BotonesSociales({
     retry: false,
   });
   const proveedores = data?.providers ?? [];
+  // El que se tocó, mientras el navegador se va: un segundo toque abría otra solicitud y pisaba la
+  // primera, y la persona volvía a «No pudimos entrar».
+  const [yendo, setYendo] = useState<Proveedor | null>(null);
+  const dentroDeUnaApp = useSyncExternalStore(
+    () => () => {},
+    () => esNavegadorDeApp(navigator.userAgent),
+    () => false,
+  );
   if (proveedores.length === 0) return null;
 
   const ir = (p: Proveedor) => {
+    if (yendo) return;
+    setYendo(p);
     const origen = desde ?? new URLSearchParams(window.location.search).get("desde");
     try {
       if (origen) window.sessionStorage.setItem(DESDE_KEY, origen);
@@ -52,11 +64,27 @@ export function BotonesSociales({
 
   return (
     <div>
+      {/* Instagram, TikTok y Facebook abren los enlaces en su propio navegador, y Google no deja
+          entrar ahí (lo rechaza en su pantalla, sin que Orión se entere). Se avisa antes de tocar. */}
+      {dentroDeUnaApp && (
+        <div role="note" className="mb-3 rounded-base bg-warning-bg px-4 py-3 text-[13px] leading-relaxed text-warning">
+          <strong>Estás dentro de una app</strong> (Instagram, TikTok…) y ahí Google no deja entrar. Abre
+          esta página en Chrome o Safari —menú <strong>⋯</strong> → «Abrir en el navegador»— o entra con tu
+          correo aquí abajo.
+        </div>
+      )}
       <div className="grid gap-2.5">
         {ORDEN.filter((p) => proveedores.includes(p)).map((p) => (
-          <button key={p} type="button" onClick={() => ir(p)} className={ESTILO[p]}>
+          <button
+            key={p}
+            type="button"
+            onClick={() => ir(p)}
+            disabled={yendo !== null}
+            aria-busy={yendo === p || undefined}
+            className={`${ESTILO[p]} disabled:cursor-default disabled:opacity-70`}
+          >
             {LOGO[p]}
-            Continuar con {NOMBRE[p]}
+            {yendo === p ? `Abriendo ${NOMBRE[p]}…` : `Continuar con ${NOMBRE[p]}`}
           </button>
         ))}
       </div>

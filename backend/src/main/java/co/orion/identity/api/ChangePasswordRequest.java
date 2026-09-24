@@ -6,7 +6,8 @@ import jakarta.validation.constraints.Size;
 import co.orion.shared.security.CabeEnBcrypt;
 
 public record ChangePasswordRequest(
-        @NotBlank(message = "currentPassword es obligatoria")
+        // Obligatoria para quien ya tiene contraseña; quien entró con Google crea la primera sin ella
+        // (lo decide PasswordService, que sabe cuál es el caso).
         @CabeEnBcrypt String currentPassword,
 
         @NotBlank

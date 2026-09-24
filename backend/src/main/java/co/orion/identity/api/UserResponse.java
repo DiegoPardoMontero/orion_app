@@ -19,7 +19,7 @@ import co.orion.shared.security.OrionUserDetails;
  * se fía de eso y las vuelve a comprobar en {@code BookingService}, que es donde importan.
  */
 public record UserResponse(UUID id, String email, String fullName, String role, String photoUrl,
-                           boolean adultConfirmed, boolean emailVerified) {
+                           boolean adultConfirmed, boolean emailVerified, boolean hasPassword) {
 
     public static UserResponse from(OrionUserDetails principal) {
         User user = principal.user();
@@ -30,6 +30,8 @@ public record UserResponse(UUID id, String email, String fullName, String role, 
                 principal.rolEfectivo(),
                 user.getPhotoUrl(),
                 user.hasConfirmedAdulthood(),
-                user.isEmailVerified());
+                user.isEmailVerified(),
+                // Sin contraseña propia (entró con Google): «Cambiar contraseña» se vuelve «Crear una».
+                user.hasPasswordSet());
     }
 }

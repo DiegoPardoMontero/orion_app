@@ -5,7 +5,7 @@ import { ArrowRight, Check, GraduationCap, KeyRound, Lock, Mail, User } from "lu
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { CambiarClave } from "@/components/CambiarClave";
+import { CambiarClave, useEtiquetaDeClave } from "@/components/CambiarClave";
 import { MiCielo } from "@/components/gamificacion/MiCielo";
 import { TarjetaDiagnostico } from "@/components/gamificacion/TarjetaDiagnostico";
 import { MiFicha, QuienLoVe } from "@/components/gamificacion/MiFicha";
@@ -105,6 +105,7 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
   const [telefono, setTelefono] = useState(inicial.whatsappPhone ?? "");
   const [guardado, setGuardado] = useState(false);
   const [cambiandoClave, setCambiandoClave] = useState(false);
+  const etiquetaDeClave = useEtiquetaDeClave();
 
   const guardar = useMutation({
     mutationFn: () =>
@@ -203,7 +204,7 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
         className="mt-3 flex w-full items-center gap-2.5 rounded-base border-[1.5px] border-border px-4 py-3 text-left text-[13.5px] font-semibold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
       >
         <KeyRound size={16} strokeWidth={1.75} className="text-text-secondary" />
-        Cambiar contraseña
+        {etiquetaDeClave}
       </button>
 
       {error && (

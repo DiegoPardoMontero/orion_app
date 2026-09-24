@@ -20,6 +20,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -61,6 +65,9 @@ class SocialLoginIT extends ApiIntegrationSupport {
     @Autowired
     private JdbcTemplate jdbc;
 
+    @Autowired
+    private PendienteSocial pendientes;
+
     @BeforeEach
     void limpiar() {
         jdbc.update("delete from social_identities");
@@ -97,6 +104,55 @@ class SocialLoginIT extends ApiIntegrationSupport {
         assertThat(q.get("client_id")).isEqualTo("google-de-prueba");
         assertThat(URLDecoder.decode(q.get("redirect_uri"), StandardCharsets.UTF_8))
                 .isEqualTo("https://orion.test/login/oauth2/code/google");
+    }
+
+    @Test
+    @DisplayName("La solicitud de Google se guarda en su propia cookie firmada, no en la sesión en memoria")
+    void laSolicitudVaEnCookie() throws Exception {
+        HttpClient cliente = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build();
+        HttpResponse<Void> r = cliente.send(HttpRequest.newBuilder(
+                URI.create(rest.getRootUri() + "/oauth2/authorization/google")).GET().build(),
+                HttpResponse.BodyHandlers.discarding());
+
+        String state = UriComponentsBuilder.fromUriString(r.headers().firstValue("Location").orElseThrow())
+                .build().getQueryParams().getFirst("state");
+        List<String> cookies = r.headers().allValues("Set-Cookie");
+        // Un reinicio del backend mientras la persona está en Google ya no pierde su regreso.
+        assertThat(cookies).anySatisfy(c -> assertThat(c)
+                .startsWith(SignedCookieAuthorizationRequestRepository.nombre(URLDecoder.decode(state, StandardCharsets.UTF_8)) + "=")
+                .contains("HttpOnly"));
+        assertThat(cookies).noneSatisfy(c -> assertThat(c).startsWith("ORION_SESSION="));
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Test
+    @DisplayName("El alta a medio completar vive en una cookie firmada: otro arranque la lee; una falsa, no")
+    void elPendienteEnCookie() {
+        MockHttpServletResponse guardado = new MockHttpServletResponse();
+        pendientes.guardar(perfil("g-9", "nueva@orion.test", true), guardado);
+        String cookie = guardado.getHeader(HttpHeaders.SET_COOKIE);
+        String valor = cookie.substring(0, cookie.indexOf(';'));
+
+        HttpHeaders h = new HttpHeaders();
+        h.add(HttpHeaders.COOKIE, valor);
+        ResponseEntity<Map> r = rest.exchange("/api/v1/auth/social/pending", HttpMethod.GET, new HttpEntity<>(h), Map.class);
+        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(r.getBody()).containsEntry("email", "nueva@orion.test").containsEntry("provider", "google");
+
+        HttpHeaders falsa = new HttpHeaders();
+        falsa.add(HttpHeaders.COOKIE, PendienteSocial.COOKIE + "=eyJwcm92ZWVkb3IiOiJHT09HTEUifQ.Zm9v");
+        assertThat(rest.exchange("/api/v1/auth/social/pending", HttpMethod.GET, new HttpEntity<>(falsa), Map.class)
+                .getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("Cada fallo dice su motivo: cancelar en Google no es lo mismo que volver tarde")
+    void motivos() {
+        assertThat(SocialLogin.motivo(new OAuth2AuthenticationException(new OAuth2Error("access_denied"))))
+                .isEqualTo("cancelado");
+        assertThat(SocialLogin.motivo(new OAuth2AuthenticationException(
+                new OAuth2Error("authorization_request_not_found")))).isEqualTo("vencido");
+        assertThat(SocialLogin.motivo(new IllegalStateException("otra cosa"))).isEqualTo("error");
     }
 
     @Test
@@ -201,6 +257,8 @@ class SocialLoginIT extends ApiIntegrationSupport {
 
         assertThat(creada.getRole()).isEqualTo(UserRole.STUDENT);
         assertThat(creada.isEmailVerified()).isTrue();
+        // Y la pantalla lo sabe: «Cambiar contraseña» se vuelve «Crear una».
+        assertThat(UserResponse.from(new OrionUserDetails(creada)).hasPassword()).isFalse();
         // Sin contraseña utilizable: el login con correo no abre esta cuenta.
         ResponseEntity<String> conClave = rest.postForEntity("/api/v1/auth/login",
                 Map.of("email", "nueva@orion.test", "password", "cualquiera"), String.class);

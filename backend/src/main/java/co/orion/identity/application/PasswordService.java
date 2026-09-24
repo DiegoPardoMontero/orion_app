@@ -25,13 +25,18 @@ public class PasswordService {
     /**
      * Cambia la contraseña del usuario de la sesión. Se exige la actual: sin eso, cualquiera que
      * encontrara una sesión abierta podría dejar al dueño fuera de su propia cuenta.
+     *
+     * <p>Salvo que nunca haya tenido una (24/09/2026): quien entró con Google nació con una al azar
+     * que nadie conoce, y pedírsela era un callejón sin salida. Ahí crea la primera, y desde
+     * entonces cambiarla pide la actual como a cualquiera.
      */
     @Transactional
     public User change(UUID userId, String currentPassword, String newPassword) {
         User user = users.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
-        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+        if (user.hasPasswordSet()
+                && (currentPassword == null || !passwordEncoder.matches(currentPassword, user.getPasswordHash()))) {
             throw new UnprocessableException("La contraseña actual no es correcta");
         }
 

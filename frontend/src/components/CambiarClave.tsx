@@ -1,13 +1,28 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { AvisoError } from "@/components/estados";
 import { Modal } from "@/components/Modal";
 import { Boton, Campo } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
+import { meQueryKey, useMe } from "@/lib/auth/session";
 
+/** El texto del botón que abre esto: «Crear una contraseña» para quien entró con Google. */
+export function useEtiquetaDeClave(): string {
+  const { data: me } = useMe();
+  return me?.hasPassword === false ? "Crear una contraseña" : "Cambiar contraseña";
+}
+
+/**
+ * Cambiar la contraseña, o crear la primera. Quien entró con Google nació con una contraseña al
+ * azar que nadie conoce: pedirle «la actual» era un callejón sin salida. Ahí crea una sin la
+ * actual, y desde entonces puede entrar también con su correo.
+ */
 export function CambiarClave({ onCerrar }: { onCerrar: () => void }) {
+  const queryClient = useQueryClient();
+  const { data: me } = useMe();
+  const crear = me?.hasPassword === false;
   const [actual, setActual] = useState("");
   const [nueva, setNueva] = useState("");
   const [listo, setListo] = useState(false);
@@ -16,9 +31,12 @@ export function CambiarClave({ onCerrar }: { onCerrar: () => void }) {
     mutationFn: () =>
       apiFetch<void>("/api/v1/me/password", {
         method: "POST",
-        body: { currentPassword: actual, newPassword: nueva },
+        body: { currentPassword: crear ? null : actual, newPassword: nueva },
       }),
-    onSuccess: () => setListo(true),
+    onSuccess: () => {
+      setListo(true);
+      void queryClient.invalidateQueries({ queryKey: meQueryKey });
+    },
   });
 
   const error = cambiar.error instanceof ApiError ? cambiar.error.message : null;
@@ -26,11 +44,13 @@ export function CambiarClave({ onCerrar }: { onCerrar: () => void }) {
   const corta = nueva.length > 0 && nueva.length < 8;
 
   return (
-    <Modal titulo="Cambiar contraseña" onCerrar={onCerrar}>
+    <Modal titulo={crear ? "Crear una contraseña" : "Cambiar contraseña"} onCerrar={onCerrar}>
       {listo ? (
         <>
           <p className="text-[13px] text-text-secondary">
-            Listo, tu contraseña quedó actualizada. Úsala la próxima vez que entres.
+            {crear
+              ? "Listo. Desde ahora puedes entrar con Google o con tu correo y esta contraseña."
+              : "Listo, tu contraseña quedó actualizada. Úsala la próxima vez que entres."}
           </p>
           <Boton variante="primario" onClick={onCerrar} className="mt-5 h-12 w-full">
             Entendido
@@ -38,20 +58,29 @@ export function CambiarClave({ onCerrar }: { onCerrar: () => void }) {
         </>
       ) : (
         <>
-          <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="actual">
-            Contraseña actual
-          </label>
-          <Campo
-            id="actual"
-            type="password"
-            autoComplete="current-password"
-            value={actual}
-            onChange={(event) => setActual(event.target.value)}
-            className="mt-1.5"
-          />
+          {crear ? (
+            <p className="text-[13px] leading-relaxed text-text-secondary">
+              Entras con Google, así que no tienes una contraseña propia. Si quieres entrar también con
+              tu correo ({me?.email}), crea una aquí: Google sigue funcionando igual.
+            </p>
+          ) : (
+            <>
+              <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="actual">
+                Contraseña actual
+              </label>
+              <Campo
+                id="actual"
+                type="password"
+                autoComplete="current-password"
+                value={actual}
+                onChange={(event) => setActual(event.target.value)}
+                className="mt-1.5"
+              />
+            </>
+          )}
 
           <label className="mt-3 block text-[12.5px] font-bold text-text-secondary" htmlFor="nueva">
-            Contraseña nueva
+            {crear ? "Tu contraseña" : "Contraseña nueva"}
           </label>
           <Campo
             id="nueva"
@@ -75,11 +104,11 @@ export function CambiarClave({ onCerrar }: { onCerrar: () => void }) {
             </Boton>
             <Boton
               variante="primario"
-              disabled={!actual || nueva.length < 8 || corta || cambiar.isPending}
+              disabled={(!crear && !actual) || nueva.length < 8 || corta || cambiar.isPending}
               onClick={() => cambiar.mutate()}
               className="h-11 flex-1"
             >
-              {cambiar.isPending ? "Guardando…" : "Cambiar"}
+              {cambiar.isPending ? "Guardando…" : crear ? "Crear" : "Cambiar"}
             </Boton>
           </div>
         </>

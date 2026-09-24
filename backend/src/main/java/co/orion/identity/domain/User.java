@@ -37,6 +37,10 @@ public class User {
     @Column(name = "password_hash", nullable = false, length = 100)
     private String passwordHash;
 
+    /** Si la contraseña la eligió la persona. Quien nació desde Google tiene una al azar (V56). */
+    @Column(name = "password_set", nullable = false)
+    private boolean passwordSet = true;
+
     @Column(name = "full_name", nullable = false, length = 150)
     private String fullName;
 
@@ -113,8 +117,24 @@ public class User {
         this.email = nuevo;
     }
 
+    /** Una contraseña que eligió la persona: desde aquí, cambiarla pide la actual. */
     public void changePasswordHash(String passwordHash) {
         this.passwordHash = Objects.requireNonNull(passwordHash, "passwordHash");
+        this.passwordSet = true;
+    }
+
+    /**
+     * Una contraseña al azar que nadie conoce: la de quien nace desde un proveedor o por invitación,
+     * o la que se reemplaza al tomar posesión de una cuenta. Cambia el hash, así que cierra las
+     * sesiones que había.
+     */
+    public void replacePasswordWithUnknown(String passwordHash) {
+        this.passwordHash = Objects.requireNonNull(passwordHash, "passwordHash");
+        this.passwordSet = false;
+    }
+
+    public boolean hasPasswordSet() {
+        return passwordSet;
     }
 
     public void changeWhatsappPhone(String whatsappPhone) {

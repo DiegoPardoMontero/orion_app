@@ -142,6 +142,7 @@ public class ProfessorInviteService {
         // Contraseña aleatoria imposible de adivinar: el profesor fija la suya real al aceptar.
         User professor = new User(email, passwordEncoder.encode(randomToken()),
                 "Profesor invitado", UserRole.PROFESSOR);
+        professor.replacePasswordWithUnknown(professor.getPasswordHash());
         professor.deactivate();
 
         User saved;

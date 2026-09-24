@@ -1,12 +1,16 @@
 package co.orion.identity.api;
 
 import java.io.IOException;
+import java.net.http.HttpClient;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
+import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.Authentication;
@@ -14,17 +18,20 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.client.endpoint.RestClientAuthorizationCodeTokenResponseClient;
+import org.springframework.security.oauth2.client.http.OAuth2ErrorResponseErrorHandler;
 import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
-import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizationRequestRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
+import org.springframework.security.oauth2.core.http.converter.OAuth2AccessTokenResponseHttpMessageConverter;
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClient;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -60,25 +67,25 @@ public class SocialLogin {
     private static final Logger log = LoggerFactory.getLogger(SocialLogin.class);
     private static final ObjectMapper JSON = new ObjectMapper();
 
-    /** Donde se guarda, en la sesión, a quien vuelve nuevo del proveedor hasta que complete. */
-    static final String PENDIENTE = "orion.social.pendiente";
-
     private final SocialProviders proveedores;
     private final SocialLoginService servicio;
     private final String baseUrl;
     private final SecurityContextRepository contextos = new HttpSessionSecurityContextRepository();
     private final AuthorizationRequestRepository<OAuth2AuthorizationRequest> solicitudes;
+    private final PendienteSocial pendientes;
 
-    public SocialLogin(SocialProviders proveedores,
-                       SocialLoginService servicio,
-                       @Value("${orion.app.base-url}") String baseUrl,
-                       @Value("${server.servlet.session.cookie.secure:false}") boolean segura,
-                       Clock clock) {
+    SocialLogin(SocialProviders proveedores,
+                SocialLoginService servicio,
+                FirmaSocial firma,
+                PendienteSocial pendientes,
+                @Value("${orion.app.base-url}") String baseUrl,
+                @Value("${server.servlet.session.cookie.secure:false}") boolean segura,
+                Clock clock) {
         this.proveedores = proveedores;
         this.servicio = servicio;
         this.baseUrl = baseUrl;
-        this.solicitudes = new PorProveedor(new HttpSessionOAuth2AuthorizationRequestRepository(),
-                new SignedCookieAuthorizationRequestRepository(segura, clock));
+        this.pendientes = pendientes;
+        this.solicitudes = new SignedCookieAuthorizationRequestRepository(firma, segura, clock);
     }
 
     public boolean encendido() {
@@ -89,6 +96,17 @@ public class SocialLogin {
     public void configurar(HttpSecurity http) throws Exception {
         RestClientAuthorizationCodeTokenResponseClient tokens =
                 new RestClientAuthorizationCodeTokenResponseClient();
+        // Con tiempos: sin ellos, un proveedor lento dejaba la petición colgada hasta que el proxy de
+        // Next la cortaba a los 30 s con un «Internal Server Error» pelado.
+        tokens.setRestClient(RestClient.builder()
+                .requestFactory(conTiempos())
+                .messageConverters(c -> {
+                    c.clear();
+                    c.add(new FormHttpMessageConverter());
+                    c.add(new OAuth2AccessTokenResponseHttpMessageConverter());
+                })
+                .defaultStatusHandler(new OAuth2ErrorResponseErrorHandler())
+                .build());
         tokens.setParametersCustomizer(parametros -> {
             if (proveedores.appleConfigurado()
                     && proveedores.appleClientId().equals(parametros.getFirst(OAuth2ParameterNames.CLIENT_ID))) {
@@ -104,9 +122,34 @@ public class SocialLogin {
                 .tokenEndpoint(t -> t.accessTokenResponseClient(tokens))
                 .successHandler(this::alVolver)
                 .failureHandler((req, res, ex) -> {
-                    log.warn("El login social falló: {}", ex.getMessage());
-                    res.sendRedirect(baseUrl + "/login?social=error");
+                    String motivo = motivo(ex);
+                    log.warn("El login social falló ({}): {}", motivo, ex.getMessage());
+                    res.sendRedirect(baseUrl + "/login?social=" + motivo);
                 }));
+    }
+
+    /**
+     * El porqué, con nombre (24/09/2026): antes todo terminaba en el mismo «No pudimos entrar», y ni
+     * la persona sabía qué hacer ni el registro decía qué había pasado.
+     */
+    static String motivo(Exception ex) {
+        if (ex instanceof OAuth2AuthenticationException oauth) {
+            String codigo = oauth.getError().getErrorCode();
+            if ("access_denied".equals(codigo)) {
+                return "cancelado";
+            }
+            if ("authorization_request_not_found".equals(codigo) || "invalid_state_parameter".equals(codigo)) {
+                return "vencido";
+            }
+        }
+        return "error";
+    }
+
+    private static JdkClientHttpRequestFactory conTiempos() {
+        JdkClientHttpRequestFactory fabrica = new JdkClientHttpRequestFactory(
+                HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build());
+        fabrica.setReadTimeout(Duration.ofSeconds(15));
+        return fabrica;
     }
 
     /** Apple exige {@code response_mode=form_post} cuando se piden el nombre y el correo. */
@@ -138,17 +181,30 @@ public class SocialLogin {
 
     private void alVolver(HttpServletRequest request, HttpServletResponse response,
                           Authentication autenticacion) throws IOException {
-        OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) autenticacion;
+        try {
+            decidir(request, response, (OAuth2AuthenticationToken) autenticacion);
+        } catch (RuntimeException ex) {
+            // Una carrera al vincular (dos regresos a la vez) o la base caída: a la pantalla de entrar
+            // con su motivo, nunca un 500 pelado a mitad del regreso.
+            log.error("El login social falló después de volver del proveedor", ex);
+            cerrarSesion(request, response);
+            response.sendRedirect(baseUrl + "/login?social=error");
+        }
+    }
+
+    private void decidir(HttpServletRequest request, HttpServletResponse response,
+                         OAuth2AuthenticationToken token) throws IOException {
         PerfilSocial perfil = perfil(token.getAuthorizedClientRegistrationId(), token.getPrincipal(), request);
 
         switch (servicio.resolver(perfil)) {
             case SocialLoginService.Entra entra -> {
+                pendientes.borrar(response);
                 abrirSesion(entra.user(), request, response);
                 response.sendRedirect(baseUrl + "/entrar/listo");
             }
             case SocialLoginService.Completa completa -> {
                 cerrarSesion(request, response);
-                request.getSession().setAttribute(PENDIENTE, completa.perfil());
+                pendientes.guardar(completa.perfil(), response);
                 response.sendRedirect(baseUrl + "/registro/completar");
             }
             case SocialLoginService.Rechazado rechazo -> {
@@ -229,41 +285,6 @@ public class SocialLogin {
             return completo.isEmpty() ? null : completo;
         } catch (Exception ex) {
             return null;
-        }
-    }
-
-    /**
-     * Sesión para Google y Facebook; cookie firmada para Apple, cuyo regreso por POST entre sitios
-     * no trae la cookie de sesión. Al guardar se sabe el proveedor por la solicitud; al leer, por
-     * la ruta de vuelta ({@code /login/oauth2/code/apple}).
-     */
-    private record PorProveedor(AuthorizationRequestRepository<OAuth2AuthorizationRequest> sesion,
-                                AuthorizationRequestRepository<OAuth2AuthorizationRequest> apple)
-            implements AuthorizationRequestRepository<OAuth2AuthorizationRequest> {
-
-        @Override
-        public OAuth2AuthorizationRequest loadAuthorizationRequest(HttpServletRequest request) {
-            return esApple(request) ? apple.loadAuthorizationRequest(request)
-                    : sesion.loadAuthorizationRequest(request);
-        }
-
-        @Override
-        public void saveAuthorizationRequest(OAuth2AuthorizationRequest solicitud,
-                                             HttpServletRequest request, HttpServletResponse response) {
-            boolean deApple = solicitud != null && SocialProviders.APPLE.equals(
-                    solicitud.getAttribute(OAuth2ParameterNames.REGISTRATION_ID));
-            (deApple ? apple : sesion).saveAuthorizationRequest(solicitud, request, response);
-        }
-
-        @Override
-        public OAuth2AuthorizationRequest removeAuthorizationRequest(HttpServletRequest request,
-                                                                     HttpServletResponse response) {
-            return esApple(request) ? apple.removeAuthorizationRequest(request, response)
-                    : sesion.removeAuthorizationRequest(request, response);
-        }
-
-        private static boolean esApple(HttpServletRequest request) {
-            return request.getRequestURI().endsWith("/" + SocialProviders.APPLE);
         }
     }
 }

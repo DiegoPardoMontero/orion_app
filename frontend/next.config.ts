@@ -39,6 +39,22 @@ const nextConfig: NextConfig = {
    * API_URL se lee al ARRANCAR el servidor, no al compilar: la misma imagen sirve en local
    * (localhost:8080) y en Railway (backend.railway.internal:8080) sin recompilar.
    */
+  /**
+   * Un solo dominio: quien entra por www. se va al dominio sin www. antes de nada. La vuelta de Google
+   * llega siempre al dominio de ORION_APP_BASE_URL, y la cookie que la espera es de un solo host:
+   * quien empezaba en www. volvía sin ella y veía «No pudimos entrar» (24/09/2026).
+   */
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www\\.(?<dominio>.+)" }],
+        destination: "https://:dominio/:path*",
+        permanent: true,
+      },
+    ];
+  },
+
   async rewrites() {
     const api = process.env.API_URL ?? "http://localhost:8080";
     return [

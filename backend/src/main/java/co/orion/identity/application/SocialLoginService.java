@@ -129,7 +129,7 @@ public class SocialLoginService {
     private void tomarPosesion(User user) {
         byte[] secreto = new byte[32];
         RANDOM.nextBytes(secreto);
-        user.changePasswordHash(passwordEncoder.encode(HexFormat.of().formatHex(secreto)));
+        user.replacePasswordWithUnknown(passwordEncoder.encode(HexFormat.of().formatHex(secreto)));
         user.markEmailVerified(clock.instant());
         users.save(user);
     }

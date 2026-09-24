@@ -21,7 +21,6 @@ import co.orion.shared.security.IntentosDeAcceso;
 import co.orion.shared.security.OrionUserDetails;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
@@ -47,11 +46,12 @@ public class SocialAuthController {
     private final LegalDocumentService legal;
     private final EmailVerificationService verificacion;
     private final IntentosDeAcceso intentos;
+    private final PendienteSocial pendientes;
 
-    public SocialAuthController(SocialProviders proveedores, SocialLoginService servicio,
-                                SocialLogin login, RegistrationService registro,
-                                LegalDocumentService legal, EmailVerificationService verificacion,
-                                IntentosDeAcceso intentos) {
+    SocialAuthController(SocialProviders proveedores, SocialLoginService servicio,
+                         SocialLogin login, RegistrationService registro,
+                         LegalDocumentService legal, EmailVerificationService verificacion,
+                         IntentosDeAcceso intentos, PendienteSocial pendientes) {
         this.proveedores = proveedores;
         this.servicio = servicio;
         this.login = login;
@@ -59,6 +59,7 @@ public class SocialAuthController {
         this.legal = legal;
         this.verificacion = verificacion;
         this.intentos = intentos;
+        this.pendientes = pendientes;
     }
 
     /** Los botones que la pantalla puede mostrar: solo los que están configurados aquí. */
@@ -89,19 +90,18 @@ public class SocialAuthController {
             verificacion.send(creado.getId());
         }
 
-        http.getSession().removeAttribute(SocialLogin.PENDIENTE);
+        pendientes.borrar(response);
         login.abrirSesion(creado, http, response);
         return UserResponse.from(new OrionUserDetails(creado));
     }
 
-    private static PerfilSocial pendiente(HttpServletRequest http) {
-        HttpSession sesion = http.getSession(false);
-        Object perfil = sesion == null ? null : sesion.getAttribute(SocialLogin.PENDIENTE);
-        if (!(perfil instanceof PerfilSocial p)) {
+    private PerfilSocial pendiente(HttpServletRequest http) {
+        PerfilSocial perfil = pendientes.leer(http);
+        if (perfil == null) {
             throw new ResourceNotFoundException(
                     "Tu ingreso con el proveedor venció. Vuelve a intentarlo desde el inicio.");
         }
-        return p;
+        return perfil;
     }
 
     public record Proveedores(List<String> providers) {

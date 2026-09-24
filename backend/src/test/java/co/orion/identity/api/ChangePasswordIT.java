@@ -7,10 +7,12 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import co.orion.TestcontainersConfiguration;
 import co.orion.identity.domain.UserRole;
@@ -25,6 +27,9 @@ class ChangePasswordIT extends ApiIntegrationSupport {
     private static final String NUEVA = "clave-nueva-1";
 
     private Session anaSession;
+
+    @Autowired
+    private JdbcTemplate jdbc;
 
     @BeforeEach
     void seed() {
@@ -80,6 +85,27 @@ class ChangePasswordIT extends ApiIntegrationSupport {
         assertThat(response.getBody().get("error").toString()).contains("actual no es correcta");
         // La contraseña original sigue funcionando: no se tocó nada.
         assertThat(login("ana@orion.test", PASSWORD).getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    /**
+     * Quien entró con Google nació con una contraseña al azar: la primera la crea sin la actual, y
+     * desde ahí es como cualquiera (24/09/2026).
+     */
+    @SuppressWarnings("rawtypes")
+    @Test
+    void anAccountWithoutAPasswordCreatesItsFirstOneWithoutTheCurrent() {
+        jdbc.update("update users set password_set = false where email = 'ana@orion.test'");
+        assertThat(get("/api/v1/auth/me", anaSession, Map.class).getBody()).containsEntry("hasPassword", false);
+
+        ResponseEntity<Void> creada = post(PASSWORD_URL, anaSession, new ChangePasswordRequest(null, NUEVA), Void.class);
+
+        assertThat(creada.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(login("ana@orion.test", NUEVA).getStatusCode()).isEqualTo(HttpStatus.OK);
+        Session nueva = new Session(cookieValue(creada, "ORION_SESSION"), anaSession.csrfToken());
+        assertThat(get("/api/v1/auth/me", nueva, Map.class).getBody()).containsEntry("hasPassword", true);
+        // La segunda vez ya pide la actual.
+        assertThat(post(PASSWORD_URL, nueva, new ChangePasswordRequest(null, "otra-clave-2"), Map.class)
+                .getStatusCode().value()).isEqualTo(422);
     }
 
     @Test
