@@ -42,7 +42,14 @@ class TextosDelActaTest {
             "backend/src/main/java/co/orion/practice/application/PracticeService.java",
             "backend/src/main/java/co/orion/practice/application/GeneradorSinIa.java",
             "backend/src/main/java/co/orion/practice/domain/PracticeSet.java",
-            "backend/src/main/java/co/orion/practice/domain/PracticeItem.java");
+            "backend/src/main/java/co/orion/practice/domain/PracticeItem.java",
+            // Lo del 23/09: la vista del profesor, el ensayo, la bienvenida y los recorridos.
+            "frontend/src/components/practica/EjerciciosDelActa.tsx",
+            "frontend/src/app/(app)/admin/sistema/EnsayoDelActa.tsx",
+            "frontend/src/components/bienvenida/Bienvenida.tsx",
+            "frontend/src/components/bienvenida/ConoceOrion.tsx",
+            "frontend/src/components/bienvenida/Reproductor.tsx",
+            "frontend/src/lib/recorrido.ts");
 
     private static final List<String> PROMPTS = List.of(
             "backend/src/main/resources/prompts/lesson-note-v3.txt",
