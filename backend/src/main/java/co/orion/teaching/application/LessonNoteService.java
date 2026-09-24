@@ -27,6 +27,7 @@ import co.orion.scheduling.persistence.BookingRepository;
 import co.orion.shared.error.ForbiddenException;
 import co.orion.shared.error.ResourceNotFoundException;
 import co.orion.shared.error.UnprocessableException;
+import co.orion.shared.text.TextoParaIa;
 import co.orion.teaching.application.LessonNoteDrafter.Borrador;
 import co.orion.teaching.application.LessonNoteDrafter.Palabra;
 import co.orion.teaching.domain.LessonNote;
@@ -271,14 +272,19 @@ public class LessonNoteService {
         return nota;
     }
 
-    /** D7: al proveedor solo va el nombre de pila, el idioma, el nivel y el objetivo. */
-    private LessonNoteDrafter.Contexto contexto(Booking b, User profesor, String crudo) {
+    /**
+     * D7: al proveedor solo va el nombre de pila, el idioma, el nivel y el objetivo. El objetivo es
+     * la motivación que el estudiante escribió en su ficha (Pardo lo aprobó el 23/09/2026), en una
+     * línea y con tope.
+     */
+    LessonNoteDrafter.Contexto contexto(Booking b, User profesor, String crudo) {
         String nombre = users.findById(b.getStudentId()).map(u -> primerNombre(u.getFullName())).orElse(null);
-        String nivel = perfiles.findById(b.getStudentId()).map(StudentProfile::getSelfDeclaredLevel)
-                .map(Enum::name).orElse(null);
+        Optional<StudentProfile> perfil = perfiles.findById(b.getStudentId());
+        String nivel = perfil.map(StudentProfile::getSelfDeclaredLevel).map(Enum::name).orElse(null);
+        String objetivo = perfil.map(StudentProfile::getMotivation).map(t -> TextoParaIa.unaLinea(t, 280)).orElse(null);
         return new LessonNoteDrafter.Contexto(profesor.getId(), crudo, nombre,
                 "EN".equalsIgnoreCase(b.getLanguageCode()) || b.getLanguageCode() == null ? "inglés" : b.getLanguageCode(),
-                nivel, null);
+                nivel, objetivo);
     }
 
     private List<LessonVocabulary> reemplazarVocabulario(LessonNote nota, List<Palabra> palabras) {

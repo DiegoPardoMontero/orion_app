@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import co.orion.catalog.application.PlatformSettingsService;
 import co.orion.identity.domain.User;
+import co.orion.identity.persistence.StudentProfileRepository;
 import co.orion.practice.domain.Evaluador;
 import co.orion.practice.domain.PracticeCompletedEvent;
 import co.orion.practice.domain.PracticeItem;
@@ -40,6 +41,7 @@ import co.orion.practice.persistence.PracticeSetRepository;
 import co.orion.scheduling.persistence.BookingRepository;
 import co.orion.shared.error.ResourceNotFoundException;
 import co.orion.shared.error.UnprocessableException;
+import co.orion.shared.text.TextoParaIa;
 import co.orion.shared.time.BusinessZone;
 
 /**
@@ -65,18 +67,20 @@ public class PracticeService {
     private final BookingRepository bookings;
     private final PracticeGenerator generador;
     private final PlatformSettingsService settings;
+    private final StudentProfileRepository perfiles;
     private final ApplicationEventPublisher eventos;
     private final TransactionTemplate cadaUnoEnSuTransaccion;
     private final Clock clock;
 
     public PracticeService(PracticeSetRepository sets, PracticeItemRepository items, BookingRepository bookings,
-                           PracticeGenerator generador, PlatformSettingsService settings,
+                           PracticeGenerator generador, PlatformSettingsService settings, StudentProfileRepository perfiles,
                            ApplicationEventPublisher eventos, PlatformTransactionManager transacciones, Clock clock) {
         this.sets = sets;
         this.items = items;
         this.bookings = bookings;
         this.generador = generador;
         this.settings = settings;
+        this.perfiles = perfiles;
         this.eventos = eventos;
         this.cadaUnoEnSuTransaccion = new TransactionTemplate(transacciones);
         this.cadaUnoEnSuTransaccion.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -95,9 +99,15 @@ public class PracticeService {
             return Optional.empty();
         }
         Instant vence = clock.instant().plus(Duration.ofDays(settings.getInt("practice_set_ttl_days")));
+        // D7: el nivel y el objetivo del estudiante viajan con el material, como estaban al publicarse.
+        Material conEstudiante = perfiles.findById(estudianteId)
+                .map(p -> material.conEstudiante(
+                        p.getSelfDeclaredLevel() == null ? null : p.getSelfDeclaredLevel().name(),
+                        TextoParaIa.unaLinea(p.getMotivation(), 280)))
+                .orElse(material);
         try {
             return Optional.of(sets.saveAndFlush(new PracticeSet(estudianteId, actaId, profesorId,
-                    material.languageCode(), JSON.writeValueAsString(material), vence)));
+                    conEstudiante.languageCode(), JSON.writeValueAsString(conEstudiante), vence)));
         } catch (DataIntegrityViolationException ex) {
             return Optional.empty();
         } catch (JsonProcessingException ex) {

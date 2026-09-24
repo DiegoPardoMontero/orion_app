@@ -133,6 +133,22 @@ class PracticaIT extends ApiIntegrationSupport {
     }
 
     @Test
+    @DisplayName("D7: el set guarda el nivel y el objetivo de la ficha del estudiante, como estaban al publicar")
+    void elSetLlevaNivelYObjetivo() {
+        jdbc.update("update student_profiles set self_declared_level = 'ADVANCED', motivation = ? where user_id = ?",
+                "Presentaciones\nen el trabajo", ana.getId());
+
+        actaPublicada(NOTAS);
+        await().atMost(Duration.ofSeconds(5)).until(() ->
+                jdbc.queryForObject("select count(*) from practice_sets", Integer.class) == 1);
+
+        assertThat(jdbc.queryForObject("select material->>'studentLevel' from practice_sets", String.class))
+                .isEqualTo("ADVANCED");
+        assertThat(jdbc.queryForObject("select material->>'studentGoal' from practice_sets", String.class))
+                .isEqualTo("Presentaciones en el trabajo");
+    }
+
+    @Test
     @DisplayName("Un acta sin vocabulario no da práctica: el set falla y al estudiante no se le ofrece nada")
     void sinAnclaNoHayPractica() {
         actaPublicada("Conversación libre sobre viajes, muy tranquila, sin temas nuevos.");

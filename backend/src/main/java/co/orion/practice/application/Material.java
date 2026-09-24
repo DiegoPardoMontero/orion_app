@@ -8,7 +8,20 @@ import java.util.List;
  * puede corregir después.
  */
 public record Material(String languageCode, String workedOn, String recurringIssues, String nextSteps,
-                       List<Termino> vocabulary, String bookingId, String classStartsAt) {
+                       List<Termino> vocabulary, String bookingId, String classStartsAt,
+                       String studentLevel, String studentGoal) {
+
+    /** Sin nivel ni objetivo: lo que sale del acta, antes de mirar la ficha del estudiante. */
+    public Material(String languageCode, String workedOn, String recurringIssues, String nextSteps,
+                    List<Termino> vocabulary, String bookingId, String classStartsAt) {
+        this(languageCode, workedOn, recurringIssues, nextSteps, vocabulary, bookingId, classStartsAt, null, null);
+    }
+
+    /** D7 (Pardo, 23/09/2026): el nivel que declara y su objetivo, para ajustar los ejercicios. */
+    public Material conEstudiante(String nivel, String objetivo) {
+        return new Material(languageCode, workedOn, recurringIssues, nextSteps, vocabulary, bookingId, classStartsAt,
+                nivel, objetivo);
+    }
 
     public record Termino(String term, String meaning) {
     }
