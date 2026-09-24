@@ -56,7 +56,7 @@ const base = (c: PublicFigures): Record<"estudiante" | "profesor" | "general", P
     },
     {
       p: "¿Puedo cambiar la hora de una clase?",
-      r: `Sí, con «Proponer otro horario». La clase no se mueve hasta que tu profesor acepte, y el pago no se toca. Se puede incluso dentro de las ${horas(c.studentCancelHours)}: es la salida de quien ya no alcanza a cancelar.`,
+      r: `No se mueve: se cancela y se reserva otra. Si cancelas con más de ${horas(c.studentCancelHours)} de anticipación, el pago vuelve completo a tu saldo y lo usas en la nueva reserva. Si ya estás dentro del plazo, escríbele a tu profesor: a veces puede cancelar él.`,
     },
     {
       p: "¿Qué es una semana protegida?",

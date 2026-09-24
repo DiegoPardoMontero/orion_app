@@ -90,8 +90,7 @@ export function PoliticaCancelacion({ rol }: { rol: "estudiante" | "profesor" })
       </ul>
 
       <p className="mt-2.5 text-[12px] leading-relaxed text-text-muted">
-        Reprogramar no es cancelar: proponer otro horario se puede incluso dentro de ese plazo y
-        no cuesta nada, porque la clase sigue en pie hasta que la otra persona acepte.
+        Una clase no cambia de hora: si no se puede, se cancela y se reserva otra.
       </p>
     </section>
   );

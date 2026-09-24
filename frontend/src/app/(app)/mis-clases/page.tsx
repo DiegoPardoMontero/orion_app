@@ -3,8 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
-  Calendar,
-  CalendarClock,
+  ArrowRight,
   Check,
   Clock,
   MapPin,
@@ -23,18 +22,13 @@ import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Modal } from "@/components/Modal";
 import { SelectorEstrellas } from "@/components/Rating";
 import { Rigel } from "@/components/Rigel";
-import { Badge, Bloque, Boton, BotonPrincipal, Chip, Segmento, Tarjeta } from "@/components/ui";
+import { Badge, Boton, BotonPrincipal, Segmento, Tarjeta } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
-import type {
-  ConversationSummary,
-  MyBookingResponse,
-  SlotsResponse,
-  SlotView,
-} from "@/lib/api/types";
+import type { ConversationSummary, MyBookingResponse } from "@/lib/api/types";
 import type { EntradaDeActa, ResumenDeActas } from "@/lib/actas";
 import { useMe } from "@/lib/auth/session";
 import { esperaPago, etiquetaEstado } from "@/lib/estados-clase";
-import { diaBogota, fechaCorta, fechaYRango, horaBogota, precioCop, rangoHoras } from "@/lib/format";
+import { diaBogota, fechaCorta, fechaYRango, precioCop, rangoHoras } from "@/lib/format";
 import { useElegibilidadRetracto, useRetractarse } from "@/lib/retracto";
 import { horas, minutos, useCifras } from "@/lib/cifras";
 
@@ -154,6 +148,22 @@ function Contenido() {
           <Agenda clases={data ?? []} scope={scope} esProfesor={esProfesor} senalada={claseSenalada} />
         ) : (
           <VistaCalendario clases={data ?? []} scope={scope} esProfesor={esProfesor} />
+        )}
+
+        {/* El switch de arriba no lo ve todo el mundo: al final de la lista, el camino a la otra
+            mitad, dicho con palabras. */}
+        {!isPending && !isError && (
+          <button
+            type="button"
+            onClick={() => {
+              setScope(scope === "upcoming" ? "past" : "upcoming");
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className="mx-auto mt-6 flex min-h-11 cursor-pointer items-center gap-1.5 rounded-pill px-4 text-[14px] font-bold text-primary-strong transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
+          >
+            {scope === "upcoming" ? "Ver clases pasadas" : "Ver próximas clases"}
+            <ArrowRight size={16} strokeWidth={2} aria-hidden />
+          </button>
         )}
       </div>
     </main>
@@ -411,7 +421,6 @@ function TarjetaClase({
   esLaSiguiente?: boolean;
 }) {
   const [cancelando, setCancelando] = useState(false);
-  const [reprogramando, setReprogramando] = useState(false);
   const [reportando, setReportando] = useState(false);
   const [registrando, setRegistrando] = useState(false);
   const [calificando, setCalificando] = useState(false);
@@ -625,17 +634,6 @@ function TarjetaClase({
 
           {scope === "upcoming" && clase.status === "CONFIRMED" && (
             <>
-              {/* Los dos lados pueden proponer, y a cualquier hora: es justamente la salida de
-                  quien ya no puede cancelar. Lo que protege al otro no es el plazo, es que tiene
-                  que aceptar. */}
-              <Boton
-                variante="fantasma"
-                onClick={() => setReprogramando(true)}
-                className="h-10 flex-1 basis-[170px] sm:flex-none sm:basis-auto"
-              >
-                <CalendarClock size={15} strokeWidth={1.9} />
-                Otro horario
-              </Boton>
               {/* Sin `disabled`: cancelar se puede siempre. Deshabilitarlo dentro de la ventana
                   obligaba a quien ya sabía que no iba a ir a dejar la clase en pie, y el profesor
                   se enteraba esperando delante de una sala vacía. La consecuencia se explica en el
@@ -706,7 +704,6 @@ function TarjetaClase({
       </Tarjeta>
 
       {cancelando && <ModalCancelar clase={clase} onCerrar={() => setCancelando(false)} />}
-      {reprogramando && <ModalReprogramar clase={clase} onCerrar={() => setReprogramando(false)} />}
       {reportando && <ModalReportar clase={clase} onCerrar={() => setReportando(false)} />}
       {registrando && <ModalAsistencia clase={clase} onCerrar={() => setRegistrando(false)} />}
       {calificando && (
@@ -1116,128 +1113,6 @@ function ModalReportar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
   );
 }
 
-function ModalReprogramar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar: () => void }) {
-  const queryClient = useQueryClient();
-  const profesorId = clase.counterpart?.id;
-  const [diaElegido, setDiaElegido] = useState<string | null>(null);
-  const [cupoElegido, setCupoElegido] = useState<string | null>(null);
-
-  // La agenda del mismo profesor. Su cupo actual no aparece (ya está tomado por esta reserva).
-  const cupos = useQuery({
-    queryKey: ["slots", profesorId],
-    queryFn: () => apiFetch<SlotsResponse>(`/api/v1/professors/${profesorId}/slots`),
-    enabled: !!profesorId,
-  });
-
-  const porDia = useMemo(() => {
-    const grupos: Record<string, SlotView[]> = {};
-    for (const slot of cupos.data?.slots ?? []) {
-      if (!slot.startsAt) continue;
-      (grupos[diaBogota(slot.startsAt)] ??= []).push(slot);
-    }
-    return grupos;
-  }, [cupos.data]);
-  const dias = Object.keys(porDia);
-  const diaActivo = diaElegido && porDia[diaElegido] ? diaElegido : (dias[0] ?? null);
-  const cuposDelDia = diaActivo ? porDia[diaActivo] : [];
-
-  const reprogramar = useMutation({
-    mutationFn: (startsAt: string) =>
-      apiFetch(`/api/v1/bookings/${clase.id}/reschedule-requests`, {
-        method: "POST",
-        body: { startsAt },
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["me", "bookings"] });
-      void queryClient.invalidateQueries({ queryKey: ["slots"] });
-      onCerrar();
-    },
-    onError: () => {
-      // 422/409: el cupo se ocupó o la agenda cambió; refrescamos para ver la realidad.
-      setCupoElegido(null);
-      void queryClient.invalidateQueries({ queryKey: ["slots", profesorId] });
-    },
-  });
-
-  const error = reprogramar.error instanceof ApiError ? reprogramar.error.message : null;
-
-  return (
-    <Modal titulo="Proponer otro horario" onCerrar={onCerrar}>
-      <p className="text-[13px] text-text-secondary">
-        Elige un horario libre de {clase.counterpart?.fullName}. La clase se mueve cuando la otra
-        persona acepte; hasta entonces sigue en su hora original.
-      </p>
-
-      <div className="mt-4 space-y-3">
-        {cupos.isPending && <Cargando filas={2} />}
-        {cupos.isError && (
-          <ErrorCarga mensaje="No pudimos cargar la agenda." onReintentar={() => void cupos.refetch()} />
-        )}
-        {cupos.data && dias.length === 0 && (
-          <p className="rounded-base bg-surface-sunken px-4 py-3 text-[13px] text-text-secondary">
-            No hay otros cupos disponibles esta semana. Vuelve más adelante o escríbele por WhatsApp.
-          </p>
-        )}
-
-        {dias.length > 0 && (
-          <>
-            <Bloque tono="melocoton" titulo="Elige un día" icono={<Calendar size={16} strokeWidth={1.75} />}>
-              <div className="flex flex-wrap gap-2">
-                {dias.map((dia) => (
-                  <Chip
-                    key={dia}
-                    familia="fecha"
-                    activo={dia === diaActivo}
-                    onClick={() => {
-                      setDiaElegido(dia);
-                      setCupoElegido(null);
-                    }}
-                  >
-                    {fechaCorta(porDia[dia][0].startsAt!)}
-                  </Chip>
-                ))}
-              </div>
-            </Bloque>
-            <Bloque tono="lavanda" titulo="Nuevo horario" icono={<Clock size={16} strokeWidth={1.75} />}>
-              <div className="grid grid-cols-3 gap-2.5">
-                {cuposDelDia.map((cupo) => (
-                  <Chip
-                    key={cupo.startsAt}
-                    familia="hora"
-                    activo={cupo.startsAt === cupoElegido}
-                    onClick={() => setCupoElegido(cupo.startsAt!)}
-                  >
-                    {horaBogota(cupo.startsAt!)}
-                  </Chip>
-                ))}
-              </div>
-            </Bloque>
-          </>
-        )}
-      </div>
-
-      {error && (
-        <div className="mt-3">
-          <AvisoError mensaje={error} />
-        </div>
-      )}
-
-      <div className="mt-5 flex gap-2.5">
-        <Boton variante="contorno" onClick={onCerrar} className="h-11 flex-1">
-          Volver
-        </Boton>
-        <Boton
-          variante="primario"
-          disabled={!cupoElegido || reprogramar.isPending}
-          onClick={() => cupoElegido && reprogramar.mutate(cupoElegido)}
-          className="h-11 flex-1"
-        >
-          {reprogramar.isPending ? "Guardando…" : "Confirmar cambio"}
-        </Boton>
-      </div>
-    </Modal>
-  );
-}
 
 function ModalAsistencia({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar: () => void }) {
   const queryClient = useQueryClient();

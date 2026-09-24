@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Eye, EyeOff, Lock, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { CambiarFoto } from "@/components/CambiarFoto";
 import { AvatarOrion } from "@/components/gamificacion/AvatarOrion";
 import { EstrellaLogro } from "@/components/gamificacion/EstrellaLogro";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
@@ -17,6 +18,7 @@ import {
   type Logro,
 } from "@/lib/gamificacion";
 import { AvisoError } from "@/components/estados";
+import { Rigel } from "@/components/Rigel";
 import { Boton } from "@/components/ui";
 import { BarraDeEdicion } from "@/components/BarraDeEdicion";
 
@@ -24,7 +26,8 @@ const NIVELES = ["BEGINNER", "INTERMEDIATE", "ADVANCED"] as const;
 
 /**
  * «Mi ficha»: lo que el estudiante declara sobre sí mismo, más su avatar compuesto y las últimas
- * estrellas que encendió.
+ * estrellas que encendió. Desde el 24/09 vive junto a sus datos de cuenta, separados por quién los
+ * ve: arriba lo que ven sus profesores, abajo lo que es solo suyo (ver `cuenta/page.tsx`).
  *
  * <p>Todo es opcional a propósito. Una ficha a medias es válida —quien solo quiere reservar una
  * clase no tiene que rellenar un formulario para hacerlo—, y cada campo que sí se llena empuja el
@@ -66,7 +69,7 @@ export function MiFicha() {
     <section className="mt-8">
       <h2 className="font-display text-[19px] font-bold">Mi ficha</h2>
       <p className="mt-1 text-[13.5px] text-text-secondary">
-        Lo que cuentas de ti. Todo es opcional; lo que llenes le sirve a tu profesor.
+        Lo que cuentas de ti para que tus clases se parezcan a lo que buscas. Todo es opcional.
       </p>
 
       <div className="mt-4 flex flex-col items-center gap-4 rounded-card border border-border bg-surface-raised p-5 sm:flex-row sm:items-start sm:gap-6">
@@ -107,6 +110,15 @@ export function MiFicha() {
         </div>
       </div>
 
+      <QuienLoVe
+        icono={<Eye size={15} strokeWidth={2} />}
+        titulo="Lo que ven tus profesores"
+        texto="Tu foto, tu nombre y esta ficha. La leen antes de cada clase para prepararla."
+      />
+      <div className="mt-3 rounded-card border border-border bg-surface-raised p-5">
+        <CambiarFoto nombre={ficha.data.fullName} fotoUrl={ficha.data.photoUrl} />
+      </div>
+
       <Formulario
         ficha={ficha.data}
         idiomas={idiomas.data ?? []}
@@ -118,6 +130,11 @@ export function MiFicha() {
         }}
       />
 
+      <QuienLoVe
+        icono={<Sparkles size={15} strokeWidth={2} />}
+        titulo="Quién más la ve"
+        texto="Tú decides si otros estudiantes de Orión también pueden abrirla."
+      />
       <Privacidad ficha={ficha.data} onCambio={() => void ficha.refetch()} />
     </section>
   );
@@ -210,7 +227,7 @@ function Formulario({
   const error = guardar.error instanceof ApiError ? guardar.error.message : null;
 
   return (
-    <div className="mt-4 rounded-card border border-border bg-surface-raised p-5">
+    <div className="mt-3 rounded-card border border-border bg-surface-raised p-5">
       {/* Un fieldset alcanza a todo lo de dentro y no se olvida del control que se añada mañana. */}
       <fieldset disabled={!editando} className="contents">
       <fieldset>
@@ -329,65 +346,51 @@ function Formulario({
 }
 
 /**
- * El interruptor del perfil público.
- *
- * <p>La fecha de nacimiento solo se pide al activarlo, porque solo ahí hace falta: el servidor no
- * deja publicar el perfil de un menor de edad, y esa comprobación es suya, no de este formulario.
+ * El interruptor del perfil público. La mayoría de edad ya se confirmó al crear la cuenta (V24): no
+ * hace falta pedir una fecha para hacerla visible.
  */
 function Privacidad({ ficha, onCambio }: { ficha: FichaEstudiante; onCambio: () => void }) {
   const publico = ficha.isPublic === true;
-  const [fecha, setFecha] = useState(ficha.birthDate ?? "");
-  const [pidiendoFecha, setPidiendoFecha] = useState(false);
 
   const cambiar = useMutation({
     mutationFn: (destino: boolean) =>
       apiFetch<FichaEstudiante>("/api/v1/me/student-profile/visibility", {
         method: "PUT",
-        body: { isPublic: destino, birthDate: fecha || null },
+        body: { isPublic: destino },
       }),
-    onSuccess: () => {
-      setPidiendoFecha(false);
-      onCambio();
-    },
+    onSuccess: onCambio,
   });
 
   const error = cambiar.error instanceof ApiError ? cambiar.error.message : null;
 
   return (
-    <div className="mt-4 rounded-card border border-border bg-surface-raised p-5">
+    <div className="mt-3 rounded-card border border-border bg-surface-raised p-5">
       <div className="flex items-start gap-3">
         <span className="mt-0.5 text-text-muted">
           {publico ? <Eye size={18} strokeWidth={1.8} /> : <Lock size={18} strokeWidth={1.8} />}
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-[14px] font-bold">
-            {publico ? "Tu ficha es pública" : "Tu ficha es privada"}
+            {publico ? "Tu ficha es visible" : "Tu ficha es privada"}
           </p>
           {/* Ser exactos aquí importa: quien lee esto está decidiendo qué muestra de sí mismo. Los
               profesores con los que ya tuvo clase la ven de todos modos —la usan para preparar la
               clase—; lo que este interruptor decide es si otros estudiantes también. */}
           <p className="mt-1 text-[13px] leading-relaxed text-text-secondary">
             {publico
-              ? "Cualquier estudiante de Orión puede abrirla. Tus profesores la ven siempre."
+              ? "Cualquier estudiante de Orión puede abrirla. Tus profesores la ven siempre. Tu correo, tu WhatsApp y tus pagos nunca se muestran."
               : "Solo la ven tus profesores, para preparar tus clases. Ningún otro estudiante."}
           </p>
         </div>
       </div>
 
-      {(pidiendoFecha || (!publico && fecha === "")) && !publico && (
-        <div className={pidiendoFecha ? "mt-4" : "hidden"}>
-          <label className="block text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary" htmlFor="nacimiento">
-            Tu fecha de nacimiento
-          </label>
-          <input
-            id="nacimiento"
-            type="date"
-            value={fecha}
-            onChange={(e) => setFecha(e.target.value)}
-            className="mt-1.5 w-full rounded-base border-[1.5px] border-border bg-surface px-4 py-3 text-[14px] outline-none focus-visible:border-primary focus-visible:shadow-focus"
-          />
-          <p className="mt-1.5 text-[12.5px] text-text-muted">
-            Se pide una sola vez y no aparece en tu perfil.
+      {!publico && (
+        <div className="mt-4 flex items-start gap-3 rounded-base bg-rigel-soft px-3.5 py-3">
+          <Rigel pose="guia" decorativo className="h-auto w-12 shrink-0" />
+          <p className="text-[13px] leading-relaxed text-rigel-ink">
+            <strong>Te recomiendo hacerla visible.</strong> Con tu ficha completa y a la vista, los
+            profes llegan a tu primera clase sabiendo qué buscas, y te es más fácil encontrar con
+            quién practicar.
           </p>
         </div>
       )}
@@ -399,33 +402,36 @@ function Privacidad({ ficha, onCambio }: { ficha: FichaEstudiante; onCambio: () 
       )}
 
       <Boton
-        variante="secundario"
+        variante={publico ? "secundario" : "primario"}
         className="mt-4"
         disabled={cambiar.isPending}
-        onClick={() => {
-          if (publico) {
-            cambiar.mutate(false);
-            return;
-          }
-          if (!fecha) {
-            setPidiendoFecha(true);
-            return;
-          }
-          cambiar.mutate(true);
-        }}
+        onClick={() => cambiar.mutate(!publico)}
       >
         {publico ? (
           <>
             <EyeOff size={15} strokeWidth={1.9} />
-            Volverlo privado
+            Volverla privada
           </>
         ) : (
           <>
             <Eye size={15} strokeWidth={1.9} />
-            Hacerlo visible
+            Hacerla visible
           </>
         )}
       </Boton>
+    </div>
+  );
+}
+
+/** El rótulo de cada bloque: quién ve lo que viene debajo. */
+export function QuienLoVe({ icono, titulo, texto }: { icono: React.ReactNode; titulo: string; texto: string }) {
+  return (
+    <div className="mt-7">
+      <p className="flex items-center gap-2 text-[12px] font-bold tracking-[0.06em] text-text-secondary uppercase">
+        {icono}
+        {titulo}
+      </p>
+      <p className="mt-1 text-[13px] text-text-muted">{texto}</p>
     </div>
   );
 }

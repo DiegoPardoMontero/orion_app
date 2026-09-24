@@ -189,47 +189,18 @@ test("un estudiante edita su perfil y persiste", async ({ page }) => {
   await login(page, USERS.ana);
   // Esperar a que el login termine (sesión establecida) antes de navegar, o /cuenta rebota a login.
   await expect(page).toHaveURL(/\/profesores/);
-  // Los datos de contacto viven en su propia sección desde que el perfil se troceó.
+  // Los datos de contacto van con la ficha, en «Solo para ti» (24/09): el enlace viejo sigue sirviendo.
   await page.goto("/cuenta?seccion=datos");
   await expect(page.getByRole("heading", { name: "Mi perfil" })).toBeVisible();
 
   // #telefono es el número local del PhoneInput (el país va aparte, Colombia por defecto).
   await page.locator("#telefono").fill("3009998877");
-  await page.getByRole("button", { name: "Guardar cambios" }).click();
+  await page.getByRole("button", { name: "Guardar mis datos" }).click();
   await expect(page.getByText("tus datos quedaron actualizados")).toBeVisible();
 
   // Recargar y comprobar que el dato se guardó de verdad (se re-parsea del E.164 +57...).
   await page.reload();
   await expect(page.locator("#telefono")).toHaveValue("3009998877");
-});
-
-test("un estudiante reprograma una clase a otro cupo", async ({ page }) => {
-  await login(page, USERS.ana);
-
-  // Aseguramos una clase reprogramable: reservamos un cupo lejano (> 24 h).
-  await page.getByRole("link", { name: /Ver agenda/ }).first().click();
-  await expect(page.getByText("Cupos disponibles")).toBeVisible();
-  await page.locator("main .flex-wrap button").last().click();
-  const cupos = page.locator("main .grid-cols-3 button");
-  await cupos.first().click();
-  await page.getByRole("button", { name: "Confirmar reserva" }).click();
-  await expect(page).toHaveURL(/\/mis-clases/);
-
-  // Abrimos «Otro horario» en la primera clase habilitada y elegimos un nuevo cupo.
-  const reprogramar = page
-    .getByRole("button", { name: "Otro horario" })
-    .and(page.locator(":not([disabled])"))
-    .first();
-  await reprogramar.click();
-
-  const dialog = page.getByRole("dialog");
-  await expect(dialog.getByText("Elige un día")).toBeVisible();
-  await dialog.locator(".flex-wrap button").last().click();
-  await dialog.locator(".grid-cols-3 button").last().click();
-  await dialog.getByRole("button", { name: "Confirmar cambio" }).click();
-
-  // Éxito: el modal se cierra. Si hubiera fallado (cupo ocupado, etc.) seguiría abierto con aviso.
-  await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
 /**

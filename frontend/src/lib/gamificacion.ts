@@ -54,7 +54,6 @@ export type FichaEstudiante = {
   skyCode: string;
   accessories: { zone: string; accessoryCode: string }[];
   isPublic: boolean | null;
-  birthDate: string | null;
   ownView: boolean;
 };
 

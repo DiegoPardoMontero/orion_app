@@ -61,7 +61,7 @@ export const NAV_BY_ROLE: Record<Role, NavGroup[]> = {
       titulo: "Clases",
       items: [
         { href: "/profesores", label: "Buscar profesor" },
-        { href: "/mis-clases", label: "Mi agenda" },
+        { href: "/mis-clases", label: "Mis clases" },
         { href: "/mensajes", label: "Mensajes" },
       ],
     },
@@ -152,7 +152,7 @@ export const NAV_BY_ROLE: Record<Role, NavGroup[]> = {
 export const TABS_BY_ROLE: Record<Role, NavItem[]> = {
   STUDENT: [
     { href: "/profesores", label: "Buscar" },
-    { href: "/mis-clases", label: "Agenda" },
+    { href: "/mis-clases", label: "Clases" },
     { href: "/mensajes", label: "Mensajes" },
     { href: "/saldo", label: "Pagos" },
     { href: "/cuenta", label: "Perfil" },

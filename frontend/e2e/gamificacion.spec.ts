@@ -151,14 +151,10 @@ test("el perfil público se enciende y se apaga: Carlos lo ve y deja de verlo", 
     return (await r.json()).id as string;
   });
 
-  await page.getByRole("button", { name: "Hacerlo visible" }).click();
-  // La fecha solo se pide la primera vez; si ya estaba puesta, el botón publica directo.
-  const fecha = page.locator("#nacimiento");
-  if (await fecha.isVisible()) {
-    await fecha.fill("1995-04-12");
-    await page.getByRole("button", { name: "Hacerlo visible" }).click();
-  }
-  await expect(page.getByText("Tu ficha es pública")).toBeVisible();
+  // Rigel lo recomienda, y basta un botón: la mayoría de edad ya se confirmó al crear la cuenta.
+  await expect(page.getByText("Te recomiendo hacerla visible.")).toBeVisible();
+  await page.getByRole("button", { name: "Hacerla visible" }).click();
+  await expect(page.getByText("Tu ficha es visible")).toBeVisible();
   await logout(page);
 
   await login(page, USERS.carlos);
@@ -173,7 +169,7 @@ test("el perfil público se enciende y se apaga: Carlos lo ve y deja de verlo", 
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page).toHaveURL(/\/profesores/);
   await page.goto("/cuenta?seccion=ficha");
-  await page.getByRole("button", { name: "Volverlo privado" }).click();
+  await page.getByRole("button", { name: "Volverla privada" }).click();
   await expect(page.getByText("Tu ficha es privada")).toBeVisible();
   await logout(page);
 

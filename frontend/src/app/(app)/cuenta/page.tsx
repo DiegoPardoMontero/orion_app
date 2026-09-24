@@ -1,19 +1,16 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, Check, GraduationCap, KeyRound, Mail, User } from "lucide-react";
+import { ArrowRight, Check, GraduationCap, KeyRound, Lock, Mail, User } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { CambiarClave } from "@/components/CambiarClave";
-import { CambiarFoto } from "@/components/CambiarFoto";
 import { MiCielo } from "@/components/gamificacion/MiCielo";
 import { TarjetaDiagnostico } from "@/components/gamificacion/TarjetaDiagnostico";
-import { MiFicha } from "@/components/gamificacion/MiFicha";
+import { MiFicha, QuienLoVe } from "@/components/gamificacion/MiFicha";
 import { InvitacionAPracticar } from "@/components/InvitacionAPracticar";
 import { PanelProgreso } from "@/components/PanelProgreso";
-import { PoliticaCancelacion } from "@/components/PoliticaCancelacion";
-import { PreguntasFrecuentes } from "@/components/PreguntasFrecuentes";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
 import { PhoneInput } from "@/components/PhoneInput";
 import { BotonPrincipal, Campo } from "@/components/ui";
@@ -54,15 +51,20 @@ export default function CuentaPage() {
   return <FormularioCuenta inicial={cuenta.data} />;
 }
 
-type Seccion = "resumen" | "cielo" | "ficha" | "datos" | "cancelar" | "preguntas";
+type Seccion = "resumen" | "cielo" | "ficha";
 
+/**
+ * Dos secciones y no cinco (24/09/2026): «Si hay que cancelar» y «Preguntas» salieron del perfil
+ * —las reglas se explican al cancelar y las preguntas viven en Ayuda—, y la ficha y los datos van
+ * juntos, separados por quién ve cada cosa. Los enlaces viejos (`?seccion=datos` y los otros) caen
+ * en la sección que los reemplaza.
+ */
 const SECCIONES: { clave: Seccion; label: string }[] = [
   { clave: "resumen", label: "Resumen" },
-  { clave: "ficha", label: "Mi ficha" },
-  { clave: "datos", label: "Mis datos" },
-  { clave: "cancelar", label: "Si hay que cancelar" },
-  { clave: "preguntas", label: "Preguntas" },
+  { clave: "ficha", label: "Mi ficha y mis datos" },
 ];
+
+const ANTIGUAS: Record<string, Seccion> = { datos: "ficha", cancelar: "resumen", preguntas: "resumen" };
 
 /**
  * La sección vive en la URL y no en un estado local, para que un enlace pueda apuntar a una
@@ -122,10 +124,9 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
   const error = guardar.error instanceof ApiError ? guardar.error.message : null;
 
   const params = useSearchParams();
-  const pedida = params.get("seccion");
-  const seccion: Seccion = SECCIONES.some((s) => s.clave === pedida) || pedida === "cielo"
-    ? (pedida as Seccion)
-    : "resumen";
+  const pedida = params.get("seccion") ?? "resumen";
+  const seccion: Seccion =
+    SECCIONES.some((s) => s.clave === pedida) || pedida === "cielo" ? (pedida as Seccion) : (ANTIGUAS[pedida] ?? "resumen");
 
   return (
     <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-3xl lg:px-12 lg:py-8">
@@ -143,13 +144,16 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
       */}
       <SubNav actual={seccion} />
 
+      {/* El diagnóstico va al final: es una foto del día que se hizo, no lo que se viene a mirar. */}
       {seccion === "resumen" && (
         <>
-          <TarjetaDiagnostico />
           <PanelProgreso />
           <InvitacionAPracticar />
           <div className="mt-8">
             <MiCielo />
+          </div>
+          <div className="mt-8">
+            <TarjetaDiagnostico />
           </div>
         </>
       )}
@@ -158,22 +162,14 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
 
       {seccion === "ficha" && <MiFicha />}
 
-      {seccion === "cancelar" && (
-        <div className="mt-6">
-          <PoliticaCancelacion rol="estudiante" />
-        </div>
-      )}
-
-      {seccion === "preguntas" && <PreguntasFrecuentes rol="estudiante" />}
-
-      <div className={seccion === "datos" ? "" : "hidden"}>
-      <h2 className="mt-8 font-display text-[19px] font-bold">Tus datos</h2>
-
-      <div className="mt-4">
-        <CambiarFoto nombre={inicial.fullName} fotoUrl={inicial.photoUrl} />
-      </div>
-
-      <label className="mt-6 block text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary" htmlFor="nombre">
+      <div className={seccion === "ficha" ? "" : "hidden"}>
+      <QuienLoVe
+        icono={<Lock size={15} strokeWidth={2} />}
+        titulo="Solo para ti"
+        texto="Tu correo, tu WhatsApp y tu contraseña. No los ve ningún profesor ni otro estudiante."
+      />
+      <div className="mt-3 rounded-card border border-border bg-surface-raised p-5">
+      <label className="block text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary" htmlFor="nombre">
         Nombre completo
       </label>
       <Campo
@@ -185,12 +181,15 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
         icono={<User size={18} strokeWidth={1.75} />}
         className="mt-1.5"
       />
+      <p className="mt-1.5 text-[12px] text-text-muted">Tu nombre sí lo ven tus profesores.</p>
 
       <label className="mt-4 block text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary" htmlFor="telefono">
         WhatsApp <span className="font-semibold normal-case text-text-muted">(opcional)</span>
       </label>
       <PhoneInput id="telefono" value={telefono} onChange={setTelefono} className="mt-1.5" />
-      <p className="mt-1.5 text-[12px] text-text-muted">Por aquí te escribe tu profesor para coordinar.</p>
+      <p className="mt-1.5 text-[12px] text-text-muted">
+        Solo lo usa el equipo de Orión si necesita avisarte algo de una clase.
+      </p>
 
       {/* Correo y rol se muestran, no se editan. */}
       <div className="mt-5 flex items-center gap-2.5 rounded-base bg-surface-sunken px-4 py-3">
@@ -225,12 +224,9 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
         onClick={() => guardar.mutate()}
         className="mt-5"
       >
-        {guardar.isPending ? "Guardando…" : "Guardar cambios"}
+        {guardar.isPending ? "Guardando…" : "Guardar mis datos"}
       </BotonPrincipal>
-
-      <PoliticaCancelacion rol="estudiante" />
-
-      <PreguntasFrecuentes rol="estudiante" />
+      </div>
 
       <EnseñarCta />
       </div>
