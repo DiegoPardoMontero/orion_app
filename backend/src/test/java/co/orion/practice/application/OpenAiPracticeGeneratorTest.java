@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -53,6 +54,8 @@ class OpenAiPracticeGeneratorTest {
             assertThat(g.expected()).isNull();
         });
         verify(presupuesto).registrar(any(), eq("gpt-5-mini"), eq(100), eq(20), anyInt(), eq("OK"));
+        // Una frase propia no tiene una respuesta que comparar: no hay revisión.
+        assertThat(proveedor.llamadas()).isEqualTo(1);
         // Al proveedor va el acta, nunca quién es el estudiante.
         assertThat(proveedor.cuerpos().getFirst()).contains("I go yesterday").contains("used to = solía");
     }
@@ -177,5 +180,68 @@ class OpenAiPracticeGeneratorTest {
         when(presupuesto.disponible()).thenReturn(false);
 
         assertThat(generador.disponible()).isFalse();
+    }
+
+    /** Un hueco bueno, un diálogo con su orden y una frase propia: lo que la revisión recibe. */
+    private static final String TRES = """
+            {"items":[{"type":"FILL_BLANK","prompt":"Completa.","payload":{"sentence":"I ___ play.","options":["used to","use"]},
+                       "expected":"used to","explanation":"Hábito pasado.","sourceTerm":"used to"},
+                      {"type":"ORDER_DIALOGUE","prompt":"Ordena.","payload":{"lines":["B: Fine.","A: Hi, how are you?"]},
+                       "expected":["A: Hi, how are you?","B: Fine."],"explanation":"Saludo y respuesta.","sourceTerm":null},
+                      {"type":"WRITE_SENTENCE","prompt":"Escribe.","payload":{"term":"used to"},"expected":null,
+                       "explanation":"Úsala.","sourceTerm":"used to"}]}""";
+
+    @Test
+    @DisplayName("La revisión resuelve los cerrados como estudiante: lo que no resuelve igual, o ve ambiguo, se descarta")
+    void laRevisionDescarta() {
+        proveedor.luego(200, ServidorDePrueba.chat(TRES)).luego(200, ServidorDePrueba.chat("""
+                {"answers":[{"index":0,"answer":"used to","ambiguous":true},
+                            {"index":1,"answer":["B: Fine.","A: Hi, how are you?"],"ambiguous":false}]}"""));
+
+        List<PracticeGenerator.Generado> revisados = generador.generar(UUID.randomUUID(), ACTA, 4);
+
+        assertThat(revisados).extracting(PracticeGenerator.Generado::tipo).containsExactly(PracticeItemType.WRITE_SENTENCE);
+        assertThat(proveedor.llamadas()).isEqualTo(2);
+        // A la revisión va lo que ve el estudiante: ni la respuesta esperada ni la frase propia.
+        assertThat(proveedor.cuerpos().get(1)).contains("I ___ play").doesNotContain("WRITE_SENTENCE")
+                .doesNotContain("Hábito pasado");
+        verify(presupuesto, times(2)).registrar(any(), eq("gpt-5-mini"), eq(100), eq(20), anyInt(), eq("OK"));
+    }
+
+    @Test
+    @DisplayName("Lo que la revisión resuelve igual se queda, y lo que no respondió también: la duda no descarta")
+    void laRevisionConfirma() {
+        proveedor.luego(200, ServidorDePrueba.chat(TRES)).luego(200, ServidorDePrueba.chat("""
+                {"answers":[{"index":0,"answer":"used to","ambiguous":false}]}"""));
+
+        assertThat(generador.generar(UUID.randomUUID(), ACTA, 4)).hasSize(3);
+    }
+
+    @Test
+    @DisplayName("Si la revisión se cae, los ejercicios siguen sin revisar: el set no se pierde por ella")
+    void laRevisionCaida() {
+        proveedor.luego(200, ServidorDePrueba.chat(TRES)).luego(503, "{\"error\":{\"message\":\"overloaded\"}}");
+
+        assertThat(generador.generar(UUID.randomUUID(), ACTA, 4)).hasSize(3);
+        verify(presupuesto).registrar(any(), any(), eq(null), eq(null), anyInt(), eq("ERROR"));
+    }
+
+    @Test
+    @DisplayName("En corregir la frase no se descarta: si la revisión llegó a otra corrección, se suma a las aceptadas")
+    void otraCorreccionValida() {
+        PracticeGenerator.Generado corregir = new PracticeGenerator.Generado(PracticeItemType.FIX_SENTENCE, "Corrige.",
+                "{\"sentence\":\"I go yesterday.\",\"accepted\":[]}", "I went yesterday.", "Pasado.", null);
+        var respuestas = OpenAiPracticeGenerator.respuestasDe(
+                "{\"answers\":[{\"index\":0,\"answer\":\"Yesterday I went.\",\"ambiguous\":true}]}");
+
+        List<PracticeGenerator.Generado> revisados = OpenAiPracticeGenerator.aplicarRevision(List.of(corregir), respuestas);
+
+        assertThat(revisados).singleElement().satisfies(g ->
+                assertThat(g.payload()).contains("Yesterday I went."));
+        // Y la que ya valía, o la frase sin corregir, no se suman.
+        var igual = OpenAiPracticeGenerator.respuestasDe(
+                "{\"answers\":[{\"index\":0,\"answer\":\"I go yesterday\",\"ambiguous\":false}]}");
+        assertThat(OpenAiPracticeGenerator.aplicarRevision(List.of(corregir), igual).getFirst().payload())
+                .isEqualTo(corregir.payload());
     }
 }

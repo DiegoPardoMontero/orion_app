@@ -24,6 +24,18 @@ class ValidadorDeEjerciciosTest {
     }
 
     @Test
+    @DisplayName("Un diálogo dice quién habla, y en el orden esperado nadie habla dos veces seguidas")
+    void losTurnosSeAlternan() {
+        assertThat(ValidadorDeEjercicios.seTurnan(List.of("Interviewer: Tell me about a project.",
+                "Candidate: I led a migration.", "Interviewer: What was hard?", "Candidate: The deadline."))).isTrue();
+        // Lo que devolvió OpenAI con el prompt v3: dos preguntas juntas y las dos respuestas después.
+        assertThat(ValidadorDeEjercicios.seTurnan(List.of("Interviewer: Tell me about a project.",
+                "Interviewer: What was hard?", "Candidate: The deadline.", "Candidate: I led a migration."))).isFalse();
+        // Sin etiquetas no se puede comprobar, y no pasa.
+        assertThat(ValidadorDeEjercicios.seTurnan(List.of("Hi, how was the trip?", "Great, thanks!", "Where did you go?"))).isFalse();
+    }
+
+    @Test
     @DisplayName("Un ejercicio de vocabulario con un término que el acta no tiene se descarta")
     void sinAnclaSeDescarta() {
         assertThat(ValidadorDeEjercicios.validos(List.of(hueco("used to"), hueco("gonna")), ACTA, 4))

@@ -5,6 +5,8 @@ import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,6 +26,8 @@ public final class ServidorDePrueba implements AutoCloseable {
     private volatile int esperaMs;
     private volatile int estado = 200;
     private volatile String respuesta = "{}";
+    /** Respuestas que se dan una vez cada una, en orden, antes de volver a la de {@link #responde}. */
+    private final Queue<Object[]> siguientes = new ConcurrentLinkedQueue<>();
 
     public ServidorDePrueba() {
         try {
@@ -40,9 +44,11 @@ public final class ServidorDePrueba implements AutoCloseable {
             } catch (InterruptedException ex) {
                 Thread.currentThread().interrupt();
             }
-            byte[] bytes = respuesta.getBytes(StandardCharsets.UTF_8);
+            Object[] turno = siguientes.poll();
+            int esteEstado = turno == null ? estado : (int) turno[0];
+            byte[] bytes = (turno == null ? respuesta : (String) turno[1]).getBytes(StandardCharsets.UTF_8);
             intercambio.getResponseHeaders().add("Content-Type", "application/json");
-            intercambio.sendResponseHeaders(estado, bytes.length);
+            intercambio.sendResponseHeaders(esteEstado, bytes.length);
             intercambio.getResponseBody().write(bytes);
             intercambio.close();
         });
@@ -56,6 +62,12 @@ public final class ServidorDePrueba implements AutoCloseable {
     public ServidorDePrueba responde(int estado, String cuerpo) {
         this.estado = estado;
         this.respuesta = cuerpo;
+        return this;
+    }
+
+    /** Encola una respuesta para una sola llamada: la primera sin encolar recibe esta, y así. */
+    public ServidorDePrueba luego(int estado, String cuerpo) {
+        siguientes.add(new Object[] {estado, cuerpo});
         return this;
     }
 

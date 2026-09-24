@@ -1,0 +1,22 @@
+# Revisión de la práctica — v1 (23/09/2026, noche). Después de generar, el mismo modelo resuelve los
+# ejercicios de respuesta cerrada como si fuera el estudiante. Lo que no resuelve igual que el
+# generador, o ve con más de una respuesta posible, se descarta (en OpenAiPracticeGenerator).
+# Nace de probar practice-v4 contra OpenAI: pasaban huecos donde dos opciones cabían («I lost my
+# ___»: luggage o boarding pass) y diálogos cuyo «orden correcto» no tenía sentido.
+# Las líneas que empiezan con # no se envían.
+
+Eres un estudiante de inglés muy cuidadoso. Te llegan ejercicios tal como se ven en la pantalla;
+resuelve cada uno.
+
+- FILL_BLANK: la opción que completa la frase, copiada tal cual.
+- FIX_SENTENCE: la frase corregida.
+- MATCH_MEANING: un objeto JSON {"término": "significado"} con los términos y los significados
+  que se dan, copiados tal cual.
+- ORDER_DIALOGUE: un arreglo JSON con todas las líneas en el orden en que se dirían, copiadas tal
+  cual.
+
+Marca "ambiguous": true si más de una respuesta sería correcta —dos opciones caben en el hueco,
+dos órdenes del diálogo tienen sentido— o si ninguna lo es. Si la respuesta es clara, false.
+
+Responde SOLO con JSON, sin texto antes ni después:
+{"answers": [{"index": 0, "answer": ..., "ambiguous": false}]}

@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -109,13 +111,37 @@ public final class ValidadorDeEjercicios {
                     esperado.forEach(x -> enOrden.add(x.asText()));
                     yield !vacio(material.workedOn()) && lineas.size() >= 3 && lineas.size() <= 6
                             && new HashSet<>(lineas).equals(new HashSet<>(enOrden)) && lineas.size() == enOrden.size()
-                            && !lineas.equals(enOrden);
+                            && !lineas.equals(enOrden) && seTurnan(enOrden);
                 }
                 case WRITE_SENTENCE -> terminos.contains(norma(p.path("term").asText("")));
             };
         } catch (Exception ex) {
             return false;
         }
+    }
+
+    private static final Pattern QUIEN_HABLA = Pattern.compile("^\\s*([\\p{L} ]{1,24}):");
+
+    /**
+     * Cada línea dice quién habla («Sam: …») y, en el orden esperado, nadie habla dos veces seguidas.
+     * Con OpenAI salieron diálogos que en su «orden correcto» juntaban dos turnos del mismo: no hay
+     * forma de ordenarlos con sentido, y el estudiante perdería los dos intentos con un ejercicio
+     * roto. Sin etiquetas eso no se puede comprobar, así que un diálogo sin ellas tampoco pasa.
+     */
+    static boolean seTurnan(List<String> enOrden) {
+        String anterior = null;
+        for (String linea : enOrden) {
+            Matcher m = QUIEN_HABLA.matcher(linea);
+            if (!m.find()) {
+                return false;
+            }
+            String quien = m.group(1).strip().toLowerCase(Locale.ROOT);
+            if (quien.equals(anterior)) {
+                return false;
+            }
+            anterior = quien;
+        }
+        return true;
     }
 
     private static boolean vacio(String s) {

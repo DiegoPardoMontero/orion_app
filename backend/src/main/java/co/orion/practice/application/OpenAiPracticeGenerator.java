@@ -7,10 +7,13 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -32,6 +35,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import co.orion.practice.domain.Evaluador;
 import co.orion.practice.domain.PracticeItemType;
 
 /**
@@ -45,7 +49,12 @@ public class OpenAiPracticeGenerator implements PracticeGenerator {
 
     private static final Logger log = LoggerFactory.getLogger(OpenAiPracticeGenerator.class);
     private static final ObjectMapper JSON = new ObjectMapper();
-    static final String PROMPT = "prompts/practice-v3.txt";
+    static final String PROMPT = "prompts/practice-v4.txt";
+    static final String REVISION = "prompts/practice-check-v1.txt";
+
+    /** Los que tienen una sola respuesta correcta: los que la revisión puede resolver y comparar. */
+    private static final Set<PracticeItemType> CERRADOS = EnumSet.of(PracticeItemType.FILL_BLANK,
+            PracticeItemType.FIX_SENTENCE, PracticeItemType.MATCH_MEANING, PracticeItemType.ORDER_DIALOGUE);
 
     private final RestClient http;
     private final String apiKey;
@@ -106,7 +115,149 @@ public class OpenAiPracticeGenerator implements PracticeGenerator {
         List<Generado> generados = leer(contenido(respuesta));
         presupuesto.registrar(estudianteId, modelo, tokens(respuesta, "prompt_tokens"),
                 tokens(respuesta, "completion_tokens"), ms(inicio), generados.isEmpty() ? "INVALID_OUTPUT" : "OK");
-        return generados;
+        return revisados(estudianteId, generados);
+    }
+
+    /**
+     * La revisión: el mismo modelo resuelve los ejercicios cerrados como si fuera el estudiante, y lo
+     * que no resuelve igual que el generador —o ve con dos respuestas posibles— se descarta. El
+     * validador comprueba la forma y el ancla al acta; esto comprueba que el ejercicio tenga sentido:
+     * contra OpenAI pasaban huecos donde cabían dos opciones y diálogos con un «orden correcto» que
+     * no se sostenía, y el estudiante perdía sus dos intentos en un ejercicio roto.
+     *
+     * <p>Si la revisión falla, los ejercicios siguen sin revisar: es una mejora, no una puerta, y un
+     * set no se pierde porque la segunda llamada no respondió.
+     */
+    List<Generado> revisados(UUID estudianteId, List<Generado> generados) {
+        if (generados.stream().noneMatch(g -> CERRADOS.contains(g.tipo()))) {
+            return generados;
+        }
+        long inicio = System.nanoTime();
+        Map<?, ?> respuesta;
+        try {
+            respuesta = http.post().uri(endpoint)
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(cuerpoDeRevision(generados))
+                    .retrieve()
+                    .body(Map.class);
+        } catch (RuntimeException ex) {
+            presupuesto.registrar(estudianteId, modelo, null, null, ms(inicio),
+                    ex instanceof ResourceAccessException ? "TIMEOUT" : "ERROR");
+            log.info("La revisión de la práctica no respondió; los ejercicios quedan sin revisar: {}", ex.getMessage());
+            return generados;
+        }
+        Map<Integer, JsonNode> respuestas = respuestasDe(contenido(respuesta));
+        presupuesto.registrar(estudianteId, modelo, tokens(respuesta, "prompt_tokens"),
+                tokens(respuesta, "completion_tokens"), ms(inicio), respuestas.isEmpty() ? "INVALID_OUTPUT" : "OK");
+        return aplicarRevision(generados, respuestas);
+    }
+
+    Map<String, Object> cuerpoDeRevision(List<Generado> generados) {
+        ArrayNode ejercicios = JSON.createArrayNode();
+        for (int i = 0; i < generados.size(); i++) {
+            Generado g = generados.get(i);
+            if (!CERRADOS.contains(g.tipo())) {
+                continue;
+            }
+            ObjectNode e = ejercicios.addObject();
+            e.put("index", i);
+            e.put("type", g.tipo().name());
+            e.put("prompt", g.prompt());
+            e.set("material", loQueVeElEstudiante(g));
+        }
+        Map<String, Object> cuerpo = new LinkedHashMap<>();
+        cuerpo.put("model", modelo);
+        // Un poco más de razonamiento que al generar: ordenar un diálogo sin pensar es justo el error
+        // que se busca atrapar, y una revisión que se equivoca descarta ejercicios buenos.
+        cuerpo.put("reasoning_effort", "low");
+        cuerpo.put("max_completion_tokens", 2500);
+        cuerpo.put("response_format", Map.of("type", "json_object"));
+        cuerpo.put("messages", List.of(
+                Map.of("role", "system", "content", leerPrompt(REVISION)),
+                Map.of("role", "user", "content", ejercicios.toString())));
+        return cuerpo;
+    }
+
+    /** El payload sin las respuestas: en corregir la frase, {@code accepted} son otras correcciones. */
+    private static JsonNode loQueVeElEstudiante(Generado g) {
+        try {
+            JsonNode p = JSON.readTree(g.payload());
+            if (p instanceof ObjectNode objeto) {
+                ObjectNode copia = objeto.deepCopy();
+                copia.remove("accepted");
+                return copia;
+            }
+            return p;
+        } catch (IOException ex) {
+            return JSON.createObjectNode();
+        }
+    }
+
+    static Map<Integer, JsonNode> respuestasDe(String contenido) {
+        Map<Integer, JsonNode> respuestas = new HashMap<>();
+        if (contenido == null) {
+            return respuestas;
+        }
+        try {
+            for (JsonNode r : JSON.readTree(contenido).path("answers")) {
+                if (r.path("index").isInt()) {
+                    respuestas.put(r.path("index").asInt(), r);
+                }
+            }
+        } catch (IOException ex) {
+            return Map.of();
+        }
+        return respuestas;
+    }
+
+    /**
+     * Se queda lo que la revisión resolvió igual, sin ambigüedad. Corregir una frase es distinto: hay
+     * muchas correcciones buenas, así que no se descarta; si la revisión llegó a otra, esa se suma a
+     * las aceptadas —una corrección válida que el generador no previó no puede contar como error—.
+     * Un ejercicio que la revisión no respondió se queda: la duda no descarta.
+     */
+    static List<Generado> aplicarRevision(List<Generado> generados, Map<Integer, JsonNode> respuestas) {
+        List<Generado> salida = new ArrayList<>();
+        for (int i = 0; i < generados.size(); i++) {
+            Generado g = generados.get(i);
+            JsonNode r = respuestas.get(i);
+            if (r == null || !CERRADOS.contains(g.tipo())) {
+                salida.add(g);
+                continue;
+            }
+            JsonNode a = r.path("answer");
+            String respuesta = a.isTextual() ? a.asText() : a.isMissingNode() || a.isNull() ? null : a.toString();
+            if (g.tipo() == PracticeItemType.FIX_SENTENCE) {
+                salida.add(conOtraCorreccion(g, respuesta));
+            } else if (!r.path("ambiguous").asBoolean(false)
+                    && Evaluador.esCorrecta(g.tipo(), g.payload(), g.expected(), respuesta)) {
+                salida.add(g);
+            } else {
+                log.info("La revisión descarta un {}: {} ({}; esperada {}, la revisión dijo {})", g.tipo(),
+                        r.path("ambiguous").asBoolean(false) ? "tiene más de una respuesta" : "no llegó a la esperada",
+                        g.payload(), g.expected(), respuesta);
+            }
+        }
+        return salida;
+    }
+
+    private static Generado conOtraCorreccion(Generado g, String respuesta) {
+        try {
+            JsonNode p = JSON.readTree(g.payload());
+            if (respuesta == null || respuesta.isBlank() || !(p instanceof ObjectNode objeto)
+                    || Evaluador.esCorrecta(g.tipo(), g.payload(), g.expected(), respuesta)
+                    || Evaluador.normalizar(respuesta).equals(Evaluador.normalizar(p.path("sentence").asText()))) {
+                return g;
+            }
+            ObjectNode copia = objeto.deepCopy();
+            ArrayNode aceptadas = copia.has("accepted") && copia.get("accepted").isArray()
+                    ? (ArrayNode) copia.get("accepted") : copia.putArray("accepted");
+            aceptadas.add(respuesta.strip());
+            return new Generado(g.tipo(), g.prompt(), copia.toString(), g.expected(), g.explicacion(), g.terminoFuente());
+        } catch (IOException ex) {
+            return g;
+        }
     }
 
     /**
@@ -251,8 +402,13 @@ public class OpenAiPracticeGenerator implements PracticeGenerator {
     }
 
     private static String instrucciones() {
+        return leerPrompt(PROMPT);
+    }
+
+    /** Un prompt del classpath, sin sus líneas de comentario. */
+    private static String leerPrompt(String prompt) {
         try {
-            String texto = new String(new ClassPathResource(PROMPT).getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            String texto = new String(new ClassPathResource(prompt).getInputStream().readAllBytes(), StandardCharsets.UTF_8);
             return texto.lines().filter(l -> !l.startsWith("#")).reduce("", (a, b) -> a + b + "\n").trim();
         } catch (IOException ex) {
             throw new UncheckedIOException("No se pudo leer el prompt de práctica", ex);
