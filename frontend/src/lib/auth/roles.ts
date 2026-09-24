@@ -80,7 +80,6 @@ export const NAV_BY_ROLE: Record<Role, NavGroup[]> = {
       titulo: "Enseñar",
       items: [
         { href: "/mis-clases", label: "Agenda" },
-        { href: "/disponibilidad", label: "Disponibilidad" },
         { href: "/mensajes", label: "Mensajes" },
       ],
     },
@@ -94,7 +93,8 @@ export const NAV_BY_ROLE: Record<Role, NavGroup[]> = {
     {
       titulo: "Mi cuenta",
       items: [
-        { href: "/perfil", label: "Perfil público" },
+        // El perfil público y los horarios son una sola pantalla con dos secciones (24/09/2026).
+        { href: "/perfil", label: "Mi perfil" },
         // Su enlace para compartir, a la vista (24/09/2026): dentro del perfil nadie lo encontraba.
         { href: "/invitar", label: "Invitar estudiantes" },
         { href: "/ayuda", label: "Ayuda" },
@@ -161,9 +161,11 @@ export const TABS_BY_ROLE: Record<Role, NavItem[]> = {
   ],
   PROFESSOR: [
     { href: "/mis-clases", label: "Agenda" },
-    { href: "/disponibilidad", label: "Horarios" },
     { href: "/mensajes", label: "Mensajes" },
     { href: "/ganancias", label: "Ganancias" },
+    // Los horarios están dentro del perfil: su lugar en la barra lo toma el desempeño, que en el
+    // celular no tenía entrada.
+    { href: "/desempeno", label: "Desempeño" },
     { href: "/perfil", label: "Perfil" },
   ],
   TEACHER_APPLICANT: [{ href: "/aplicacion/estado", label: "Postulación" }],

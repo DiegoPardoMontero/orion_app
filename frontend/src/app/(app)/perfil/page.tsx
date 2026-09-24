@@ -3,8 +3,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BadgeCheck, Check, Eye, Plus, Sparkles, UserPlus, X } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { CambiarFoto } from "@/components/CambiarFoto";
+import { MisHorarios } from "@/components/profesor/MisHorarios";
 import { bordeSegun, ContadorPalabras } from "@/components/ContadorPalabras";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
 import { Boton, Campo, Spinner, Toggle } from "@/components/ui";
@@ -26,11 +28,37 @@ import { SelectorDePais } from "@/components/SelectorDePais";
 /** El idioma tal como lo edita el profesor: código + si es nativo + niveles que enseña. */
 type LangEdit = { code: string; isNative: boolean; levels: string[] };
 
+type SeccionPerfil = "perfil" | "horarios";
+
+/**
+ * «Mi perfil» del profesor: lo que ven los estudiantes y sus horarios, en dos secciones de una misma
+ * pantalla (24/09/2026: «fusiona disponibilidad con lo demás del profesor»). La sección va en la
+ * dirección —`?seccion=horarios`— para poder enlazarla desde un correo o el recorrido.
+ */
 export default function PerfilPage() {
+  return (
+    <Suspense fallback={null}>
+      <Perfil />
+    </Suspense>
+  );
+}
+
+function Perfil() {
+  const seccion: SeccionPerfil = useSearchParams().get("seccion") === "horarios" ? "horarios" : "perfil";
   const perfil = useQuery({
     queryKey: ["me", "profile"],
     queryFn: () => apiFetch<ProfileResponse>("/api/v1/me/profile"),
   });
+
+  // Las dos pestañas con el mismo ancho, para que la cabecera no salte al cambiar de una a otra.
+  if (seccion === "horarios") {
+    return (
+      <main className="mx-auto w-full max-w-md px-5 py-5 lg:max-w-[1180px] lg:px-12 lg:py-8">
+        <Cabecera seccion="horarios" />
+        <MisHorarios />
+      </main>
+    );
+  }
 
   if (perfil.isPending) {
     return (
@@ -54,6 +82,38 @@ export default function PerfilPage() {
   // El formulario se monta ya con los datos, así no hay que sembrarlo desde un efecto: nace
   // con su estado inicial y a partir de ahí es su dueño, sin que un refetch pise lo que escribes.
   return <FormularioPerfil inicial={perfil.data} />;
+}
+
+function Cabecera({ seccion }: { seccion: SeccionPerfil }) {
+  const secciones: { clave: SeccionPerfil; label: string; href: string }[] = [
+    { clave: "perfil", label: "Perfil público", href: "/perfil" },
+    { clave: "horarios", label: "Mis horarios", href: "/perfil?seccion=horarios" },
+  ];
+  return (
+    <>
+      <h1 className="font-display text-h1 font-bold">Mi perfil</h1>
+      <nav className="mt-4 -mx-5 overflow-x-auto px-5 lg:mx-0 lg:px-0" aria-label="Secciones de tu perfil">
+        <ul className="flex w-max gap-1.5">
+          {secciones.map((s) => (
+            <li key={s.clave}>
+              <Link
+                href={s.href}
+                scroll={false}
+                aria-current={seccion === s.clave ? "page" : undefined}
+                className={`inline-flex h-9 items-center rounded-pill px-3.5 text-[13px] font-semibold transition-colors focus-visible:shadow-focus ${
+                  seccion === s.clave
+                    ? "bg-primary text-on-primary"
+                    : "bg-surface-sunken text-text-secondary hover:bg-border/60 hover:text-text"
+                }`}
+              >
+                {s.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </>
+  );
 }
 
 function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
@@ -158,6 +218,7 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
     },
     onSuccess: (actualizado) => {
       queryClient.setQueryData(["me", "profile"], actualizado);
+      void queryClient.invalidateQueries({ queryKey: ["me", "profile", "pending"] });
       setCanPublish(actualizado.canPublish ?? false);
       setPublicado(actualizado.isPublished ?? false);
       // Publicarse o cambiar el perfil altera el directorio que ven los estudiantes.
@@ -202,9 +263,9 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
     setGoals((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]));
 
   return (
-    <main className="mx-auto w-full max-w-md px-5 py-5 lg:max-w-2xl">
-      <h1 className="font-display text-h1 font-bold">Mi perfil</h1>
-      <p className="mt-1 text-[12.5px] text-text-secondary">Esto es lo que ven los estudiantes.</p>
+    <main className="mx-auto w-full max-w-md px-5 py-5 lg:max-w-[1180px] lg:px-12 lg:py-8">
+      <Cabecera seccion="perfil" />
+      <p className="mt-4 text-[12.5px] text-text-secondary">Esto es lo que ven los estudiantes.</p>
       <Link
         href="/invitar"
         className="mt-4 flex min-h-11 items-center justify-between gap-3 rounded-card bg-accent-lavender-soft px-4 py-3 text-[13.5px] transition-colors hover:bg-info-bg focus-visible:shadow-focus"
@@ -565,6 +626,7 @@ function WidgetTarifa({
       );
       void queryClient.invalidateQueries({ queryKey: ["professors"] });
       onGuardada();
+      void queryClient.invalidateQueries({ queryKey: ["me", "profile", "pending"] });
     },
   });
 

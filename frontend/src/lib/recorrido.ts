@@ -55,8 +55,9 @@ export const RECORRIDO_PROFESOR: Recorrido = {
       titulo: "Tus horarios",
       texto: "Marca las franjas en que das clase cada semana. Si un día no puedes, agrégalo como excepción.",
       guia: "rigel",
-      ruta: "/disponibilidad",
-      anclas: ["nav:/disponibilidad"],
+      // Desde el 24/09 los horarios viven dentro del perfil.
+      ruta: "/perfil?seccion=horarios",
+      anclas: ["horarios-semana", "nav:/perfil"],
     },
     {
       titulo: "Tu perfil público",
@@ -105,7 +106,7 @@ export const RECORRIDO_PROFESOR: Recorrido = {
     titulo: (nombre) => `¡Listo, ${nombre}! Ya conoces Orión.`,
     texto:
       "Revisa que tu disponibilidad esté al día: así te encuentran los estudiantes. Si algo se te olvida, el recorrido está en Ayuda.",
-    principal: { etiqueta: "Revisar mi disponibilidad", href: "/disponibilidad" },
+    principal: { etiqueta: "Revisar mi disponibilidad", href: "/perfil?seccion=horarios" },
     secundaria: { etiqueta: "Ir a mi agenda", href: "/mis-clases" },
   },
 };

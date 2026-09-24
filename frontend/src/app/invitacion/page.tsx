@@ -55,7 +55,7 @@ function Invitacion() {
       }),
     onSuccess: (me) => {
       queryClient.setQueryData(meQueryKey, me);
-      router.replace("/disponibilidad");
+      router.replace("/perfil?seccion=horarios");
     },
   });
 
