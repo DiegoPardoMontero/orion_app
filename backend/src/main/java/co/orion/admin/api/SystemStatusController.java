@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import co.orion.admin.application.RehearsalService;
 import co.orion.admin.application.SystemStatusService;
 import co.orion.scheduling.application.TestClassService;
 import co.orion.scheduling.domain.Booking;
@@ -23,17 +24,20 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
-/** Estado del despliegue y ensayo del aula. Solo admin: la ruta ya está bajo `/api/v1/admin/**`. */
+/** Estado del despliegue y ensayos del aula y del acta. Solo admin: la ruta ya está bajo `/api/v1/admin/**`. */
 @RestController
 @RequestMapping("/api/v1/admin/system")
 public class SystemStatusController {
 
     private final SystemStatusService status;
     private final TestClassService testClasses;
+    private final RehearsalService ensayos;
 
-    public SystemStatusController(SystemStatusService status, TestClassService testClasses) {
+    public SystemStatusController(SystemStatusService status, TestClassService testClasses,
+                                  RehearsalService ensayos) {
         this.status = status;
         this.testClasses = testClasses;
+        this.ensayos = ensayos;
     }
 
     @GetMapping("/status")
@@ -61,6 +65,30 @@ public class SystemStatusController {
                 ZonedDateTime.ofInstant(creada.getStartsAt(), BusinessZone.BOGOTA),
                 ZonedDateTime.ofInstant(creada.getEndsAt(), BusinessZone.BOGOTA),
                 creada.getMeetingLink());
+    }
+
+    /**
+     * Ensayo del acta y la práctica: una clase de prueba que ya se dictó, lista para que el profesor
+     * escriba su acta. Tampoco cobra ni manda correos de reserva.
+     */
+    @PostMapping("/rehearsal")
+    @ResponseStatus(HttpStatus.CREATED)
+    public RehearsalResponse rehearsal(@AuthenticationPrincipal OrionUserDetails principal,
+                                       @Valid @RequestBody RehearsalRequest body) {
+        Booking creada = testClasses.createHeld(principal.user(), body.studentEmail(), body.professorEmail());
+        return new RehearsalResponse(creada.getId(), "/mis-clases/" + creada.getId() + "/acta");
+    }
+
+    /** Los ensayos de la última semana, con su acta y su práctica: en qué va cada uno. */
+    @GetMapping("/rehearsals")
+    public RehearsalService.Ensayos rehearsals() {
+        return ensayos.recientes();
+    }
+
+    public record RehearsalRequest(@NotBlank @Email String studentEmail, @NotBlank @Email String professorEmail) {
+    }
+
+    public record RehearsalResponse(java.util.UUID bookingId, String acta) {
     }
 
     /** La hora va en hora de Bogotá y sin zona: es la que el admin lee en su reloj. */

@@ -7,6 +7,7 @@ import { AlertTriangle, CheckCircle2, ExternalLink, XCircle } from "lucide-react
 import { apiFetch, ApiError } from "@/lib/api/fetch";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
 import { Boton, Campo, Tarjeta } from "@/components/ui";
+import { EnsayoDelActa } from "./EnsayoDelActa";
 
 type Integracion = {
   nombre: string;
@@ -24,7 +25,7 @@ type ClaseDePrueba = {
 };
 
 /**
- * Sistema: qué integraciones están vivas en este despliegue, y un ensayo del aula.
+ * Sistema: qué integraciones están vivas en este despliegue, y los ensayos del aula y del acta.
  *
  * <p>Nace de un problema concreto: si una variable de Railway falta o está mal escrita, Orión
  * arranca igual y responde 200 en el health, pero la integración se apaga en silencio. Desde fuera
@@ -101,6 +102,7 @@ export default function SistemaPage() {
       </div>
 
       <EnsayoDelAula />
+      <EnsayoDelActa />
     </main>
   );
 }

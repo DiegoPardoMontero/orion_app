@@ -37,6 +37,8 @@ import co.orion.shared.time.ClassLength;
 @Service
 public class TestClassService {
 
+    private static final String IDIOMA_DEL_ENSAYO = "EN";
+
     private final BookingRepository bookings;
     private final UserRepository users;
     private final MeetingLinkProvider meetingLinks;
@@ -54,6 +56,55 @@ public class TestClassService {
 
     @Transactional
     public Booking create(User admin, String studentEmail, String professorEmail, Instant startsAt) {
+        Pareja pareja = pareja(studentEmail, professorEmail);
+
+        // Al minuto en punto: los cupos reales empiezan así, y una prueba que empieza a las 20:03
+        // no prueba lo mismo.
+        Instant inicio = (startsAt == null ? clock.instant() : startsAt).truncatedTo(ChronoUnit.MINUTES);
+
+        Booking booking = new Booking(pareja.student().getId(), pareja.professor().getId(),
+                inicio, inicio.plus(ClassLength.DURATION),
+                BookingModality.VIRTUAL, null, null, admin.getId(), inicio);
+        booking.markAsTrial();
+        booking.confirmPayment();
+
+        Booking saved = guardarOPerderLaCarrera(booking);
+        saved.assignMeetingLink(meetingLinks.linkFor(saved.getId()));
+
+        // Deliberadamente NO se publica BookingCreatedEvent: una clase de prueba no manda correos
+        // de confirmación ni invitaciones de calendario a nadie.
+        return bookings.save(saved);
+    }
+
+    /**
+     * Una clase de prueba que ya se dictó: empezó hace una hora, termina ahora y queda cerrada. Es el
+     * ensayo del acta y de la práctica (Bloque 10), que solo existen después de la clase — sin esto,
+     * probarlos exigía dar una clase de una hora y esperar a que se cerrara sola.
+     *
+     * <p>Nace COMPLETED en un solo INSERT. El índice único del cupo mira solo las clases confirmadas
+     * y las que esperan pago, así que el ensayo no choca con la clase real que el profesor tenga a
+     * esa hora. El idioma es inglés, el único que Orión enseña (V42): el acta y la práctica lo
+     * guardan. Igual que la otra, no publica eventos: nadie recibe correos de una clase que no fue.
+     */
+    @Transactional
+    public Booking createHeld(User admin, String studentEmail, String professorEmail) {
+        Pareja pareja = pareja(studentEmail, professorEmail);
+
+        Instant ahora = clock.instant();
+        Instant fin = ahora.truncatedTo(ChronoUnit.MINUTES);
+        Instant inicio = fin.minus(ClassLength.DURATION);
+        Booking booking = new Booking(pareja.student().getId(), pareja.professor().getId(),
+                inicio, fin, BookingModality.VIRTUAL, null, IDIOMA_DEL_ENSAYO, admin.getId(), inicio);
+        booking.markAsTrial();
+        booking.confirmPayment();
+        booking.closeWithAttendance(true, ahora);
+        return bookings.saveAndFlush(booking);
+    }
+
+    private record Pareja(User student, User professor) {
+    }
+
+    private Pareja pareja(String studentEmail, String professorEmail) {
         User student = buscar(studentEmail, "estudiante");
         User professor = buscar(professorEmail, "profesor");
 
@@ -66,23 +117,7 @@ public class TestClassService {
             throw new UnprocessableException(
                     professorEmail + " no tiene rol PROFESSOR. Cámbialo desde Usuarios y repite.");
         }
-
-        // Al minuto en punto: los cupos reales empiezan así, y una prueba que empieza a las 20:03
-        // no prueba lo mismo.
-        Instant inicio = (startsAt == null ? clock.instant() : startsAt).truncatedTo(ChronoUnit.MINUTES);
-
-        Booking booking = new Booking(student.getId(), professor.getId(),
-                inicio, inicio.plus(ClassLength.DURATION),
-                BookingModality.VIRTUAL, null, null, admin.getId(), inicio);
-        booking.markAsTrial();
-        booking.confirmPayment();
-
-        Booking saved = guardarOPerderLaCarrera(booking);
-        saved.assignMeetingLink(meetingLinks.linkFor(saved.getId()));
-
-        // Deliberadamente NO se publica BookingCreatedEvent: una clase de prueba no manda correos
-        // de confirmación ni invitaciones de calendario a nadie.
-        return bookings.save(saved);
+        return new Pareja(student, professor);
     }
 
     /**

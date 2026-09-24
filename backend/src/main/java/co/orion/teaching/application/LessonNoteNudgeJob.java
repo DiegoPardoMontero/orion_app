@@ -23,7 +23,8 @@ import co.orion.teaching.domain.LessonNoteNudgeEvent;
  * <p>Cada 15 minutos: clases cerradas hace más de {@code lesson_note_nudge_minutes} (60), sin acta y
  * sin recordatorio. Idempotente por {@code bookings.note_nudge_sent_at}: se marca en la misma
  * transacción que publica el evento. <strong>Una vez y nunca insiste</strong>: un sistema que
- * persigue al profesor todos los días es un sistema que el profesor aprende a ignorar.
+ * persigue al profesor todos los días es un sistema que el profesor aprende a ignorar. Las clases
+ * de prueba no reciben recordatorio: un ensayo no manda correos.
  *
  * <p>La transacción va por {@code TransactionTemplate} y no por {@code @Transactional}: el
  * programador llama a {@link #run()}, y una anotación en {@link #recordar()} no se aplica desde
@@ -67,7 +68,7 @@ public class LessonNoteNudgeJob {
         Instant cerradasAntesDe = ahora.minus(Duration.ofMinutes(settings.getInt("lesson_note_nudge_minutes")));
         List<Object[]> pendientes = jdbc.query("""
                 select b.id, b.professor_id, b.student_id from bookings b
-                where b.status = 'COMPLETED' and b.note_nudge_sent_at is null
+                where b.status = 'COMPLETED' and b.note_nudge_sent_at is null and not b.is_trial
                   and b.completed_at < ? and b.completed_at >= ?
                   and not exists (select 1 from lesson_notes n where n.booking_id = b.id)
                 for update skip locked
