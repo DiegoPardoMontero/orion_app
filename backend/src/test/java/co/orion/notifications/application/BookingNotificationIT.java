@@ -1,6 +1,7 @@
 package co.orion.notifications.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
@@ -92,12 +93,18 @@ class BookingNotificationIT extends ApiIntegrationSupport {
     @Autowired
     private ProfessorProfileRepository profiles;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbc;
+
     private User ana;
     private User maria;
     private ApiIntegrationSupport.Session anaSession;
 
     @BeforeEach
     void seed() {
+        jdbc.update("delete from notifications");
+        jdbc.update("delete from messages");
+        jdbc.update("delete from conversations");
         bookings.deleteAll();
         rules.deleteAll();
         profiles.deleteAll();
@@ -163,6 +170,32 @@ class BookingNotificationIT extends ApiIntegrationSupport {
                 .toList();
 
         assertThat(recipients).containsExactlyInAnyOrder("ana@orion.test", "maria@orion.test");
+    }
+
+    /**
+     * El saludo al reservar (24/09/2026): al estudiante le llega en su chat, a nombre del profe y
+     * escrito por Orión, con el día, la hora y una ⭐. Sin correo aparte (ya salió el de la reserva),
+     * pero sí en la campana, como la reserva misma para los dos.
+     */
+    @Test
+    void bookingGreetsTheStudentInTheNameOfTheProfessor() throws Exception {
+        book();
+
+        await().atMost(java.time.Duration.ofSeconds(5)).until(() ->
+                jdbc.queryForObject("select count(*) from messages where automated", Integer.class) == 1);
+        java.util.Map<String, Object> saludo = jdbc.queryForMap(
+                "select sender_id, body, booking_id from messages where automated");
+        assertThat(saludo.get("sender_id")).isEqualTo(maria.getId());
+        assertThat((String) saludo.get("body")).startsWith("¡Hola, Ana! ⭐ Soy María")
+                .contains("primera clase").contains("miércoles 15 de julio a las 9:00 AM");
+        assertThat(jdbc.queryForObject(
+                "select count(*) from notifications where user_id = ? and type = 'BOOKING_CREATED'", Integer.class,
+                maria.getId())).isEqualTo(1);
+        await().atMost(java.time.Duration.ofSeconds(5)).until(() -> jdbc.queryForObject(
+                "select count(*) from notifications where user_id = ? and type in ('BOOKING_CREATED', 'MESSAGE')",
+                Integer.class, ana.getId()) == 2);
+        // Dos correos (los de la reserva), no tres: el saludo no manda el suyo.
+        verify(mailSender, timeout(5000).times(2)).send(any(MimeMessage.class));
     }
 
     @Test

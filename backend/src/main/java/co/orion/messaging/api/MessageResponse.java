@@ -14,6 +14,8 @@ public record MessageResponse(
         UUID id,
         UUID senderId,
         boolean system,
+        /** Lo escribió Orión a nombre de quien firma (el saludo al reservar). */
+        boolean automated,
         boolean mine,
         String body,
         String flaggedReason,
@@ -25,6 +27,7 @@ public record MessageResponse(
                 message.getId(),
                 message.getSenderId(),
                 message.isSystem(),
+                message.isAutomated(),
                 viewerId.equals(message.getSenderId()),
                 message.getBody(),
                 message.getFlaggedReason() != null ? message.getFlaggedReason().name() : null,

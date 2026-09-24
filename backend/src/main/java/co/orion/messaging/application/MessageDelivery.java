@@ -67,12 +67,18 @@ public class MessageDelivery {
 
         String linkPath = "/mensajes/" + conversation.getId();
         notifications.create(recipientId, "MESSAGE",
-                "Nuevo mensaje de " + sender.getFullName(),
+                (message.isAutomated() ? sender.getFullName() + " te escribió" : "Nuevo mensaje de " + sender.getFullName()),
                 previewOf(message.getBody()),
                 linkPath);
 
         message.markNotified(now);
         messages.save(message);
+
+        // El saludo al reservar va a la campana, pero no por correo: el correo de la reserva ya salió
+        // con lo mismo, y dos correos por una sola clase es ruido.
+        if (message.isAutomated()) {
+            return Optional.empty();
+        }
 
         return Optional.of(new Delivery(
                 recipient.getEmail(), recipient.getFullName(), sender.getFullName(), conversation.getId()));

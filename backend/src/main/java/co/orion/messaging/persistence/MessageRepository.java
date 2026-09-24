@@ -30,4 +30,7 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
     boolean existsBySenderId(UUID senderId);
 
     List<Message> findByFlaggedReasonIsNotNullOrderByCreatedAtDesc();
+
+    /** Si la reserva ya tiene su saludo (V57: uno por reserva). */
+    boolean existsByBookingIdAndAutomatedTrue(UUID bookingId);
 }

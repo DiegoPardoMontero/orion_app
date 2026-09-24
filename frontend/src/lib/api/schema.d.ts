@@ -292,6 +292,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/practice-items/{id}/skip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["saltar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/practice-items/{id}/pair": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["unirPareja"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/practice-items/{id}/answer": {
         parameters: {
             query?: never;
@@ -1452,6 +1484,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["paraElProfesor"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/professors/me/students/{id}/practice-sets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["historialParaElProfesor"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2877,6 +2925,11 @@ export interface components {
             publishedAt?: string;
             /** Format: date-time */
             lastEditedAt?: string;
+            studentName?: string;
+            /** Format: date-time */
+            classStartsAt?: string;
+            /** Format: date-time */
+            editableUntil?: string;
         };
         PalabraView: {
             term?: string;
@@ -2958,12 +3011,15 @@ export interface components {
             /** Format: int32 */
             index?: number;
             type?: string;
+            category?: string;
             prompt?: string;
             payload?: string;
             /** Format: int32 */
             attempts?: number;
             correct?: boolean;
             closed?: boolean;
+            skipped?: boolean;
+            hint?: string;
             explanation?: string;
             expected?: string;
             answer?: string;
@@ -2992,6 +3048,18 @@ export interface components {
             /** Format: date-time */
             completedAt?: string;
             items?: components["schemas"]["ItemView"][];
+            perfect?: boolean;
+        };
+        ParejaRequest: {
+            term: string;
+            meaning: string;
+        };
+        PairView: {
+            pairCorrect?: boolean;
+            closed?: boolean;
+            /** Format: int32 */
+            attemptsLeft?: number;
+            item?: components["schemas"]["ItemView"];
         };
         RespuestaRequest: {
             answer: string;
@@ -3047,7 +3115,7 @@ export interface components {
             body: string;
         };
         ChangePasswordRequest: {
-            currentPassword: string;
+            currentPassword?: string;
             newPassword: string;
         };
         RefundResponse: {
@@ -3141,6 +3209,7 @@ export interface components {
             /** Format: uuid */
             senderId?: string;
             system?: boolean;
+            automated?: boolean;
             mine?: boolean;
             body?: string;
             flaggedReason?: string;
@@ -3253,6 +3322,7 @@ export interface components {
             photoUrl?: string;
             adultConfirmed?: boolean;
             emailVerified?: boolean;
+            hasPassword?: boolean;
         };
         ResetPasswordRequest: {
             token: string;
@@ -3610,17 +3680,47 @@ export interface components {
             ofrecidasEstaSemana?: number;
             /** Format: int32 */
             completadasEstaSemana?: number;
+            /** Format: int32 */
+            ofrecidasEsteMes?: number;
+            /** Format: int32 */
+            completadasEsteMes?: number;
             leCosto?: string[];
+        };
+        PracticaEnLaFicha: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            lessonNoteId?: string;
+            bookingId?: string;
+            /** Format: date-time */
+            classStartsAt?: string;
+            status?: string;
+            /** Format: int32 */
+            itemCount?: number;
+            /** Format: int32 */
+            correctCount?: number;
+            /** Format: date-time */
+            completedAt?: string;
+            workedOn?: string;
+            stars?: string[];
         };
         EjercicioDelActa: {
             /** Format: int32 */
             index?: number;
             type?: string;
+            category?: string;
             prompt?: string;
             payload?: string;
             expected?: string;
             explanation?: string;
             sourceTerm?: string;
+            firstAnswer?: string;
+            secondAnswer?: string;
+            /** Format: int32 */
+            attempts?: number;
+            correct?: boolean;
+            skipped?: boolean;
+            closed?: boolean;
         };
         PracticaDelActa: {
             /** Format: uuid */
@@ -3630,6 +3730,17 @@ export interface components {
             itemCount?: number;
             /** Format: date-time */
             expiresAt?: string;
+            /** Format: date-time */
+            completedAt?: string;
+            studentName?: string;
+            /** Format: int32 */
+            firstTry?: number;
+            /** Format: int32 */
+            secondTry?: number;
+            /** Format: int32 */
+            shown?: number;
+            /** Format: int32 */
+            skipped?: number;
             items?: components["schemas"]["EjercicioDelActa"][];
         };
         DelProfesor: {
@@ -4814,6 +4925,54 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["SetView"];
+                };
+            };
+        };
+    };
+    saltar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ItemView"];
+                };
+            };
+        };
+    };
+    unirPareja: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ParejaRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PairView"];
                 };
             };
         };
@@ -6730,6 +6889,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["Resumen"];
+                };
+            };
+        };
+    };
+    historialParaElProfesor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PracticaEnLaFicha"][];
                 };
             };
         };

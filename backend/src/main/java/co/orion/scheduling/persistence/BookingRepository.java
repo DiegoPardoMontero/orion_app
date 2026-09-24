@@ -143,4 +143,16 @@ public interface BookingRepository extends JpaRepository<Booking, UUID>,
     boolean studentHasOverlappingBooking(@Param("studentId") UUID studentId,
                                          @Param("startsAt") Instant startsAt,
                                          @Param("endsAt") Instant endsAt);
+
+    /**
+     * Cuántas clases del mismo par se reservaron antes de esta, en estos estados. Cero: es su primera
+     * clase juntos (el saludo al reservar lo dice distinto).
+     */
+    @Query("""
+            select count(b) from Booking b
+             where b.studentId = :studentId and b.professorId = :professorId
+               and b.createdAt < :antesDe and b.status in :estados
+            """)
+    long countEarlierTogether(@Param("studentId") UUID studentId, @Param("professorId") UUID professorId,
+                              @Param("antesDe") Instant antesDe, @Param("estados") Collection<BookingStatus> estados);
 }

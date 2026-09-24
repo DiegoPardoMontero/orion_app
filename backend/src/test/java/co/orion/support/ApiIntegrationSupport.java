@@ -31,6 +31,7 @@ import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.identity.persistence.AdminAuditLogRepository;
 import co.orion.legal.persistence.AgreementAcceptanceRepository;
+import co.orion.messaging.persistence.ConversationRepository;
 import co.orion.identity.persistence.TeacherApplicationRepository;
 import co.orion.identity.persistence.TeacherDocumentRepository;
 import co.orion.identity.persistence.StudentProfileRepository;
@@ -99,6 +100,9 @@ public abstract class ApiIntegrationSupport {
     @Autowired
     private ProfessorSanctionRepository professorSanctions;
 
+    @Autowired
+    private ConversationRepository conversations;
+
     /**
      * Limpia ANTES de que el @BeforeEach de cada test haga users.deleteAll(). Estas tablas
      * referencian a users (y a bookings) SIN cascade, así que si quedaran filas el borrado de
@@ -131,6 +135,10 @@ public abstract class ApiIntegrationSupport {
         professorSanctions.deleteAll();
         disputes.deleteAll();
         rescheduleRequests.deleteAll();
+
+        // Desde el saludo al reservar (24/09/2026) toda reserva confirmada abre una conversación,
+        // y conversations apunta a users sin cascade. Los mensajes caen con ella.
+        conversations.deleteAll();
     }
 
     /**

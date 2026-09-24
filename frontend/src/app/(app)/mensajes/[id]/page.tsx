@@ -210,6 +210,8 @@ function Burbuja({ mensaje }: { mensaje: MessageResponse }) {
       >
         <span>{mensaje.createdAt ? horaBogota(mensaje.createdAt) : ""}</span>
         {mio && mensaje.readAt && <span>· Leído</span>}
+        {/* El saludo al reservar lo escribe Orión a nombre del profe, y se dice. */}
+        {mensaje.automated && <span>· Enviado por Orión ✦</span>}
       </div>
       {flagged && (
         <p

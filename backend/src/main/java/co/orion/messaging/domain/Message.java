@@ -52,6 +52,17 @@ public class Message {
     @Column(name = "is_system", nullable = false)
     private boolean system;
 
+    /**
+     * Lo escribió Orión a nombre del autor: el saludo al reservar (V57). La pantalla lo marca
+     * «Enviado por Orión»; no cuenta como si el profe hubiera escrito a mano.
+     */
+    @Column(name = "automated", nullable = false)
+    private boolean automated;
+
+    /** La reserva a la que saluda, si es el saludo al reservar. Uno por reserva (V57). */
+    @Column(name = "booking_id", updatable = false)
+    private UUID bookingId;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "flagged_reason", length = 40)
     private FlaggedReason flaggedReason;
@@ -85,6 +96,28 @@ public class Message {
         this.bodyOriginal = bodyOriginal;
         this.flaggedReason = flaggedReason;
         this.system = false;
+    }
+
+    /**
+     * El saludo al reservar: a nombre de quien firma (el profe), escrito por Orión, nunca
+     * enmascarado.
+     */
+    public static Message automatic(UUID conversationId, UUID senderId, UUID bookingId, String body) {
+        Message message = new Message();
+        message.conversationId = Objects.requireNonNull(conversationId, "conversationId");
+        message.senderId = Objects.requireNonNull(senderId, "senderId");
+        message.bookingId = Objects.requireNonNull(bookingId, "bookingId");
+        message.body = Objects.requireNonNull(body, "body");
+        message.automated = true;
+        return message;
+    }
+
+    public boolean isAutomated() {
+        return automated;
+    }
+
+    public UUID getBookingId() {
+        return bookingId;
     }
 
     /** Mensaje del sistema: sin autor, nunca enmascarado. */
