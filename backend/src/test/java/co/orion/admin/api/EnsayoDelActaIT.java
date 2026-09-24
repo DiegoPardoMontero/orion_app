@@ -108,7 +108,7 @@ class EnsayoDelActaIT extends ApiIntegrationSupport {
         var clase = bookings.findById(id).orElseThrow();
         assertThat(clase.getStatus()).isEqualTo(BookingStatus.COMPLETED);
         assertThat(clase.getCompletedAt()).isNotNull();
-        assertThat(clase.isTrial()).isTrue();
+        assertThat(clase.isRehearsal()).isTrue();
         assertThat(clase.getLanguageCode()).isEqualTo("EN");
         assertThat(payments.findByBookingId(id)).isEmpty();
     }
@@ -168,7 +168,7 @@ class EnsayoDelActaIT extends ApiIntegrationSupport {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Test
-    @DisplayName("Una clase de prueba no se califica: no puede mover la reputación del profesor")
+    @DisplayName("Un ensayo no se califica: no puede mover la reputación del profesor")
     void noSeCalifica() {
         UUID id = ensayar();
         Session ana = login("ana@orion.test");
@@ -180,7 +180,11 @@ class EnsayoDelActaIT extends ApiIntegrationSupport {
         // Y la agenda se lo dice a la pantalla, para que no ofrezca «Calificar».
         List<Map> pasadas = get("/api/v1/me/bookings?scope=past", ana, List.class).getBody();
         assertThat(pasadas).filteredOn(b -> id.toString().equals(b.get("id")))
-                .singleElement().satisfies(b -> assertThat(b.get("trial")).isEqualTo(true));
+                .singleElement().satisfies(b -> {
+                    assertThat(b.get("rehearsal")).isEqualTo(true);
+                    // Un ensayo no es la clase de prueba de un estudiante (V62).
+                    assertThat(b.get("trial")).isEqualTo(false);
+                });
     }
 
     @SuppressWarnings("rawtypes")

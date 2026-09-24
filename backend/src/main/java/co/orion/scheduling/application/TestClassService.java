@@ -26,7 +26,7 @@ import co.orion.shared.time.ClassLength;
  * tarde de trabajo, y el resultado era que el aula no se probaba. Esto la deja en un clic.
  *
  * <p><strong>Qué NO hace.</strong> No crea pago, no mueve dinero y no toca las ganancias de nadie.
- * La reserva nace confirmada y marcada como {@code is_trial}, que es la bandera que ya existía para
+ * La reserva nace confirmada y marcada como ensayo ({@code is_rehearsal}), que es la bandera que ya existía para
  * exactamente esto. Sin fila en {@code payments} no hay nada que liquidar ni que aparecer en
  * «Mis ganancias»: una prueba no puede contaminar la contabilidad.
  *
@@ -65,7 +65,7 @@ public class TestClassService {
         Booking booking = new Booking(pareja.student().getId(), pareja.professor().getId(),
                 inicio, inicio.plus(ClassLength.DURATION),
                 BookingModality.VIRTUAL, null, null, admin.getId(), inicio);
-        booking.markAsTrial();
+        booking.markAsRehearsal();
         booking.confirmPayment();
 
         Booking saved = guardarOPerderLaCarrera(booking);
@@ -101,7 +101,7 @@ public class TestClassService {
         Instant inicio = fin.minus(ClassLength.DURATION);
         Booking booking = new Booking(pareja.student().getId(), pareja.professor().getId(),
                 inicio, fin, BookingModality.VIRTUAL, null, IDIOMA_DEL_ENSAYO, admin.getId(), inicio);
-        booking.markAsTrial();
+        booking.markAsRehearsal();
         booking.confirmPayment();
         booking.closeWithAttendance(true, ahora);
         return bookings.saveAndFlush(booking);

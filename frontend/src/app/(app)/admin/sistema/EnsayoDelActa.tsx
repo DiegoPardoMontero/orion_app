@@ -50,7 +50,7 @@ export function guardarCorreos(estudiante: string, profesor: string) {
 /**
  * Ensayar el acta y la práctica (Bloque 10) sin dar una clase de una hora.
  *
- * <p>Crea una clase de prueba que ya se dictó y deja escritos los pasos con sus enlaces: el profesor
+ * <p>Crea un ensayo —una clase que ya se dictó— y deja escritos los pasos con sus enlaces: el profesor
  * escribe el acta, el estudiante la lee y resuelve la práctica, y el profesor vuelve a ver los
  * ejercicios. Debajo, en qué va cada ensayo: lo que falla en este recorrido —la práctica que no se
  * genera, una función apagada en Ajustes— no se ve desde ninguna de las pantallas que recorre.
@@ -86,7 +86,7 @@ export function EnsayoDelActa() {
     <section className="mt-10" id="ensayo-del-acta">
       <h2 className="font-display text-h3 font-bold">Ensayar el acta y la práctica</h2>
       <p className="mt-1 text-[13px] leading-relaxed text-text-secondary">
-        Crea una clase de prueba que ya se dictó: el profesor puede escribir el acta en ese mismo momento. No cobra,
+        Crea un ensayo: una clase que ya se dictó, para que el profesor pueda escribir el acta en ese mismo momento. No cobra,
         no manda correos de reserva ni recordatorios, y no cuenta en el porcentaje de actas de nadie.
       </p>
 
@@ -168,7 +168,7 @@ function Pasos({ ensayo }: { ensayo: Ensayo }) {
   const acta = `/mis-clases/${ensayo.bookingId}/acta`;
   return (
     <div className="mt-4 rounded-card bg-success-bg p-4">
-      <p className="text-[13.5px] font-bold text-success">Clase de prueba creada y cerrada.</p>
+      <p className="text-[13.5px] font-bold text-success">Ensayo creado y cerrado.</p>
       <ol className="mt-2.5 grid list-decimal gap-2 pl-5 text-[13px] leading-relaxed text-text-secondary">
         <li>
           Entra como <strong className="text-text">{ensayo.profesorEmail}</strong> y abre{" "}

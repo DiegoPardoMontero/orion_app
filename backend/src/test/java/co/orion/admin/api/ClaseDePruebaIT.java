@@ -76,7 +76,7 @@ class ClaseDePruebaIT extends ApiIntegrationSupport {
 
         var reserva = bookings.findById(id).orElseThrow();
         assertThat(reserva.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
-        assertThat(reserva.isTrial()).isTrue();
+        assertThat(reserva.isRehearsal()).isTrue();
         // El aula, ya asignada: es el enlace que el admin va a abrir.
         assertThat(reserva.getMeetingLink()).isEqualTo("/mis-clases/" + id + "/aula");
         // Y lo importante: ni un peso. Sin fila en payments no hay nada que liquidar.

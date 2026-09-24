@@ -115,7 +115,7 @@ public class AvisosDeClase {
 
     private void pedirCalificacion(UUID bookingId) {
         seguro("clase terminada " + bookingId, () -> bookings.findById(bookingId)
-                .filter(b -> !b.isTrial() && !reviews.existsByBookingId(b.getId()))
+                .filter(b -> !b.isRehearsal() && !reviews.existsByBookingId(b.getId()))
                 .ifPresent(b -> notifications.create(b.getStudentId(), "RATE_REQUEST",
                         "¿Cómo te fue con " + nombre(b.getProfessorId()) + "?",
                         "Califica tu clase: +20 puntos, y le ayudas a quien busca profe.",

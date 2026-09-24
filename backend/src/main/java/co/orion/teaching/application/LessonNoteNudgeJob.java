@@ -68,7 +68,7 @@ public class LessonNoteNudgeJob {
         Instant cerradasAntesDe = ahora.minus(Duration.ofMinutes(settings.getInt("lesson_note_nudge_minutes")));
         List<Object[]> pendientes = jdbc.query("""
                 select b.id, b.professor_id, b.student_id from bookings b
-                where b.status = 'COMPLETED' and b.note_nudge_sent_at is null and not b.is_trial
+                where b.status = 'COMPLETED' and b.note_nudge_sent_at is null and not b.is_rehearsal
                   and b.completed_at < ? and b.completed_at >= ?
                   and not exists (select 1 from lesson_notes n where n.booking_id = b.id)
                 for update skip locked

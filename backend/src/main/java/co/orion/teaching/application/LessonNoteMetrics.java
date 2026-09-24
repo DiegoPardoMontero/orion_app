@@ -39,7 +39,7 @@ public class LessonNoteMetrics {
      * Las clases de prueba no cuentan: un ensayo del acta desde Sistema no puede mover el porcentaje
      * de nadie. El gasto y los resultados de la IA sí incluyen los ensayos, porque son llamadas reales.
      */
-    private static final String SIN_ENSAYOS = " and booking_id not in (select id from bookings where is_trial)";
+    private static final String SIN_ENSAYOS = " and booking_id not in (select id from bookings where is_rehearsal)";
 
     private final JdbcTemplate jdbc;
     private final TeachingAiBudget presupuesto;
@@ -70,11 +70,11 @@ public class LessonNoteMetrics {
 
         long generadas = contar("select count(*) from lesson_notes where created_at >= ? and created_at < ?" + SIN_ENSAYOS, hoy, manana);
         long publicadas = contar("select count(*) from lesson_notes where published_at >= ? and published_at < ?" + SIN_ENSAYOS, hoy, manana);
-        long cerradas = contar("select count(*) from bookings where status = 'COMPLETED' and completed_at >= ? and not is_trial", desde);
+        long cerradas = contar("select count(*) from bookings where status = 'COMPLETED' and completed_at >= ? and not is_rehearsal", desde);
         long conActa = contar("""
                 select count(*) from bookings b join lesson_notes n on n.booking_id = b.id
                 where b.status = 'COMPLETED' and b.completed_at >= ? and n.status = 'PUBLISHED'
-                  and not b.is_trial
+                  and not b.is_rehearsal
                 """, desde);
         long sinEditar = contar("""
                 select count(*) from lesson_notes
@@ -109,12 +109,12 @@ public class LessonNoteMetrics {
         Instant desde = desde(DIAS_DEL_PROFESOR);
         long cerradas = contar("""
                 select count(*) from bookings
-                where professor_id = ? and status = 'COMPLETED' and completed_at >= ? and not is_trial
+                where professor_id = ? and status = 'COMPLETED' and completed_at >= ? and not is_rehearsal
                 """, profesorId, desde);
         long conActa = contar("""
                 select count(*) from bookings b join lesson_notes n on n.booking_id = b.id
                 where b.professor_id = ? and b.status = 'COMPLETED' and b.completed_at >= ?
-                  and n.status = 'PUBLISHED' and not b.is_trial
+                  and n.status = 'PUBLISHED' and not b.is_rehearsal
                 """, profesorId, desde);
         return new DelProfesor(cerradas, conActa, DIAS_DEL_PROFESOR);
     }

@@ -68,7 +68,7 @@ public class RehearsalService {
                   join users p on p.id = b.professor_id
                   left join lesson_notes n on n.booking_id = b.id
                   left join practice_sets ps on ps.lesson_note_id = n.id
-                 where b.is_trial and b.status = 'COMPLETED' and b.completed_at >= ?
+                 where b.is_rehearsal and b.status = 'COMPLETED' and b.completed_at >= ?
                  order by b.completed_at desc
                  limit 6
                 """, (rs, i) -> new Ensayo(

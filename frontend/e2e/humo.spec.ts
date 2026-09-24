@@ -185,6 +185,53 @@ test("un estudiante nuevo se registra desde el login y aterriza dentro", async (
 });
 
 /**
+ * La clase de prueba (Q7): María la ofrece gratis desde su perfil y una estudiante nueva —que aún
+ * no tiene clases con ella— la reserva; sin pasarela, queda confirmada y marcada como prueba.
+ */
+test("María ofrece una clase de prueba gratis y una estudiante nueva la reserva", async ({ page }) => {
+  await login(page, USERS.maria);
+  await page.goto("/perfil");
+  await page.getByRole("button", { name: "Editar mi perfil" }).click();
+  // El interruptor nace encendido, pero sin precio no es una oferta.
+  await page.locator("#precio-prueba").fill("0");
+  await page.getByRole("button", { name: "Guardar cambios" }).click();
+  await expect(page.getByText("Listo, tu perfil quedó actualizado.")).toBeVisible();
+  await logout(page);
+
+  await page.goto("/login");
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("link", { name: "Crea tu cuenta" }).click();
+  const email = `prueba.${Date.now()}@orion.local`;
+  await page.locator("#nombre").fill("Pía Prueba");
+  await page.locator("#email").fill(email);
+  await page.locator("#password").fill("orion123*");
+  await aceptarCondiciones(page);
+  await page.getByRole("button", { name: "Crear cuenta" }).click();
+  await expect(page).toHaveURL(/\/profesores/);
+  await saltarRecorrido(page);
+  await verificarCorreo(page, email);
+
+  await page.goto("/profesores");
+  await page.getByRole("link", { name: /Ver agenda/ }).first().click();
+  await page.waitForURL(/\/profesores\/[0-9a-f-]+$/);
+  const perfilDeMaria = new URL(page.url()).pathname;
+  await expect(page.getByText("Clase de prueba gratis")).toBeVisible();
+  await expect(page.getByText("Cupos disponibles")).toBeVisible();
+  await page.locator("main .grid-cols-3 button").first().click();
+  await page.getByRole("button", { name: /^Clase de prueba/ }).click();
+  await page.getByRole("button", { name: "Confirmar reserva" }).click();
+
+  await expect(page).toHaveURL(/\/mis-clases/);
+  await expect(page.getByText("Clase de prueba").first()).toBeVisible();
+
+  // Una sola por pareja: de vuelta en el perfil de María ya no se ofrece. Se entra por la dirección
+  // y no con un clic: la celebración de «Primera reserva» puede estar encima.
+  await page.goto(perfilDeMaria);
+  await expect(page.getByText("Cupos disponibles")).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Clase de prueba/ })).toHaveCount(0);
+});
+
+/**
  * Sin cuenta (decisión del 23/09/2026): el catálogo y el perfil de un profesor se ven —es el enlace
  * que el profesor comparte en sus redes—, y reservar pide entrar; al entrar, se vuelve al mismo
  * perfil, ya con su agenda.
@@ -608,7 +655,7 @@ test("el admin ensaya el acta: María la escribe y ve los ejercicios que saliero
   await ensayo.getByPlaceholder("estudiante@correo.com").fill(USERS.ana.email);
   await ensayo.getByPlaceholder("profesor@correo.com").fill(USERS.maria.email);
   await ensayo.getByRole("button", { name: "Crear clase ya dictada" }).click();
-  await expect(ensayo.getByText("Clase de prueba creada y cerrada.")).toBeVisible();
+  await expect(ensayo.getByText("Ensayo creado y cerrado.")).toBeVisible();
   const acta = await ensayo.getByRole("link", { name: "el acta de la clase" }).getAttribute("href");
   expect(acta).toMatch(/^\/mis-clases\/[\w-]+\/acta$/);
   await logout(page);

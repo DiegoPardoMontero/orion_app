@@ -40,16 +40,17 @@ public class AvisosDeReserva {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onCreated(BookingCreatedEvent event) {
         Booking b = bookings.findById(event.bookingId()).orElse(null);
-        if (b == null || b.isTrial()) {
+        if (b == null || b.isRehearsal()) {
             return;
         }
         String cuando = cuando(b);
         String enlace = "/mis-clases?clase=" + b.getId();
+        String clase = b.isTrial() ? "clase de prueba" : "clase";
         notifications.create(b.getStudentId(), "BOOKING_CREATED",
-                "Tu clase con " + nombre(b.getProfessorId()) + " quedó agendada",
+                "Tu " + clase + " con " + nombre(b.getProfessorId()) + " quedó agendada",
                 capital(cuando) + ". Entras desde «Mis clases» a la hora de la clase.", enlace);
         notifications.create(b.getProfessorId(), "BOOKING_RECEIVED",
-                "Nueva clase con " + nombre(b.getStudentId()),
+                (b.isTrial() ? "Nueva clase de prueba con " : "Nueva clase con ") + nombre(b.getStudentId()),
                 capital(cuando) + ". Ya está en tu agenda.", enlace);
     }
 
@@ -57,7 +58,7 @@ public class AvisosDeReserva {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onCancelled(BookingCancelledEvent event) {
         Booking b = bookings.findById(event.bookingId()).orElse(null);
-        if (b == null || b.isTrial()) {
+        if (b == null || b.isRehearsal()) {
             return;
         }
         UUID quien = b.getCancelledBy();

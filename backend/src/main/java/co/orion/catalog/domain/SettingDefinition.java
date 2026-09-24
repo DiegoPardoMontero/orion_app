@@ -32,6 +32,10 @@ public enum SettingDefinition {
     PAYMENT_HOLD_MINUTES("payment_hold_minutes", Grupo.DINERO, Tipo.ENTERO,
             "Minutos para pagar",
             "Cuánto tiempo se aparta el cupo mientras el estudiante paga.", 5, 120, false),
+    TRIAL_MIN_PRICE_COP("trial_min_price_cop", Grupo.DINERO, Tipo.ENTERO,
+            "Precio mínimo de una clase de prueba",
+            "En pesos. Una clase de prueba cuesta 0 (gratis) o entre esto y la tarifa del profesor. "
+                    + "Por debajo de 1.500 la pasarela no puede cobrar.", 1500, 500_000, false),
 
     // ---------------------------------------------------------------------------- plazos
     STUDENT_CANCEL_HOURS("student_cancel_hours", Grupo.PLAZOS, Tipo.ENTERO,

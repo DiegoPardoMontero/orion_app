@@ -24,6 +24,7 @@ public record ProfileResponse(
         String education,
         boolean certified,
         boolean acceptsTrial,
+        Long trialPriceCop,
         Long hourlyRateCop,
         String compensationModel,
         List<ProfileLanguage> languages,

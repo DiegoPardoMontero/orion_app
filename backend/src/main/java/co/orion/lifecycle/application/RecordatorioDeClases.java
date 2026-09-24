@@ -81,7 +81,7 @@ public class RecordatorioDeClases {
         // Las de prueba del admin no se recuerdan: son ensayos del aula, no clases de nadie.
         for (UUID id : jdbc.queryForList("""
                 select b.id from bookings b
-                 where b.status = 'CONFIRMED' and not b.is_trial
+                 where b.status = 'CONFIRMED' and not b.is_rehearsal
                    and b.starts_at > ? and b.starts_at <= ?
                    and b.created_at <= b.starts_at - interval '24 hours'
                    and not exists (select 1 from booking_reminders r where r.booking_id = b.id and r.kind = 'DAY_BEFORE')
@@ -91,7 +91,7 @@ public class RecordatorioDeClases {
 
         for (UUID id : jdbc.queryForList("""
                 select b.id from bookings b
-                 where b.status = 'CONFIRMED' and not b.is_trial
+                 where b.status = 'CONFIRMED' and not b.is_rehearsal
                    and b.starts_at > ? and b.starts_at <= ?
                    and b.created_at <= ?
                    and not exists (select 1 from booking_reminders r where r.booking_id = b.id and r.kind = 'HOUR_BEFORE')
@@ -101,7 +101,7 @@ public class RecordatorioDeClases {
 
         for (UUID id : jdbc.queryForList("""
                 select b.id from bookings b
-                 where b.status = 'COMPLETED' and not b.is_trial
+                 where b.status = 'COMPLETED' and not b.is_rehearsal
                    and b.starts_at <= ? and b.starts_at > ?
                    and not exists (select 1 from reviews v where v.booking_id = b.id)
                    and not exists (select 1 from booking_reminders r where r.booking_id = b.id and r.kind = 'RATE')

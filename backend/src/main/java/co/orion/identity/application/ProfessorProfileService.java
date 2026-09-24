@@ -1,7 +1,9 @@
 package co.orion.identity.application;
 
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -41,6 +43,7 @@ import co.orion.shared.error.UnprocessableException;
 public class ProfessorProfileService {
 
     private static final String COMMISSION_KEY = "commission_rate_bps";
+    private static final String TRIAL_MIN_KEY = "trial_min_price_cop";
 
     private final ProfessorProfileRepository profiles;
     private final UserRepository users;
@@ -156,6 +159,45 @@ public class ProfessorProfileService {
         return breakdown(hourlyRateCop);
     }
 
+    /**
+     * La clase de prueba (Q7): si la ofrece y su precio. 0 es gratis; si no, entre el piso de
+     * {@code trial_min_price_cop} y su propia tarifa —una prueba más cara que la clase normal no es
+     * una prueba—. Con tarifa 0, la prueba también es gratis.
+     */
+    @Transactional
+    public ProfileResponse setTrial(UUID professorId, boolean acepta, Long precioCop) {
+        ProfessorProfile profile = profiles.findByIdWithUser(professorId)
+                .orElseGet(() -> createEmptyProfileFor(professorId));
+        if (precioCop != null) {
+            requireValidTrialPrice(precioCop, profile.getHourlyRateCop());
+        }
+        // Encendido y sin precio se guarda tal cual: no es una oferta hasta que tenga precio
+        // (offersTrial), y guardar otra cosa del perfil nunca puede fallar por esto.
+        profile.changeTrial(acepta, precioCop);
+        profiles.save(profile);
+        return toOwnResponse(profile);
+    }
+
+    private void requireValidTrialPrice(long precio, Long tarifa) {
+        if (precio == 0) {
+            return;
+        }
+        if (tarifa == null) {
+            throw new UnprocessableException("Fija primero tu tarifa por hora: la prueba no puede costar más que ella.");
+        }
+        long piso = settings.getInt(TRIAL_MIN_KEY);
+        if (precio < piso || precio > tarifa) {
+            throw new UnprocessableException(tarifa == 0
+                    ? "Tus clases son gratuitas: la de prueba también tiene que serlo (0)."
+                    : "La clase de prueba cuesta 0 (gratis) o entre " + pesos(piso) + " y tu tarifa, "
+                            + pesos(tarifa) + ".");
+        }
+    }
+
+    private static String pesos(long cop) {
+        return "$" + NumberFormat.getIntegerInstance(Locale.forLanguageTag("es-CO")).format(cop);
+    }
+
     @Transactional(readOnly = true)
     public RateBreakdownResponse ratePreview(long hourlyRateCop) {
         return breakdown(hourlyRateCop);
@@ -181,7 +223,8 @@ public class ProfessorProfileService {
                 profile.getYearsExperience(),
                 profile.getEducation(),
                 profile.isCertified(),
-                profile.acceptsTrial(),
+                profile.offersTrial(),
+                profile.offersTrial() ? profile.getTrialPriceCop() : null,
                 profile.getHourlyRateCop(),
                 rating.ratingAvg(),
                 rating.ratingCount(),
@@ -317,6 +360,7 @@ public class ProfessorProfileService {
                 profile.getEducation(),
                 profile.isCertified(),
                 profile.acceptsTrial(),
+                profile.getTrialPriceCop(),
                 profile.getHourlyRateCop(),
                 profile.getCompensationModel().name(),
                 id == null ? List.of() : loadLanguages(id),

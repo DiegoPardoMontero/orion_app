@@ -199,7 +199,7 @@ function EnsayoDelAula() {
       <h2 className="font-display text-h3 font-bold">Ensayar el aula</h2>
       <p className="mt-1 text-[13px] leading-relaxed text-text-secondary">
         Crea una clase confirmada entre dos cuentas para probar la videollamada. No cobra, no manda
-        correos y no cuenta en las ganancias de nadie: queda marcada como clase de prueba.
+        correos y no cuenta en las ganancias de nadie: queda marcada como ensayo.
       </p>
 
       <Tarjeta className="mt-3">
@@ -250,12 +250,12 @@ function EnsayoDelAula() {
           disabled={!estudiante.trim() || !profesor.trim() || crear.isPending}
           onClick={() => crear.mutate()}
         >
-          {crear.isPending ? "Creando…" : "Crear clase de prueba"}
+          {crear.isPending ? "Creando…" : "Crear el ensayo"}
         </Boton>
 
         {crear.data && (
           <div className="mt-4 rounded-card bg-success-bg p-4">
-            <p className="text-[13.5px] font-bold text-success">Clase de prueba creada.</p>
+            <p className="text-[13.5px] font-bold text-success">Ensayo creado.</p>
             <p className="mt-1 text-[13px] text-text-secondary">
               {new Date(crear.data.startsAt).toLocaleString("es-CO", { timeZone: "America/Bogota" })}
               {" · "}

@@ -37,5 +37,14 @@ public record CreateBookingRequest(
         @Size(max = 5)
         String languageCode,
 
-        UUID studentId) {
+        UUID studentId,
+
+        /** Reservarla como clase de prueba (Q7). Ausente o falso: una clase normal. */
+        Boolean trial) {
+
+    /** La forma de siempre, sin clase de prueba. */
+    public CreateBookingRequest(UUID professorId, OffsetDateTime startsAt, String modality, String locationNote,
+                                String languageCode, UUID studentId) {
+        this(professorId, startsAt, modality, locationNote, languageCode, studentId, null);
+    }
 }

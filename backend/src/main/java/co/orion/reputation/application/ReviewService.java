@@ -176,10 +176,11 @@ public class ReviewService {
     // --- helpers ---
 
     private void assertReviewable(Booking booking, Instant now) {
-        // Una clase de prueba la crea el admin para ensayar el aula o el acta, a veces con un
-        // profesor de verdad: calificarla movería su reputación por una clase que no existió.
-        if (booking.isTrial()) {
-            throw new UnprocessableException("Las clases de prueba no se califican.");
+        // Un ensayo lo crea el admin para probar el aula o el acta, a veces con un profesor de
+        // verdad: calificarlo movería su reputación por una clase que no existió. La clase de prueba
+        // de un estudiante (V62) sí se califica: es una clase.
+        if (booking.isRehearsal()) {
+            throw new UnprocessableException("Los ensayos no se califican.");
         }
         BookingStatus status = booking.getStatus();
         boolean occurred = status == BookingStatus.CONFIRMED || status == BookingStatus.COMPLETED;

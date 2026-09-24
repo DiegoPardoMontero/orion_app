@@ -16,6 +16,7 @@ import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.catalog.application.PlatformSettingsService;
 import co.orion.identity.persistence.ProfessorLanguageRepository;
+import co.orion.identity.persistence.ProfessorProfileRepository;
 import co.orion.identity.persistence.UserRepository;
 import co.orion.scheduling.domain.Booking;
 import co.orion.scheduling.domain.BookingCancelledEvent;
@@ -41,10 +42,14 @@ public class BookingService {
     private static final String STUDENT_WINDOW = "student_cancel_hours";
     private static final String PROFESSOR_WINDOW = "professor_cancel_hours";
 
+    /** El índice de la V62: una clase de prueba por pareja estudiante–profesor. */
+    private static final String UNA_PRUEBA_POR_PAREJA = "ux_bookings_una_prueba_por_pareja";
+
     private final BookingRepository bookings;
     private final UserRepository users;
     private final SlotQueryService slots;
     private final ProfessorLanguageRepository professorLanguages;
+    private final ProfessorProfileRepository professorProfiles;
     private final MeetingLinkProvider meetingLinks;
     private final PaymentInitiator payments;
     private final PlatformSettingsService settings;
@@ -55,6 +60,7 @@ public class BookingService {
                           UserRepository users,
                           SlotQueryService slots,
                           ProfessorLanguageRepository professorLanguages,
+                          ProfessorProfileRepository professorProfiles,
                           MeetingLinkProvider meetingLinks,
                           PaymentInitiator payments,
                           PlatformSettingsService settings,
@@ -64,6 +70,7 @@ public class BookingService {
         this.users = users;
         this.slots = slots;
         this.professorLanguages = professorLanguages;
+        this.professorProfiles = professorProfiles;
         this.meetingLinks = meetingLinks;
         this.payments = payments;
         this.settings = settings;
@@ -104,6 +111,24 @@ public class BookingService {
                              String locationNote,
                              String requestedLanguage,
                              UUID requestedStudentId) {
+        return create(actor, professorId, startsAt, modalityName, locationNote, requestedLanguage,
+                requestedStudentId, false);
+    }
+
+    /**
+     * Con {@code trial}, la reserva es la clase de prueba (Q7): el profesor tiene que ofrecerla, y
+     * es para conocerse — si el estudiante ya tiene o tuvo clases con él, no hay prueba que hacer.
+     * Una por pareja: el chequeo amable está aquí y el árbitro final es el índice de la V62.
+     */
+    @Transactional
+    public NewBooking create(User actor,
+                             UUID professorId,
+                             Instant startsAt,
+                             String modalityName,
+                             String locationNote,
+                             String requestedLanguage,
+                             UUID requestedStudentId,
+                             boolean trial) {
         UUID studentId = resolveStudent(actor, requestedStudentId);
         requireAdulthood(actor);
         requireVerifiedEmail(actor);
@@ -119,9 +144,16 @@ public class BookingService {
 
         // locationNote describía dónde verse en persona. Sin presencial no tiene sentido, y
         // guardarlo pondría una dirección en una clase a la que se entra por un enlace.
+        if (trial) {
+            requireTrialIsPossible(studentId, professorId);
+        }
+
         Booking booking = new Booking(studentId, professorId, startsAt, endsAt, modality,
                 null, resolveLanguage(professorId, requestedLanguage), actor.getId(),
                 payments.holdExpiry(clock.instant()));
+        if (trial) {
+            booking.markAsTrial();
+        }
 
         Booking saved = saveOrLoseTheRace(booking);
         PaymentTicket ticket = payments.initiate(saved);
@@ -364,7 +396,51 @@ public class BookingService {
         try {
             return bookings.saveAndFlush(booking);
         } catch (DataIntegrityViolationException ex) {
+            if (String.valueOf(ex.getMostSpecificCause().getMessage()).contains(UNA_PRUEBA_POR_PAREJA)) {
+                throw new ConflictException("Ya tienes una clase de prueba con este profesor.");
+            }
             throw new ConflictException("Alguien acaba de tomar este cupo");
+        }
+    }
+
+    /**
+     * La clase de prueba de este estudiante con este profesor: si la ofrece, a qué precio, y si le
+     * toca. {@code motivo} dice por qué no, en palabras, cuando no.
+     */
+    public record Prueba(boolean ofrecida, Long precioCop, boolean disponible, String motivo) {
+    }
+
+    @Transactional(readOnly = true)
+    public Prueba pruebaCon(UUID studentId, UUID professorId) {
+        Long precio = professorProfiles.findById(professorId)
+                .filter(p -> p.offersTrial())
+                .map(p -> p.getTrialPriceCop())
+                .orElse(null);
+        if (precio == null) {
+            return new Prueba(false, null, false, "Este profesor no ofrece clase de prueba.");
+        }
+        // Una prueba a medio pagar todavía aparta su lugar: se dice así, y no «ya tienes clases».
+        if (bookings.existsByStudentIdAndProfessorIdAndTrialTrueAndStatus(studentId, professorId,
+                BookingStatus.PENDING_PAYMENT)) {
+            return new Prueba(true, precio, false, "Ya reservaste tu clase de prueba con este profesor y está "
+                    + "esperando el pago. Si no la pagas, en unos minutos se libera y puedes volver a reservarla.");
+        }
+        // Una prueba dictada o a la que faltó el estudiante cuenta; lo mismo que cualquier clase
+        // normal con él: la prueba es para conocerse.
+        if (bookings.countEarlierTogether(studentId, professorId, clock.instant().plusSeconds(1),
+                List.of(BookingStatus.PENDING_PAYMENT, BookingStatus.CONFIRMED, BookingStatus.UNDER_REVIEW,
+                        BookingStatus.COMPLETED, BookingStatus.NO_SHOW_STUDENT)) > 0) {
+            return new Prueba(true, precio, false,
+                    "La clase de prueba es para conocer al profesor, y tú ya tienes clases con él.");
+        }
+        return new Prueba(true, precio, true, null);
+    }
+
+    /** El chequeo amable de la clase de prueba; la regla de fondo la guarda el índice de la V62. */
+    private void requireTrialIsPossible(UUID studentId, UUID professorId) {
+        Prueba prueba = pruebaCon(studentId, professorId);
+        if (!prueba.disponible()) {
+            throw new UnprocessableException(prueba.motivo());
         }
     }
 

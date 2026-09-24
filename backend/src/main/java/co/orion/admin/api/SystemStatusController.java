@@ -50,7 +50,7 @@ public class SystemStatusController {
 
     /**
      * Crea una clase de prueba para ensayar el aula. No cobra, no manda correos y no cuenta en las
-     * ganancias: nace confirmada y marcada como {@code is_trial}.
+     * ganancias: nace confirmada y marcada como ensayo ({@code is_rehearsal}).
      */
     @PostMapping("/test-class")
     @ResponseStatus(HttpStatus.CREATED)

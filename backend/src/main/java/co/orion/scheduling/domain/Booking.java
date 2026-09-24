@@ -72,7 +72,18 @@ public class Booking {
     @Column(name = "language_code", length = 5)
     private String languageCode;
 
-    /** Clase de prueba (Q7). La columna existe desde la V16; el flujo que la enciende no. */
+    /**
+     * Ensayo del aula o del acta que lanza un administrador (se llamaba {@code is_trial} hasta la
+     * V62). No cobra, no avisa, no se califica y no cuenta como trabajo hecho.
+     */
+    @Column(name = "is_rehearsal", nullable = false)
+    private boolean rehearsal;
+
+    /**
+     * La clase de prueba del estudiante (Q7, V62): con el precio de prueba del profesor, la misma
+     * comisión y una por pareja estudiante–profesor. Es una clase de verdad: avisa, se califica y
+     * da puntos.
+     */
     @Column(name = "is_trial", nullable = false)
     private boolean trial;
 
@@ -326,15 +337,23 @@ public class Booking {
         return meetingLink;
     }
 
+    public boolean isRehearsal() {
+        return rehearsal;
+    }
+
+    /**
+     * Marca la reserva como ensayo del administrador: es lo que la deja fuera de las ganancias y del
+     * ranking sin inventar un estado nuevo — un ensayo no mueve dinero ni es trabajo hecho.
+     */
+    public void markAsRehearsal() {
+        this.rehearsal = true;
+    }
+
     public boolean isTrial() {
         return trial;
     }
 
-    /**
-     * Marca la reserva como clase de prueba. Hoy solo lo usa el ensayo del aula que lanza un
-     * administrador: es lo que la deja fuera de las ganancias y del ranking sin inventar un estado
-     * nuevo — una clase de prueba no mueve dinero y no debería contar como trabajo hecho.
-     */
+    /** La marca como clase de prueba del estudiante. Solo al crearla: después ya no cambia. */
     public void markAsTrial() {
         this.trial = true;
     }

@@ -34,7 +34,9 @@ public record MyBookingResponse(UUID id,
                                 /** Dentro de la ventana: se puede cancelar, pero con consecuencia. */
                                 boolean lateCancel,
                                 Counterpart counterpart,
-                                /** Clase de prueba del admin (aula o ensayo del acta): no se califica. */
+                                /** Ensayo del admin (aula o acta): no se califica ni cuenta. */
+                                boolean rehearsal,
+                                /** La clase de prueba del estudiante (Q7): una clase de verdad, a precio de prueba. */
                                 boolean trial) {
 
     /**
@@ -68,6 +70,7 @@ public record MyBookingResponse(UUID id,
                 !booking.getStatus().isTerminal(),
                 booking.isConfirmed() && !booking.isCancellableAt(now, cancellationWindow),
                 Counterpart.of(counterpart, counterpartPhotoUrl, counterpartHeadline),
+                booking.isRehearsal(),
                 booking.isTrial());
     }
 }

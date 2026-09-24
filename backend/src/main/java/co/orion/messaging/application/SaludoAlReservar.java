@@ -93,7 +93,7 @@ public class SaludoAlReservar {
     /** Escribe el saludo, si la reserva sigue en pie y no tiene uno. Corre dentro de una transacción. */
     void saludar(UUID bookingId) {
         Booking reserva = bookings.findById(bookingId).orElse(null);
-        if (reserva == null || reserva.getStatus() != BookingStatus.CONFIRMED || reserva.isTrial()
+        if (reserva == null || reserva.getStatus() != BookingStatus.CONFIRMED || reserva.isRehearsal()
                 || messages.existsByBookingIdAndAutomatedTrue(bookingId)) {
             return;
         }
@@ -104,10 +104,15 @@ public class SaludoAlReservar {
         }
         boolean primera = bookings.countEarlierTogether(reserva.getStudentId(), reserva.getProfessorId(),
                 reserva.getCreatedAt(), List.of(BookingStatus.CONFIRMED, BookingStatus.COMPLETED)) == 0;
-        String cuerpo = texto(FechasEnPalabras.primerNombre(estudiante.getFullName()),
-                FechasEnPalabras.primerNombre(profe.getFullName()),
-                FechasEnPalabras.dia(reserva.getStartsAt()), FechasEnPalabras.hora(reserva.getStartsAt()),
-                primera, objetivoDe(estudiante.getId()));
+        String cuerpo = reserva.isTrial()
+                ? textoDePrueba(FechasEnPalabras.primerNombre(estudiante.getFullName()),
+                        FechasEnPalabras.primerNombre(profe.getFullName()),
+                        FechasEnPalabras.dia(reserva.getStartsAt()), FechasEnPalabras.hora(reserva.getStartsAt()),
+                        objetivoDe(estudiante.getId()))
+                : texto(FechasEnPalabras.primerNombre(estudiante.getFullName()),
+                        FechasEnPalabras.primerNombre(profe.getFullName()),
+                        FechasEnPalabras.dia(reserva.getStartsAt()), FechasEnPalabras.hora(reserva.getStartsAt()),
+                        primera, objetivoDe(estudiante.getId()));
 
         Conversation conversacion = conversations
                 .findByStudentIdAndProfessorId(reserva.getStudentId(), reserva.getProfessorId())
@@ -142,6 +147,19 @@ public class SaludoAlReservar {
                     .append(hora).append(" (hora de Colombia). Si hay algo que quieras repasar de la última,"
                             + " cuéntamelo por aquí. ¡Nos vemos!");
         }
+        return t.toString();
+    }
+
+    /** El de la clase de prueba: es para conocerse, y el saludo lo dice. */
+    static String textoDePrueba(String estudiante, String profe, String dia, String hora, String objetivo) {
+        StringBuilder t = new StringBuilder();
+        t.append("¡Hola, ").append(estudiante).append("! ⭐ Soy ").append(profe)
+                .append(". Te confirmo nuestra clase de prueba: el ").append(dia).append(" a las ").append(hora)
+                .append(" (hora de Colombia). Es para conocernos: veremos tu nivel y lo que buscas");
+        if (objetivo != null) {
+            t.append(" —vi en tu ficha que lo quieres para ").append(objetivo).append("—");
+        }
+        t.append(", y te cuento cómo trabajaría contigo. Si quieres adelantarme algo, escríbeme por aquí. ¡Nos vemos!");
         return t.toString();
     }
 

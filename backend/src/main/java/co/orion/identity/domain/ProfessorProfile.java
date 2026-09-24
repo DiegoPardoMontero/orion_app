@@ -87,6 +87,10 @@ public class ProfessorProfile {
     @Column(name = "accepts_trial", nullable = false)
     private boolean acceptsTrial;
 
+    /** Lo que cuesta su clase de prueba (V62): 0 es gratis; sin precio, no la ofrece todavía. */
+    @Column(name = "trial_price_cop")
+    private Long trialPriceCop;
+
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
@@ -244,6 +248,26 @@ public class ProfessorProfile {
 
     public boolean isCertified() {
         return certified;
+    }
+
+    /** Fija la clase de prueba: si la ofrece y a qué precio. Las reglas del precio las valida el servicio. */
+    public void changeTrial(boolean acepta, Long precioCop) {
+        this.acceptsTrial = acepta;
+        if (precioCop != null) {
+            this.trialPriceCop = precioCop;
+        }
+    }
+
+    public Long getTrialPriceCop() {
+        return trialPriceCop;
+    }
+
+    /**
+     * Si un estudiante puede reservarle una clase de prueba: el interruptor encendido <em>y</em> un
+     * precio fijado. El interruptor solo, que nace encendido, no es una oferta: no dice cuánto cuesta.
+     */
+    public boolean offersTrial() {
+        return acceptsTrial && trialPriceCop != null;
     }
 
     public boolean acceptsTrial() {

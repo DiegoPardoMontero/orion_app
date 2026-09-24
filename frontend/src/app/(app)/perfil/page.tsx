@@ -80,6 +80,9 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
   const [education, setEducation] = useState(inicial.education ?? "");
   const [certified, setCertified] = useState(inicial.certified ?? false);
   const [acceptsTrial, setAcceptsTrial] = useState(inicial.acceptsTrial ?? false);
+  // El precio de la clase de prueba (Q7): 0 es gratis. Sin precio no se ofrece, aunque el
+  // interruptor esté encendido.
+  const [precioPrueba, setPrecioPrueba] = useState(inicial.trialPriceCop != null ? String(inicial.trialPriceCop) : "");
   const [langs, setLangs] = useState<LangEdit[]>(
     (inicial.languages ?? []).map((l) => ({
       code: l.code ?? "",
@@ -106,6 +109,7 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
     setEducation(inicial.education ?? "");
     setCertified(inicial.certified ?? false);
     setAcceptsTrial(inicial.acceptsTrial ?? false);
+    setPrecioPrueba(inicial.trialPriceCop != null ? String(inicial.trialPriceCop) : "");
     setLangs((inicial.languages ?? []).map((l) => ({
       code: l.code ?? "",
       isNative: l.isNative ?? false,
@@ -116,8 +120,8 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
   }
 
   const guardar = useMutation({
-    mutationFn: () =>
-      apiFetch<ProfileResponse>("/api/v1/me/profile", {
+    mutationFn: async () => {
+      const perfil = await apiFetch<ProfileResponse>("/api/v1/me/profile", {
         method: "PUT",
         body: {
           headline: headline.trim() || undefined,
@@ -135,7 +139,21 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
           goals,
           isPublished: publicado,
         },
-      }),
+      });
+      // La clase de prueba va por su propia ruta, como la tarifa: su precio tiene reglas propias
+      // (0, o entre el mínimo y la tarifa) y el error tiene que decir cuáles.
+      const precio = precioPrueba.trim() === "" ? null : Number(precioPrueba.replace(/\D/g, ""));
+      // Solo si cambió algo de la prueba: guardar la bio nunca puede fallar por el precio de prueba.
+      const cambioLaPrueba =
+        acceptsTrial !== (inicial.acceptsTrial ?? false) || precio !== (inicial.trialPriceCop ?? null);
+      if (cambioLaPrueba) {
+        return apiFetch<ProfileResponse>("/api/v1/me/profile/trial", {
+          method: "PUT",
+          body: { acceptsTrial, trialPriceCop: precio },
+        });
+      }
+      return perfil;
+    },
     onSuccess: (actualizado) => {
       queryClient.setQueryData(["me", "profile"], actualizado);
       setCanPublish(actualizado.canPublish ?? false);
@@ -411,6 +429,30 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
           </span>
           <Toggle activo={acceptsTrial} onCambio={setAcceptsTrial} etiqueta="Clase de prueba" />
         </label>
+        {acceptsTrial && (
+          <div className="rounded-card bg-surface-raised p-4 shadow-sm">
+            <label htmlFor="precio-prueba" className="block text-[13px] font-bold text-text">
+              Precio de la clase de prueba
+            </label>
+            <p className="mt-0.5 text-[12.5px] text-text-muted">
+              0 si es gratis. Es una por estudiante, para conocerse; Orión cobra la misma comisión.
+            </p>
+            <div className="mt-2 flex items-center gap-2">
+              <span className="text-[14px] font-semibold text-text-secondary">$</span>
+              <Campo
+                id="precio-prueba"
+                inputMode="numeric"
+                value={precioPrueba}
+                onChange={(e) => setPrecioPrueba(e.target.value.replace(/[^\d]/g, ""))}
+                placeholder="Por ejemplo, 15000"
+                className="max-w-[180px]"
+              />
+            </div>
+            {precioPrueba.trim() === "" && (
+              <p className="mt-2 text-[12.5px] text-[#8a5a33]">Sin precio no aparece en tu perfil: pon 0 si es gratis.</p>
+            )}
+          </div>
+        )}
       </section>
 
       {/* — Publicar — */}

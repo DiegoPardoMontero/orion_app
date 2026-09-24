@@ -88,6 +88,8 @@ export default function AgendaProfesorPage() {
   const [diaElegido, setDiaElegido] = useState<string | null>(null);
   const [cupoElegido, setCupoElegido] = useState<string | null>(null);
   const [idioma, setIdioma] = useState<string | null>(null);
+  // Reservarla como clase de prueba (Q7). Solo se ofrece si al estudiante le toca.
+  const [comoPrueba, setComoPrueba] = useState(false);
 
   const profesor = useQuery({
     queryKey: ["professor", id],
@@ -100,6 +102,19 @@ export default function AgendaProfesorPage() {
     queryFn: () => apiFetch<GoalResponse[]>("/api/v1/catalog/goals"),
     staleTime: 5 * 60_000,
   });
+
+  // La clase de prueba con este profe: si la ofrece, cuánto cuesta y si a este estudiante le toca
+  // (es una por pareja, y para conocerse). Solo lo pregunta un estudiante.
+  const prueba = useQuery({
+    queryKey: ["professor", id, "trial"],
+    queryFn: () =>
+      apiFetch<{ offered: boolean; priceCop: number | null; available: boolean; reason: string | null }>(
+        `/api/v1/professors/${id}/trial`,
+      ),
+    enabled: me?.role === "STUDENT",
+  });
+  const pruebaDisponible = prueba.data?.available === true && prueba.data.priceCop != null;
+  const reservandoPrueba = comoPrueba && pruebaDisponible;
 
   // Los próximos 7 días alimentan los chips de móvil (y el estado de carga/vacío inicial).
   const cupos = useQuery({
@@ -131,11 +146,13 @@ export default function AgendaProfesorPage() {
           startsAt,
           modality: "VIRTUAL",
           languageCode: idiomaDeLaClase ?? undefined,
+          trial: reservandoPrueba || undefined,
         },
       }),
     onSuccess: (reserva) => {
       void queryClient.invalidateQueries({ queryKey: ["me", "bookings"] });
       void queryClient.invalidateQueries({ queryKey: ["me", "credits"] });
+      void queryClient.invalidateQueries({ queryKey: ["professor", id, "trial"] });
 
       // El cupo queda apartado, pero la clase no existe hasta que entre el pago. Si el saldo del
       // estudiante la cubrió entera no hay pasarela a la que ir y la reserva ya está confirmada.
@@ -189,7 +206,7 @@ export default function AgendaProfesorPage() {
   const idiomaDeLaClase =
     idiomasQueEnsena.length === 1 ? (idiomasQueEnsena[0].code ?? null) : idioma;
 
-  const precio = detalle.hourlyRateCop ?? null;
+  const precio = reservandoPrueba ? (prueba.data?.priceCop ?? null) : (detalle.hourlyRateCop ?? null);
   // La misma regla que aplica el backend, mínimo de la pasarela incluido: si el desglose de aquí y
   // el del checkout no coinciden al peso, el estudiante ve cambiar el precio entre dos pantallas.
   const { creditoAplicadoCop: creditoAplicado, aPagarCop: aPagar } = aplicarSaldo(
@@ -200,6 +217,35 @@ export default function AgendaProfesorPage() {
   // Controles compartidos entre móvil y desktop: idioma y confirmación.
   const controles: ReactNode = (
     <>
+      {/* La clase de prueba se elige aquí, antes de todo lo demás: cambia el precio. */}
+      {pruebaDisponible && (
+        <Bloque tono="melocoton" titulo="¿Cómo quieres tu primera clase?" icono={<Sparkles size={16} strokeWidth={1.75} />}>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {[
+              { valor: true, titulo: "Clase de prueba", detalle: esGratis(prueba.data!.priceCop) ? "Gratis" : precioCop(prueba.data!.priceCop!) },
+              { valor: false, titulo: "Clase normal", detalle: detalle.hourlyRateCop != null ? (esGratis(detalle.hourlyRateCop) ? "Gratis" : precioCop(detalle.hourlyRateCop)) : "" },
+            ].map((o) => (
+              <button
+                key={o.titulo}
+                type="button"
+                aria-pressed={comoPrueba === o.valor}
+                onClick={() => setComoPrueba(o.valor)}
+                className={`flex min-h-14 flex-col items-start justify-center rounded-base border-[1.5px] px-4 py-2 text-left transition-colors focus-visible:shadow-focus ${
+                  comoPrueba === o.valor
+                    ? "border-transparent bg-night text-on-primary"
+                    : "border-border bg-surface-raised text-text hover:bg-surface-sunken"
+                }`}
+              >
+                <span className="text-[14px] font-bold">{o.titulo}</span>
+                <span className={`text-[12.5px] ${comoPrueba === o.valor ? "text-on-primary/80" : "text-text-secondary"}`}>{o.detalle}</span>
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-[12.5px] text-text-secondary">
+            La de prueba es una sola con este profe, para conoceros: tu nivel, lo que buscas y cómo trabajaría contigo.
+          </p>
+        </Bloque>
+      )}
       {/* El selector solo aparece cuando hay algo que elegir. Con un idioma el backend lo asigna
           solo, y preguntar entre una opción sería un paso de más. */}
       {idiomasQueEnsena.length > 1 && (
@@ -246,7 +292,7 @@ export default function AgendaProfesorPage() {
       {precio !== null && (
         <div className="rounded-base border border-border bg-surface-sunken px-4 py-3 text-[13px]">
           <LineaImporte
-            etiqueta={`Clase de ${minutos(cifras.classMinutes)}`}
+            etiqueta={`${reservandoPrueba ? "Clase de prueba" : "Clase"} de ${minutos(cifras.classMinutes)}`}
             valor={esGratis(precio) ? "Gratis" : precioCop(precio)}
           />
           {creditoAplicado > 0 && (
@@ -358,9 +404,10 @@ export default function AgendaProfesorPage() {
                 <BadgeCheck size={12} strokeWidth={2.4} /> Certificado
               </Badge>
             )}
-            {detalle.acceptsTrial && (
+            {detalle.acceptsTrial && detalle.trialPriceCop != null && (
               <Badge tono="coral">
-                <Sparkles size={12} strokeWidth={2.4} /> Ofrece clase de prueba
+                <Sparkles size={12} strokeWidth={2.4} />
+                {esGratis(detalle.trialPriceCop) ? "Clase de prueba gratis" : `Clase de prueba · ${precioCop(detalle.trialPriceCop)}`}
               </Badge>
             )}
           </div>

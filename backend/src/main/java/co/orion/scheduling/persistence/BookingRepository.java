@@ -155,4 +155,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID>,
             """)
     long countEarlierTogether(@Param("studentId") UUID studentId, @Param("professorId") UUID professorId,
                               @Param("antesDe") Instant antesDe, @Param("estados") Collection<BookingStatus> estados);
+
+    /** Si la pareja tiene una clase de prueba en ese estado (la V62 permite una activa). */
+    boolean existsByStudentIdAndProfessorIdAndTrialTrueAndStatus(UUID studentId, UUID professorId, BookingStatus status);
 }
