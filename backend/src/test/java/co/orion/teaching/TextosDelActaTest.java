@@ -45,7 +45,7 @@ class TextosDelActaTest {
             "backend/src/main/java/co/orion/practice/domain/PracticeItem.java");
 
     private static final List<String> PROMPTS = List.of(
-            "backend/src/main/resources/prompts/lesson-note-v2.txt",
+            "backend/src/main/resources/prompts/lesson-note-v3.txt",
             "backend/src/main/resources/prompts/practice-v4.txt",
             "backend/src/main/resources/prompts/practice-check-v1.txt");
 

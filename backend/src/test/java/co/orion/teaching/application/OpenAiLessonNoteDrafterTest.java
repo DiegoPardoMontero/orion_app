@@ -28,6 +28,18 @@ class OpenAiLessonNoteDrafterTest {
     }
 
     @Test
+    @DisplayName("Una palabra repetida al revés (la traducción como palabra nueva) se queda una sola vez")
+    void sinParesInvertidos() {
+        var b = OpenAiLessonNoteDrafter.validar("""
+                {"workedOn":"El menú.","recurringIssues":"","nextSteps":"",
+                 "vocabulary":[{"term":"appetizer","meaning":"entrada"},{"term":"entrada","meaning":"appetizer"},
+                               {"term":"bill","meaning":"cuenta"},{"term":"Bill","meaning":"la cuenta"}]}""");
+
+        assertThat(b).isPresent();
+        assertThat(b.get().vocabulario()).extracting(LessonNoteDrafter.Palabra::term).containsExactly("appetizer", "bill");
+    }
+
+    @Test
     @DisplayName("Lo que no es JSON, o trae claves de más, no pasa")
     void loRaroNoPasa() {
         assertThat(OpenAiLessonNoteDrafter.validar("Claro, aquí tienes el acta: ...")).isEmpty();
