@@ -576,6 +576,14 @@ test("Ana practica lo de su clase y María lo ve en su ficha", async ({ page }) 
     });
     if (await cierre.isVisible()) break;
     // El navegador de pruebas no suele traer voz en inglés: el de escucha se salta, sin contar como error.
+    // Esa voz se decide hasta segundo y medio después de abrir el ejercicio; mientras tanto «Reproducir»
+    // está apagado y «Saltar este» todavía no sale, así que se espera la decisión antes de responder.
+    const reproducir = page.getByRole("button", { name: "Reproducir", exact: true });
+    if (await reproducir.isVisible()) {
+      await expect(async () => {
+        expect((await saltar.isVisible()) || (await reproducir.isEnabled())).toBe(true);
+      }).toPass({ timeout: 5000 });
+    }
     if (await saltar.isVisible()) {
       await saltar.click();
     } else if (!(await seguir.isVisible())) {
