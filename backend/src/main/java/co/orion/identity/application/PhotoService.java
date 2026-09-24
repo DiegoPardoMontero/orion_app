@@ -3,10 +3,13 @@ package co.orion.identity.application;
 import java.util.Set;
 import java.util.UUID;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import co.orion.identity.domain.StudentProfileUpdatedEvent;
 import co.orion.identity.domain.User;
+import co.orion.identity.domain.UserRole;
 import co.orion.identity.persistence.UserRepository;
 import co.orion.shared.error.BusinessRuleViolationException;
 import co.orion.shared.error.ResourceNotFoundException;
@@ -25,10 +28,12 @@ public class PhotoService {
 
     private final UserRepository users;
     private final PhotoUploader uploader;
+    private final ApplicationEventPublisher events;
 
-    public PhotoService(UserRepository users, PhotoUploader uploader) {
+    public PhotoService(UserRepository users, PhotoUploader uploader, ApplicationEventPublisher events) {
         this.users = users;
         this.uploader = uploader;
+        this.events = events;
     }
 
     @Transactional
@@ -50,6 +55,11 @@ public class PhotoService {
         String url = uploader.upload(bytes, type);
         user.changePhotoUrl(url);
         users.save(user);
+        // La foto es parte de la ficha: sin este evento, «Perfil listo» y «Ficha completa» no se
+        // enteraban hasta el siguiente cambio de otra cosa.
+        if (user.getRole() == UserRole.STUDENT) {
+            events.publishEvent(new StudentProfileUpdatedEvent(userId));
+        }
         return url;
     }
 }

@@ -123,7 +123,7 @@ class EngagementApiIT extends ApiIntegrationSupport {
         assertThat(response.getBody().currentStreakWeeks()).isZero();
         // El sello nace en nivel 1 con solo registrarse.
         assertThat(response.getBody().sealLevel()).isEqualTo(1);
-        assertThat(response.getBody().totalCount()).isEqualTo(25);
+        assertThat(response.getBody().totalCount()).isEqualTo(26);
     }
 
     @Test
@@ -144,7 +144,7 @@ class EngagementApiIT extends ApiIntegrationSupport {
         ResponseEntity<AchievementResponse[]> response =
                 get("/api/v1/me/achievements", anaSession, AchievementResponse[].class);
 
-        assertThat(response.getBody()).hasSize(25);
+        assertThat(response.getBody()).hasSize(26);
         var primero = response.getBody()[0];
         assertThat(primero.target()).isPositive();
         assertThat(primero.glow()).isBetween(1, 3);

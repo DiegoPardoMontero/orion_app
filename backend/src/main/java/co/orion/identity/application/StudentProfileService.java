@@ -199,6 +199,36 @@ public class StudentProfileService {
         return hechos;
     }
 
+    /**
+     * Lo que le falta a la ficha para estar completa (24/09/2026): foto, nivel, idioma, para qué lo
+     * aprende y su motivación. Vacío: completa, y enciende «Ficha completa». Lo usan el logro y los
+     * recordatorios; la pantalla calcula lo mismo con los datos que ya tiene.
+     */
+    @Transactional(readOnly = true)
+    public List<String> faltanDeLaFicha(UUID userId) {
+        StudentProfile profile = profiles.findByIdWithUser(userId).orElse(null);
+        if (profile == null) {
+            return List.of("FOTO", "NIVEL", "IDIOMA", "OBJETIVO", "MOTIVACION");
+        }
+        List<String> faltan = new java.util.ArrayList<>();
+        if (profile.getUser().getPhotoUrl() == null || profile.getUser().getPhotoUrl().isBlank()) {
+            faltan.add("FOTO");
+        }
+        if (profile.getSelfDeclaredLevel() == null) {
+            faltan.add("NIVEL");
+        }
+        if (profile.getPrimaryLanguage() == null) {
+            faltan.add("IDIOMA");
+        }
+        if (goals.findByUserId(userId).isEmpty()) {
+            faltan.add("OBJETIVO");
+        }
+        if (profile.getMotivation() == null || profile.getMotivation().isBlank()) {
+            faltan.add("MOTIVACION");
+        }
+        return faltan;
+    }
+
     /** Al registrarse un estudiante nace su ficha, con los cosméticos iniciales. */
     @Transactional
     public void createFor(User user) {

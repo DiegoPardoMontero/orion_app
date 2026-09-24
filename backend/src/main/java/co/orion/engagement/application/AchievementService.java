@@ -350,6 +350,9 @@ public class AchievementService {
         if (!studentGoals.findByUserId(studentId).isEmpty()) {
             eventos.add("goal_declared");
         }
+        if (studentProfiles.faltanDeLaFicha(studentId).isEmpty()) {
+            eventos.add("ficha_completa");
+        }
 
         // Las perfectas se leen del libro de puntos (su bono), como las prácticas: así cuentan también
         // las que se terminaron antes de que existiera la tabla de engagement.

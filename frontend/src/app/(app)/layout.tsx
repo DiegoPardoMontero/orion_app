@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useState, type ReactNode } from "react";
 import { CambiarClave } from "@/components/CambiarClave";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import { Vacio } from "@/components/estados";
@@ -37,6 +37,7 @@ import { AvisoCorreoSinVerificar } from "@/components/AvisoCorreoSinVerificar";
 import { AvisoMayoriaDeEdad } from "@/components/AvisoMayoriaDeEdad";
 import { Bienvenida } from "@/components/bienvenida/Bienvenida";
 import { Encendido } from "@/components/gamificacion/Encendido";
+import { FranjaDeFicha } from "@/components/FranjaDeFicha";
 import { Wordmark } from "@/components/marca";
 import { Boton } from "@/components/ui";
 import { useMiAplicacion } from "@/lib/aplicacion";
@@ -199,6 +200,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             correo={me.email}
             ensena={me.role === "PROFESSOR" || me.role === "TEACHER_APPLICANT"}
           />
+        )}
+        {/* La ficha a medias: Rigel lo recuerda en todas las pantallas hasta que se complete. */}
+        {me.role === "STUDENT" && (
+          <Suspense fallback={null}>
+            <FranjaDeFicha />
+          </Suspense>
         )}
         <div className={`flex-1 lg:pb-0 ${practicando ? "" : "pb-24"}`}>
           {rutaProtegida ? <GateProfesor aplic={aplic}>{children}</GateProfesor> : children}

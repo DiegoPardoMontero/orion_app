@@ -36,12 +36,12 @@ class CatalogoGamificacionIT {
 
     /**
      * Diecinueve de los veinte del diseño —«Cara a cara» pedía tomar una clase presencial y Orión
-     * dejó de darlas (V30): una estrella que nadie puede encender ya no es una meta— y los seis de
-     * la práctica (V53).
+     * dejó de darlas (V30): una estrella que nadie puede encender ya no es una meta—, los seis de
+     * la práctica (V53) y «Ficha completa» (V58).
      */
     @Test
     void estanLosLogrosDelDisenoQueSiguenSiendoPosibles() {
-        assertThat(achievements.findByActiveTrueOrderByDisplayOrderAsc()).hasSize(25);
+        assertThat(achievements.findByActiveTrueOrderByDisplayOrderAsc()).hasSize(26);
     }
 
     @Test
@@ -55,7 +55,7 @@ class CatalogoGamificacionIT {
                 .containsEntry(AchievementFamily.VOLUMEN, 5L)
                 // AMPLITUD perdió «Cara a cara» al desaparecer las clases presenciales.
                 .containsEntry(AchievementFamily.AMPLITUD, 2L)
-                .containsEntry(AchievementFamily.COMPROMISO, 3L)
+                .containsEntry(AchievementFamily.COMPROMISO, 4L)
                 .containsEntry(AchievementFamily.PRACTICA, 6L);
     }
 
