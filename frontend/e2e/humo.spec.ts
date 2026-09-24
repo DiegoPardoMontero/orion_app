@@ -145,16 +145,39 @@ test("un estudiante nuevo se registra desde el login y aterriza dentro", async (
   await expect(page).toHaveURL(/\/profesores/);
   await expect(page.getByRole("heading", { name: "Profesores" })).toBeVisible();
 
-  // Y lo recibe el recorrido guiado, una sola vez: se recorre entero y al recargar ya no vuelve.
+  // Y lo recibe el recorrido guiado (handoff §7): va de pantalla en pantalla, se puede retomar si
+  // se cierra a mitad y, terminado, no vuelve.
   const recorrido = page.getByRole("dialog");
-  await expect(recorrido.getByRole("heading", { name: "¡Hola, Nueva! Te muestro cómo funciona Orión" })).toBeVisible();
+  await expect(recorrido.getByRole("heading", { name: "Te muestro Orión en 6 pasos" })).toBeVisible();
   await recorrido.getByRole("button", { name: "Empezar" }).click();
   await expect(recorrido.getByText("1 de 6")).toBeVisible();
-  await expect(recorrido.getByRole("heading", { name: "Busca tu profesor" })).toBeVisible();
-  for (let i = 0; i < 6; i++) await recorrido.getByRole("button", { name: "Siguiente" }).click();
-  await expect(recorrido.getByRole("heading", { name: "¡Listo! Ya sabes moverte por Orión" })).toBeVisible();
-  await recorrido.getByRole("link", { name: "Buscar profesor" }).click();
+  await expect(recorrido.getByRole("heading", { name: "Encuentra tu profe" })).toBeVisible();
+  await expect(recorrido.getByRole("button", { name: "Atrás" })).toBeDisabled();
+  await recorrido.getByRole("button", { name: "Siguiente" }).click();
+  // El paso 2 lleva al perfil de un profesor, a sus horarios.
+  await expect(recorrido.getByText("2 de 6")).toBeVisible();
+  await expect(page).toHaveURL(/\/profesores\/[0-9a-f-]+$/);
+  await recorrido.getByRole("button", { name: "Siguiente" }).click();
+  await expect(recorrido.getByText("3 de 6")).toBeVisible();
+  await expect(page).toHaveURL(/\/mis-clases/);
+
+  // Cerrar a mitad: al volver, Rigel pregunta si seguimos.
+  await page.reload();
+  await expect(recorrido.getByRole("heading", { name: "¿Seguimos donde íbamos?" })).toBeVisible();
+  await recorrido.getByRole("button", { name: "Seguir" }).click();
+  await expect(recorrido.getByText("3 de 6")).toBeVisible();
+  await recorrido.getByRole("button", { name: "Siguiente" }).click();
+  await expect(recorrido.getByText("4 de 6 · Meissa")).toBeVisible();
+  await recorrido.getByRole("button", { name: "Siguiente" }).click();
+  await expect(recorrido.getByText("5 de 6")).toBeVisible();
+  await expect(page).toHaveURL(/\/cuenta\?seccion=cielo/);
+  await recorrido.getByRole("button", { name: "Siguiente" }).click();
+  await expect(recorrido.getByText("6 de 6")).toBeVisible();
+  await recorrido.getByRole("button", { name: "Terminar" }).click();
+  await expect(recorrido.getByRole("heading", { name: "¡Listo! Ya conoces Orión." })).toBeVisible();
+  await recorrido.getByRole("button", { name: "Buscar profe" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page).toHaveURL(/\/profesores$/);
   await page.reload();
   await page.waitForLoadState("networkidle");
   await expect(page.getByRole("heading", { name: "Profesores" })).toBeVisible();

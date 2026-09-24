@@ -103,3 +103,35 @@ Pardo, textual en lo esencial:
     todo)».
 18. **«Invitar estudiantes»** en vez del enlace propio del profe: que genere un link para compartir
     en redes o mandarlo directamente a sus estudiantes.
+
+## Auditoría del recorrido contra el handoff (paso 9)
+
+Diferencias encontradas y corregidas:
+
+- **Bienvenida**: era un modal de 720 con un reproductor genérico → pantalla completa sin
+  navegación (capturas 01/02): chip «Tu postulación fue aprobada», título 30/40, video 350×197 /
+  760×428 con portada noche, play coral 64/84, «Sofía · Directora académica».
+- **«Lo veo después»** solo aplazaba por la sesión → marca la bienvenida, lleva a la agenda y Rigel
+  ofrece el recorrido ahí una sola vez.
+- **Textos** distintos a §7 («Busca tu profesor», «¡Hola, X! Te muestro…») → palabra por palabra.
+- **Tarjeta**: radio 18, sin círculo del guía, contador en mayúsculas coral → radio 22, círculo de
+  52 (#FFF1C9 / #EFE9F9) con el personaje de 40, «1 de 8 · Meissa» 12/700, título 19, texto 15/1.5,
+  ayuda de teclado en escritorio, flecha de 16 a 45°.
+- **Progreso**: segmentos iguales en coral → hecho 8 lavanda / actual 20 tinta / pendiente 8.
+- **Botones**: «Atrás» oculto en el paso 1 y sin «Terminar» → deshabilitado a .45 y «Terminar».
+- **Foco**: velo rgba(29,20,36,.62) y anillo de 2 → rgba(46,30,78,.74), margen de 6 del fondo local
+  y anillo de 3 #FFC189.
+- **Solo iluminaba íconos** → cada paso lleva a su pantalla e ilumina el elemento (Unirse, Actas,
+  clase pasada, filtros, horarios del perfil, Mi cielo), con la navegación de respaldo.
+- Faltaban la píldora «Te llevo hasta allá», `inert`, `aria-live`, el paso guardado con «¿Seguimos
+  donde íbamos?» y «Repetir» desde el paso 1 → hechos.
+- **Ayuda**: una tarjeta con dos botones → la lista de la captura 03 y el video en modal de 880.
+
+Lo que queda distinto, a propósito o por límite:
+
+- Con YouTube, Vimeo o Drive el reproductor es el del proveedor: los controles del diseño solo
+  aplican a un archivo de video, y la duración solo se muestra si sale del archivo.
+- No hay pruebas `toHaveScreenshot`: las capturas se compararon a mano al mismo tamaño; el e2e cubre
+  el comportamiento (pantallas, retomar, terminar).
+- En la barra inferior del móvil el ítem iluminado conserva su color de texto.
+- El paso 2 del profesor lleva a Disponibilidad: cambiará al fusionarla con el perfil (paso 16).

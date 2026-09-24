@@ -436,6 +436,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/push-subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["suscribir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/push-subscriptions/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["probar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/push-subscriptions/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["apagar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/photo": {
         parameters: {
             query?: never;
@@ -1092,6 +1140,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/system/test-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["testEmail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/system/test-class": {
         parameters: {
             query?: never;
@@ -1372,6 +1436,38 @@ export interface paths {
             cookie?: never;
         };
         get: operations["profile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/students/{id}/points": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["puntos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/push/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["config"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1676,6 +1772,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["historial"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/points": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["puntos_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3114,6 +3226,21 @@ export interface components {
         ReplyRequest: {
             body: string;
         };
+        Keys: {
+            p256dh: string;
+            auth: string;
+        };
+        SubscribeRequest: {
+            endpoint: string;
+            keys: components["schemas"]["Keys"];
+        };
+        TestPushResponse: {
+            /** Format: int32 */
+            devices?: number;
+        };
+        UnsubscribeRequest: {
+            endpoint: string;
+        };
         ChangePasswordRequest: {
             currentPassword?: string;
             newPassword: string;
@@ -3449,6 +3576,16 @@ export interface components {
         ReviewDecisionRequest: {
             note?: string;
         };
+        TestEmailRequest: {
+            /** Format: email */
+            to?: string;
+        };
+        Resultado: {
+            enviado?: boolean;
+            para?: string;
+            via?: string;
+            detalle?: string;
+        };
         TestClassRequest: {
             /** Format: email */
             studentEmail: string;
@@ -3573,6 +3710,14 @@ export interface components {
             fullName?: string;
             whatsappPhone?: string;
             status?: string;
+        };
+        StudentPointsResponse: {
+            /** Format: int64 */
+            total?: number;
+        };
+        PushConfigResponse: {
+            enabled?: boolean;
+            publicKey?: string;
         };
         LanguageBadge: {
             code?: string;
@@ -3805,6 +3950,26 @@ export interface components {
             lessons?: number;
             /** Format: date-time */
             lastLessonAt?: string;
+        };
+        Movement: {
+            source?: string;
+            /** Format: int32 */
+            points?: number;
+            /** Format: date-time */
+            occurredAt?: string;
+            detail?: string;
+        };
+        MyPointsResponse: {
+            /** Format: int64 */
+            total?: number;
+            recent?: components["schemas"]["Movement"][];
+            ways?: components["schemas"]["Way"][];
+        };
+        Way: {
+            source?: string;
+            /** Format: int32 */
+            points?: number;
+            once?: boolean;
         };
         PerformanceResponse: {
             ratingAvg?: number;
@@ -5160,6 +5325,72 @@ export interface operations {
             };
         };
     };
+    suscribir: {
+        parameters: {
+            query?: never;
+            header?: {
+                "User-Agent"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubscribeRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    probar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TestPushResponse"];
+                };
+            };
+        };
+    };
+    apagar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnsubscribeRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     upload: {
         parameters: {
             query?: never;
@@ -6271,6 +6502,30 @@ export interface operations {
             };
         };
     };
+    testEmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TestEmailRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Resultado"];
+                };
+            };
+        };
+    };
     testClass: {
         parameters: {
             query?: never;
@@ -6721,6 +6976,48 @@ export interface operations {
             };
         };
     };
+    puntos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StudentPointsResponse"];
+                };
+            };
+        };
+    };
+    config: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PushConfigResponse"];
+                };
+            };
+        };
+    };
     list_4: {
         parameters: {
             query?: {
@@ -7141,6 +7438,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["SetView"][];
+                };
+            };
+        };
+    };
+    puntos_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MyPointsResponse"];
                 };
             };
         };

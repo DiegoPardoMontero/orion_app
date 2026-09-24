@@ -84,9 +84,22 @@ export default function AyudaPage() {
         </a>
       )}
 
-      <ConoceOrion rol={me?.role === "PROFESSOR" || me?.role === "STUDENT" ? me.role : null} />
+      <ConoceOrion
+        rol={me?.role === "PROFESSOR" || me?.role === "STUDENT" ? me.role : null}
+        onPreguntas={() => document.getElementById("preguntas")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+        onSoporte={() => {
+          setAbriendo(true);
+          requestAnimationFrame(() =>
+            document.getElementById("nueva-solicitud")?.scrollIntoView({ behavior: "smooth", block: "start" }),
+          );
+        }}
+      />
 
-      {abriendo && <FormularioNuevaSolicitud onListo={() => setAbriendo(false)} />}
+      {abriendo && (
+        <div id="nueva-solicitud" className="scroll-mt-20">
+          <FormularioNuevaSolicitud onListo={() => setAbriendo(false)} />
+        </div>
+      )}
 
       <h2 className="mt-8 font-display text-[17px] font-bold">Mis solicitudes</h2>
 
@@ -120,7 +133,9 @@ export default function AyudaPage() {
           rol, pero /perfil está cerrado para el profesor no aprobado y el aspirante ni lo tiene en
           el menú — y son justo quienes más dudas tienen. Ayuda es la única pantalla a la que
           llegan todos, así que aquí no pueden faltar. */}
-      {faq && <PreguntasFrecuentes rol={faq} />}
+      <div id="preguntas" className="scroll-mt-20">
+        {faq && <PreguntasFrecuentes rol={faq} />}
+      </div>
       {politica && <PoliticaCancelacion rol={politica} />}
     </main>
   );

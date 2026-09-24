@@ -84,7 +84,7 @@ export function MiCielo() {
         </div>
       )}
 
-      <div className="mt-4 flex flex-wrap gap-3">
+      <div data-tour="mi-cielo" className="mt-4 flex flex-wrap gap-3 rounded-card">
         <Dato icono={<Sparkles size={15} strokeWidth={2} />} valor={resumen.data.points} etiqueta="puntos" />
         <Dato
           icono={<Flame size={15} strokeWidth={2} />}

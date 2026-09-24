@@ -65,12 +65,15 @@ export function Rigel({
   tono = "dorado",
   className = "",
   decorativo = false,
+  recorte,
 }: {
   pose?: RigelPose;
   tono?: RigelTono;
   className?: string;
   /** Cuando el mensaje ya está en el texto de al lado, se oculta a lectores de pantalla. */
   decorativo?: boolean;
+  /** Otro viewBox: la tarjeta del recorrido lo recorta a `22 14 156 156` para que quepa en 40 px. */
+  recorte?: string;
 }) {
   const t = TONOS[tono];
   const vars = {
@@ -83,7 +86,7 @@ export function Rigel({
 
   return (
     <svg
-      viewBox="0 0 200 210"
+      viewBox={recorte ?? "0 0 200 210"}
       // Con la racha brinca; en las demás poses flota.
       className={`${pose === "racha" ? "rigel-brinco" : "rigel-bob"} ${className}`}
       style={vars}

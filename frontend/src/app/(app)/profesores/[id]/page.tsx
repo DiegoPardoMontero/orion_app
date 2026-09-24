@@ -493,7 +493,7 @@ export default function AgendaProfesorPage() {
         </section>
 
         {/* Columna de agenda */}
-        <section className="mt-5 lg:mt-6 lg:rounded-card lg:bg-surface-raised lg:p-9 lg:shadow-lg">
+        <section data-tour="horarios" className="mt-5 lg:mt-6 lg:rounded-card lg:bg-surface-raised lg:p-9 lg:shadow-lg">
           {!conSesion ? (
             <ReservarConCuenta nombre={detalle.fullName ?? null} aqui={aqui} />
           ) : cupos.isError ? (

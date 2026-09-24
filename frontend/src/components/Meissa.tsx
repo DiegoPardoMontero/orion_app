@@ -29,6 +29,7 @@ export function Meissa({
   sobreAmanecer = false,
   className = "",
   decorativo = false,
+  recorte,
 }: {
   estado?: MeissaEstado;
   /** Sobre el degradado del amanecer, el aura y las barras van en crema. */
@@ -36,6 +37,8 @@ export function Meissa({
   className?: string;
   /** Cuando la línea de estado ya lo dice al lado, se oculta a lectores de pantalla. */
   decorativo?: boolean;
+  /** Otro viewBox: la tarjeta del recorrido lo recorta a `22 14 156 156` para que quepa en 40 px. */
+  recorte?: string;
 }) {
   const aura = sobreAmanecer ? CREMA : "#B9A7E6";
   const voz = sobreAmanecer ? CREMA : "#7A4A8C";
@@ -43,7 +46,7 @@ export function Meissa({
 
   return (
     <svg
-      viewBox="0 0 200 210"
+      viewBox={recorte ?? "0 0 200 210"}
       className={className}
       role={decorativo ? undefined : "img"}
       aria-label={decorativo ? undefined : ETIQUETA[estado]}

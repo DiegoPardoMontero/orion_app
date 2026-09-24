@@ -31,6 +31,7 @@ import { esperaPago, etiquetaEstado } from "@/lib/estados-clase";
 import { diaBogota, fechaCorta, fechaYRango, precioCop, rangoHoras } from "@/lib/format";
 import { useElegibilidadRetracto, useRetractarse } from "@/lib/retracto";
 import { horas, minutos, useCifras } from "@/lib/cifras";
+import { AvisoDelRecorrido } from "@/components/bienvenida/AvisoDelRecorrido";
 
 type Scope = "upcoming" | "past";
 type Vista = "agenda" | "calendario";
@@ -100,6 +101,7 @@ function Contenido() {
       {scope === "past" && me && (me.role === "PROFESSOR" || me.role === "STUDENT") && (
         <ListaDeActas esProfesor={esProfesor} />
       )}
+      <AvisoDelRecorrido />
       {scope === "upcoming" && esProfesor && <AvisoDeActas onVer={() => setScope("past")} />}
 
       <div className="mt-4">
@@ -217,7 +219,7 @@ function ListaDeActas({ esProfesor }: { esProfesor: boolean }) {
   const visibles = data.slice(0, 5);
 
   return (
-    <section className="mt-4 rounded-card bg-surface-raised p-4 shadow-sm" aria-labelledby="titulo-actas">
+    <section data-tour="actas" className="mt-4 rounded-card bg-surface-raised p-4 shadow-sm" aria-labelledby="titulo-actas">
       <h2
         id="titulo-actas"
         className="flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-[0.06em] text-text-secondary"
@@ -493,7 +495,7 @@ function TarjetaClase({
 
   return (
     <>
-      <Tarjeta>
+      <Tarjeta tour={scope === "past" && clase.status === "COMPLETED" ? "clase-pasada" : undefined}>
         <div className="flex items-center justify-between gap-2">
           <span className="flex items-center gap-2 text-[13.5px] font-bold">
             <Clock size={15} strokeWidth={1.9} className="text-primary" />
@@ -611,6 +613,7 @@ function TarjetaClase({
           {scope === "upcoming" && clase.status === "CONFIRMED" && virtual && clase.meetingLink && (
             <Link
               href={clase.meetingLink}
+              data-tour="unirse"
               className="inline-flex h-10 min-h-11 w-full items-center justify-center gap-2 rounded-pill bg-primary px-4 text-[14px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus sm:order-last sm:min-h-0 sm:w-auto"
             >
               <Video size={16} strokeWidth={1.75} />

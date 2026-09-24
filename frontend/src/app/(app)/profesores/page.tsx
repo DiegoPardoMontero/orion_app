@@ -235,7 +235,7 @@ export default function ProfesoresPage() {
 
       {/* Barra de filtros horizontal, sobre los resultados (solo desktop). */}
       {esDesktop && (
-        <div className="mt-5 hidden rounded-card bg-surface-raised p-5 shadow-sm lg:block">
+        <div data-tour="filtros" className="mt-5 hidden rounded-card bg-surface-raised p-5 shadow-sm lg:block">
           <div className="mb-4 flex items-center justify-between gap-3">
             <p className="flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-[0.04em] text-text-muted">
               <SlidersHorizontal size={14} strokeWidth={2} />
@@ -266,6 +266,7 @@ export default function ProfesoresPage() {
             {!esDesktop && (
               <Boton
                 variante="contorno"
+                data-tour="filtros"
                 onClick={() => setHojaAbierta(true)}
                 className="h-11 shrink-0"
               >

@@ -172,13 +172,18 @@ export function Bloque({
 
 export function Tarjeta({
   className = "",
+  tour,
   children,
 }: {
   className?: string;
+  /** El ancla del recorrido guiado (`data-tour`), si esta tarjeta es lo que un paso explica. */
+  tour?: string;
   children: ReactNode;
 }) {
   return (
-    <div className={`rounded-card bg-surface-raised p-5 shadow-sm ${className}`}>{children}</div>
+    <div data-tour={tour} className={`rounded-card bg-surface-raised p-5 shadow-sm ${className}`}>
+      {children}
+    </div>
   );
 }
 

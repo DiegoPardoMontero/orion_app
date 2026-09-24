@@ -60,7 +60,8 @@ async function esperarEnlaceDeVerificacion(page: Page, email: string): Promise<s
  * que no son sobre él lo saltan: mientras está abierto, lo de atrás no recibe clics.
  */
 export async function saltarRecorrido(page: Page) {
-  const saltar = page.getByRole("dialog").getByRole("button", { name: "Saltar" });
+  // En el inicio el diseño dice «Ahora no»; a mitad de camino, «Saltar».
+  const saltar = page.getByRole("dialog").getByRole("button", { name: /^(Ahora no|Saltar)$/ });
   await saltar.click({ timeout: 15_000 });
   await expect(saltar).toHaveCount(0);
 }
