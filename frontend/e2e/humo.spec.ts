@@ -530,6 +530,9 @@ test("el admin ensaya el acta: María la escribe y ve los ejercicios que saliero
 
   await login(page, USERS.maria);
   await page.waitForURL((u) => !u.pathname.startsWith("/login"));
+  // Entra a «Próximas», y aun así se entera de que tiene actas por escribir.
+  await page.goto("/mis-clases");
+  await expect(page.getByRole("button", { name: /actas? por escribir/ })).toBeVisible();
   await page.goto(acta!);
   await page.locator("#notas").fill("Ensayo: repasamos past simple; dijo 'I go yesterday' y aprendió 'shipment' (envío).");
   await page.getByRole("button", { name: "Generar acta" }).click();

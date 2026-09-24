@@ -106,6 +106,7 @@ function Contenido() {
       {scope === "past" && me && (me.role === "PROFESSOR" || me.role === "STUDENT") && (
         <ListaDeActas esProfesor={esProfesor} />
       )}
+      {scope === "upcoming" && esProfesor && <AvisoDeActas onVer={() => setScope("past")} />}
 
       <div className="mt-4">
         {isPending && <Cargando />}
@@ -163,6 +164,34 @@ function Contenido() {
  * El mes con sus clases, y debajo las del día que se elija. Elegir un día no cambia de vista: el
  * calendario se mira para ubicarse, y saltar a otra pantalla al pulsar rompería justo eso.
  */
+/**
+ * Las actas pendientes, vistas desde «Próximas». La lista vive en «Pasadas» —las clases de las que se
+ * escribe ya pasaron—, pero el profesor entra a «Próximas», y así no se enteraba de que le faltaba
+ * alguna. Una línea y nada más: la agenda sigue siendo lo primero.
+ */
+function AvisoDeActas({ onVer }: { onVer: () => void }) {
+  const { data } = useQuery({
+    queryKey: ["lesson-notes-index"],
+    queryFn: () => apiFetch<EntradaDeActa[]>("/api/v1/me/lesson-notes/index"),
+    staleTime: 60_000,
+  });
+  const pendientes = data?.length ?? 0;
+  if (pendientes === 0) return null;
+  return (
+    <button
+      type="button"
+      onClick={onVer}
+      className="mt-4 flex min-h-11 w-full items-center justify-between gap-3 rounded-card bg-accent-lavender-soft px-4 py-2.5 text-left text-[13.5px] transition-colors hover:bg-info-bg focus-visible:shadow-focus"
+    >
+      <span className="flex items-center gap-2 font-semibold text-text">
+        <NotebookPen size={16} strokeWidth={2} className="shrink-0 text-[#5e4a8a]" />
+        {pendientes === 1 ? "Tienes un acta por escribir" : `Tienes ${pendientes} actas por escribir`}
+      </span>
+      <span className="shrink-0 text-[12.5px] font-bold text-primary-strong">Verlas</span>
+    </button>
+  );
+}
+
 /**
  * Las actas de un vistazo (Bloque 10, A5.4). Al profesor, lo que le falta escribir; al estudiante,
  * los resúmenes que ya puede leer. Los dos estados vacíos invitan y ninguno lamenta: «Estás al
