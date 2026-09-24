@@ -6,7 +6,7 @@ Resumen vivo de qué hay construido y desplegado. Se actualiza al cerrar cada pa
 
 **Backend** (Spring Boot 4.1, `co.orion`): identidad + sesión, disponibilidad + `SlotCalculator`,
 reservas, asistencia, notificaciones por correo (con `.ics` + link a Google Calendar), panel admin
-(usuarios, reservas, métricas). **Migraciones Flyway V1–V51.**
+(usuarios, reservas, métricas). **Migraciones Flyway V1–V62.**
 
 Módulos: `identity`, `scheduling`, `catalog`, `billing`, `messaging`, `notifications`, `reputation`,
 `lifecycle`, `admin`, `engagement`, `legal`, `support`, `assessment`, `teaching`, `practice`,
@@ -30,6 +30,14 @@ dentro de `/cuenta`).
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots), con Rigel de protagonista.
 
 ## Verificación
+Al 24/09/2026 por la noche, con el refinamiento del Bloque 11 (pasos 1–10):
+- Backend: `./mvnw verify` — **373 unitarios + 564 de integración**, verde.
+- Frontend: `tsc` + `lint` verdes; **115 tests de Vitest**.
+- **E2E Playwright: 22 de 23** sobre base recreada, con el recorrido nuevo (cambia de pantalla, se
+  retoma tras recargar y termina) y la clase de prueba gratis de punta a punta. El recorrido del
+  profesor y del estudiante, la bienvenida, Ayuda y el video se compararon además a ojo con las
+  capturas del paquete, a 390 y a 1280.
+
 Al 24/09/2026 por la tarde, con la práctica construida desde el diseño de Claude Design (los diez
 tipos, el cierre, el logro nuevo, «Mi cielo» y la vista del profesor):
 - Backend: `./mvnw verify` — **363 unitarios + 528 de integración**, verde.
@@ -678,6 +686,44 @@ como la videollamada.
   ni la traducción repetida al revés (esta última también se limpia en código). En 12 corridas:
   todo en español, la inyección ignorada y el vocabulario limpio.
 
+## Refinamiento · Bloque 11 (24/09/2026)
+
+Un pedido largo de Pardo, con sus respuestas a tres preguntas; el brief y la auditoría del recorrido
+están en [`orion-bloque-11-refinamiento.md`](./briefs/orion-bloque-11-refinamiento.md). La lista de
+**todos los flujos para probarlos** está publicada como página: https://claude.ai/artifact/DsCqoUx3mT15GnmEk5AviM
+
+- **Navegación y perfil**: «Mis clases» también para el estudiante, «Ver clases pasadas» debajo de
+  la lista, fuera «Otro horario». «Mi ficha» y «Mis datos» son una sola sección que separa lo que ven
+  los profesores, quién más la ve y lo que es solo tuyo; fuera «Si hay que cancelar» y «Preguntas»
+  del perfil. El Confidence Score va al final del resumen.
+- **Google**: el `state` y el registro a medias viajan en cookies firmadas (sobreviven a un
+  despliegue y a dos pestañas), `www` redirige al dominio, los navegadores de Instagram o TikTok
+  avisan, y cada fallo tiene nombre. Las cuentas de Google pueden **crear** su contraseña (V56).
+- **Saludo al reservar** (V57): a nombre del profe, con ⭐, en el chat del estudiante y marcado
+  «Enviado por Orión»; uno por reserva por índice. Reservar y cancelar llegan también a la campana.
+- **La ficha con énfasis** (V58): franja de Rigel en todas las pantallas (se cierra por un día),
+  campana el día 1 y 3, correo el día 2, logro «Ficha completa» (+25).
+- **Avatar**: dos opciones de cada cosa desde el primer día (V59).
+- **Puntos** junto al nombre en todas partes (solo estudiantes) y «Tus puntos» con lo último y cómo
+  se hacen. Fuentes nuevas: primer mensaje a cada profe, llegar a tiempo al aula, ficha visible,
+  recorrido y diagnóstico. **Arreglado**: calificar una clase nunca daba sus 20 puntos (nadie
+  llamaba a `onReviewCreated`); ahora la reseña publica un evento.
+- **Recordatorios y avisos** (V60): la clase de mañana (campana y correo a los dos), una hora antes
+  (campana y dispositivo), calificar al terminar y al día siguiente; práctica lista, reseña recibida,
+  reserva vencida, respuesta de soporte, sanción aplicada o levantada y liquidación pagada. Sistema
+  manda un **correo de prueba** real por el transporte de producción.
+- **Avisos en el dispositivo** (Web Push, V61): opt-in desde la campana, cifrado RFC 8291 y VAPID
+  solo con el JDK, y solo hacia servicios de push conocidos (sin SSRF). Suenan lo urgente y lo
+  esperado; logros y confirmaciones se quedan en la campana.
+- **Bienvenida y recorrido idénticos al diseño**, y el recorrido **cambia de pantalla** en cada paso.
+- **Clase de prueba** (V62, Q7): precio del profe (0 = gratis, o entre `trial_min_price_cop` y su
+  tarifa), la misma comisión, una por pareja por índice, solo para quien aún no tiene clases con
+  él. La marca vieja de los ensayos del admin pasó a llamarse `is_rehearsal`.
+
+**Pendiente de esta tanda** (pasos 12–18 del brief): escritorio más ancho, recordar la práctica en
+más sitios, país con lista y bandera en la postulación, la franja de ficha para el profesor, fusionar
+Disponibilidad con el perfil, Rigel visible en el hero del celular e «Invitar estudiantes».
+
 ## La práctica, rediseñada y gamificada (24/09/2026)
 
 Pardo pidió ejercicios más interactivos, cinco distintos por set y en varias categorías, correcciones
@@ -868,6 +914,16 @@ su test; lo que cambia el comportamiento o pide una decisión está abajo, en Pe
 - **Subida de fotos y documentos en local**: exige `CLOUDINARY_URL` en el entorno. Sin ella la API
   responde 503 con un mensaje legible (antes era un 500 sin explicación), pero el wizard de
   postulación no se puede terminar en local: le faltarán siempre la foto y el CV.
+- **Avisos en el dispositivo apagados hasta poner las claves VAPID** en Railway:
+  `npx web-push generate-vapid-keys` → `ORION_VAPID_PUBLIC_KEY`, `ORION_VAPID_PRIVATE_KEY` y
+  `ORION_VAPID_SUBJECT` (mailto:). Cambiarlas invalida las suscripciones. En iPhone solo funcionan
+  con Orión instalada en la pantalla de inicio.
+- **Las sesiones se pierden en cada despliegue** (viven en memoria de Tomcat): el login con Google ya
+  no depende de ellas, pero cualquier despliegue saca a todo el mundo. Guardarlas en la base (Spring
+  Session JDBC) exige que el usuario de la sesión sea serializable; hoy guarda la entidad `User`.
+- **Los profesores actuales pierden la insignia «Ofrece clase de prueba»** hasta que fijen un precio
+  de prueba: antes la insignia salía sin que hubiera nada detrás. El asistente de postulación tiene el
+  interruptor pero no el precio.
 - **Config de producción**: `ORION_APP_BASE_URL`, `WOMPI_*`, `RESEND_API_KEY`,
   `NEXT_PUBLIC_SUPPORT_WHATSAPP`, `NEXT_PUBLIC_SITE_URL`, `ORION_LEGAL_*` y `ORION_ALERTS_TO`
   en Railway.
