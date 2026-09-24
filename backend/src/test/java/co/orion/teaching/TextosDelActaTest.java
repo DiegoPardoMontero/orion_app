@@ -53,8 +53,8 @@ class TextosDelActaTest {
 
     private static final List<String> PROMPTS = List.of(
             "backend/src/main/resources/prompts/lesson-note-v3.txt",
-            "backend/src/main/resources/prompts/practice-v4.txt",
-            "backend/src/main/resources/prompts/practice-check-v1.txt");
+            "backend/src/main/resources/prompts/practice-v5.txt",
+            "backend/src/main/resources/prompts/practice-check-v2.txt");
 
     @Test
     @DisplayName("Las pantallas y los avisos del acta y de la práctica no regañan ni lamentan")

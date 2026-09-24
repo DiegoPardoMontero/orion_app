@@ -104,14 +104,15 @@ class OpenAiPracticeGeneratorTest {
         for (int i = 0; i < 40; i++) {
             Material m = new Material("EN", COMPLETA.workedOn(), COMPLETA.recurringIssues(), null,
                     COMPLETA.vocabulary(), UUID.randomUUID().toString(), null);
-            List<PracticeItemType> tipos = OpenAiPracticeGenerator.tiposPara(m, 4);
-            assertThat(tipos).hasSize(4).doesNotHaveDuplicates();
+            List<PracticeItemType> tipos = OpenAiPracticeGenerator.tiposPara(m, 5);
+            // Cinco, uno por categoría, y dos de repuesto; nunca dos iguales.
+            assertThat(tipos).hasSize(7).doesNotHaveDuplicates();
+            assertThat(tipos.stream().map(PracticeItemType::categoria).distinct()).hasSize(5);
             vistos.addAll(tipos);
         }
-        // Los cinco que sabe pedir el prompt v4; los tipos nuevos llegan con la generación v5.
-        assertThat(vistos).containsExactlyInAnyOrder(PracticeItemType.FILL_BLANK, PracticeItemType.FIX_SENTENCE,
-                PracticeItemType.MATCH_MEANING, PracticeItemType.ORDER_DIALOGUE, PracticeItemType.WRITE_SENTENCE);
-        assertThat(OpenAiPracticeGenerator.entrada(COMPLETA, 4)).contains("Tipos para este set: ");
+        assertThat(vistos).containsExactlyInAnyOrder(PracticeItemType.values());
+        assertThat(OpenAiPracticeGenerator.entrada(COMPLETA, 5)).contains("Tipos para este set: ")
+                .contains("Ejercicios que quiero: 7");
     }
 
     @Test
@@ -121,10 +122,14 @@ class OpenAiPracticeGeneratorTest {
         Material unaPalabra = new Material("EN", "Small talk.", null, null,
                 List.of(new Material.Termino("deadline", null)), "x", null);
 
-        assertThat(OpenAiPracticeGenerator.tiposPara(sinErroresNiTema, 4)).containsExactly(
-                PracticeItemType.FILL_BLANK, PracticeItemType.MATCH_MEANING, PracticeItemType.WRITE_SENTENCE);
-        assertThat(OpenAiPracticeGenerator.tiposPara(unaPalabra, 4)).containsExactly(
-                PracticeItemType.FILL_BLANK, PracticeItemType.ORDER_DIALOGUE, PracticeItemType.WRITE_SENTENCE);
+        // Sin errores ni tema: nada de corregir ni de conversación (y alcanza para seis).
+        assertThat(OpenAiPracticeGenerator.tiposPara(sinErroresNiTema, 5)).hasSize(6).doesNotContain(
+                PracticeItemType.FIX_SENTENCE, PracticeItemType.SPOT_ERROR, PracticeItemType.ORDER_DIALOGUE,
+                PracticeItemType.CHOOSE_REPLY);
+        // Una palabra sin significado: ni parejas ni escuchar y elegir, que necesitan significados.
+        assertThat(OpenAiPracticeGenerator.tiposPara(unaPalabra, 5)).containsExactly(
+                PracticeItemType.FILL_BLANK, PracticeItemType.BUILD_SENTENCE, PracticeItemType.ORDER_DIALOGUE,
+                PracticeItemType.CHOOSE_REPLY, PracticeItemType.DICTATION, PracticeItemType.WRITE_SENTENCE);
     }
 
     @Test
@@ -138,6 +143,36 @@ class OpenAiPracticeGeneratorTest {
         assertThat(leidos.getFirst().payload())
                 .isEqualTo("{\"lines\":[\"B: Hello\",\"B: Great\",\"A: Hi\",\"A: How was it?\"]}");
         assertThat(ValidadorDeEjercicios.validos(leidos, COMPLETA, 4)).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("Las fichas de una frase que llegan ya en orden se desordenan")
+    void fichasEnOrden() {
+        String fichas = "[\"Where\",\"is\",\"my\",\"luggage\",\"?\"]";
+        List<PracticeGenerator.Generado> leidos = OpenAiPracticeGenerator.leer(
+                "{\"items\":[{\"type\":\"BUILD_SENTENCE\",\"prompt\":\"Arma.\",\"payload\":{\"tiles\":" + fichas
+                        + ",\"guide\":\"¿Dónde está mi equipaje?\"},\"expected\":" + fichas
+                        + ",\"explanation\":\"x\",\"sourceTerm\":null}]}");
+
+        assertThat(leidos.getFirst().payload()).contains("\"tiles\":[\"is\",\"luggage\",\"Where\",\"my\",\"?\"]")
+                .contains("guide");
+    }
+
+    @Test
+    @DisplayName("La revisión también resuelve los tipos nuevos: la ficha del error que no es, fuera")
+    void laRevisionDeLosNuevos() {
+        PracticeGenerator.Generado error = new PracticeGenerator.Generado(PracticeItemType.SPOT_ERROR, "Caza.",
+                "{\"tokens\":[\"I\",\"never\",\"go\",\"to\",\"Canada.\"]}",
+                "{\"index\":2,\"correction\":\"I have never been to Canada.\"}", "x", null);
+        PracticeGenerator.Generado chat = new PracticeGenerator.Generado(PracticeItemType.CHOOSE_REPLY, "Responde.",
+                "{\"from\":\"Receptionist\",\"message\":\"Do you have a reservation?\",\"options\":[\"Yes, under García.\",\"I have 30 years.\",\"Blue.\"]}",
+                "Yes, under García.", "x", null);
+        var respuestas = OpenAiPracticeGenerator.respuestasDe("""
+                {"answers":[{"index":0,"answer":1,"ambiguous":false},
+                            {"index":1,"answer":"Yes, under García.","ambiguous":false}]}""");
+
+        assertThat(OpenAiPracticeGenerator.aplicarRevision(List.of(error, chat), respuestas))
+                .extracting(PracticeGenerator.Generado::tipo).containsExactly(PracticeItemType.CHOOSE_REPLY);
     }
 
     @Test
