@@ -19,6 +19,7 @@ export function Modal({
   titulo,
   onCerrar,
   bloqueante = false,
+  amplio = false,
   children,
 }: {
   titulo: string;
@@ -29,6 +30,8 @@ export function Modal({
    * es un aviso que nadie contestó, y aquí lo que se pide es una declaración.
    */
   bloqueante?: boolean;
+  /** Más ancho en escritorio (720 px), para lo que no cabe en una tarjeta de aviso: un video. */
+  amplio?: boolean;
   children: ReactNode;
 }) {
   const panel = useRef<HTMLDivElement>(null);
@@ -67,7 +70,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={tituloId}
-        className="anim-sheet w-full rounded-t-[24px] bg-surface-raised p-7 shadow-lg outline-none sm:max-w-[440px] sm:rounded-card sm:[animation:modal-in_220ms_var(--ease-out)_both]"
+        className={`anim-sheet w-full rounded-t-[24px] bg-surface-raised p-7 shadow-lg outline-none sm:rounded-card sm:[animation:modal-in_220ms_var(--ease-out)_both] ${amplio ? "sm:max-w-[720px]" : "sm:max-w-[440px]"}`}
         onClick={(event) => event.stopPropagation()}
       >
         <h2 id={tituloId} className="font-display text-[22px] font-bold text-text">

@@ -168,6 +168,9 @@ public class SecurityConfig {
                         .hasRole("STUDENT")
                 .requestMatchers("/api/v1/students/*/profile")
                         .hasAnyRole("STUDENT", "PROFESSOR", "ADMIN")
+                // La bienvenida: el video y los recorridos. El servicio comprueba que el paso sea del rol.
+                .requestMatchers("/api/v1/me/onboarding", "/api/v1/me/onboarding/**")
+                        .hasAnyRole("STUDENT", "PROFESSOR")
                 // La gamificación es del estudiante: mide lo que él ha recorrido.
                 .requestMatchers("/api/v1/me/engagement", "/api/v1/me/achievements",
                         "/api/v1/me/cosmetics", "/api/v1/me/streak").hasRole("STUDENT")

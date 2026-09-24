@@ -3,6 +3,7 @@
 import { MessageCircle, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
+import { ConoceOrion } from "@/components/bienvenida/ConoceOrion";
 import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { PoliticaCancelacion } from "@/components/PoliticaCancelacion";
 import { PreguntasFrecuentes } from "@/components/PreguntasFrecuentes";
@@ -82,6 +83,8 @@ export default function AyudaPage() {
           </span>
         </a>
       )}
+
+      <ConoceOrion rol={me?.role === "PROFESSOR" || me?.role === "STUDENT" ? me.role : null} />
 
       {abriendo && <FormularioNuevaSolicitud onListo={() => setAbriendo(false)} />}
 

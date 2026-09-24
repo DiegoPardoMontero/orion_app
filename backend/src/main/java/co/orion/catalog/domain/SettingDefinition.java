@@ -1,5 +1,7 @@
 package co.orion.catalog.domain;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -208,11 +210,19 @@ public enum SettingDefinition {
     GAMIFICATION_COUNT_FREE_LESSONS("gamification_count_free_lessons", Grupo.POLITICAS,
             Tipo.BOOLEANO, "Las clases gratuitas suman puntos",
             "Por defecto no: las clases de prueba en producción no deben ensuciar el perfil de nadie.",
+            false),
+
+    // ------------------------------------------------------------------------- contenido
+    PROFESSOR_WELCOME_VIDEO_URL("professor_welcome_video_url", Grupo.CONTENIDO, Tipo.ENLACE,
+            "Video de bienvenida para profesores",
+            "El video de Sofía que cada profesor aprobado ve una vez, al entrar. Sirve un enlace de "
+                    + "YouTube (puede ser oculto), Vimeo, Google Drive o un .mp4. Vacío, no aparece nada.",
             false);
 
-    public enum Grupo { DINERO, PLAZOS, REPUTACION, POLITICAS }
+    public enum Grupo { DINERO, PLAZOS, REPUTACION, POLITICAS, CONTENIDO }
 
-    public enum Tipo { ENTERO, BOOLEANO, OPCION }
+    /** {@code ENLACE} es el único que admite quedar vacío: un enlace vacío es «no hay». */
+    public enum Tipo { ENTERO, BOOLEANO, OPCION, ENLACE }
 
     private final String key;
     private final Grupo grupo;
@@ -262,6 +272,9 @@ public enum SettingDefinition {
      */
     public String validate(String raw) {
         String value = raw == null ? "" : raw.trim();
+        if (value.isEmpty() && tipo == Tipo.ENLACE) {
+            return "";
+        }
         if (value.isEmpty()) {
             throw new UnprocessableException("«" + etiqueta + "» no puede quedar vacío.");
         }
@@ -269,6 +282,7 @@ public enum SettingDefinition {
             case ENTERO -> validarEntero(value);
             case BOOLEANO -> validarBooleano(value);
             case OPCION -> validarOpcion(value);
+            case ENLACE -> validarEnlace(value);
         };
     }
 
@@ -301,6 +315,24 @@ public enum SettingDefinition {
                     + String.join(", ", opciones.stream().sorted().toList()) + ".");
         }
         return upper;
+    }
+
+    /**
+     * Solo https y con dominio: el enlace termina dentro de un reproductor en la página del
+     * profesor, y un {@code javascript:} o un {@code http:} ahí serían, respectivamente, un agujero
+     * y un aviso de contenido mixto.
+     */
+    private String validarEnlace(String value) {
+        URI uri;
+        try {
+            uri = new URI(value);
+        } catch (URISyntaxException ex) {
+            throw new UnprocessableException("«" + etiqueta + "» no es un enlace válido.");
+        }
+        if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null || value.length() > 500) {
+            throw new UnprocessableException("«" + etiqueta + "» tiene que ser un enlace https://.");
+        }
+        return value;
     }
 
     public String getKey() {

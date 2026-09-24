@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { aceptarCondiciones, verificarCorreo } from "./apoyo";
+import { aceptarCondiciones, saltarRecorrido, verificarCorreo } from "./apoyo";
 
 /**
  * El Bloque 8 de punta a punta. Asume backend + docker con la semilla, como el humo.
@@ -35,6 +35,7 @@ async function registrar(page: Page) {
   await aceptarCondiciones(page);
   await page.getByRole("button", { name: "Crear cuenta" }).click();
   await expect(page).toHaveURL(/\/profesores/);
+  await saltarRecorrido(page);
   return email;
 }
 

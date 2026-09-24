@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { aceptarCondiciones, verificarCorreo } from "./apoyo";
+import { aceptarCondiciones, saltarRecorrido, verificarCorreo } from "./apoyo";
 
 /**
  * Humo del MVP: los caminos que no pueden romperse nunca. Asume backend + docker con la semilla.
@@ -144,6 +144,21 @@ test("un estudiante nuevo se registra desde el login y aterriza dentro", async (
   // El backend crea la cuenta y abre sesión de una vez: el estudiante cae en su home, ya dentro.
   await expect(page).toHaveURL(/\/profesores/);
   await expect(page.getByRole("heading", { name: "Profesores" })).toBeVisible();
+
+  // Y lo recibe el recorrido guiado, una sola vez: se recorre entero y al recargar ya no vuelve.
+  const recorrido = page.getByRole("dialog");
+  await expect(recorrido.getByRole("heading", { name: "¡Hola, Nueva! Te muestro cómo funciona Orión" })).toBeVisible();
+  await recorrido.getByRole("button", { name: "Empezar" }).click();
+  await expect(recorrido.getByText("1 de 6")).toBeVisible();
+  await expect(recorrido.getByRole("heading", { name: "Busca tu profesor" })).toBeVisible();
+  for (let i = 0; i < 6; i++) await recorrido.getByRole("button", { name: "Siguiente" }).click();
+  await expect(recorrido.getByRole("heading", { name: "¡Listo! Ya sabes moverte por Orión" })).toBeVisible();
+  await recorrido.getByRole("link", { name: "Buscar profesor" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.reload();
+  await page.waitForLoadState("networkidle");
+  await expect(page.getByRole("heading", { name: "Profesores" })).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
 /**
@@ -237,6 +252,7 @@ test("una estudiante sin saldo sale hacia Wompi y su cupo queda apartado", async
   await aceptarCondiciones(page);
   await page.getByRole("button", { name: "Crear cuenta" }).click();
   await expect(page).toHaveURL(/\/profesores/);
+  await saltarRecorrido(page);
 
   // Desde el Bloque 9 una cuenta sin correo verificado puede mirar pero no reservar. Se verifica
   // por el camino real —el enlace que llegó al buzón— y no por SQL: ese camino cruza el correo,
@@ -492,4 +508,47 @@ test("sin IA, María escribe el acta a mano y la publica igual", async ({ page }
       data: { value: "true" },
     });
   }
+});
+
+/**
+ * El ensayo del Bloque 10 (23/09/2026): el admin crea desde Sistema una clase de prueba ya dictada,
+ * María escribe el acta de esa clase en ese mismo momento y, publicada, ve debajo los ejercicios que
+ * salieron de ella —con la respuesta esperada, sin nada de lo que haga Ana—; el admin ve en qué va.
+ */
+test("el admin ensaya el acta: María la escribe y ve los ejercicios que salieron", async ({ page }) => {
+  await login(page, USERS.admin);
+  await page.waitForURL((u) => !u.pathname.startsWith("/login"));
+  await page.goto("/admin/sistema");
+  const ensayo = page.locator("#ensayo-del-acta");
+  await ensayo.getByPlaceholder("estudiante@correo.com").fill(USERS.ana.email);
+  await ensayo.getByPlaceholder("profesor@correo.com").fill(USERS.maria.email);
+  await ensayo.getByRole("button", { name: "Crear clase ya dictada" }).click();
+  await expect(ensayo.getByText("Clase de prueba creada y cerrada.")).toBeVisible();
+  const acta = await ensayo.getByRole("link", { name: "el acta de la clase" }).getAttribute("href");
+  expect(acta).toMatch(/^\/mis-clases\/[\w-]+\/acta$/);
+  await logout(page);
+
+  await login(page, USERS.maria);
+  await page.waitForURL((u) => !u.pathname.startsWith("/login"));
+  await page.goto(acta!);
+  await page.locator("#notas").fill("Ensayo: repasamos past simple; dijo 'I go yesterday' y aprendió 'shipment' (envío).");
+  await page.getByRole("button", { name: "Generar acta" }).click();
+  await expect(page.getByText("Borrador", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Publicar", exact: true }).click();
+  await expect(page.getByText("Publicada", { exact: true })).toBeVisible();
+
+  // La práctica se genera en segundo plano; la sección se actualiza sola mientras tanto.
+  const practica = page.getByRole("heading", { name: "La práctica que salió de esta acta" });
+  await expect(practica).toBeVisible();
+  await expect(async () => {
+    await page.reload();
+    await expect(page.getByText(/^Respuesta:/).first()).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 30_000 });
+  await expect(page.getByText("Listos. Tu estudiante todavía no los empieza.")).toBeVisible();
+  await logout(page);
+
+  await login(page, USERS.admin);
+  await page.waitForURL((u) => !u.pathname.startsWith("/login"));
+  await page.goto("/admin/sistema");
+  await expect(page.locator("#ensayo-del-acta").getByText(/Práctica lista/).first()).toBeVisible();
 });

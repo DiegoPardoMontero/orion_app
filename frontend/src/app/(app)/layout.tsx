@@ -35,6 +35,7 @@ import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import { Vacio } from "@/components/estados";
 import { AvisoCorreoSinVerificar } from "@/components/AvisoCorreoSinVerificar";
 import { AvisoMayoriaDeEdad } from "@/components/AvisoMayoriaDeEdad";
+import { Bienvenida } from "@/components/bienvenida/Bienvenida";
 import { Encendido } from "@/components/gamificacion/Encendido";
 import { Wordmark } from "@/components/marca";
 import { Boton } from "@/components/ui";
@@ -205,6 +206,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       {/* Las cuentas anteriores a la regla de mayoría de edad nunca la declararon. Va aquí y no en
           una pantalla porque hay que pedirla entren por donde entren. */}
       {!me.adultConfirmed && <AvisoMayoriaDeEdad />}
+
+      {/* La bienvenida espera a la declaración de edad: dos diálogos a la vez no se leen. */}
+      {me.adultConfirmed && <Bienvenida me={me} />}
     </div>
   );
 }
@@ -335,6 +339,7 @@ function TabBar({
           <Link
             key={item.href}
             href={item.href}
+            data-tour={`nav:${item.href}`}
             aria-current={activo ? "page" : undefined}
             className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 pt-2"
           >
@@ -462,6 +467,7 @@ function Sidebar({
                 <Link
                   key={item.href}
                   href={item.href}
+                  data-tour={`nav:${item.href}`}
                   aria-current={activo ? "page" : undefined}
                   // Colapsado, el nombre se va de la pantalla pero no del árbol accesible: el
                   // `title` lo devuelve al pasar el ratón y `aria-label` a quien no ve el icono.

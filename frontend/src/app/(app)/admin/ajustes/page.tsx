@@ -16,7 +16,7 @@ type Setting = {
   group: string;
   label: string;
   description: string;
-  type: "ENTERO" | "BOOLEANO" | "OPCION" | "TEXTO";
+  type: "ENTERO" | "BOOLEANO" | "OPCION" | "ENLACE" | "TEXTO";
   min: number | null;
   max: number | null;
   options: string[];
@@ -37,6 +37,7 @@ const ETIQUETA_GRUPO: Record<string, string> = {
   PLAZOS: "Plazos",
   REPUTACION: "Reputación y ranking",
   POLITICAS: "Políticas",
+  CONTENIDO: "Contenido",
   OTROS: "Sin catalogar",
 };
 
@@ -234,6 +235,15 @@ function FilaAjuste({
                 </option>
               ))}
             </select>
+          ) : ajuste.type === "ENLACE" ? (
+            <Campo
+              type="url"
+              value={valor}
+              onChange={(e) => setValor(e.target.value)}
+              placeholder="https://… (vacío: no se muestra)"
+              aria-label={ajuste.label}
+              className="w-full sm:w-80"
+            />
           ) : (
             <Campo
               type="number"

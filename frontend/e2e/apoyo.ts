@@ -54,3 +54,13 @@ async function esperarEnlaceDeVerificacion(page: Page, email: string): Promise<s
   }
   throw new Error(`No llegó el correo de verificación para ${email} en 10 s`);
 }
+
+/**
+ * Las cuentas nuevas ven el recorrido guiado al entrar (las de la semilla ya lo vieron). Las pruebas
+ * que no son sobre él lo saltan: mientras está abierto, lo de atrás no recibe clics.
+ */
+export async function saltarRecorrido(page: Page) {
+  const saltar = page.getByRole("dialog").getByRole("button", { name: "Saltar" });
+  await saltar.click({ timeout: 15_000 });
+  await expect(saltar).toHaveCount(0);
+}

@@ -60,7 +60,7 @@ class SettingDefinitionTest {
     }
 
     @Test
-    @DisplayName("Un valor vacío no pasa por ningún tipo")
+    @DisplayName("Un valor vacío no pasa, salvo en un enlace (ver losEnlaces)")
     void elVacioNoPasa() {
         assertThatThrownBy(() -> SettingDefinition.AUTO_COMPLETE_HOURS.validate("   "))
                 .isInstanceOf(UnprocessableException.class)
@@ -82,6 +82,18 @@ class SettingDefinitionTest {
         assertThat(SettingDefinition.SANCTIONS_MODE.isSensitive()).isTrue();
 
         assertThat(SettingDefinition.RANKING_WEIGHT_RATING.isSensitive()).isFalse();
+    }
+
+    @Test
+    @DisplayName("Un enlace vacío es «no hay»; si viene, tiene que ser https con dominio")
+    void losEnlaces() {
+        SettingDefinition video = SettingDefinition.PROFESSOR_WELCOME_VIDEO_URL;
+        assertThat(video.validate("  ")).isEmpty();
+        assertThat(video.validate(" https://youtu.be/abc ")).isEqualTo("https://youtu.be/abc");
+        assertThatThrownBy(() -> video.validate("javascript:alert(1)")).isInstanceOf(UnprocessableException.class);
+        assertThatThrownBy(() -> video.validate("http://youtu.be/abc")).isInstanceOf(UnprocessableException.class);
+        assertThatThrownBy(() -> video.validate("https:///sin-dominio")).isInstanceOf(UnprocessableException.class);
+        assertThatThrownBy(() -> video.validate("https://youtu.be/con espacio")).isInstanceOf(UnprocessableException.class);
     }
 
     @Test
