@@ -21,12 +21,14 @@ import co.orion.engagement.domain.Achievement;
 import co.orion.engagement.domain.AchievementEvaluators;
 import co.orion.engagement.domain.AchievementInput;
 import co.orion.engagement.domain.AchievementUnlockedEvent;
+import co.orion.engagement.domain.PracticeTally;
 import co.orion.engagement.domain.StreakCalculator;
 import co.orion.engagement.domain.StreakProtectedEvent;
 import co.orion.engagement.domain.StreakProtection;
 import co.orion.engagement.domain.UserAchievement;
 import co.orion.engagement.persistence.AchievementRepository;
 import co.orion.engagement.persistence.PointEventRepository;
+import co.orion.engagement.persistence.PracticeTallyRepository;
 import co.orion.engagement.persistence.StreakProtectionRepository;
 import co.orion.engagement.persistence.UserAchievementRepository;
 import co.orion.identity.application.StudentProfileService;
@@ -65,6 +67,9 @@ public class AchievementService {
     static final String FUENTE_PRACTICA = "PRACTICE";
     /** Lo que promete el cierre de la práctica (brief, B5.3): «+15 puntos». */
     static final int PUNTOS_PRACTICA = 15;
+    /** El bono de una constelación perfecta: todo al primer intento (24/09/2026). */
+    static final String FUENTE_PRACTICA_PERFECTA = "PRACTICE_PERFECT";
+    static final int PUNTOS_PRACTICA_PERFECTA = 5;
     private static final String FUENTE_RESENA = "REVIEW";
     private static final String FUENTE_LOGRO = "ACHIEVEMENT";
 
@@ -80,6 +85,7 @@ public class AchievementService {
     private final UserAchievementRepository userAchievements;
     private final PointEventRepository pointEvents;
     private final StreakProtectionRepository protections;
+    private final PracticeTallyRepository tallies;
     private final PlatformSettingsService settings;
     private final ApplicationEventPublisher events;
     private final Clock clock;
@@ -94,6 +100,7 @@ public class AchievementService {
                               UserAchievementRepository userAchievements,
                               PointEventRepository pointEvents,
                               StreakProtectionRepository protections,
+                              PracticeTallyRepository tallies,
                               PlatformSettingsService settings,
                               ApplicationEventPublisher events,
                               Clock clock) {
@@ -107,6 +114,7 @@ public class AchievementService {
         this.userAchievements = userAchievements;
         this.pointEvents = pointEvents;
         this.protections = protections;
+        this.tallies = tallies;
         this.settings = settings;
         this.events = events;
         this.clock = clock;
@@ -161,12 +169,20 @@ public class AchievementService {
 
     /** Los hechos que solo mueven logros y no dan puntos directos. */
     /**
-     * Una práctica terminada: sus puntos (una vez por set, por el índice único del libro) y, como
-     * cuenta para la racha, la reevaluación de las estrellas de constancia.
+     * Una práctica terminada: sus puntos (una vez por set, por el índice único del libro), el bono si
+     * fue perfecta, lo que cuenta para los logros de práctica y, como cuenta para la racha, la
+     * reevaluación de las estrellas de constancia.
      */
     @Transactional
-    public void onPracticeCompleted(UUID studentId, UUID setId, Instant when) {
+    public void onPracticeCompleted(UUID studentId, UUID setId, Instant when, boolean perfecta,
+                                    int escuchaAcertada, int segundaOportunidad) {
+        if (!tallies.existsById(setId)) {
+            tallies.save(new PracticeTally(setId, studentId, perfecta, escuchaAcertada, segundaOportunidad, when));
+        }
         concederSiEsNueva(studentId, FUENTE_PRACTICA, setId, PUNTOS_PRACTICA, when);
+        if (perfecta) {
+            concederSiEsNueva(studentId, FUENTE_PRACTICA_PERFECTA, setId, PUNTOS_PRACTICA_PERFECTA, when);
+        }
         reevaluar(studentId);
     }
 
@@ -335,6 +351,11 @@ public class AchievementService {
             eventos.add("goal_declared");
         }
 
+        // Las perfectas se leen del libro de puntos (su bono), como las prácticas: así cuentan también
+        // las que se terminaron antes de que existiera la tabla de engagement.
+        long perfectas = pointEvents.findByUserIdAndSourceType(studentId, FUENTE_PRACTICA_PERFECTA).size();
+        List<PracticeTally> cuentas = tallies.findByUserId(studentId);
+
         return new AchievementInput(
                 tomadas,
                 // Ya no hay presenciales que contar: Orión es virtual y el CHECK de la base lo
@@ -350,7 +371,10 @@ public class AchievementService {
                 protections.findByUserId(studentId).stream()
                         .map(StreakProtection::getGrantedFor).collect(Collectors.toSet()),
                 ahora,
-                practicasDe(studentId));
+                practicasDe(studentId),
+                perfectas,
+                cuentas.stream().mapToLong(PracticeTally::getListeningCorrect).sum(),
+                cuentas.stream().mapToLong(PracticeTally::getSecondTryCorrect).sum());
     }
 
     private Set<UUID> profesoresConTarifaCero(List<Booking> reservas) {

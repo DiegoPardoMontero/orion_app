@@ -12,8 +12,8 @@ import type { GoalResponse } from "@/lib/api/types";
 import { etiquetaObjetivo } from "@/lib/i18n";
 import { NIVEL_ESTUDIANTE, type FichaEstudiante } from "@/lib/gamificacion";
 import { useMe } from "@/lib/auth/session";
-import { fechaCorta } from "@/lib/format";
-import type { ResumenDePractica } from "@/lib/practica";
+import { fechaCorta, fechaLarga } from "@/lib/format";
+import type { PracticaEnLaFicha, ResumenDePractica } from "@/lib/practica";
 
 /**
  * El perfil de un estudiante visto por otra persona.
@@ -196,36 +196,76 @@ function EnClaseContigo({ estudianteId }: { estudianteId: string }) {
   );
 }
 
+const ESTADO_EN_LA_FICHA: Record<PracticaEnLaFicha["status"], string> = {
+  READY: "Sin empezar",
+  IN_PROGRESS: "En curso",
+  COMPLETED: "Completada",
+  EXPIRED: "Venció sin hacer",
+};
+
 /**
- * Cuánto practicó entre clases (Bloque 10, paso B5.4): un resumen agregado, nunca las respuestas
- * una por una. Si el estudiante siente que sus ejercicios son vigilados deja de arriesgarse a
- * equivocarse, y equivocarse en privado es justamente el valor de la práctica.
+ * Cuánto practicó entre clases (Bloque 10, paso B5.4) y, práctica por práctica, cómo le fue: desde el
+ * 24/09/2026 el profesor ve cada ejercicio con lo que respondió su estudiante (decisión de Pardo; el
+ * estudiante lo sabe desde la portada de su práctica). El detalle vive en el acta de cada clase.
  */
 function SuPractica({ estudianteId }: { estudianteId: string }) {
   const { data: me } = useMe();
+  const esProfesor = me?.role === "PROFESSOR";
   const resumen = useQuery({
     queryKey: ["professors", "me", "students", estudianteId, "practice"],
     queryFn: () => apiFetch<ResumenDePractica>(`/api/v1/professors/me/students/${estudianteId}/practice`),
-    enabled: me?.role === "PROFESSOR",
+    enabled: esProfesor,
+    retry: false,
+  });
+  const historial = useQuery({
+    queryKey: ["professors", "me", "students", estudianteId, "practice-sets"],
+    queryFn: () => apiFetch<PracticaEnLaFicha[]>(`/api/v1/professors/me/students/${estudianteId}/practice-sets`),
+    enabled: esProfesor,
     retry: false,
   });
   const d = resumen.data;
-  if (!d || (d.ofrecidasEstaSemana === 0 && d.leCosto.length === 0)) return null;
+  const sets = historial.data ?? [];
+  const hayResumen = d && (d.ofrecidasEstaSemana > 0 || d.leCosto.length > 0);
+  if (!hayResumen && sets.length === 0) return null;
 
   return (
     <section className="mt-5 rounded-card border border-border bg-surface-raised p-5">
       <h2 className="text-[12px] font-bold uppercase tracking-[0.06em] text-text-secondary">Entre clases</h2>
-      <p className="mt-2 text-[14.5px] leading-relaxed text-text">
-        {d.ofrecidasEstaSemana > 0 ? (
-          <>
-            <strong>
-              Practicó {d.completadasEstaSemana} de {d.ofrecidasEstaSemana}{" "}
-              {d.ofrecidasEstaSemana === 1 ? "vez" : "veces"} esta semana.
-            </strong>{" "}
-          </>
-        ) : null}
-        {d.leCosto.length > 0 && <>Le costó: {d.leCosto.join(", ")}.</>}
-      </p>
+      {d && hayResumen && (
+        <p className="mt-2 text-[14.5px] leading-relaxed text-text">
+          {d.ofrecidasEstaSemana > 0 ? (
+            <>
+              <strong>
+                Practicó {d.completadasEstaSemana} de {d.ofrecidasEstaSemana}{" "}
+                {d.ofrecidasEstaSemana === 1 ? "vez" : "veces"} esta semana.
+              </strong>{" "}
+            </>
+          ) : null}
+          {d.leCosto.length > 0 && <>Le costó: {d.leCosto.join(", ")}.</>}
+        </p>
+      )}
+      {sets.length > 0 && (
+        <ul className="mt-3 divide-y divide-border">
+          {sets.map((p) => (
+            <li key={p.id}>
+              <Link
+                href={p.bookingId ? `/mis-clases/${p.bookingId}/acta` : "#"}
+                className="flex min-h-11 items-center justify-between gap-3 py-2 text-[13.5px] transition-colors hover:text-primary-strong focus-visible:shadow-focus"
+              >
+                <span className="min-w-0 truncate">
+                  <span className="font-semibold">
+                    Práctica del {p.classStartsAt ? fechaLarga(p.classStartsAt) : "acta"}
+                  </span>
+                  <span className="text-text-muted"> · {ESTADO_EN_LA_FICHA[p.status]}</span>
+                </span>
+                <span className="shrink-0 text-[12.5px] font-bold text-primary-strong">
+                  {p.status === "COMPLETED" ? `${p.correctCount} de ${p.itemCount} · Ver` : "Ver"}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

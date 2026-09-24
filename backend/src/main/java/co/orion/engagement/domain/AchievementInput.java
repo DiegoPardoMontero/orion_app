@@ -27,6 +27,9 @@ import co.orion.scheduling.domain.LearningProgress.Tomada;
  * @param mesesYaProtegidos meses en los que ya gastó su protección de racha
  * @param ahora el instante de referencia
  * @param practicas las prácticas terminadas, como semanas activas para la racha
+ * @param practicasPerfectas las terminadas con todo al primer intento
+ * @param escuchaAcertada los ejercicios de escucha acertados, sumando todas las prácticas
+ * @param segundaOportunidad los ejercicios acertados al segundo intento, sumando todas
  */
 public record AchievementInput(List<Tomada> clasesTomadas,
                                long presenciales,
@@ -37,14 +40,25 @@ public record AchievementInput(List<Tomada> clasesTomadas,
                                long diasSinCancelar,
                                Set<java.time.LocalDate> mesesYaProtegidos,
                                Instant ahora,
-                               List<Tomada> practicas) {
+                               List<Tomada> practicas,
+                               long practicasPerfectas,
+                               long escuchaAcertada,
+                               long segundaOportunidad) {
+
+    /** Sin el detalle de la práctica: la forma del 22/09, que siguen usando pruebas anteriores. */
+    public AchievementInput(List<Tomada> clasesTomadas, long presenciales, Set<String> idiomas, Set<UUID> profesores,
+                            Set<String> eventosOcurridos, int camposDePerfil, long diasSinCancelar,
+                            Set<java.time.LocalDate> mesesYaProtegidos, Instant ahora, List<Tomada> practicas) {
+        this(clasesTomadas, presenciales, idiomas, profesores, eventosOcurridos, camposDePerfil, diasSinCancelar,
+                mesesYaProtegidos, ahora, practicas, 0, 0, 0);
+    }
 
     /** Sin prácticas: la forma de antes del Bloque 10, que siguen usando las pruebas. */
     public AchievementInput(List<Tomada> clasesTomadas, long presenciales, Set<String> idiomas, Set<UUID> profesores,
                             Set<String> eventosOcurridos, int camposDePerfil, long diasSinCancelar,
                             Set<java.time.LocalDate> mesesYaProtegidos, Instant ahora) {
         this(clasesTomadas, presenciales, idiomas, profesores, eventosOcurridos, camposDePerfil, diasSinCancelar,
-                mesesYaProtegidos, ahora, List.of());
+                mesesYaProtegidos, ahora, List.of(), 0, 0, 0);
     }
 
     /**

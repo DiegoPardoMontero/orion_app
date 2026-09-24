@@ -426,6 +426,15 @@ test("Ana practica lo de su clase y María lo ve en su ficha", async ({ page }) 
     await expect(practicar).toBeVisible({ timeout: 2000 });
   }).toPass({ timeout: 30_000 });
   await practicar.click();
+  // La portada: de qué clase sale, cuánto dura y la constelación apagada. (Si una corrida anterior
+  // ya lo empezó, se entra directo al ejercicio.)
+  const empezar = page.getByRole("button", { name: "Empezar" });
+  await expect(empezar.or(page.getByRole("img", { name: /estrellas encendidas/ })).first()).toBeVisible();
+  if (await empezar.isVisible()) {
+    await expect(page.getByRole("img", { name: /0 de \d estrellas encendidas/ })).toBeVisible();
+    await expect(page.getByText(/verá cómo te fue/)).toBeVisible();
+    await empezar.click();
+  }
 
   // Un ejercicio por pantalla, hasta que no quede ninguno abierto.
   const verComo = page.getByRole("button", { name: "Ver cómo me fue" });
@@ -463,11 +472,13 @@ test("Ana practica lo de su clase y María lo ve en su ficha", async ({ page }) 
       await expect(page.getByText("Así es.").or(siguiente)).toBeVisible();
     }
     if (await siguiente.isVisible()) await siguiente.click();
-    await page.waitForTimeout(1400);
+    // Un acierto se queda en pantalla un momento, para leer la explicación, y avanza solo.
+    await expect(page.getByText("Así es.")).toHaveCount(0, { timeout: 6000 });
   }
   await page.getByRole("button", { name: "Ver cómo me fue" }).click();
-  await expect(page.getByRole("heading", { name: /bien usados/ })).toBeVisible();
-  await expect(page.getByText("+15 puntos")).toBeVisible();
+  await expect(page.getByRole("heading", { name: /bien usados|Constelación perfecta/ })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Constelación completa" })).toBeVisible();
+  await expect(page.getByText("+15 puntos por practicar")).toBeVisible();
   await page.goto("/mis-clases");
   await logout(page);
 
@@ -525,7 +536,7 @@ test("sin IA, María escribe el acta a mano y la publica igual", async ({ page }
 /**
  * El ensayo del Bloque 10 (23/09/2026): el admin crea desde Sistema una clase de prueba ya dictada,
  * María escribe el acta de esa clase en ese mismo momento y, publicada, ve debajo los ejercicios que
- * salieron de ella —con la respuesta esperada, sin nada de lo que haga Ana—; el admin ve en qué va.
+ * salieron de ella con su respuesta esperada; el admin ve en qué va.
  */
 test("el admin ensaya el acta: María la escribe y ve los ejercicios que salieron", async ({ page }) => {
   await login(page, USERS.admin);
@@ -557,9 +568,9 @@ test("el admin ensaya el acta: María la escribe y ve los ejercicios que saliero
   await expect(practica).toBeVisible();
   await expect(async () => {
     await page.reload();
-    await expect(page.getByText(/^Respuesta:/).first()).toBeVisible({ timeout: 2000 });
+    await expect(page.getByText(/^Respuesta esperada:/).first()).toBeVisible({ timeout: 2000 });
   }).toPass({ timeout: 30_000 });
-  await expect(page.getByText("Listos. Tu estudiante todavía no los empieza.")).toBeVisible();
+  await expect(page.getByText("Listos. Todavía no los empieza.")).toBeVisible();
   await logout(page);
 
   await login(page, USERS.admin);

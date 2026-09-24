@@ -41,4 +41,7 @@ public interface PracticeSetRepository extends JpaRepository<PracticeSet, UUID> 
 
     List<PracticeSet> findByStudentIdAndProfessorIdAndCreatedAtGreaterThanEqual(UUID studentId, UUID professorId,
                                                                                 Instant desde);
+
+    List<PracticeSet> findTop20ByStudentIdAndProfessorIdAndStatusNotInOrderByCreatedAtDesc(
+            UUID studentId, UUID professorId, Collection<PracticeSetStatus> excluidos);
 }

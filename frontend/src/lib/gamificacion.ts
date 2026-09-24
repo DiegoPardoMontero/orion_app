@@ -80,6 +80,7 @@ export const NOMBRE_FAMILIA: Record<FamiliaLogro, string> = {
   VOLUMEN: "Volumen",
   AMPLITUD: "Amplitud",
   COMPROMISO: "Compromiso",
+  PRACTICA: "Práctica",
 };
 
 export const ORDEN_FAMILIAS: FamiliaLogro[] = [
@@ -88,6 +89,7 @@ export const ORDEN_FAMILIAS: FamiliaLogro[] = [
   "VOLUMEN",
   "AMPLITUD",
   "COMPROMISO",
+  "PRACTICA",
 ];
 
 export const NIVEL_ESTUDIANTE: Record<string, string> = {

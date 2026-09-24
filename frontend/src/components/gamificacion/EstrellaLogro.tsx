@@ -20,12 +20,15 @@ const RADIO_ORBITA = 240;
 /** 2·π·240, redondeado como en el entregable. */
 const CIRCUNFERENCIA = 1508;
 
-export type FamiliaLogro = "PRIMEROS" | "CONSTANCIA" | "VOLUMEN" | "AMPLITUD" | "COMPROMISO";
+export type FamiliaLogro = "PRIMEROS" | "CONSTANCIA" | "VOLUMEN" | "AMPLITUD" | "COMPROMISO" | "PRACTICA";
 export type EstadoLogro = "apagada" | "progreso" | "encendida";
 
-/** Durazno para los primeros pasos, la constancia y el volumen; lavanda para amplitud y compromiso. */
+/**
+ * Durazno para los primeros pasos, la constancia y el volumen; lavanda para amplitud, compromiso y
+ * la práctica, que es de Meissa.
+ */
 function colorDe(familia: FamiliaLogro): string {
-  return familia === "AMPLITUD" || familia === "COMPROMISO"
+  return familia === "AMPLITUD" || familia === "COMPROMISO" || familia === "PRACTICA"
     ? "var(--color-star-social)"
     : "var(--color-star-solo)";
 }

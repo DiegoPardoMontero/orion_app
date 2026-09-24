@@ -1,6 +1,7 @@
 package co.orion.practice.domain;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.hibernate.annotations.Generated;
@@ -55,6 +56,10 @@ public class PracticeItem {
     @Column(length = 600)
     private String answer;
 
+    /** La del primer intento: con dos, la última la tapa, y es la que dice qué no sabía todavía. */
+    @Column(name = "first_answer", length = 600)
+    private String firstAnswer;
+
     @Column(name = "is_correct")
     private Boolean correct;
 
@@ -96,6 +101,9 @@ public class PracticeItem {
         if (attempts >= maxIntentos) {
             throw new UnprocessableException("Ya usaste los intentos de este ejercicio. Sigue con el próximo.");
         }
+        if (attempts == 0) {
+            this.firstAnswer = respuesta;
+        }
         this.attempts++;
         this.answer = respuesta;
         this.correct = acerto;
@@ -105,6 +113,25 @@ public class PracticeItem {
     /** Terminado: acertado, sin intentos o saltado. Se muestra la respuesta y se sigue. */
     public boolean cerrado(int maxIntentos) {
         return Boolean.TRUE.equals(correct) || attempts >= maxIntentos || skippedAt != null;
+    }
+
+    /** Acertado a la primera: lo que cuenta para una constelación perfecta y para la racha del set. */
+    public boolean alPrimerIntento() {
+        return Boolean.TRUE.equals(correct) && attempts == 1;
+    }
+
+    /** Acertado al segundo intento: lo que celebra el logro «Segunda oportunidad». */
+    public boolean alSegundoIntento() {
+        return Boolean.TRUE.equals(correct) && attempts == 2;
+    }
+
+    /**
+     * Una constelación perfecta: todo lo que se respondió, al primer intento. Lo saltado por falta de
+     * voz no la rompe, pero un set entero saltado no es perfecto.
+     */
+    public static boolean perfecta(List<PracticeItem> items) {
+        List<PracticeItem> respondidos = items.stream().filter(i -> i.skippedAt == null).toList();
+        return !respondidos.isEmpty() && respondidos.stream().allMatch(PracticeItem::alPrimerIntento);
     }
 
     /**
@@ -132,6 +159,7 @@ public class PracticeItem {
     public String getExplanation() { return explanation; }
     public String getSourceTerm() { return sourceTerm; }
     public String getAnswer() { return answer; }
+    public String getFirstAnswer() { return firstAnswer; }
     public Boolean getCorrect() { return correct; }
     public int getAttempts() { return attempts; }
     public Instant getAnsweredAt() { return answeredAt; }

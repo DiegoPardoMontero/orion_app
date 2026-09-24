@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { leerPayload, mostrarEsperada, palabrasNuevas, primerNombre, resumirLoTrabajado, unirFichas, type Ejercicio } from "./practica";
+import {
+  leerPayload,
+  mostrarEsperada,
+  mostrarRespuesta,
+  palabrasNuevas,
+  primerNombre,
+  rachaAlPrimerIntento,
+  resumirLoTrabajado,
+  unirFichas,
+  type Ejercicio,
+} from "./practica";
 
 describe("la invitación a practicar", () => {
   it("resume lo trabajado en una línea, sin punto final y en minúscula para ir tras los dos puntos", () => {
@@ -46,5 +56,27 @@ describe("las respuestas de los tipos nuevos", () => {
       "I have never been to Canada.",
     );
     expect(mostrarEsperada("LISTEN_CHOOSE", "escala")).toBe("escala");
+  });
+});
+
+describe("la racha dentro del set", () => {
+  const item = (index: number, attempts: number, correct: boolean | null, skipped = false): Ejercicio =>
+    ({ id: String(index), index, attempts, correct, closed: true, skipped }) as unknown as Ejercicio;
+
+  it("cuenta los últimos seguidos al primer intento", () => {
+    expect(rachaAlPrimerIntento([item(0, 2, true), item(1, 1, true), item(2, 1, true), item(3, 1, true)])).toBe(3);
+  });
+
+  it("un fallo la corta y lo saltado ni suma ni corta", () => {
+    expect(rachaAlPrimerIntento([item(0, 1, true), item(1, 2, false)])).toBe(0);
+    expect(rachaAlPrimerIntento([item(0, 1, true), item(1, 0, null, true), item(2, 1, true)])).toBe(2);
+  });
+});
+
+describe("lo que ve el profesor", () => {
+  it("muestra la palabra que tocó, no su posición", () => {
+    expect(mostrarRespuesta("SPOT_ERROR", '{"tokens":["I","never","go","to","Canada."]}', "2")).toBe("tocó «go»");
+    expect(mostrarRespuesta("BUILD_SENTENCE", "{}", '["Where","my","is","luggage","?"]')).toBe("Where my is luggage?");
+    expect(mostrarRespuesta("FIX_SENTENCE", "{}", "I am 30")).toBe("I am 30");
   });
 });

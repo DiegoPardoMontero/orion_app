@@ -62,6 +62,8 @@ export type SetDePractica = {
   expiresAt: string;
   completedAt: string | null;
   items: Ejercicio[];
+  /** Constelación perfecta: todo lo respondido, al primer intento. Da su bono al terminar. */
+  perfect: boolean;
 };
 
 export type Resultado = {
@@ -78,15 +80,24 @@ export type ResumenDePractica = {
   leCosto: string[];
 };
 
-/** Un ejercicio tal como lo ve el profesor que escribió el acta: sin nada de lo que hizo el estudiante. */
+/**
+ * Un ejercicio tal como lo ve el profesor que escribió el acta, con lo que hizo su estudiante
+ * (decisión de Pardo, 24/09/2026; el estudiante lo sabe desde la portada de su práctica).
+ */
 export type EjercicioDelActa = {
   index: number;
   type: TipoDeEjercicio;
+  category: CategoriaDeEjercicio;
   prompt: string;
   payload: string;
   expected: string | null;
   explanation: string | null;
   sourceTerm: string | null;
+  firstAnswer: string | null;
+  secondAnswer: string | null;
+  attempts: number;
+  correct: boolean | null;
+  skipped: boolean;
 };
 
 export type PracticaDelActa = {
@@ -94,8 +105,51 @@ export type PracticaDelActa = {
   status: "PENDING" | "READY" | "IN_PROGRESS" | "COMPLETED" | "EXPIRED" | "FAILED";
   itemCount: number;
   expiresAt: string;
+  completedAt: string | null;
+  studentName: string | null;
+  firstTry: number;
+  secondTry: number;
+  shown: number;
+  skipped: number;
   items: EjercicioDelActa[];
 };
+
+/** Una práctica en la ficha del estudiante, para el profesor. */
+export type PracticaEnLaFicha = {
+  id: string;
+  lessonNoteId: string;
+  bookingId: string | null;
+  classStartsAt: string | null;
+  status: "READY" | "IN_PROGRESS" | "COMPLETED" | "EXPIRED";
+  itemCount: number;
+  correctCount: number;
+  completedAt: string | null;
+};
+
+/** Cómo le fue en un ejercicio, en palabras para el profesor. */
+export type ResultadoDelEjercicio = "primero" | "segundo" | "mostrada" | "saltado" | "sinHacer";
+
+export function resultadoDe(e: EjercicioDelActa): ResultadoDelEjercicio {
+  if (e.skipped) return "saltado";
+  if (e.correct === true) return e.attempts <= 1 ? "primero" : "segundo";
+  if (e.attempts === 0) return "sinHacer";
+  return "mostrada";
+}
+
+/** Lo que respondió el estudiante, legible: el índice de «caza el error» es una palabra. */
+export function mostrarRespuesta(tipo: TipoDeEjercicio, payload: string, respuesta: string): string {
+  try {
+    if (tipo === "SPOT_ERROR") {
+      const fichas = (JSON.parse(payload) as { tokens?: string[] }).tokens ?? [];
+      const i = Number.parseInt(respuesta, 10);
+      return Number.isInteger(i) && fichas[i] !== undefined ? `tocó «${fichas[i]}»` : respuesta;
+    }
+    if (tipo === "BUILD_SENTENCE") return unirFichas(JSON.parse(respuesta) as string[]);
+  } catch {
+    // Si no se puede leer, se muestra tal cual.
+  }
+  return mostrarEsperada(tipo, respuesta);
+}
 
 export const NOMBRE_DEL_TIPO: Record<TipoDeEjercicio, string> = {
   FILL_BLANK: "Completa",
@@ -145,6 +199,22 @@ export function leerPayload<T>(ejercicio: { payload: string }): T {
 }
 
 export const PUNTOS_POR_PRACTICA = 15;
+export const PUNTOS_CONSTELACION_PERFECTA = 5;
+
+/**
+ * Cuántos seguidos lleva al primer intento, contando hacia atrás desde el último cerrado. Lo saltado
+ * no suma ni corta: no fue un intento.
+ */
+export function rachaAlPrimerIntento(items: Ejercicio[]): number {
+  let racha = 0;
+  const cerrados = [...items].sort((a, b) => a.index - b.index).filter((i) => i.closed && !i.skipped);
+  for (let k = cerrados.length - 1; k >= 0; k--) {
+    const i = cerrados[k];
+    if (i.correct === true && i.attempts === 1) racha++;
+    else break;
+  }
+  return racha;
+}
 
 export function primerNombre(nombre: string): string {
   return nombre.trim().split(/\s+/)[0];

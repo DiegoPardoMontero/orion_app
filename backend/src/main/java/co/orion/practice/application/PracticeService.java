@@ -271,7 +271,9 @@ public class PracticeService {
         if (set.completar(correctos, clock.instant())) {
             sets.save(set);
             eventos.publishEvent(new PracticeCompletedEvent(set.getStudentId(), set.getId(), suyos.size(),
-                    correctos, set.getCompletedAt()));
+                    correctos, set.getCompletedAt(), PracticeItem.perfecta(suyos),
+                    (int) suyos.stream().filter(i -> i.getItemType().seOye() && Boolean.TRUE.equals(i.getCorrect())).count(),
+                    (int) suyos.stream().filter(PracticeItem::alSegundoIntento).count()));
         }
         return new ConEjercicios(set, suyos);
     }
@@ -290,9 +292,10 @@ public class PracticeService {
     /* ---------------- lo que ve el profesor ---------------- */
 
     /**
-     * Un resumen agregado, nunca las respuestas una por una: si el estudiante siente que sus
-     * ejercicios son vigilados, deja de arriesgarse a equivocarse, y equivocarse en privado es
-     * justamente el valor de la función (brief, paso B5.4).
+     * El resumen de la semana: cuántas practicó y dónde le costó. Desde el 24/09/2026 el profesor ve
+     * también cada ejercicio con lo que respondió su estudiante (decisión de Pardo, que cambió el
+     * «nunca las respuestas» del brief, paso B5.4): el estudiante lo sabe desde la portada de su
+     * práctica, porque equivocarse sin saber que alguien mira sería lo contrario de confiar.
      *
      * @param leCosto los términos (o tipos de ejercicio) donde más falló en las últimas cuatro semanas
      */
@@ -330,10 +333,9 @@ public class PracticeService {
     }
 
     /**
-     * Los ejercicios que salieron de un acta, para el profesor que la escribió: enunciado, respuesta
-     * esperada y explicación. Solo lectura, y nunca lo que hizo el estudiante —ni sus respuestas, ni
-     * sus intentos, ni si acertó—, por la misma razón que el resumen de arriba: el profesor ve qué se
-     * le propuso, no cómo le fue ejercicio por ejercicio. Vacío si el acta aún no tiene práctica.
+     * Los ejercicios que salieron de un acta, para el profesor que la escribió: cada uno con su
+     * respuesta esperada y lo que hizo el estudiante (sus respuestas, sus intentos, si acertó o lo
+     * saltó). Vacío si el acta aún no tiene práctica.
      */
     @Transactional(readOnly = true)
     public Optional<ConEjercicios> delActa(User profesor, UUID actaId) {
@@ -342,6 +344,16 @@ public class PracticeService {
             throw new ResourceNotFoundException("Práctica no encontrada");
         }
         return set.map(s -> new ConEjercicios(s, items.findByPracticeSetIdOrderByItemIndexAsc(s.getId())));
+    }
+
+    /** Las prácticas de un estudiante con este profesor, para su ficha: de la más nueva a la más vieja. */
+    @Transactional(readOnly = true)
+    public List<PracticeSet> historialParaElProfesor(User profesor, UUID estudianteId) {
+        if (!bookings.existsByProfessorIdAndStudentId(profesor.getId(), estudianteId)) {
+            throw new ResourceNotFoundException("Estudiante no encontrado");
+        }
+        return sets.findTop20ByStudentIdAndProfessorIdAndStatusNotInOrderByCreatedAtDesc(estudianteId,
+                profesor.getId(), List.of(PracticeSetStatus.PENDING, PracticeSetStatus.FAILED));
     }
 
     private static String nombreDelTipo(PracticeItem i) {

@@ -72,7 +72,8 @@ public class EngagementListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void on(PracticeCompletedEvent event) {
-        seguro(() -> achievements.onPracticeCompleted(event.studentId(), event.setId(), event.completedAt()),
+        seguro(() -> achievements.onPracticeCompleted(event.studentId(), event.setId(), event.completedAt(),
+                        event.perfecta(), event.escuchaAcertada(), event.segundaOportunidad()),
                 "práctica terminada " + event.setId());
     }
 

@@ -31,8 +31,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 /**
- * La práctica (brief del Bloque 10, paso B3). El estudiante opera sobre sus sets; el profesor ve
- * un resumen agregado de sus estudiantes y los ejercicios de sus actas, nunca las respuestas.
+ * La práctica (brief del Bloque 10, paso B3). El estudiante opera sobre sus sets; el profesor ve el
+ * resumen de sus estudiantes y, en cada acta, los ejercicios con lo que hizo su estudiante.
  *
  * <p><strong>La respuesta esperada no viaja</strong> mientras el ejercicio está abierto: se manda
  * solo cuando ya está cerrado (acertado o sin intentos), para mostrarla con su explicación.
@@ -107,31 +107,66 @@ public class PracticeController {
     }
 
     /**
-     * Los ejercicios de un acta, para el profesor que la escribió. Aquí la respuesta esperada sí
-     * viaja —el profesor no está resolviendo nada— y lo del estudiante no viaja nunca. 204 si el
+     * Los ejercicios de un acta, para el profesor que la escribió, con lo que hizo su estudiante en
+     * cada uno (decisión de Pardo, 24/09/2026; el estudiante lo sabe desde su portada). 204 si el
      * acta todavía no tiene práctica.
      */
     @GetMapping("/api/v1/professors/me/lesson-notes/{id}/practice")
     public ResponseEntity<PracticaDelActa> delActa(@AuthenticationPrincipal OrionUserDetails principal,
                                                    @PathVariable UUID id) {
+        int max = practica.maxIntentos();
         return practica.delActa(principal.user(), id)
-                .map(c -> ResponseEntity.ok(new PracticaDelActa(c.set().getId(), c.set().getStatus().name(),
-                        c.set().getItemCount(), bogota(c.set().getExpiresAt()),
-                        c.ejercicios().stream().map(i -> new EjercicioDelActa(i.getItemIndex(),
-                                i.getItemType().name(), i.getPrompt(), i.getPayload(), i.getExpected(),
-                                i.getExplanation(), i.getSourceTerm())).toList())))
+                .map(c -> {
+                    PracticeSet s = c.set();
+                    List<PracticeItem> ej = c.ejercicios();
+                    String estudiante = users.findById(s.getStudentId()).map(u -> u.getFullName()).orElse(null);
+                    return ResponseEntity.ok(new PracticaDelActa(s.getId(), s.getStatus().name(), s.getItemCount(),
+                            bogota(s.getExpiresAt()), bogota(s.getCompletedAt()), estudiante,
+                            (int) ej.stream().filter(PracticeItem::alPrimerIntento).count(),
+                            (int) ej.stream().filter(PracticeItem::alSegundoIntento).count(),
+                            (int) ej.stream().filter(i -> i.cerrado(max) && Boolean.FALSE.equals(i.getCorrect())).count(),
+                            (int) ej.stream().filter(i -> i.getSkippedAt() != null).count(),
+                            ej.stream().map(i -> new EjercicioDelActa(i.getItemIndex(), i.getItemType().name(),
+                                    i.getItemType().categoria().name(), i.getPrompt(), i.getPayload(), i.getExpected(),
+                                    i.getExplanation(), i.getSourceTerm(), i.getFirstAnswer(),
+                                    i.getAttempts() > 1 ? i.getAnswer() : null, i.getAttempts(), i.getCorrect(),
+                                    i.getSkippedAt() != null)).toList()));
+                })
                 .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
+    /** Las prácticas de un estudiante con este profesor, para su ficha. */
+    @GetMapping("/api/v1/professors/me/students/{id}/practice-sets")
+    public List<PracticaEnLaFicha> historialParaElProfesor(@AuthenticationPrincipal OrionUserDetails principal,
+                                                          @PathVariable UUID id) {
+        return practica.historialParaElProfesor(principal.user(), id).stream().map(s -> {
+            Material m = material(s);
+            return new PracticaEnLaFicha(s.getId(), s.getLessonNoteId(), m == null ? null : m.bookingId(),
+                    m == null || m.classStartsAt() == null ? null
+                            : ZonedDateTime.ofInstant(java.time.Instant.parse(m.classStartsAt()), BusinessZone.BOGOTA),
+                    s.getStatus().name(), s.getItemCount(), s.getCorrectCount(), bogota(s.getCompletedAt()));
+        }).toList();
     }
 
     /* ---------------- vistas ---------------- */
 
-    /** Sin intentos, sin acierto y sin respuesta: nada de lo que hizo el estudiante. */
-    public record EjercicioDelActa(int index, String type, String prompt, String payload, String expected,
-                                   String explanation, String sourceTerm) {
+    /**
+     * Un ejercicio del acta con lo que hizo el estudiante: su primera respuesta, la del segundo
+     * intento si lo hubo, si acertó y si lo saltó.
+     */
+    public record EjercicioDelActa(int index, String type, String category, String prompt, String payload,
+                                   String expected, String explanation, String sourceTerm, String firstAnswer,
+                                   String secondAnswer, int attempts, Boolean correct, boolean skipped) {
     }
 
+    /** El set de un acta con su resumen: cuántos al primer intento, al segundo, mostrados y saltados. */
     public record PracticaDelActa(UUID id, String status, int itemCount, ZonedDateTime expiresAt,
-                                  List<EjercicioDelActa> items) {
+                                  ZonedDateTime completedAt, String studentName, int firstTry, int secondTry,
+                                  int shown, int skipped, List<EjercicioDelActa> items) {
+    }
+
+    public record PracticaEnLaFicha(UUID id, UUID lessonNoteId, String bookingId, ZonedDateTime classStartsAt,
+                                    String status, int itemCount, int correctCount, ZonedDateTime completedAt) {
     }
 
     public record RespuestaRequest(@NotNull @Size(max = 600) String answer) {
@@ -145,7 +180,7 @@ public class PracticeController {
     public record SetView(UUID id, String status, UUID lessonNoteId, String bookingId, ZonedDateTime classStartsAt,
                           String professorName, String workedOn, int vocabularyCount, Integer estimatedMinutes,
                           int itemCount, int correctCount, ZonedDateTime expiresAt, ZonedDateTime completedAt,
-                          List<ItemView> items) {
+                          List<ItemView> items, boolean perfect) {
     }
 
     public record ResultView(boolean correct, boolean closed, int attemptsLeft, ItemView item) {
@@ -161,7 +196,9 @@ public class PracticeController {
                 profe, m == null ? null : m.workedOn(), m == null ? 0 : m.vocabulary().size(),
                 s.getEstimatedMinutes() == null ? null : s.getEstimatedMinutes().intValue(), s.getItemCount(),
                 s.getCorrectCount(), bogota(s.getExpiresAt()), bogota(s.getCompletedAt()),
-                c.ejercicios().stream().map(i -> item(i, i.cerrado(practica.maxIntentos()))).toList());
+                c.ejercicios().stream().map(i -> item(i, i.cerrado(practica.maxIntentos()))).toList(),
+                // Constelación perfecta: todo lo respondido, al primer intento. El cierre muestra su bono.
+                PracticeItem.perfecta(c.ejercicios()));
     }
 
     /**

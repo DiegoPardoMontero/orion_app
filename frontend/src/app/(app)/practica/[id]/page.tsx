@@ -4,16 +4,23 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowLeft, ArrowUp, Check, Sparkles, Turtle, Volume2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { AvisoError, Cargando, Vacio } from "@/components/estados";
+import { ConstelacionDePractica } from "@/components/practica/ConstelacionDePractica";
+import { Rigel, type RigelPose } from "@/components/Rigel";
 import { Boton, Spinner, Tarjeta } from "@/components/ui";
+import { fechaLarga } from "@/lib/format";
 import { apiFetch } from "@/lib/api/fetch";
 import {
   leerPayload,
   mostrarEsperada,
   NOMBRE_DE_CATEGORIA,
   NOMBRE_DEL_TIPO,
+  primerNombre,
+  PUNTOS_CONSTELACION_PERFECTA,
   PUNTOS_POR_PRACTICA,
+  rachaAlPrimerIntento,
+  resumirLoTrabajado,
   SE_OYEN,
   unirFichas,
   type Ejercicio,
@@ -47,15 +54,11 @@ function Contenido() {
     retry: false,
   });
 
-  // Abrirla la marca como empezada; se hace una vez, y el servidor lo ignora si ya lo estaba.
+  // «Empezar» en la portada la marca como empezada; el servidor lo ignora si ya lo estaba.
   const empezar = useMutation({
     mutationFn: () => apiFetch<SetDePractica>(`/api/v1/practice-sets/${id}/start`, { method: "POST" }),
     onSuccess: (s) => queryClient.setQueryData(["practice-set", id], s),
   });
-  const estado = set.data?.status;
-  useEffect(() => {
-    if (estado === "READY" && empezar.isIdle) empezar.mutate();
-  }, [estado, empezar]);
 
   const completar = useMutation({
     mutationFn: () => apiFetch<SetDePractica>(`/api/v1/practice-sets/${id}/complete`, { method: "POST" }),
@@ -78,16 +81,23 @@ function Contenido() {
     cuerpo = <Cierre set={set.data} />;
   } else if (set.data.status === "EXPIRED") {
     cuerpo = <Vacio titulo="Esta práctica ya venció" texto="La próxima llega con tu siguiente clase." />;
+  } else if (set.data.status === "READY") {
+    cuerpo = <Portada set={set.data} empezando={empezar.isPending} onEmpezar={() => empezar.mutate()} />;
   } else {
     const s = set.data;
     const actual = s.items.find((i) => !i.closed);
     cuerpo = (
       <>
-        <Puntos items={s.items} />
+        <ConstelacionDePractica
+          total={s.items.length}
+          encendidas={s.items.filter((i) => i.closed).length}
+          className="mx-auto h-16 w-auto max-w-full"
+        />
         {actual ? (
           <EjercicioActual
             key={actual.id}
             ejercicio={actual}
+            rachaPrevia={rachaAlPrimerIntento(s.items)}
             onActualizado={(item) =>
               queryClient.setQueryData<SetDePractica>(["practice-set", id], (previo) =>
                 previo ? { ...previo, items: previo.items.map((i) => (i.id === item.id ? item : i)) } : previo,
@@ -126,29 +136,65 @@ function Contenido() {
   );
 }
 
-/** Los puntos que se encienden, uno por ejercicio cerrado. */
-function Puntos({ items }: { items: Ejercicio[] }) {
-  const cerrados = items.filter((i) => i.closed).length;
+/**
+ * La portada del set, antes del primer ejercicio: de qué clase sale, cuánto dura y la constelación
+ * apagada que se va a encender.
+ */
+function Portada({ set, empezando, onEmpezar }: { set: SetDePractica; empezando: boolean; onEmpezar: () => void }) {
+  const trabajado = resumirLoTrabajado(set.workedOn);
+  const minutos = set.estimatedMinutes ?? set.itemCount;
+  const categorias = Array.from(new Set(set.items.map((i) => NOMBRE_DE_CATEGORIA[i.category])));
   return (
-    <div
-      className="flex items-center justify-center gap-3 py-2"
-      role="img"
-      aria-label={`Ejercicio ${Math.min(cerrados + 1, items.length)} de ${items.length}`}
-    >
-      {items.map((i) => (
-        <span
-          key={i.id}
-          aria-hidden="true"
-          className={`h-3 w-3 rounded-full transition-colors motion-reduce:transition-none ${
-            i.closed ? "bg-[#7A4A8C] shadow-[0_0_10px_rgba(122,74,140,0.55)]" : "bg-accent-lavender-soft"
-          }`}
-        />
-      ))}
+    <div className="mt-2 flex flex-col items-center gap-3 rounded-card bg-surface-raised p-7 text-center shadow-sm">
+      <Rigel pose="saludo" decorativo className="h-24 w-auto" />
+      <h1 className="font-display text-h2 font-bold">
+        {set.itemCount} ejercicios · {minutos} minutos
+      </h1>
+      {(set.classStartsAt || set.professorName) && (
+        <p className="max-w-[36ch] text-[14.5px] text-text-secondary">
+          Del {set.classStartsAt ? fechaLarga(set.classStartsAt) : "tu última clase"}
+          {set.professorName ? ` con ${primerNombre(set.professorName)}` : ""}
+          {trabajado ? `: ${trabajado}.` : "."}
+        </p>
+      )}
+      <p className="flex flex-wrap justify-center gap-1.5">
+        {categorias.map((c) => (
+          <span key={c} className="rounded-pill bg-accent-lavender-soft px-3 py-1 text-[12px] font-bold text-[#5e4a8a]">
+            {c}
+          </span>
+        ))}
+      </p>
+      <ConstelacionDePractica total={set.itemCount} encendidas={0} className="h-16 w-auto max-w-full" />
+      {set.professorName && (
+        // Transparencia: el profesor ve cada ejercicio con lo que se respondió (decisión del 24/09/2026).
+        <p className="max-w-[36ch] text-[13px] text-text-muted">
+          {primerNombre(set.professorName)} verá cómo te fue, así prepara tu próxima clase.
+        </p>
+      )}
+      <Boton className="mt-1" disabled={empezando} onClick={onEmpezar}>
+        {empezando && <Spinner />}
+        Empezar
+      </Boton>
     </div>
   );
 }
 
-function EjercicioActual({ ejercicio, onActualizado }: { ejercicio: Ejercicio; onActualizado: (e: Ejercicio) => void }) {
+/** Cómo reacciona Rigel: señala al empezar, espera mientras se comprueba, celebra o anima. */
+function poseDe(resultado: Resultado | null, enviando: boolean): RigelPose {
+  if (enviando) return "espera";
+  if (!resultado) return "guia";
+  return resultado.correct ? "celebracion" : "animo";
+}
+
+function EjercicioActual({
+  ejercicio,
+  rachaPrevia,
+  onActualizado,
+}: {
+  ejercicio: Ejercicio;
+  rachaPrevia: number;
+  onActualizado: (e: Ejercicio) => void;
+}) {
   // El diálogo ya trae una respuesta: el orden en que se muestra. Si no, quien cree que ya está bien
   // no podría comprobarlo sin mover antes una línea.
   const [respuesta, setRespuesta] = useState(() =>
@@ -166,8 +212,9 @@ function EjercicioActual({ ejercicio, onActualizado }: { ejercicio: Ejercicio; o
       apiFetch<Resultado>(`/api/v1/practice-items/${ejercicio.id}/answer`, { method: "POST", body: { answer: texto } }),
     onSuccess: (r) => {
       setResultado(r);
-      // Acertado, se avanza solo después de un respiro; si no, se espera a «Intentar otra vez» o «Siguiente».
-      if (r.correct) window.setTimeout(() => onActualizado(r.item), 1200);
+      // Acertado, se avanza solo después de un respiro para leer la explicación; si no, se espera a
+      // «Intentar otra vez» o «Siguiente».
+      if (r.correct) window.setTimeout(() => onActualizado(r.item), 2200);
     },
   });
 
@@ -178,10 +225,15 @@ function EjercicioActual({ ejercicio, onActualizado }: { ejercicio: Ejercicio; o
 
   return (
     <Tarjeta className="mt-4">
-      <p className="text-[11.5px] font-bold uppercase tracking-[0.1em] text-primary-strong">
-        {NOMBRE_DE_CATEGORIA[ejercicio.category]} · {NOMBRE_DEL_TIPO[ejercicio.type]}
-      </p>
-      <p className="mt-1 text-[14px] font-semibold text-text-secondary">{ejercicio.prompt}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[11.5px] font-bold uppercase tracking-[0.1em] text-primary-strong">
+            {NOMBRE_DE_CATEGORIA[ejercicio.category]} · {NOMBRE_DEL_TIPO[ejercicio.type]}
+          </p>
+          <p className="mt-1 text-[14px] font-semibold text-text-secondary">{ejercicio.prompt}</p>
+        </div>
+        <Rigel pose={poseDe(resultado, responder.isPending)} decorativo className="h-14 w-auto shrink-0" />
+      </div>
       {seOye && voz.disponible === false ? (
         // Sin voz en inglés no hay ejercicio de escucha posible; saltarlo no cuenta como error.
         <div className="mt-3 rounded-base bg-surface-sunken px-4 py-3 text-[14px] text-text-secondary">
@@ -205,9 +257,19 @@ function EjercicioActual({ ejercicio, onActualizado }: { ejercicio: Ejercicio; o
       )}
 
       {resultado && resultado.correct && (
-        <p className="mt-4 flex items-center gap-2 rounded-base bg-accent-lavender-soft px-4 py-3 text-[14px] font-semibold text-[#5e4a8a]" aria-live="polite">
-          <Check size={16} strokeWidth={2.4} />
-          Así es.
+        <div className="mt-4 rounded-base bg-accent-lavender-soft px-4 py-3 text-[14px] text-[#5e4a8a]" aria-live="polite">
+          <p className="flex items-center gap-2 font-semibold">
+            <Check size={16} strokeWidth={2.4} />
+            Así es.
+          </p>
+          {resultado.item.explanation && <p className="mt-1">{resultado.item.explanation}</p>}
+        </div>
+      )}
+      {resultado && resultado.correct && resultado.item.attempts === 1 && rachaPrevia + 1 >= 3 && (
+        // La racha dentro del set: tres o más seguidas al primer intento.
+        <p className="racha-entra mt-3 flex items-center justify-center gap-2 rounded-pill bg-accent-peach-soft px-4 py-2 text-[14px] font-bold text-[#8a5a33]">
+          <Sparkles size={15} strokeWidth={2.2} />
+          ¡{rachaPrevia + 1} seguidas!
         </p>
       )}
       {resultado && !resultado.correct && (
@@ -572,18 +634,21 @@ function Ordenar({ ejercicio, onCambio, bloqueado }: { ejercicio: Ejercicio; onC
 }
 
 /**
- * El cierre (B5.3): lo logrado y lo que conviene repasar. Nunca «3 de 4» ni un porcentaje en
- * primer plano: la práctica no es un examen y la pantalla no puede insinuar que lo es.
+ * El cierre (B5.3): la constelación completa, los puntos, lo logrado y lo que conviene repasar.
+ * Nunca «3 de 5» ni un porcentaje en primer plano: la práctica no es un examen y la pantalla no
+ * puede insinuar que lo es. Los logros que se encendieron los celebra el armazón de la app.
  */
 function Cierre({ set }: { set: SetDePractica }) {
   const repasar = set.items.filter((i) => i.correct === false && !i.skipped).map((i) => terminoDe(i)).filter(Boolean);
   const minutos = set.estimatedMinutes ?? set.itemCount;
+  const total = PUNTOS_POR_PRACTICA + (set.perfect ? PUNTOS_CONSTELACION_PERFECTA : 0);
   return (
-    <div className="flex flex-col items-center gap-3 rounded-card bg-surface-raised p-8 text-center shadow-sm">
-      <span className="gradient-dawn grid h-16 w-16 place-items-center rounded-full text-on-primary">
-        <Sparkles size={26} strokeWidth={2} />
-      </span>
-      <h1 className="font-display text-h2 font-bold">Listo. {minutos} minutos bien usados.</h1>
+    <div className="flex flex-col items-center gap-3 rounded-card bg-surface-raised p-7 text-center shadow-sm">
+      <ConstelacionDePractica total={set.items.length} encendidas={set.items.length} completa className="h-20 w-auto max-w-full" />
+      <Rigel pose="celebracion" decorativo className="h-20 w-auto" />
+      <h1 className="font-display text-h2 font-bold">
+        {set.perfect ? "¡Constelación perfecta!" : `Listo. ${minutos} minutos bien usados.`}
+      </h1>
       {repasar.length > 0 ? (
         <p className="max-w-[340px] text-[14.5px] text-text-secondary">
           Para repasar antes de tu próxima clase: <strong>{Array.from(new Set(repasar)).join(", ")}</strong>.
@@ -591,13 +656,33 @@ function Cierre({ set }: { set: SetDePractica }) {
       ) : (
         <p className="max-w-[340px] text-[14.5px] text-text-secondary">Llegas a tu próxima clase con todo esto fresco.</p>
       )}
-      <p className="rounded-pill bg-accent-lavender-soft px-4 py-1.5 text-[14px] font-bold text-[#5e4a8a]">+{PUNTOS_POR_PRACTICA} puntos</p>
-      <Link
-        href="/cuenta?seccion=resumen"
-        className="mt-2 inline-flex min-h-11 items-center rounded-pill bg-primary px-6 text-[15px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus"
-      >
-        Volver a mi perfil
-      </Link>
+      <div className="flex flex-col items-center gap-1">
+        <p className="rounded-pill bg-accent-lavender-soft px-4 py-1.5 text-[14px] font-bold text-[#5e4a8a]">
+          +{PUNTOS_POR_PRACTICA} puntos por practicar
+        </p>
+        {set.perfect && (
+          <p className="rounded-pill bg-accent-peach-soft px-4 py-1.5 text-[14px] font-bold text-[#8a5a33]">
+            +{PUNTOS_CONSTELACION_PERFECTA} por la constelación perfecta
+          </p>
+        )}
+        <p className="mt-1 text-[12.5px] font-semibold text-text-muted">Total: +{total} puntos</p>
+      </div>
+      <div className="mt-2 flex flex-wrap justify-center gap-2">
+        {set.bookingId && (
+          <Link
+            href={`/mis-clases/${set.bookingId}/acta`}
+            className="inline-flex min-h-11 items-center rounded-pill border-[1.5px] border-border px-5 text-[14px] font-bold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
+          >
+            Ver el resumen de la clase
+          </Link>
+        )}
+        <Link
+          href="/cuenta?seccion=resumen"
+          className="inline-flex min-h-11 items-center rounded-pill bg-primary px-6 text-[15px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus"
+        >
+          Volver a mi perfil
+        </Link>
+      </div>
     </div>
   );
 }

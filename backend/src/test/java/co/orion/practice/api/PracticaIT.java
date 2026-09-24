@@ -77,7 +77,7 @@ class PracticaIT extends ApiIntegrationSupport {
     @AfterEach
     void limpiar() {
         jdbc.update("update platform_settings set value = 'true' where key = 'practice_enabled'");
-        jdbc.update("delete from point_events where source_type = 'PRACTICE'");
+        jdbc.update("delete from point_events where source_type in ('PRACTICE', 'PRACTICE_PERFECT')");
         jdbc.update("delete from practice_sets");
         jdbc.update("delete from lesson_notes");
         jdbc.update("delete from attendance_records");
@@ -323,24 +323,42 @@ class PracticaIT extends ApiIntegrationSupport {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Test
-    @DisplayName("El profesor ve los ejercicios de su acta con la respuesta esperada, y nada de lo que hizo el estudiante")
-    void elProfesorVeLosEjerciciosDeSuActa() {
+    @DisplayName("El profesor ve cada ejercicio de su acta con lo que respondió su estudiante en cada intento")
+    void elProfesorVeLoQueHizoSuEstudiante() {
         Map set = setListo();
         cerrarTodos(set);
         String ruta = "/api/v1/professors/me/lesson-notes/" + set.get("lessonNoteId") + "/practice";
 
         Map vista = get(ruta, sesionMaria, Map.class).getBody();
 
-        assertThat(vista).containsEntry("status", "IN_PROGRESS").containsEntry("itemCount", 3);
+        assertThat(vista).containsEntry("status", "IN_PROGRESS").containsEntry("itemCount", 3)
+                .containsEntry("studentName", "Ana Ruiz").containsEntry("firstTry", 0).containsEntry("shown", 3);
         List<Map> items = (List<Map>) vista.get("items");
         assertThat(items).hasSize(3).allSatisfy(i -> {
-            assertThat(i).containsOnlyKeys("index", "type", "prompt", "payload", "expected", "explanation", "sourceTerm");
+            assertThat(i).containsEntry("firstAnswer", "no sé").containsEntry("secondAnswer", "no sé")
+                    .containsEntry("attempts", 2).containsEntry("correct", false).containsEntry("skipped", false);
             assertThat(i.get("explanation")).isNotNull();
+            assertThat(i.get("category")).isNotNull();
         });
-        assertThat(items).filteredOn(i -> "FILL_BLANK".equals(i.get("type")))
-                .allSatisfy(i -> assertThat(i.get("expected")).isNotNull());
-        // «no sé» fue lo que respondió Ana en todos: no puede aparecer en ninguna parte de la vista.
-        assertThat(get(ruta, sesionMaria, String.class).getBody()).doesNotContain("no sé");
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    @Test
+    @DisplayName("En la ficha, el profesor ve el historial de prácticas de su estudiante; otro profesor, nada")
+    void elHistorialEnLaFicha() {
+        Map set = setListo();
+        cerrarTodos(set);
+        post("/api/v1/practice-sets/" + set.get("id") + "/complete", sesionAna, null, Map.class);
+        String ruta = "/api/v1/professors/me/students/" + ana.getId() + "/practice-sets";
+
+        List<Map> historial = get(ruta, sesionMaria, List.class).getBody();
+
+        assertThat(historial).singleElement().satisfies(h -> {
+            assertThat(h).containsEntry("status", "COMPLETED").containsEntry("itemCount", 3)
+                    .containsEntry("lessonNoteId", set.get("lessonNoteId"));
+            assertThat(h.get("bookingId")).isNotNull();
+        });
+        assertThat(get(ruta, login("juan@orion.test"), String.class).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @SuppressWarnings("rawtypes")
@@ -390,5 +408,49 @@ class PracticaIT extends ApiIntegrationSupport {
                 .getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(jdbc.queryForObject("select is_correct is null and skipped_at is not null from practice_items where id = ?",
                 Boolean.class, UUID.fromString((String) escucha.get("id")))).isTrue();
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    @Test
+    @DisplayName("Una constelación perfecta da 15 + 5 puntos y enciende sus logros de práctica")
+    void constelacionPerfecta() {
+        Map set = setListo();
+        post("/api/v1/practice-sets/" + set.get("id") + "/start", sesionAna, null, Map.class);
+        for (Map item : (List<Map>) set.get("items")) {
+            String esperada = jdbc.queryForObject("select expected from practice_items where id = ?", String.class,
+                    UUID.fromString((String) item.get("id")));
+            String respuesta = "WRITE_SENTENCE".equals(item.get("type"))
+                    ? "When I was a kid I used to play football every day." : esperada;
+            assertThat(post("/api/v1/practice-items/" + item.get("id") + "/answer", sesionAna,
+                    Map.of("answer", respuesta), Map.class).getBody()).containsEntry("correct", true);
+        }
+
+        post("/api/v1/practice-sets/" + set.get("id") + "/complete", sesionAna, null, Map.class);
+
+        assertThat(jdbc.queryForObject("""
+                select sum(points) from point_events
+                where user_id = ? and source_type in ('PRACTICE', 'PRACTICE_PERFECT')""", Integer.class, ana.getId()))
+                .isEqualTo(20);
+        assertThat(jdbc.queryForList("""
+                select achievement_code from user_achievements where user_id = ? and unlocked_at is not null""",
+                String.class, ana.getId())).contains("practica-primera", "practica-perfecta");
+        assertThat(jdbc.queryForObject("select perfect from practice_tallies where practice_set_id = ?", Boolean.class,
+                UUID.fromString((String) set.get("id")))).isTrue();
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    @Test
+    @DisplayName("Con un fallo ya no es perfecta: solo los 15 de siempre")
+    void conUnFalloNoEsPerfecta() {
+        Map set = setListo();
+        cerrarTodos(set);
+        post("/api/v1/practice-sets/" + set.get("id") + "/complete", sesionAna, null, Map.class);
+
+        assertThat(jdbc.queryForObject("""
+                select coalesce(sum(points), 0) from point_events
+                where user_id = ? and source_type = 'PRACTICE_PERFECT'""", Integer.class, ana.getId())).isZero();
+        assertThat(jdbc.queryForList("""
+                select achievement_code from user_achievements where user_id = ? and unlocked_at is not null""",
+                String.class, ana.getId())).contains("practica-primera").doesNotContain("practica-perfecta");
     }
 }

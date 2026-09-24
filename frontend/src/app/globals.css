@@ -676,3 +676,52 @@ body {
     display: none;
   }
 }
+
+/* La constelación de la práctica: la estrella que se enciende y las líneas que se dibujan al
+   completar el set. Con menos movimiento, la regla global deja el estado final sin transición. */
+@keyframes constelacion-encender {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.25);
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes constelacion-trazo {
+  from {
+    stroke-dasharray: 80;
+    stroke-dashoffset: 80;
+  }
+  to {
+    stroke-dasharray: 80;
+    stroke-dashoffset: 0;
+  }
+}
+.constelacion-estrella {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: constelacion-encender 420ms var(--ease-out) both;
+}
+.constelacion-linea {
+  animation: constelacion-trazo 600ms var(--ease-out) both;
+}
+
+/* «¡Tres seguidas!»: entra con un pequeño salto. */
+@keyframes racha-entra {
+  from {
+    transform: translateY(6px) scale(0.92);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.racha-entra {
+  animation: racha-entra 320ms var(--ease-out) both;
+}

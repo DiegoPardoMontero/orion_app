@@ -4,12 +4,12 @@ import java.util.Map;
 import java.util.function.BiFunction;
 
 /**
- * Los ocho evaluadores. Cada uno recibe la foto del estudiante y los parámetros del logro, y
+ * Los evaluadores, uno por criterio. Cada uno recibe la foto del estudiante y los parámetros del logro, y
  * devuelve el progreso — un número que se compara con {@code target}.
  *
  * <p>El catálogo es data-driven pero <strong>no</strong> con un motor genérico de reglas en JSONB:
- * eso es un intérprete a medio hacer que nadie sabe depurar cuando falla en producción. Ocho
- * funciones tipadas cubren los veinte logros, y un logro nuevo del mismo tipo sigue siendo un
+ * eso es un intérprete a medio hacer que nadie sabe depurar cuando falla en producción. Una
+ * función tipada por criterio cubre el catálogo, y un logro nuevo del mismo tipo sigue siendo un
  * INSERT sin tocar código.
  *
  * <p>Son funciones puras: sin Spring, sin repositorios y sin reloj del sistema. Es lo que permite
@@ -23,37 +23,51 @@ public final class AchievementEvaluators {
 
     /** Cuántos parámetros lee cada evaluador viene documentado en su entrada del mapa. */
     private static final Map<CriteriaType, BiFunction<AchievementInput, Map<String, String>, Integer>>
-            EVALUADORES = Map.of(
+            EVALUADORES = Map.ofEntries(
 
-            CriteriaType.LESSON_COUNT,
-            (in, params) -> in.clasesTomadas().size(),
+            Map.entry(CriteriaType.LESSON_COUNT,
+            (in, params) -> in.clasesTomadas().size()),
 
-            CriteriaType.STREAK_WEEKS,
+            Map.entry(CriteriaType.STREAK_WEEKS,
             (in, params) -> StreakCalculator
                     .calcular(in.semanasActivas(), in.mesesYaProtegidos(), in.ahora())
-                    .actual(),
+                    .actual()),
 
-            CriteriaType.DISTINCT_PROFESSORS,
-            (in, params) -> in.profesores().size(),
+            Map.entry(CriteriaType.DISTINCT_PROFESSORS,
+            (in, params) -> in.profesores().size()),
 
             // Solo los idiomas conocidos: una reserva anterior a la V20 sin idioma no puede
             // contarse como "otro idioma" porque no sabemos cuál era.
-            CriteriaType.DISTINCT_LANGUAGES,
-            (in, params) -> in.idiomas().size(),
+            Map.entry(CriteriaType.DISTINCT_LANGUAGES,
+            (in, params) -> in.idiomas().size()),
 
-            CriteriaType.MODALITY_TAKEN,
+            Map.entry(CriteriaType.MODALITY_TAKEN,
             (in, params) -> "IN_PERSON".equals(params.get("modality"))
                     ? (int) Math.min(Integer.MAX_VALUE, in.presenciales())
-                    : in.clasesTomadas().size() - (int) in.presenciales(),
+                    : in.clasesTomadas().size() - (int) in.presenciales()),
 
-            CriteriaType.EVENT_ONCE,
-            (in, params) -> in.eventosOcurridos().contains(params.get("event")) ? 1 : 0,
+            Map.entry(CriteriaType.EVENT_ONCE,
+            (in, params) -> in.eventosOcurridos().contains(params.get("event")) ? 1 : 0),
 
-            CriteriaType.PROFILE_COMPLETE,
-            (in, params) -> in.camposDePerfil(),
+            Map.entry(CriteriaType.PROFILE_COMPLETE,
+            (in, params) -> in.camposDePerfil()),
 
-            CriteriaType.NO_CANCELLATIONS_DAYS,
-            (in, params) -> (int) Math.min(Integer.MAX_VALUE, in.diasSinCancelar()));
+            Map.entry(CriteriaType.NO_CANCELLATIONS_DAYS,
+            (in, params) -> (int) Math.min(Integer.MAX_VALUE, in.diasSinCancelar())),
+
+            // La práctica (24/09/2026). Las cuentas vienen del libro de puntos y de la tabla propia
+            // de engagement: el módulo sigue sin leer nada de la práctica fuera de su evento.
+            Map.entry(CriteriaType.PRACTICE_COUNT,
+            (in, params) -> in.practicas().size()),
+
+            Map.entry(CriteriaType.PRACTICE_PERFECT,
+            (in, params) -> (int) Math.min(Integer.MAX_VALUE, in.practicasPerfectas())),
+
+            Map.entry(CriteriaType.LISTENING_CORRECT,
+            (in, params) -> (int) Math.min(Integer.MAX_VALUE, in.escuchaAcertada())),
+
+            Map.entry(CriteriaType.SECOND_TRY_CORRECT,
+            (in, params) -> (int) Math.min(Integer.MAX_VALUE, in.segundaOportunidad())));
 
     /**
      * El progreso de un logro. Un tipo sin evaluador es un error de programación —el catálogo y el

@@ -143,10 +143,11 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/me/lesson-notes", "/api/v1/me/lesson-notes/**")
                         .hasAnyRole("STUDENT", "PROFESSOR")
                 // La práctica (Bloque 10, Parte B): del estudiante; el servicio exige además que el set
-                // sea suyo (404 si no). El profesor solo ve el resumen agregado de sus estudiantes.
+                // sea suyo (404 si no). El profesor ve el resumen y el historial de sus estudiantes.
                 .requestMatchers("/api/v1/me/practice", "/api/v1/me/practice/**").hasRole("STUDENT")
                 .requestMatchers("/api/v1/practice-sets/**", "/api/v1/practice-items/**").hasRole("STUDENT")
-                .requestMatchers("/api/v1/professors/me/students/*/practice").hasRole("PROFESSOR")
+                .requestMatchers("/api/v1/professors/me/students/*/practice",
+                        "/api/v1/professors/me/students/*/practice-sets").hasRole("PROFESSOR")
                 // Cuántas de sus clases tienen acta: informativo, en su desempeño.
                 .requestMatchers("/api/v1/professors/me/lesson-notes/**").hasRole("PROFESSOR")
                 // El aula. Los dos lados entran; el servicio comprueba que la reserva sea suya y
