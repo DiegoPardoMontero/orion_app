@@ -89,6 +89,12 @@ public class TestClassService {
     @Transactional
     public Booking createHeld(User admin, String studentEmail, String professorEmail) {
         Pareja pareja = pareja(studentEmail, professorEmail);
+        // En el aula da igual quién hace de estudiante; aquí no: el acta y la práctica son suyas, y
+        // la práctica solo la abre una cuenta de estudiante.
+        if (pareja.student().getRole() != UserRole.STUDENT) {
+            throw new UnprocessableException(
+                    studentEmail + " no tiene rol STUDENT: la práctica del ensayo solo la abre un estudiante.");
+        }
 
         Instant ahora = clock.instant();
         Instant fin = ahora.truncatedTo(ChronoUnit.MINUTES);

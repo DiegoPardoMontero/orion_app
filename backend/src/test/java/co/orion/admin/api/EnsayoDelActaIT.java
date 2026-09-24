@@ -166,6 +166,35 @@ class EnsayoDelActaIT extends ApiIntegrationSupport {
                 Integer.class, maria.getId())).isZero();
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    @Test
+    @DisplayName("Una clase de prueba no se califica: no puede mover la reputación del profesor")
+    void noSeCalifica() {
+        UUID id = ensayar();
+        Session ana = login("ana@orion.test");
+
+        ResponseEntity<Map> r = post("/api/v1/bookings/" + id + "/review", ana,
+                Map.of("rating", 5, "comment", "Excelente"), Map.class);
+
+        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+        // Y la agenda se lo dice a la pantalla, para que no ofrezca «Calificar».
+        List<Map> pasadas = get("/api/v1/me/bookings?scope=past", ana, List.class).getBody();
+        assertThat(pasadas).filteredOn(b -> id.toString().equals(b.get("id")))
+                .singleElement().satisfies(b -> assertThat(b.get("trial")).isEqualTo(true));
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Test
+    @DisplayName("El estudiante del ensayo tiene que ser un estudiante: la práctica solo la abre uno")
+    void elEstudianteEsEstudiante() {
+        createUser("juan@orion.test", "Juan Torres", UserRole.PROFESSOR);
+        ResponseEntity<Map> r = post(RUTA, admin,
+                Map.of("studentEmail", "juan@orion.test", "professorEmail", "maria@orion.test"), Map.class);
+
+        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+        assertThat((String) r.getBody().get("error")).contains("STUDENT");
+    }
+
     @SuppressWarnings("rawtypes")
     @Test
     @DisplayName("Solo el administrador puede ensayar")

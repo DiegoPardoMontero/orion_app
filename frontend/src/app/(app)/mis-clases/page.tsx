@@ -453,9 +453,12 @@ function TarjetaClase({
   // terminar); aquí basta con ofrecer el botón en ese rango.
   const puedeReportar = !esProfesor && scope === "past" && clase.status === "CONFIRMED";
 
+  // Una clase de prueba del admin no se califica: movería la reputación del profesor por una clase
+  // que no existió (el servidor también la rechaza).
   const puedeCalificar =
     !esProfesor &&
     scope === "past" &&
+    !clase.trial &&
     (clase.status === "CONFIRMED" || clase.status === "COMPLETED");
 
   // El acta (Bloque 10): una sola consulta para toda la lista —TanStack la comparte entre
@@ -492,10 +495,13 @@ function TarjetaClase({
               </span>
             )}
           </span>
-          <Badge tono={virtual ? "menta" : "melocoton"}>
-            {virtual ? <Video size={12} strokeWidth={2.4} /> : <MapPin size={12} strokeWidth={2.4} />}
-            {virtual ? "Virtual" : "Presencial"}
-          </Badge>
+          <span className="flex flex-wrap items-center justify-end gap-1.5">
+            {clase.trial && <Badge tono="neutral">De prueba</Badge>}
+            <Badge tono={virtual ? "menta" : "melocoton"}>
+              {virtual ? <Video size={12} strokeWidth={2.4} /> : <MapPin size={12} strokeWidth={2.4} />}
+              {virtual ? "Virtual" : "Presencial"}
+            </Badge>
+          </span>
         </div>
 
         <div className="mt-3 flex items-center gap-2.5">

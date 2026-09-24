@@ -2735,6 +2735,7 @@ export interface components {
             canCancel?: boolean;
             lateCancel?: boolean;
             counterpart?: components["schemas"]["Counterpart"];
+            trial?: boolean;
         };
         EligibilityResponse: {
             eligible?: boolean;

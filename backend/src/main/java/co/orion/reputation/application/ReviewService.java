@@ -169,6 +169,11 @@ public class ReviewService {
     // --- helpers ---
 
     private void assertReviewable(Booking booking, Instant now) {
+        // Una clase de prueba la crea el admin para ensayar el aula o el acta, a veces con un
+        // profesor de verdad: calificarla movería su reputación por una clase que no existió.
+        if (booking.isTrial()) {
+            throw new UnprocessableException("Las clases de prueba no se califican.");
+        }
         BookingStatus status = booking.getStatus();
         boolean occurred = status == BookingStatus.CONFIRMED || status == BookingStatus.COMPLETED;
         if (!occurred) {

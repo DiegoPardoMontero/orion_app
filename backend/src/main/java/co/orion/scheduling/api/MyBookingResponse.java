@@ -33,7 +33,9 @@ public record MyBookingResponse(UUID id,
                                 boolean canCancel,
                                 /** Dentro de la ventana: se puede cancelar, pero con consecuencia. */
                                 boolean lateCancel,
-                                Counterpart counterpart) {
+                                Counterpart counterpart,
+                                /** Clase de prueba del admin (aula o ensayo del acta): no se califica. */
+                                boolean trial) {
 
     /**
      * La otra parte: el profesor si mira un estudiante, el estudiante si mira un profesor. La foto
@@ -65,6 +67,7 @@ public record MyBookingResponse(UUID id,
                 booking.getMeetingLink(),
                 !booking.getStatus().isTerminal(),
                 booking.isConfirmed() && !booking.isCancellableAt(now, cancellationWindow),
-                Counterpart.of(counterpart, counterpartPhotoUrl, counterpartHeadline));
+                Counterpart.of(counterpart, counterpartPhotoUrl, counterpartHeadline),
+                booking.isTrial());
     }
 }
