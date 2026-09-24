@@ -377,7 +377,8 @@ public class PracticeService {
      *
      * @param leCosto los términos (o tipos de ejercicio) donde más falló en las últimas cuatro semanas
      */
-    public record Resumen(int ofrecidasEstaSemana, int completadasEstaSemana, List<String> leCosto) {
+    public record Resumen(int ofrecidasEstaSemana, int completadasEstaSemana, int ofrecidasEsteMes,
+                          int completadasEsteMes, List<String> leCosto) {
     }
 
     @Transactional(readOnly = true)
@@ -388,14 +389,23 @@ public class PracticeService {
         Instant ahora = clock.instant();
         LocalDate hoy = LocalDate.ofInstant(ahora, BusinessZone.BOGOTA);
         Instant lunes = hoy.with(DayOfWeek.MONDAY).atStartOfDay(BusinessZone.BOGOTA).toInstant();
+        // La ficha dice «este mes» (diseño del 24/09/2026): se mira desde el día 1, o cuatro semanas
+        // atrás si el mes acaba de empezar y lo que le costó está en el anterior.
+        Instant primeroDelMes = hoy.withDayOfMonth(1).atStartOfDay(BusinessZone.BOGOTA).toInstant();
+        Instant cuatroSemanas = ahora.minus(Duration.ofDays(28));
         List<PracticeSet> recientes = sets.findByStudentIdAndProfessorIdAndCreatedAtGreaterThanEqual(
-                estudianteId, profesor.getId(), ahora.minus(Duration.ofDays(28)));
+                estudianteId, profesor.getId(), primeroDelMes.isBefore(cuatroSemanas) ? primeroDelMes : cuatroSemanas);
 
         List<PracticeSet> estaSemana = recientes.stream()
                 .filter(s -> !s.getCreatedAt().isBefore(lunes))
                 .filter(s -> s.getStatus() != PracticeSetStatus.PENDING && s.getStatus() != PracticeSetStatus.FAILED)
                 .toList();
         int completadas = (int) estaSemana.stream().filter(s -> s.getStatus() == PracticeSetStatus.COMPLETED).count();
+        List<PracticeSet> esteMes = recientes.stream()
+                .filter(s -> !s.getCreatedAt().isBefore(primeroDelMes))
+                .filter(s -> s.getStatus() != PracticeSetStatus.PENDING && s.getStatus() != PracticeSetStatus.FAILED)
+                .toList();
+        int completadasDelMes = (int) esteMes.stream().filter(s -> s.getStatus() == PracticeSetStatus.COMPLETED).count();
 
         Map<String, Long> fallos = new LinkedHashMap<>();
         if (!recientes.isEmpty()) {
@@ -407,7 +417,7 @@ public class PracticeService {
         List<String> leCosto = fallos.entrySet().stream()
                 .sorted(Map.Entry.<String, Long>comparingByValue(Comparator.reverseOrder()))
                 .limit(3).map(Map.Entry::getKey).collect(Collectors.toCollection(ArrayList::new));
-        return new Resumen(estaSemana.size(), completadas, leCosto);
+        return new Resumen(estaSemana.size(), completadas, esteMes.size(), completadasDelMes, leCosto);
     }
 
     /**
@@ -426,12 +436,18 @@ public class PracticeService {
 
     /** Las prácticas de un estudiante con este profesor, para su ficha: de la más nueva a la más vieja. */
     @Transactional(readOnly = true)
-    public List<PracticeSet> historialParaElProfesor(User profesor, UUID estudianteId) {
+    public List<ConEjercicios> historialParaElProfesor(User profesor, UUID estudianteId) {
         if (!bookings.existsByProfessorIdAndStudentId(profesor.getId(), estudianteId)) {
             throw new ResourceNotFoundException("Estudiante no encontrado");
         }
-        return sets.findTop20ByStudentIdAndProfessorIdAndStatusNotInOrderByCreatedAtDesc(estudianteId,
+        List<PracticeSet> suyos = sets.findTop20ByStudentIdAndProfessorIdAndStatusNotInOrderByCreatedAtDesc(estudianteId,
                 profesor.getId(), List.of(PracticeSetStatus.PENDING, PracticeSetStatus.FAILED));
+        // Con los ejercicios, de una sola consulta: la fila de cada set pinta su constelación.
+        Map<UUID, List<PracticeItem>> porSet = suyos.isEmpty() ? Map.of()
+                : items.findByPracticeSetIdIn(suyos.stream().map(PracticeSet::getId).toList()).stream()
+                        .collect(Collectors.groupingBy(PracticeItem::getPracticeSetId));
+        return suyos.stream().map(s -> new ConEjercicios(s, porSet.getOrDefault(s.getId(), List.of()).stream()
+                .sorted(Comparator.comparingInt(PracticeItem::getItemIndex)).toList())).toList();
     }
 
     private static String nombreDelTipo(PracticeItem i) {

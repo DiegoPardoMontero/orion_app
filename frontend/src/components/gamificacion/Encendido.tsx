@@ -1,20 +1,21 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { EstrellaLogro } from "@/components/gamificacion/EstrellaLogro";
+import { SelloDeLogro } from "@/components/gamificacion/SelloDeLogro";
 import { Rigel } from "@/components/Rigel";
 import { apiFetch } from "@/lib/api/fetch";
 import { useMe } from "@/lib/auth/session";
-import type { Logro } from "@/lib/gamificacion";
+import { NOMBRE_FAMILIA, type Logro } from "@/lib/gamificacion";
 
 /**
- * El encendido: la celebración de §2f.
+ * El logro nuevo (handoff `design_handoff_orion_practica`, §10.6): un momento reutilizable en toda
+ * la app. El sello entra estampándose, con su nombre, lo que lo encendió y sus puntos; y se sigue con
+ * un botón, porque un logro que se va solo en un segundo es un logro que no se alcanzó a leer.
  *
- * <p>Los 720 ms son el único derroche permitido del sistema, y por eso está acotado: cuatro cuadros
- * en CSS, sin confeti ni sonido, y <strong>nunca encadenado</strong> — si se encienden dos estrellas
- * a la vez se muestran en secuencia con 400 ms entre ellas, porque dos celebraciones simultáneas no
- * son el doble de fiesta, son ruido.
+ * <p><strong>Nunca encadenado</strong>: si se encienden dos a la vez van en cola, uno tras otro —dos
+ * celebraciones simultáneas no son el doble de fiesta, son ruido—.
  *
  * <p>Lo que dispara la celebración es la diferencia entre lo que el servidor dice que está encendido
  * y lo último que esta persona ya vio, guardado en el navegador. La primera visita <em>no</em>
@@ -33,7 +34,6 @@ export function Encendido() {
   });
 
   const [cola, setCola] = useState<Logro[]>([]);
-  const cerrando = useRef(false);
   const clave = me.data ? `orion.encendidas.${me.data.id}` : null;
 
   useEffect(() => {
@@ -57,19 +57,13 @@ export function Encendido() {
   }, [clave, logros.data]);
 
   const actual = cola[0];
+  const seguir = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!actual) return;
-    cerrando.current = false;
-    // 720 ms de animación + 400 ms de respiro antes de la siguiente.
-    const t = setTimeout(() => setCola((c) => c.slice(1)), 1120);
-    return () => clearTimeout(t);
-  }, [actual]);
-
-  useEffect(() => {
-    if (!actual) return;
+    seguir.current?.focus();
     const alTeclado = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setCola([]);
+      if (e.key === "Escape") setCola((c) => c.slice(1));
     };
     window.addEventListener("keydown", alTeclado);
     return () => window.removeEventListener("keydown", alTeclado);
@@ -77,60 +71,60 @@ export function Encendido() {
 
   if (!actual) return null;
 
+  const siguiente = () => setCola((c) => c.slice(1));
+  const ceja = `Logro nuevo · ${NOMBRE_FAMILIA[actual.family]}`;
+
   return (
-    <div
-      className="fixed inset-0 z-[80] grid place-items-center bg-[rgba(26,26,46,0.55)] px-6"
-      role="status"
-      aria-live="polite"
-      onClick={() => setCola([])}
-    >
-      <div className="flex flex-col items-center text-center">
-        <div className="relative grid place-items-center">
-          {/* El anillo crema que se expande y se disuelve (cuadro 3). */}
-          <span
-            aria-hidden="true"
-            className="encendido-anillo pointer-events-none absolute h-[168px] w-[168px] rounded-full border-2 border-surface"
-          />
-          {/* Los tres destellos del cuadro 4, con 60 ms de desfase entre ellos. */}
-          {[0, 1, 2].map((i) => (
-            <span
-              key={i}
-              aria-hidden="true"
-              className="encendido-destello pointer-events-none absolute h-2 w-2 rounded-full bg-surface"
-              style={{
-                animationDelay: `${480 + i * 60}ms`,
-                transform: `rotate(${i * 120}deg) translateY(-96px)`,
-              }}
-            />
-          ))}
-          <div className="encendido-estrella">
-            <EstrellaLogro
-              familia={actual.family}
-              brillo={actual.glow}
-              estado="encendida"
-              size={148}
-              sobreCielo
-              titulo={actual.name}
-            />
-          </div>
+    <div className="practica pr-aparece fixed inset-0 z-[80] flex items-center justify-center bg-[rgba(46,30,78,.86)] p-5">
+      <div
+        key={actual.code}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="logro-nuevo"
+        aria-describedby="logro-nuevo-por"
+        className="flex w-full max-w-[440px] flex-col items-center gap-3 rounded-[28px] bg-white px-[22px] pt-7 pb-[18px] text-center text-ink lg:grid lg:w-[640px] lg:max-w-none lg:grid-cols-[220px_minmax(0,1fr)] lg:items-center lg:gap-7 lg:px-10 lg:pt-9 lg:pb-6 lg:text-left"
+      >
+        <span className="text-[12px] font-extrabold tracking-[.12em] text-durazno-ink uppercase lg:hidden">{ceja}</span>
+        <div className="flex flex-col items-center">
+          <span className="lg:hidden">
+            <SelloDeLogro logro={actual} size={170} estampar />
+          </span>
+          <span className="hidden lg:block">
+            <SelloDeLogro logro={actual} size={200} estampar />
+          </span>
         </div>
-
-        <p className="mt-5 text-[12px] font-bold uppercase tracking-[0.14em] text-surface/75">
-          Estrella encendida
-        </p>
-        <h2 className="mt-1 font-display text-h2 font-bold text-surface">{actual.name}</h2>
-        <p className="mt-1 max-w-[34ch] text-[14px] leading-relaxed text-surface/80">
-          {actual.description}
-        </p>
-
-        {/* Rigel solo en la versión completa: con movimiento reducido no aparece. */}
-        <Rigel pose="celebracion" decorativo className="encendido-rigel mt-4 h-20 w-auto" />
-
-        {cola.length > 1 && (
-          <p className="mt-3 text-[12px] text-surface/65">
-            Y {cola.length - 1} más en camino
+        <div className="flex flex-col items-center gap-3 lg:items-start">
+          <span className="hidden text-[12px] font-extrabold tracking-[.12em] text-durazno-ink uppercase lg:block">{ceja}</span>
+          <h2 id="logro-nuevo" className="m-0 font-display text-[28px] leading-[1.1] font-extrabold lg:text-[34px] lg:leading-[1.05]">
+            {actual.name}
+          </h2>
+          <p id="logro-nuevo-por" className="m-0 text-[15px] leading-[1.5] text-ink-2 lg:text-[16px]">
+            {actual.description}
           </p>
-        )}
+          <span className="inline-flex h-9 items-center rounded-pill bg-rigel-soft px-4 text-[15px] font-extrabold text-rigel-ink">
+            +{actual.points} puntos
+          </span>
+          {/* Rigel muestra el sello solo en el celular; en escritorio el sello ya ocupa su lado. */}
+          <Rigel pose="sello" decorativo className="h-auto w-24 lg:hidden" />
+          <div className="flex flex-col gap-1.5 self-stretch lg:flex-row lg:gap-2.5 lg:self-auto lg:pt-1.5">
+            <button
+              ref={seguir}
+              type="button"
+              onClick={siguiente}
+              className="h-14 cursor-pointer rounded-pill bg-coral px-8 text-[16px] font-bold text-crema transition-colors hover:bg-coral-hover lg:h-[52px]"
+            >
+              Seguir
+            </button>
+            <Link
+              href={`/cuenta?seccion=cielo&familia=${actual.family}`}
+              onClick={() => setCola([])}
+              className="flex h-12 items-center justify-center rounded-pill px-[18px] text-[15px] font-bold text-ink hover:bg-arena lg:h-[52px]"
+            >
+              Verlo en Mi cielo
+            </Link>
+          </div>
+          {cola.length > 1 && <p className="m-0 text-[12px] text-ink-3">Y {cola.length - 1} más en camino</p>}
+        </div>
       </div>
     </div>
   );

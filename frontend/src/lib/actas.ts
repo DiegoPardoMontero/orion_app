@@ -20,6 +20,10 @@ export type ActaDelProfesor = {
   editable: boolean;
   publishedAt: string | null;
   lastEditedAt: string | null;
+  studentName: string | null;
+  classStartsAt: string | null;
+  /** Publicada: hasta cuándo se puede corregir (la ventana de edición). */
+  editableUntil: string | null;
 };
 
 /** Lo que ve el estudiante: sin el crudo, sin el origen, sin cuánto se corrigió. No es que no se

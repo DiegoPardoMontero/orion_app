@@ -82,6 +82,12 @@ public class LessonNoteService {
     }
 
     /** Un acta con su vocabulario, y si la propuso la IA en este llamado. */
+    /** Cuándo empezó la clase del acta: el encabezado la nombra («Clase del miércoles 23 sep»). */
+    @Transactional(readOnly = true)
+    public Instant empiezaLaClase(UUID bookingId) {
+        return bookings.findById(bookingId).map(Booking::getStartsAt).orElse(null);
+    }
+
     public record Acta(LessonNote nota, List<LessonVocabulary> palabras, boolean propuestaPorIa) {
     }
 

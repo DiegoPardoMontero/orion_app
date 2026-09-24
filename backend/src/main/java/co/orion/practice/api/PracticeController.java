@@ -139,7 +139,7 @@ public class PracticeController {
                                     i.getItemType().categoria().name(), i.getPrompt(), i.getPayload(), i.getExpected(),
                                     i.getExplanation(), i.getSourceTerm(), i.getFirstAnswer(),
                                     i.getAttempts() > 1 ? i.getAnswer() : null, i.getAttempts(), i.getCorrect(),
-                                    i.getSkippedAt() != null)).toList()));
+                                    i.getSkippedAt() != null, i.cerrado(max))).toList()));
                 })
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }
@@ -148,12 +148,15 @@ public class PracticeController {
     @GetMapping("/api/v1/professors/me/students/{id}/practice-sets")
     public List<PracticaEnLaFicha> historialParaElProfesor(@AuthenticationPrincipal OrionUserDetails principal,
                                                           @PathVariable UUID id) {
-        return practica.historialParaElProfesor(principal.user(), id).stream().map(s -> {
+        int max = practica.maxIntentos();
+        return practica.historialParaElProfesor(principal.user(), id).stream().map(c -> {
+            PracticeSet s = c.set();
             Material m = material(s);
             return new PracticaEnLaFicha(s.getId(), s.getLessonNoteId(), m == null ? null : m.bookingId(),
                     m == null || m.classStartsAt() == null ? null
                             : ZonedDateTime.ofInstant(java.time.Instant.parse(m.classStartsAt()), BusinessZone.BOGOTA),
-                    s.getStatus().name(), s.getItemCount(), s.getCorrectCount(), bogota(s.getCompletedAt()));
+                    s.getStatus().name(), s.getItemCount(), s.getCorrectCount(), bogota(s.getCompletedAt()),
+                    m == null ? null : m.workedOn(), c.ejercicios().stream().map(i -> estrella(i, max)).toList());
         }).toList();
     }
 
@@ -165,7 +168,8 @@ public class PracticeController {
      */
     public record EjercicioDelActa(int index, String type, String category, String prompt, String payload,
                                    String expected, String explanation, String sourceTerm, String firstAnswer,
-                                   String secondAnswer, int attempts, Boolean correct, boolean skipped) {
+                                   String secondAnswer, int attempts, Boolean correct, boolean skipped,
+                                   boolean closed) {
     }
 
     /** El set de un acta con su resumen: cuántos al primer intento, al segundo, mostrados y saltados. */
@@ -174,8 +178,24 @@ public class PracticeController {
                                   int shown, int skipped, List<EjercicioDelActa> items) {
     }
 
+    /**
+     * @param stars cómo quedó cada estrella del set, en orden: {@code primero}, {@code segundo},
+     *              {@code mostrada}, {@code saltada} u {@code off}
+     */
     public record PracticaEnLaFicha(UUID id, UUID lessonNoteId, String bookingId, ZonedDateTime classStartsAt,
-                                    String status, int itemCount, int correctCount, ZonedDateTime completedAt) {
+                                    String status, int itemCount, int correctCount, ZonedDateTime completedAt,
+                                    String workedOn, List<String> stars) {
+    }
+
+    /** La estrella de un ejercicio en la constelación del set, como la pinta el estudiante. */
+    static String estrella(PracticeItem i, int max) {
+        if (i.getSkippedAt() != null) {
+            return "saltada";
+        }
+        if (Boolean.TRUE.equals(i.getCorrect())) {
+            return i.getAttempts() <= 1 ? "primero" : "segundo";
+        }
+        return i.cerrado(max) ? "mostrada" : "off";
     }
 
     public record RespuestaRequest(@NotNull @Size(max = 600) String answer) {

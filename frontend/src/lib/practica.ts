@@ -81,6 +81,8 @@ export type Resultado = {
 export type ResumenDePractica = {
   ofrecidasEstaSemana: number;
   completadasEstaSemana: number;
+  ofrecidasEsteMes: number;
+  completadasEsteMes: number;
   leCosto: string[];
 };
 
@@ -102,6 +104,8 @@ export type EjercicioDelActa = {
   attempts: number;
   correct: boolean | null;
   skipped: boolean;
+  /** Cerrado: acertado, sin intentos o saltado. Abierto con un intento es «va en ese». */
+  closed: boolean;
 };
 
 export type PracticaDelActa = {
@@ -128,6 +132,9 @@ export type PracticaEnLaFicha = {
   itemCount: number;
   correctCount: number;
   completedAt: string | null;
+  workedOn: string | null;
+  /** Cómo quedó cada estrella, en orden. */
+  stars: ("primero" | "segundo" | "mostrada" | "saltada" | "off")[];
 };
 
 /** Cómo le fue en un ejercicio, en palabras para el profesor. */
@@ -136,7 +143,8 @@ export type ResultadoDelEjercicio = "primero" | "segundo" | "mostrada" | "saltad
 export function resultadoDe(e: EjercicioDelActa): ResultadoDelEjercicio {
   if (e.skipped) return "saltado";
   if (e.correct === true) return e.attempts <= 1 ? "primero" : "segundo";
-  if (e.attempts === 0) return "sinHacer";
+  // Abierto con un intento fallado todavía no es «se le mostró»: le queda otro.
+  if (e.attempts === 0 || e.closed === false) return "sinHacer";
   return "mostrada";
 }
 

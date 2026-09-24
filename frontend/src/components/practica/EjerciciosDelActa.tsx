@@ -1,48 +1,53 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Check, CornerDownRight, SkipForward, Sparkles } from "lucide-react";
-import { Spinner, Tarjeta } from "@/components/ui";
+import { Check, Clock, Eye, Loader, Minus, PlayCircle, RotateCcw, SkipForward, type LucideIcon } from "lucide-react";
 import { apiFetch } from "@/lib/api/fetch";
-import { fechaLarga } from "@/lib/format";
 import {
+  diaCorto,
   leerPayload,
   mostrarEsperada,
   mostrarRespuesta,
   NOMBRE_DE_CATEGORIA,
   NOMBRE_DEL_TIPO,
+  numeroEnPalabras,
   primerNombre,
   resultadoDe,
+  unirFichas,
   type EjercicioDelActa,
+  type EstrellaDelEjercicio,
   type PracticaDelActa,
   type ResultadoDelEjercicio,
 } from "@/lib/practica";
-
-const ESTADO: Record<PracticaDelActa["status"], string> = {
-  PENDING: "Se están generando. Suelen estar listos en un minuto.",
-  READY: "Listos. Todavía no los empieza.",
-  IN_PROGRESS: "Los está haciendo.",
-  COMPLETED: "Los terminó.",
-  EXPIRED: "Vencieron sin terminarse.",
-  FAILED:
-    "Esta vez no salieron ejercicios: el acta no tenía palabras ni frases concretas en que anclarlos. " +
-    "La próxima, anota el vocabulario y los errores de la clase.",
-};
-
-/** Verde el primer intento, ámbar el segundo, neutro lo mostrado o saltado. Nunca rojo. */
-const RESULTADO: Record<ResultadoDelEjercicio, { texto: string; clase: string }> = {
-  primero: { texto: "Al primer intento", clase: "bg-success-bg text-success" },
-  segundo: { texto: "Al segundo intento", clase: "bg-warning-bg text-warning" },
-  mostrada: { texto: "Se le mostró la respuesta", clase: "bg-surface text-text-secondary" },
-  saltado: { texto: "Lo saltó (sin voz en su dispositivo)", clase: "bg-surface text-text-secondary" },
-  sinHacer: { texto: "Sin hacer", clase: "bg-surface text-text-muted" },
-};
+import { Constelacion, formaDe } from "./Constelacion";
+import { CATEGORIA } from "./piezas";
 
 /**
- * La práctica que salió del acta, para el profesor que la escribió: cada ejercicio con su respuesta
- * esperada y lo que hizo su estudiante —lo que respondió en cada intento y cómo le fue—, para
- * preparar la siguiente clase. El estudiante lo sabe: se lo dice la portada de su práctica.
+ * Cómo le fue a tu estudiante (handoff `design_handoff_orion_practica`, §10.11 y §9.10): va debajo
+ * del acta publicada. Se lee de un vistazo —verde al primer intento, ámbar al segundo, neutro lo
+ * que se le mostró o saltó; nunca rojo— y cada ejercicio trae lo que vio, lo que respondió en cada
+ * intento y lo que se esperaba. El estudiante lo sabe desde el inicio de su práctica.
  */
+
+type Chip = { texto: string; fondo: string; tinta: string; borde?: string; I: LucideIcon };
+
+/** Verde el primer intento, ámbar el segundo, neutro lo mostrado o saltado. Nunca rojo. */
+const RESULTADO: Record<ResultadoDelEjercicio, Chip & { cabecera: string }> = {
+  primero: { texto: "Al primer intento", fondo: "#DEF3E7", tinta: "#1F5238", I: Check, cabecera: "#F1FAF4" },
+  segundo: { texto: "Al segundo intento", fondo: "#FFEBC7", tinta: "#6B440A", I: RotateCcw, cabecera: "#FFF8EA" },
+  mostrada: { texto: "Se le mostró", fondo: "#FFFFFF", tinta: "#4A3A75", borde: "1.5px solid #D5CAF0", I: Eye, cabecera: "#F8F5FC" },
+  saltado: { texto: "Lo saltó", fondo: "#FFFFFF", tinta: "#33203B", borde: "1.5px solid #E3D6CA", I: SkipForward, cabecera: "#FBF7F3" },
+  sinHacer: { texto: "Sin hacer", fondo: "#FFFFFF", tinta: "#5E4E6B", borde: "1.5px dashed #C9B8A8", I: Minus, cabecera: "#FBF7F3" },
+};
+
+const ESTRELLA: Record<ResultadoDelEjercicio, EstrellaDelEjercicio> = {
+  primero: "primero",
+  segundo: "segundo",
+  mostrada: "mostrada",
+  saltado: "saltada",
+  sinHacer: "off",
+};
+
 export function EjerciciosDelActa({ actaId }: { actaId: string }) {
   const practica = useQuery({
     queryKey: ["lesson-note-practice", actaId],
@@ -55,166 +60,264 @@ export function EjerciciosDelActa({ actaId }: { actaId: string }) {
   if (!practica.data) return null;
   const p = practica.data;
   const nombre = p.studentName ? primerNombre(p.studentName) : "tu estudiante";
-  const empezada = p.status === "IN_PROGRESS" || p.status === "COMPLETED" || p.status === "EXPIRED";
+  const items = [...p.items].sort((a, b) => a.index - b.index);
+  const resultados = items.map(resultadoDe);
+  const siguiente = p.status === "IN_PROGRESS" ? resultados.indexOf("sinHacer") : -1;
+  const estrellas = resultados.map((r, i) => (i === siguiente ? "actual" : ESTRELLA[r]));
+  const completa = p.status === "COMPLETED";
+  const empezada = p.status === "IN_PROGRESS" || completa || (p.status === "EXPIRED" && items.some((e) => e.attempts > 0 || e.skipped));
   const leCosto = Array.from(
-    new Set(p.items.filter((e) => resultadoDe(e) === "mostrada").map((e) => e.sourceTerm ?? NOMBRE_DEL_TIPO[e.type])),
+    new Set(
+      items
+        .filter((e) => ["segundo", "mostrada"].includes(resultadoDe(e)))
+        .map((e) => {
+          const t = e.sourceTerm ?? NOMBRE_DEL_TIPO[e.type];
+          return e.category === "ESCUCHA" ? `${t} (al oído)` : t;
+        }),
+    ),
   );
 
-  return (
-    <Tarjeta>
-      <h2 className="flex items-center gap-2 font-display text-h3 font-bold">
-        <Sparkles size={18} strokeWidth={2} className="text-primary" />
-        {empezada ? `Cómo le fue a ${nombre}` : "La práctica que salió de esta acta"}
-      </h2>
-      <p className="mt-1.5 flex items-center gap-2 text-[13.5px] text-text-secondary">
-        {p.status === "PENDING" && <Spinner />}
-        {p.status === "COMPLETED" && p.completedAt ? `Los terminó el ${fechaLarga(p.completedAt)}.` : ESTADO[p.status]}
-      </p>
+  const { chip, cuerpo } = encabezado(p, nombre, resultados);
 
-      {empezada && (
-        <div className="mt-3 flex flex-wrap gap-1.5 text-[12.5px] font-bold">
-          <span className="rounded-pill bg-success-bg px-3 py-1 text-success">{p.firstTry} al primer intento</span>
-          <span className="rounded-pill bg-warning-bg px-3 py-1 text-warning">{p.secondTry} al segundo</span>
-          <span className="rounded-pill bg-surface-sunken px-3 py-1 text-text-secondary">{p.shown} se le mostró</span>
-          {p.skipped > 0 && (
-            <span className="rounded-pill bg-surface-sunken px-3 py-1 text-text-secondary">{p.skipped} saltados</span>
+  return (
+    <section aria-labelledby="como-le-fue" className="practica flex flex-col gap-4">
+      <div className="flex flex-col gap-3.5 rounded-tarjeta bg-white p-[18px] lg:px-[26px] lg:py-[22px]">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-col gap-2">
+            <h2 id="como-le-fue" className="m-0 font-display text-[24px] font-bold lg:text-[32px]">
+              Cómo le fue a {nombre}
+            </h2>
+            <ChipDeEstado chip={chip} />
+          </div>
+          {items.length > 0 && (
+            <Constelacion
+              estados={estrellas}
+              forma={formaDe(p.id)}
+              ancho={160}
+              r={8}
+              guias={!completa}
+              lineas={completa}
+              className="w-[110px] lg:w-[160px]"
+            />
           )}
         </div>
-      )}
-      {leCosto.length > 0 && (
-        <p className="mt-2 text-[13.5px] text-text-secondary">
-          <strong className="text-text">Le costó:</strong> {leCosto.join(", ")}.
-        </p>
-      )}
+        {cuerpo && <p className="m-0 text-[14px] leading-[1.5] text-ink-2">{cuerpo}</p>}
+        {empezada && (
+          <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+            <Contador n={p.firstTry} etiqueta="al primer intento" fondo="#DEF3E7" tinta="#1F5238" I={Check} />
+            <Contador n={p.secondTry} etiqueta="al segundo" fondo="#FFEBC7" tinta="#6B440A" I={RotateCcw} />
+            <Contador n={p.shown} etiqueta="se le mostró" fondo="#F3EEFB" tinta="#4A3A75" I={Eye} />
+            <Contador n={p.skipped} etiqueta="saltados" fondo="#F6EFE8" tinta="#33203B" I={SkipForward} />
+          </div>
+        )}
+        {leCosto.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <strong className="text-[14px]">Le costó:</strong>
+            {leCosto.map((t) => (
+              <span key={t} className="inline-flex min-h-8 items-center rounded-pill bg-durazno-soft px-3 py-1 text-[14px] font-bold text-[#6B3E1A]">
+                {t}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
 
-      {p.items.length > 0 && (
-        <ol className="mt-4 grid gap-3">
-          {p.items.map((e) => (
-            <li key={e.index} className="rounded-card bg-surface-sunken p-4">
-              <Ejercicio ejercicio={e} empezada={empezada} />
-            </li>
+      {items.length > 0 && (
+        <div className="grid items-start gap-3.5 lg:grid-cols-2">
+          {items.map((e) => (
+            <ResultadoEjercicio key={e.index} ejercicio={e} />
           ))}
-        </ol>
+        </div>
       )}
-    </Tarjeta>
+    </section>
   );
 }
 
-function Ejercicio({ ejercicio: e, empezada }: { ejercicio: EjercicioDelActa; empezada: boolean }) {
-  const resultado = RESULTADO[resultadoDe(e)];
+/** El encabezado según el momento del set (§10.11): preparándose, lista, en curso, completada o vencida. */
+function encabezado(p: PracticaDelActa, nombre: string, resultados: ResultadoDelEjercicio[]): { chip: Chip; cuerpo: string | null } {
+  const cuenta = (r: ResultadoDelEjercicio) => resultados.filter((x) => x === r).length;
+  switch (p.status) {
+    case "PENDING":
+      return {
+        chip: { texto: "Preparándose", fondo: "#F4EAE0", tinta: "#5E4E6B", I: Loader },
+        cuerpo: "La práctica se está armando desde tu acta. Tarda cerca de un minuto.",
+      };
+    case "READY":
+      return {
+        chip: { texto: `Lista · ${nombre} aún no empieza`, fondo: "#EFE9F9", tinta: "#4A3A75", I: PlayCircle },
+        cuerpo: `Ya la tiene en su perfil. Vence el ${diaCorto(p.expiresAt)}.`,
+      };
+    case "IN_PROGRESS": {
+      const hechos = resultados.filter((r) => r !== "sinHacer").length;
+      const partes = [
+        cuenta("primero") ? `${numeroEnPalabras(cuenta("primero"))} al primer intento` : null,
+        cuenta("segundo") ? `${numeroEnPalabras(cuenta("segundo"))} al segundo` : null,
+        cuenta("mostrada") ? `${numeroEnPalabras(cuenta("mostrada"))} se le mostró` : null,
+        cuenta("saltado") ? `${numeroEnPalabras(cuenta("saltado"))} saltada` : null,
+      ].filter(Boolean);
+      return {
+        chip: { texto: `En curso · va en la ${hechos + 1}`, fondo: "#FFE9D6", tinta: "#6B3E1A", I: PlayCircle },
+        cuerpo: partes.length ? `Lleva ${partes.join(" y ")}. Lo demás aparece cuando lo haga.` : "Ya empezó. Lo demás aparece cuando lo haga.",
+      };
+    }
+    case "COMPLETED": {
+      const partes = [
+        `${cuenta("primero")} al primer intento`,
+        cuenta("segundo") ? `${cuenta("segundo")} al segundo` : null,
+        cuenta("mostrada") ? `${cuenta("mostrada")} se le mostró` : null,
+        cuenta("saltado") ? `${cuenta("saltado")} saltado${cuenta("saltado") === 1 ? "" : "s"}` : null,
+      ].filter(Boolean);
+      return {
+        chip: { texto: `Completada${p.completedAt ? ` · ${diaCorto(p.completedAt)}` : ""}`, fondo: "#DEF3E7", tinta: "#1F5238", I: Check },
+        cuerpo: `${partes.join(", ")}.`,
+      };
+    }
+    case "EXPIRED":
+      return {
+        chip: { texto: "Vencida sin hacer", fondo: "#FFFFFF", tinta: "#5E4E6B", borde: "1.5px dashed #C9B8A8", I: Clock },
+        cuerpo: `No la hizo antes del ${diaCorto(p.expiresAt)}. Puede ser buen tema para abrir la clase.`,
+      };
+    default:
+      return {
+        chip: { texto: "Sin práctica esta vez", fondo: "#F4EAE0", tinta: "#5E4E6B", I: Minus },
+        cuerpo:
+          "Esta vez no salieron ejercicios: el acta no tenía palabras ni frases concretas en que anclarlos. " +
+          "La próxima, anota el vocabulario y los errores de la clase.",
+      };
+  }
+}
+
+function ChipDeEstado({ chip }: { chip: Chip }) {
   return (
-    <div className="grid gap-2 text-[13.5px]">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="flex flex-wrap items-center gap-2 text-[11.5px] font-bold uppercase tracking-[0.08em] text-text-muted">
-          {e.index + 1}. {NOMBRE_DE_CATEGORIA[e.category]} · {NOMBRE_DEL_TIPO[e.type]}
-          {e.sourceTerm && (
-            <span className="rounded-pill bg-surface px-2 py-0.5 normal-case tracking-normal text-text-secondary">
-              {e.sourceTerm}
-            </span>
-          )}
-        </p>
-        {empezada && (
-          <span className={`inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-[11.5px] font-bold ${resultado.clase}`}>
-            {resultadoDe(e) === "primero" && <Check size={12} strokeWidth={2.6} />}
-            {resultadoDe(e) === "saltado" && <SkipForward size={12} strokeWidth={2.4} />}
-            {resultado.texto}
-          </span>
-        )}
-      </div>
-      <p className="font-semibold text-text">{e.prompt}</p>
-      <Material ejercicio={e} />
-      {e.firstAnswer && (
-        <div className="rounded-base bg-surface px-3 py-2 text-text-secondary">
-          <p>
-            <span className="font-bold text-text">{e.secondAnswer ? "Primer intento: " : "Respondió: "}</span>
-            <span lang="en">{mostrarRespuesta(e.type, e.payload, e.firstAnswer)}</span>
-          </p>
-          {e.secondAnswer && (
-            <p className="mt-0.5 flex items-start gap-1">
-              <CornerDownRight size={14} strokeWidth={2} className="mt-0.5 shrink-0" />
-              <span>
-                <span className="font-bold text-text">Segundo intento: </span>
-                <span lang="en">{mostrarRespuesta(e.type, e.payload, e.secondAnswer)}</span>
-              </span>
-            </p>
-          )}
-        </div>
-      )}
-      <p className="text-text-secondary">
-        <span className="font-bold text-text">Respuesta esperada: </span>
-        {e.expected
-          ? mostrarEsperada(e.type, e.expected)
-          : e.type === "WRITE_SENTENCE"
-            ? "cualquier frase suya que la use bien."
-            : "—"}
-      </p>
-      {e.explanation && <p className="text-text-secondary">{e.explanation}</p>}
+    <span
+      className="inline-flex h-[30px] items-center gap-1.5 self-start rounded-pill px-3 text-[13px] font-bold"
+      style={{ background: chip.fondo, color: chip.tinta, border: chip.borde ?? "none" }}
+    >
+      <chip.I size={14} strokeWidth={2} aria-hidden />
+      {chip.texto}
+    </span>
+  );
+}
+
+function Contador({ n, etiqueta, fondo, tinta, I }: { n: number; etiqueta: string; fondo: string; tinta: string; I: LucideIcon }) {
+  return (
+    <div className="flex items-center gap-2.5 rounded-pareja px-3 py-2.5" style={{ background: fondo, color: tinta }}>
+      <I size={18} strokeWidth={2} className="shrink-0" aria-hidden />
+      <span className="flex flex-col">
+        <strong className="font-display text-[22px] leading-none">{n}</strong>
+        <span className="text-[12px] font-bold">{etiqueta}</span>
+      </span>
     </div>
   );
 }
 
-/** Lo que el estudiante tiene delante para resolverlo: la frase, las opciones, los pares o el diálogo. */
-function Material({ ejercicio: e }: { ejercicio: EjercicioDelActa }) {
+/** Una tarjeta por ejercicio (§9.10): qué vio, qué respondió en cada intento y qué se esperaba. */
+function ResultadoEjercicio({ ejercicio: e }: { ejercicio: EjercicioDelActa }) {
+  const r = resultadoDe(e);
+  const c = RESULTADO[r];
+  const cat = CATEGORIA[e.category];
+  const intentos: { texto: string; bien: boolean }[] = [];
+  if (e.firstAnswer) intentos.push({ texto: mostrarRespuesta(e.type, e.payload, e.firstAnswer), bien: e.attempts === 1 && e.correct === true });
+  if (e.secondAnswer) intentos.push({ texto: mostrarRespuesta(e.type, e.payload, e.secondAnswer), bien: e.correct === true });
+  // Parejas se une par por par: a la primera no queda ningún par fallado que mostrar, solo el acierto.
+  if (e.type === "MATCH_MEANING" && e.correct === true && intentos.length === 0) {
+    const n = (leerPayload<{ terms?: string[] }>(e).terms ?? []).length;
+    intentos.push({ texto: n === 1 ? "La pareja unida" : `Las ${numeroEnPalabras(n)} parejas unidas`, bien: true });
+  }
+  const termino = leerPayload<{ term?: string }>(e).term ?? e.sourceTerm;
+
+  return (
+    <article className="flex flex-col overflow-hidden rounded-tarjeta bg-white">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 px-[18px] py-3" style={{ background: c.cabecera }}>
+        <span className="flex items-center gap-2 text-[13px] font-extrabold">
+          <span className="tracking-[.06em] uppercase" style={{ color: cat.tinta }}>
+            {NOMBRE_DE_CATEGORIA[e.category]}
+          </span>
+          <span className="font-bold text-ink-2">{NOMBRE_DEL_TIPO[e.type]}</span>
+        </span>
+        <span
+          className="inline-flex h-7 items-center gap-[5px] rounded-pill px-2.5 text-[12px] font-extrabold"
+          style={{ background: c.fondo, color: c.tinta, border: c.borde ?? "none" }}
+        >
+          <c.I size={13} strokeWidth={2.2} aria-hidden />
+          {c.texto}
+        </span>
+      </div>
+      <div className="flex flex-col gap-2.5 px-[18px] pt-3.5 pb-4">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[12px] font-bold text-ink-3">Lo que vio</span>
+          <span className="text-[15px] leading-[1.45] font-semibold">{loQueVio(e)}</span>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[12px] font-bold text-ink-3">Lo que respondió</span>
+          {intentos.length === 0 && (
+            <span className="text-[14px] text-ink-2">
+              {r === "saltado" ? "Lo saltó: su dispositivo no tenía voz en inglés." : "Todavía nada."}
+            </span>
+          )}
+          {intentos.map((i, k) => (
+            <div key={k} className="flex items-start gap-2 text-[14px] leading-[1.45]">
+              <span className="min-w-[74px] shrink-0 font-bold text-ink-2">Intento {k + 1}</span>
+              <span lang="en" className="flex-1">
+                {i.texto}
+              </span>
+              <span className="flex shrink-0 items-center gap-1 text-[12px] font-extrabold" style={{ color: i.bien ? "#2E6B4A" : "#8A5A12" }}>
+                {i.bien ? <Check size={13} strokeWidth={2.2} aria-hidden /> : <RotateCcw size={13} strokeWidth={2.2} aria-hidden />}
+                {i.bien ? "Bien" : "Casi"}
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="flex flex-col gap-1 border-t border-line-soft pt-2.5 text-[14px] leading-[1.5]">
+          <span>
+            <span className="font-bold text-ink-3">Esperada · </span>
+            <strong lang="en">
+              {e.type === "WRITE_SENTENCE"
+                ? `Cualquier frase de verdad que use ${termino ?? "la palabra"}`
+                : e.expected
+                  ? mostrarEsperada(e.type, e.expected)
+                  : "—"}
+            </strong>
+          </span>
+          {e.explanation && <span className="text-ink-2">{e.explanation}</span>}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+/** Lo que el estudiante tuvo delante, en una línea. */
+function loQueVio(e: EjercicioDelActa): string {
   switch (e.type) {
     case "FILL_BLANK": {
       const p = leerPayload<{ sentence?: string; options?: string[] }>(e);
-      return (
-        <p className="text-text-secondary">
-          «{p.sentence}»{p.options?.length ? ` · Opciones: ${p.options.join(", ")}` : ""}
-        </p>
-      );
+      return `«${p.sentence}» — elegir la que va en el hueco${p.options?.length ? `: ${p.options.join(", ")}` : ""}`;
     }
-    case "FIX_SENTENCE": {
-      const p = leerPayload<{ sentence?: string; accepted?: string[] }>(e);
-      return (
-        <p className="text-text-secondary">
-          «{p.sentence}»{p.accepted?.length ? ` · También vale: ${p.accepted.join(" / ")}` : ""}
-        </p>
-      );
-    }
+    case "FIX_SENTENCE":
+      return `«${leerPayload<{ sentence?: string }>(e).sentence}» — escribirla bien`;
     case "MATCH_MEANING": {
       const p = leerPayload<{ terms?: string[] }>(e);
-      return p.terms?.length ? <p className="text-text-secondary">Palabras: {p.terms.join(", ")}</p> : null;
+      return `${(p.terms ?? []).join(" · ")}, con sus significados en español`;
     }
-    case "ORDER_DIALOGUE": {
-      const p = leerPayload<{ lines?: string[] }>(e);
-      return p.lines?.length ? (
-        <p className="text-text-secondary">Le llegan desordenadas: {p.lines.map((l) => `«${l}»`).join(" ")}</p>
-      ) : null;
-    }
+    case "ORDER_DIALOGUE":
+      return `${(leerPayload<{ lines?: string[] }>(e).lines ?? []).length} líneas de una conversación, desordenadas`;
     case "WRITE_SENTENCE":
-      return null;
-    case "SPOT_ERROR": {
-      const p = leerPayload<{ tokens?: string[] }>(e);
-      return <p className="text-text-secondary">Toca la palabra que está mal en «{(p.tokens ?? []).join(" ")}»</p>;
-    }
+      return `Escribir una frase suya con «${leerPayload<{ term?: string }>(e).term}»`;
+    case "SPOT_ERROR":
+      return `«${unirFichas(leerPayload<{ tokens?: string[] }>(e).tokens ?? [])}» — tocar la palabra que está mal`;
     case "BUILD_SENTENCE": {
-      const p = leerPayload<{ tiles?: string[]; guide?: string }>(e);
-      return (
-        <p className="text-text-secondary">
-          {p.guide ? `«${p.guide}» · ` : ""}Fichas: {(p.tiles ?? []).join(" / ")}
-        </p>
-      );
+      const p = leerPayload<{ guide?: string }>(e);
+      return p.guide ? `Armar en inglés «${p.guide}»` : "Armar una frase con fichas";
     }
     case "CHOOSE_REPLY": {
-      const p = leerPayload<{ from?: string; message?: string; options?: string[] }>(e);
-      return (
-        <p className="text-text-secondary">
-          {p.from ? `${p.from}: ` : ""}«{p.message}» · Opciones: {(p.options ?? []).join(" / ")}
-        </p>
-      );
+      const p = leerPayload<{ from?: string; message?: string }>(e);
+      return `${p.from ? `${p.from}: ` : ""}«${p.message}»`;
     }
     case "LISTEN_CHOOSE": {
       const p = leerPayload<{ say?: string; options?: string[] }>(e);
-      return (
-        <p className="text-text-secondary">
-          Oye «{p.say}» · Opciones: {(p.options ?? []).join(", ")}
-        </p>
-      );
+      return `Meissa dice «${p.say}». Opciones: ${(p.options ?? []).join(", ")}`;
     }
-    case "DICTATION": {
-      const p = leerPayload<{ say?: string }>(e);
-      return <p className="text-text-secondary">Oye «{p.say}» y lo escribe</p>;
-    }
+    case "DICTATION":
+      return `Meissa dice «${leerPayload<{ say?: string }>(e).say}» y lo escribe`;
   }
 }

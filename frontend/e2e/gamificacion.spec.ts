@@ -82,15 +82,18 @@ test("declarar un objetivo enciende una estrella y llega la notificación", asyn
   await page.getByRole("button", { name: "Guardar cambios" }).click();
   await expect(page.getByText("Tu profesor ya lo puede ver")).toBeVisible();
 
-  // El encendido: la celebración salta sola, sin haber entrado al tablero de logros.
-  await expect(page.getByText("Estrella encendida")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Objetivo declarado" })).toBeVisible();
+  // El logro nuevo: salta solo, sin haber entrado al tablero de logros, con su sello y sus puntos.
+  const logro = page.getByRole("dialog", { name: "Objetivo declarado" });
+  await expect(logro).toBeVisible();
+  await expect(logro.getByText(/^Logro nuevo · /).filter({ visible: true })).toBeVisible();
+  await expect(logro.getByText(/^\+\d+ puntos$/)).toBeVisible();
 
-  // Y la estrella queda encendida en el cielo. Dentro de <main>: el título de la celebración
-  // lleva el mismo nombre, y sin acotar se resuelven dos elementos.
-  await page.goto("/logros");
+  // «Verlo en Mi cielo» abre el cielo en la familia de ese logro, y ahí queda encendido.
+  await logro.getByRole("link", { name: "Verlo en Mi cielo" }).click();
   await expect(page.getByRole("heading", { name: "Tu cielo" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Compromiso" })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("main").getByText("Objetivo declarado")).toBeVisible();
+  await expect(page.getByRole("main").getByText(/conseguido/).first()).toBeVisible();
 
   // Y hay una notificación por ello. Una sola, aunque se hayan encendido varias.
   await page.getByRole("button", { name: /^Notificaciones/ }).click();

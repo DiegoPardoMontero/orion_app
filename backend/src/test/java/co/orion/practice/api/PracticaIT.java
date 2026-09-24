@@ -298,8 +298,10 @@ class PracticaIT extends ApiIntegrationSupport {
         post("/api/v1/practice-sets/" + set.get("id") + "/complete", sesionAna, null, Map.class);
 
         Map resumen = get("/api/v1/professors/me/students/" + ana.getId() + "/practice", sesionMaria, Map.class).getBody();
-        assertThat(resumen).containsOnlyKeys("ofrecidasEstaSemana", "completadasEstaSemana", "leCosto")
-                .containsEntry("ofrecidasEstaSemana", 1).containsEntry("completadasEstaSemana", 1);
+        assertThat(resumen).containsOnlyKeys("ofrecidasEstaSemana", "completadasEstaSemana", "ofrecidasEsteMes",
+                        "completadasEsteMes", "leCosto")
+                .containsEntry("ofrecidasEstaSemana", 1).containsEntry("completadasEstaSemana", 1)
+                .containsEntry("ofrecidasEsteMes", 1).containsEntry("completadasEsteMes", 1);
 
         assertThat(get("/api/v1/professors/me/students/" + ana.getId() + "/practice", login("juan@orion.test"),
                 String.class).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
@@ -371,6 +373,9 @@ class PracticaIT extends ApiIntegrationSupport {
             assertThat(h).containsEntry("status", "COMPLETED").containsEntry("itemCount", 3)
                     .containsEntry("lessonNoteId", set.get("lessonNoteId"));
             assertThat(h.get("bookingId")).isNotNull();
+            assertThat(h.get("workedOn")).isNotNull();
+            // Todo cerrado con dos respuestas que no eran: tres estrellas mostradas, para su constelación.
+            assertThat((List) h.get("stars")).containsExactly("mostrada", "mostrada", "mostrada");
         });
         assertThat(get(ruta, login("juan@orion.test"), String.class).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }

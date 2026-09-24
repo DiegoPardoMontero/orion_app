@@ -11,6 +11,7 @@ import {
   palabrasNuevasDe,
   partirLinea,
   rachaDe,
+  resultadoDe,
   textoDelRegreso,
   tituloDelSet,
   primerNombre,
@@ -20,6 +21,8 @@ import {
   type Ejercicio,
 } from "./practica";
 import { formaDe } from "@/components/practica/Constelacion";
+import { logrosDelCierre } from "@/components/practica/Cierre";
+import type { Logro } from "@/lib/gamificacion";
 
 describe("la invitación a practicar", () => {
   it("resume lo trabajado en una línea, sin punto final y en minúscula para ir tras los dos puntos", () => {
@@ -158,5 +161,28 @@ describe("los textos de la pantalla de ejercicio", () => {
   it("el título del set es lo trabajado, con mayúscula", () => {
     expect(tituloDelSet({ workedOn: "check-in en el hotel. Y más." })).toBe("Check-in en el hotel");
     expect(tituloDelSet({ workedOn: null })).toBeNull();
+  });
+});
+
+describe("el cierre y lo que ve el profesor", () => {
+  const logro = (code: string, unlockedAt: string | null): Logro =>
+    ({ code, unlocked: unlockedAt !== null, unlockedAt, family: "PRACTICA", points: 10 }) as Logro;
+
+  it("el cierre suma solo los logros que encendió este set", () => {
+    const fin = "2026-09-24T15:00:00Z";
+    const logros = [
+      logro("practica-primera", "2026-09-24T15:00:01Z"),
+      logro("primeros-clase", "2026-09-20T10:00:00Z"),
+      logro("practica-perfecta", null),
+    ];
+    expect(logrosDelCierre(logros, fin).map((l) => l.code)).toEqual(["practica-primera"]);
+    expect(logrosDelCierre(logros, null)).toEqual([]);
+  });
+
+  it("un ejercicio abierto con un intento fallado todavía no es «se le mostró»", () => {
+    const e = { skipped: false, correct: false, attempts: 1, closed: false } as Parameters<typeof resultadoDe>[0];
+    expect(resultadoDe(e)).toBe("sinHacer");
+    expect(resultadoDe({ ...e, attempts: 2, closed: true })).toBe("mostrada");
+    expect(resultadoDe({ ...e, correct: true, attempts: 2, closed: true })).toBe("segundo");
   });
 });

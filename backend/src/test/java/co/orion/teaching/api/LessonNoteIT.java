@@ -226,6 +226,10 @@ class LessonNoteIT extends ApiIntegrationSupport {
         ResponseEntity<Map> a71 = put("/api/v1/lesson-notes/" + borrador.get("id"), sesionMaria, cambio, Map.class);
         assertThat(a71.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(a71.getBody().get("lastEditedAt")).isNotNull();
+        // Y dice hasta cuándo, con quién fue la clase y cuándo: la pantalla del acta lo nombra.
+        assertThat(a71.getBody()).containsEntry("studentName", "Ana Ruiz").containsKey("classStartsAt");
+        assertThat(java.time.OffsetDateTime.parse((String) a71.getBody().get("editableUntil")))
+                .isBetween(java.time.OffsetDateTime.now().plusMinutes(50), java.time.OffsetDateTime.now().plusMinutes(70));
 
         jdbc.update("update lesson_notes set published_at = now() - interval '73 hours' where id = ?::uuid",
                 borrador.get("id"));

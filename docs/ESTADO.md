@@ -30,7 +30,15 @@ dentro de `/cuenta`).
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots), con Rigel de protagonista.
 
 ## Verificación
-Al 24/09/2026, con el Bloque 10 afinado para el lanzamiento a profesores (ensayo, vista de los
+Al 24/09/2026 por la tarde, con la práctica construida desde el diseño de Claude Design (los diez
+tipos, el cierre, el logro nuevo, «Mi cielo» y la vista del profesor):
+- Backend: `./mvnw verify` — **363 unitarios + 528 de integración**, verde.
+- Frontend: `tsc` + `lint` verdes; **106 tests de Vitest**.
+- **E2E Playwright: 22 de 23** sobre base recreada, con la práctica recorrida entera en la pantalla
+  nueva (incluidos «Casi…» y el segundo intento), el cierre con sus logros y lo que ve María.
+  Además, cada tipo en cada estado comparado a ojo con las capturas del paquete, a 390 y a 1280.
+
+Por la mañana, con el Bloque 10 afinado para el lanzamiento a profesores (ensayo, vista de los
 ejercicios, bienvenida y recorridos, acta v3, práctica v4 con revisión):
 - Backend: `./mvnw verify` (Testcontainers) — **344 unitarios + 519 de integración**, verde.
 - Frontend: `tsc` + `lint` verdes; **90 tests de Vitest**.
@@ -673,8 +681,9 @@ como la videollamada.
 ## La práctica, rediseñada y gamificada (24/09/2026)
 
 Pardo pidió ejercicios más interactivos, cinco distintos por set y en varias categorías, correcciones
-y logros muy gamificados, y que el profesor vea lo que hizo su estudiante. La parte visual viene de
-Claude Design (prompt entregado; se espera la carpeta «Diseño Práctica»); esto es la lógica.
+y logros muy gamificados, y que el profesor vea lo que hizo su estudiante. La parte visual la hizo
+Claude Design (paquete `design_handoff_orion_practica`, «Diseño Acta y Ejercicios.zip») y está
+construida al píxel —ver la sección siguiente—; esta es la lógica.
 
 - **Diez tipos en cinco categorías** (V52): Palabras (Parejas, Completa), Frases (Corrige, Caza el
   error, Arma la frase), Conversación (Ordena la conversación, Responde en el chat), Escucha
@@ -704,6 +713,53 @@ Claude Design (prompt entregado; se espera la carpeta «Diseño Práctica»); es
   - en la ficha del estudiante, el historial de prácticas.
   - **El estudiante lo sabe**: la portada de su práctica dice «María verá cómo te fue, así
     prepara tu próxima clase».
+
+### El diseño, construido (24/09/2026)
+
+Cada set es una **constelación de cinco estrellas**: cada ejercicio enciende la suya y al terminar
+se dibujan las líneas. Comparado lado a lado con las capturas del paquete, a 390 y a 1280.
+
+- **La pantalla de ejercicio**: los diez tipos con todos sus estados (inicial, interactuando,
+  comprobando, «Así es.», «Casi…» con su pista, mostrada, sin voz y saltado), hechos con las piezas
+  del paquete —ficha, hueco, tarjeta de pareja, burbujas de chat, reproductor, panel de respuesta,
+  botón principal, chip de categoría— y la constelación con sus cuatro formas (cada set tiene la
+  suya, sacada de su id). Rigel acompaña con tres poses nuevas (racha, atento, sello); en Escucha
+  habla Meissa, nunca los dos juntos. En el celular la práctica va a pantalla completa, sin la barra
+  de abajo; en escritorio queda el lateral de la app.
+- **Lo que rodea al juego**: el inicio del set, la transición entre ejercicios (con la racha
+  «¡Tres seguidas!»), «Salir y seguir luego» con el aviso al volver («Sigues donde ibas. Tus dos
+  primeras estrellas ya están encendidas.»), y los estados preparándose y vencida. La invitación,
+  en el perfil y al pie del resumen de la clase, en sus cuatro momentos.
+- **El cierre** en el amanecer: la constelación que se dibuja, los puntos que se cuentan solos (solo
+  las líneas que ocurrieron: el set, el bono de perfecta y cada logro que encendió), lo que logró,
+  lo que conviene repasar, la racha semanal y «María ya puede ver cómo te fue».
+- **El logro nuevo** es ahora un momento reutilizable en toda la app: el sello se estampa, con su
+  nombre, lo que lo encendió y sus puntos, y se sigue con un botón; si son varios, van en cola. Los
+  de Práctica llevan su sello dorado (tres estados). **«Mi cielo»** muestra arriba las constelaciones
+  completas y abajo los logros por familia, en pestañas.
+- **El profesor**: el acta publicada se lee (con «Hecha con IA», hasta cuándo se puede corregir y
+  «Corregir»), los errores se leen tachados → en negrita, y el borrador se edita con el aviso de la
+  IA. Debajo, «Cómo le fue a Ana» con el estado del set, los contadores, «Le costó» y una tarjeta por
+  ejercicio (lo que vio, lo que respondió en cada intento, lo que se esperaba). En la ficha del
+  estudiante, «Practicó 2 de 3 veces este mes» y el historial con la constelación de cada set.
+- **Backend que pidió el diseño**:
+  - la pista del «Casi…» aparte de la explicación (V55, prompt v6, con un filtro que cambia las
+    pistas que dan la respuesta);
+  - Parejas se une par por par (un par que no va gasta un intento);
+  - «Tu frase» la revisa la IA (¿es una frase de verdad en inglés con el término?) y trae un ejemplo
+    para mostrar si no sale (prompt v7);
+  - I'm = I am al corregir y en el dictado;
+  - el set que se prepara ya se le ofrece al estudiante;
+  - el acta del profesor dice con quién fue la clase, cuándo, y hasta cuándo se puede corregir.
+- **Decisiones propias**, para que Pardo las confirme:
+  - Rigel conserva la mano que Pardo aprobó (sin el pulgar suelto del diseño).
+  - En el dictado Meissa no muestra la frase mientras suena: sería dar la respuesta.
+  - En Ordena y en Arma la frase, «Casi…» marca toda la respuesta en ámbar, no solo lo que está
+    mal: el servidor no dice qué posiciones fallaron mientras quedan intentos.
+  - En el segundo intento la pista se queda a la vista, y no se puede comprobar sin cambiar algo.
+  - En Responde en el chat se elige la respuesta y luego «Comprobar», como en las capturas.
+  - La hora va como en el resto de la app («8:12 PM»), no «8:12 p. m.».
+  - «Mi cielo» usa las seis familias reales; el diseño mostraba cuatro.
 
 ## Revisión de lo construido en la noche del 22 al 23/09/2026
 

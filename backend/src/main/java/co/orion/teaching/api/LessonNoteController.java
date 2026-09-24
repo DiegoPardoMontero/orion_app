@@ -160,7 +160,8 @@ public class LessonNoteController {
     public record ActaDelProfesor(UUID id, UUID bookingId, String status, String rawInput, String workedOn,
                                   String recurringIssues, String nextSteps, List<PalabraView> vocabulary,
                                   String origin, boolean draftedByAi, boolean editable,
-                                  ZonedDateTime publishedAt, ZonedDateTime lastEditedAt) {
+                                  ZonedDateTime publishedAt, ZonedDateTime lastEditedAt, String studentName,
+                                  ZonedDateTime classStartsAt, ZonedDateTime editableUntil) {
     }
 
     /**
@@ -177,7 +178,11 @@ public class LessonNoteController {
         return new ActaDelProfesor(n.getId(), n.getBookingId(), n.getStatus().name(), n.getRawInput(),
                 n.getWorkedOn(), n.getRecurringIssues(), n.getNextSteps(), palabras(a.palabras()),
                 n.getOrigin().name(), a.propuestaPorIa(), n.editable(actas.ventana(), clock.instant()),
-                bogota(n.getPublishedAt()), bogota(n.getLastEditedAt()));
+                bogota(n.getPublishedAt()), bogota(n.getLastEditedAt()),
+                users.findById(n.getStudentId()).map(u -> u.getFullName()).orElse(null),
+                bogota(actas.empiezaLaClase(n.getBookingId())),
+                // Publicada, se corrige durante la ventana (hoy 72 h): la pantalla dice hasta cuándo.
+                n.getPublishedAt() == null ? null : bogota(n.getPublishedAt().plus(actas.ventana())));
     }
 
     private ActaDelEstudiante delEstudiante(Acta a) {

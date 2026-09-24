@@ -386,12 +386,14 @@ test("María escribe y publica el acta de una clase; Ana la lee", async ({ page 
 
   await page.locator("#notas").fill("Trabajamos past simple; sigue diciendo 'I go yesterday' y le costó 'used to'.");
   await page.getByRole("button", { name: "Generar acta" }).click();
-  await expect(page.getByText("Borrador", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Publicar", exact: true })).toBeVisible();
   await expect(page.getByText("used to", { exact: true })).toBeVisible();
   // Corrige una sección antes de publicar: lo que se publica es lo que está en pantalla.
   await page.getByLabel("Lo que sigue").fill("La próxima: condicionales.");
   await page.getByRole("button", { name: "Publicar", exact: true }).click();
-  await expect(page.getByText("Publicada", { exact: true })).toBeVisible();
+  await expect(page.getByText(/^Publicada · /)).toBeVisible();
+  // Publicada se lee, con hasta cuándo se puede corregir.
+  await expect(page.getByText(/^Puedes corregirla hasta el/)).toBeVisible();
   await page.goto("/mis-clases?scope=past");
   await logout(page);
 
@@ -507,7 +509,7 @@ test("Ana practica lo de su clase y María lo ve en su ficha", async ({ page }) 
 
   // Un ejercicio por pantalla, hasta el cierre. Se responde lo que haya en pantalla; si sale «Casi…»,
   // se intenta distinto y el ejercicio se cierra de un modo u otro.
-  const cierre = page.getByRole("heading", { name: /bien usados|Constelación perfecta/ });
+  const cierre = page.getByRole("heading", { name: /^Constelación (completa|perfecta)$/ });
   for (let i = 0; i < 8; i++) {
     const seguir = page.getByRole("button", { name: "Seguir", exact: true });
     const saltar = page.getByRole("button", { name: "Saltar este" });
@@ -533,8 +535,14 @@ test("Ana practica lo de su clase y María lo ve en su ficha", async ({ page }) 
     await expect(seguir).toHaveCount(0, { timeout: 5000 });
   }
   await expect(cierre).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByRole("img", { name: /^Constelación: \d de \d estrellas encendidas/ })).toBeVisible();
-  await expect(page.getByText("+15 puntos por practicar")).toBeVisible();
+  // Los logros que encendió al terminar llegan uno a uno, cada uno con su «Seguir».
+  const logroNuevo = page.getByRole("dialog").getByRole("button", { name: "Seguir" });
+  for (let k = 0; k < 4 && (await logroNuevo.isVisible({ timeout: 2000 }).catch(() => false)); k++) {
+    await logroNuevo.click();
+  }
+  await expect(page.getByRole("img", { name: /^Constelación (completa|perfecta):/ })).toBeVisible();
+  await expect(page.getByText("Completaste el set")).toBeVisible();
+  await expect(page.getByText(/ya puede ver cómo te fue/)).toBeVisible();
   await page.goto("/mis-clases");
   await logout(page);
 
@@ -542,7 +550,11 @@ test("Ana practica lo de su clase y María lo ve en su ficha", async ({ page }) 
   await page.waitForURL((u) => !u.pathname.startsWith("/login"));
   await page.goto("/mis-clases?scope=past");
   await page.getByRole("link", { name: "Ana Ramírez", exact: true }).first().click();
-  await expect(page.getByText(/Practicó 1 de 1 vez esta semana/)).toBeVisible();
+  await expect(page.getByText(/Practicó 1 de 1 vez este mes/)).toBeVisible();
+  // La fila de esa práctica abre el acta, donde está cómo le fue ejercicio por ejercicio.
+  await page.getByRole("link", { name: /Completada/ }).first().click();
+  await expect(page.getByRole("heading", { name: "Cómo le fue a Ana" })).toBeVisible();
+  await expect(page.getByText(/^Lo que respondió$/).first()).toBeVisible();
 });
 
 /**
@@ -574,9 +586,9 @@ test("sin IA, María escribe el acta a mano y la publica igual", async ({ page }
     await page.locator("#notas").fill("Repasamos el presente perfecto y le cuesta la pronunciación de la th.");
     await page.getByRole("button", { name: "Generar acta" }).click();
     await expect(page.getByText("Escríbela con tus palabras", { exact: false })).toBeVisible();
-    await page.getByLabel("Lo que trabajaron").fill("Presente perfecto.");
+    await page.getByLabel("Lo que trabajamos").fill("Presente perfecto.");
     await page.getByRole("button", { name: "Publicar", exact: true }).click();
-    await expect(page.getByText("Publicada", { exact: true })).toBeVisible();
+    await expect(page.getByText(/^Publicada · /)).toBeVisible();
   } finally {
     await page.goto("/mis-clases");
     await logout(page);
@@ -615,18 +627,19 @@ test("el admin ensaya el acta: María la escribe y ve los ejercicios que saliero
   await page.goto(acta!);
   await page.locator("#notas").fill("Ensayo: repasamos past simple; dijo 'I go yesterday' y aprendió 'shipment' (envío).");
   await page.getByRole("button", { name: "Generar acta" }).click();
-  await expect(page.getByText("Borrador", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Publicar", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Publicar", exact: true }).click();
-  await expect(page.getByText("Publicada", { exact: true })).toBeVisible();
+  await expect(page.getByText(/^Publicada · /)).toBeVisible();
 
   // La práctica se genera en segundo plano; la sección se actualiza sola mientras tanto.
-  const practica = page.getByRole("heading", { name: "La práctica que salió de esta acta" });
+  const practica = page.getByRole("heading", { name: /^Cómo le fue a / });
   await expect(practica).toBeVisible();
   await expect(async () => {
     await page.reload();
-    await expect(page.getByText(/^Respuesta esperada:/).first()).toBeVisible({ timeout: 2000 });
+    await expect(page.getByText(/^Lista · .+ aún no empieza$/)).toBeVisible({ timeout: 2000 });
   }).toPass({ timeout: 30_000 });
-  await expect(page.getByText("Listos. Todavía no los empieza.")).toBeVisible();
+  // Cada ejercicio, con lo que se esperaba: todavía sin hacer.
+  await expect(page.getByText("Sin hacer", { exact: true }).first()).toBeVisible();
   await logout(page);
 
   await login(page, USERS.admin);

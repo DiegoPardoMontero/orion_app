@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, BookOpen, Check, MessageCircle, Mic, NotebookPen, Plus, Sparkles, Square, X } from "lucide-react";
+import { ArrowLeft, BookOpen, Check, ChevronDown, Clock, MessageCircle, Mic, Plus, Sparkles, Square, X } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -9,7 +9,7 @@ import { AvisoError, Cargando, Vacio } from "@/components/estados";
 import { Constelacion } from "@/components/marca";
 import { InvitacionDelActa } from "@/components/InvitacionAPracticar";
 import { EjerciciosDelActa } from "@/components/practica/EjerciciosDelActa";
-import { Badge, Bloque, Boton, Spinner, Tarjeta } from "@/components/ui";
+import { Bloque, Boton, Spinner, Tarjeta } from "@/components/ui";
 import {
   MAX_NOTAS,
   MAX_PALABRAS,
@@ -20,9 +20,9 @@ import {
 } from "@/lib/actas";
 import { ApiError, apiFetch, uploadFile } from "@/lib/api/fetch";
 import type { ConversationSummary } from "@/lib/api/types";
-import { primerNombre } from "@/lib/practica";
+import { diaCorto, diaDeLaClase, primerNombre } from "@/lib/practica";
 import { useMe } from "@/lib/auth/session";
-import { fechaLarga } from "@/lib/format";
+import { fechaLarga, horaBogota, iniciales } from "@/lib/format";
 
 /**
  * El acta de una clase (Bloque 10, Parte A). La misma ruta sirve a los dos lados y el servidor
@@ -309,8 +309,13 @@ function Editor({ acta }: { acta: ActaDelProfesor }) {
   const [sigue, setSigue] = useState(acta.nextSteps ?? "");
   const [palabras, setPalabras] = useState<Palabra[]>(acta.vocabulary);
   const [guardado, setGuardado] = useState(false);
+  // Publicada se lee; «Corregir» la abre para editar mientras dura la ventana.
+  const [corrigiendo, setCorrigiendo] = useState(false);
 
   const borrador = acta.status === "DRAFT";
+  const editando = borrador || corrigiendo;
+  const estudiante = acta.studentName ?? "tu estudiante";
+  const nombre = acta.studentName ? primerNombre(acta.studentName) : "tu estudiante";
   const cuerpo = () => ({
     workedOn: trabajado,
     recurringIssues: presente,
@@ -329,6 +334,7 @@ function Editor({ acta }: { acta: ActaDelProfesor }) {
       apiFetch<ActaDelProfesor>(`/api/v1/lesson-notes/${acta.id}`, { method: "PUT", body: cuerpo() }),
     onSuccess: (nueva) => {
       setGuardado(true);
+      if (!borrador) setCorrigiendo(false);
       actualizar(nueva);
     },
   });
@@ -346,77 +352,225 @@ function Editor({ acta }: { acta: ActaDelProfesor }) {
   const ocupado = guardar.isPending || publicar.isPending;
   const error = guardar.error ?? publicar.error;
   const vacia = !trabajado.trim() && !presente.trim() && !sigue.trim() && palabras.length === 0;
+  const conIa = acta.origin === "AI_DRAFT";
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
-      <div className="grid content-start gap-5">
-        <Tarjeta>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h1 className="font-display text-h2 font-bold">Acta de la clase</h1>
-            {borrador ? (
-              <span className="rounded-pill bg-warning-bg px-3 py-1 text-[12px] font-bold text-warning">
-                Borrador
-              </span>
-            ) : (
-              <Badge tono="menta">
-                <Check size={12} strokeWidth={2.4} />
-                Publicada
-              </Badge>
-            )}
-          </div>
-          <p className="mt-2 text-[13.5px] text-text-secondary">
-            {!acta.editable
-              ? "Ya pasó el plazo para editarla. Tu estudiante la ve tal como quedó."
-              : borrador
-                ? acta.origin === "MANUAL"
-                  ? "Escríbela con tus palabras; tus notas están guardadas. Lo que publiques es lo que verá tu estudiante."
-                  : "Revísala antes de publicar. Lo que publiques es lo que verá tu estudiante."
-                : "Puedes corregirla un tiempo después de publicarla; tu estudiante verá que se actualizó."}
-          </p>
-  
-          <div className="mt-5 space-y-4">
-            <CampoSeccion titulo="Lo que trabajaron" valor={trabajado} onCambio={setTrabajado} soloLectura={!acta.editable} />
-            <CampoSeccion titulo="Para tener presente" valor={presente} onCambio={setPresente} soloLectura={!acta.editable} />
-            <Vocabulario palabras={palabras} onCambio={setPalabras} soloLectura={!acta.editable} />
-            <CampoSeccion titulo="Lo que sigue" valor={sigue} onCambio={setSigue} soloLectura={!acta.editable} />
-          </div>
-  
-          {error && (
-            <div className="mt-4">
-              <AvisoError mensaje={error.message} />
-            </div>
+    <div className="practica flex flex-col gap-4">
+      {/* Quién y cuándo: el acta es de una clase con alguien. */}
+      <div className="flex items-center gap-3.5">
+        <span className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full bg-lavanda-soft text-[17px] font-extrabold text-lavanda-ink">
+          {acta.studentName ? iniciales(acta.studentName) : "?"}
+        </span>
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <h1 className="m-0 font-display text-[24px] leading-[1.1] font-bold lg:text-[32px]">Acta · {estudiante}</h1>
+          {acta.classStartsAt && (
+            <span className="text-[14px] text-ink-2">
+              Clase del {diaDeLaClase(acta.classStartsAt)} · {horaBogota(acta.classStartsAt)}
+            </span>
           )}
-  
-          {acta.editable && (
-            <div className="mt-5 flex flex-wrap items-center gap-2 sm:justify-end">
-              {guardado && !ocupado && (
-                <span className="text-[12.5px] font-semibold text-success" aria-live="polite">
-                  Guardada
-                </span>
-              )}
-              <Boton
-                variante="contorno"
-                disabled={ocupado}
-                onClick={() => guardar.mutate()}
-                className="flex-1 sm:flex-none"
-              >
-                {guardar.isPending && <Spinner />}
-                {borrador ? "Guardar sin publicar" : "Guardar cambios"}
-              </Boton>
-              {borrador && (
-                <Boton disabled={ocupado || vacia} onClick={() => publicar.mutate()} className="flex-1 sm:flex-none">
-                  {publicar.isPending && <Spinner />}
-                  Publicar
-                </Boton>
-              )}
-            </div>
-          )}
-        </Tarjeta>
-        {!borrador && <EjerciciosDelActa actaId={acta.id} />}
+        </div>
       </div>
 
+      {!editando && (
+        <>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex h-[30px] items-center gap-1.5 rounded-pill bg-ok-bg px-3 text-[13px] font-bold text-ok-ink">
+              <Check size={14} strokeWidth={2} aria-hidden />
+              Publicada{acta.publishedAt ? ` · ${diaCorto(acta.publishedAt)}, ${horaBogota(acta.publishedAt)}` : ""}
+            </span>
+            {acta.draftedByAi && (
+              <span
+                title="Partiste de un borrador hecho con IA"
+                className="inline-flex h-[30px] items-center gap-[5px] rounded-pill border border-line bg-white px-2.5 text-[12px] font-semibold text-ink-2"
+              >
+                <Sparkles size={13} strokeWidth={1.75} aria-hidden />
+                Hecha con IA
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2.5 rounded-pareja bg-white px-3.5 py-3">
+            <Clock size={20} strokeWidth={1.75} className="shrink-0 text-ink-2" aria-hidden />
+            <span className="flex-1 text-[14px] leading-[1.45]">
+              {acta.editable && acta.editableUntil ? (
+                <>
+                  Puedes corregirla hasta el{" "}
+                  <strong>
+                    {diaDeLaClase(acta.editableUntil)}, {horaBogota(acta.editableUntil)}
+                  </strong>
+                </>
+              ) : (
+                `Ya pasó el plazo para corregirla. ${nombre.charAt(0).toUpperCase()}${nombre.slice(1)} la ve tal como quedó.`
+              )}
+            </span>
+            {acta.editable && (
+              <button
+                type="button"
+                onClick={() => {
+                  setGuardado(false);
+                  setCorrigiendo(true);
+                }}
+                className="h-11 shrink-0 cursor-pointer rounded-pill border-[1.5px] border-ink px-4 text-[14px] font-bold text-ink hover:bg-arena"
+              >
+                Corregir
+              </button>
+            )}
+          </div>
+          {guardado && (
+            <p className="m-0 text-[13px] font-semibold text-ok-icon" aria-live="polite">
+              Guardada. {nombre.charAt(0).toUpperCase()}
+              {nombre.slice(1)} ve la versión nueva.
+            </p>
+          )}
+          <div className="grid gap-3.5 lg:grid-cols-2">
+            <SeccionLeida titulo="Lo que trabajamos">
+              <p className="m-0 text-[15px] leading-[1.55] whitespace-pre-wrap">{acta.workedOn || "—"}</p>
+            </SeccionLeida>
+            <SeccionLeida titulo="Errores para tener presente">
+              <Errores texto={acta.recurringIssues} />
+            </SeccionLeida>
+            <SeccionLeida titulo="Palabras nuevas">
+              {acta.vocabulary.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {acta.vocabulary.map((p) => (
+                    <span
+                      key={p.term}
+                      className="inline-flex min-h-9 items-center gap-1.5 rounded-pill bg-durazno-soft px-3.5 py-1.5 text-[14px]"
+                    >
+                      <strong lang="en">{p.term}</strong>
+                      {p.meaning && <span className="text-[#6B3E1A]">{p.meaning}</span>}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="m-0 text-[15px] text-ink-2">Ninguna esta vez.</p>
+              )}
+            </SeccionLeida>
+            <SeccionLeida titulo="Lo que sigue">
+              <p className="m-0 text-[15px] leading-[1.55] whitespace-pre-wrap">{acta.nextSteps || "—"}</p>
+            </SeccionLeida>
+          </div>
+        </>
+      )}
+
+      {editando && (
+        <>
+          {borrador ? (
+            <div className="flex items-start gap-2.5 rounded-pareja bg-lavanda-soft px-3.5 py-3 text-[14px] leading-[1.45] text-[#3E2E63]">
+              <Sparkles size={18} strokeWidth={1.75} className="mt-px shrink-0" aria-hidden />
+              <span>
+                {conIa
+                  ? `Borrador hecho con IA a partir de tus notas. Revísalo y ajústalo; al publicar, ${nombre} recibe su práctica en cerca de un minuto.`
+                  : `Escríbela con tus palabras; tus notas están guardadas. Al publicar, ${nombre} la lee y recibe su práctica en cerca de un minuto.`}
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-start gap-2.5 rounded-pareja bg-white px-3.5 py-3 text-[14px] leading-[1.45]">
+              <Clock size={18} strokeWidth={1.75} className="mt-px shrink-0 text-ink-2" aria-hidden />
+              <span>
+                Corrigiendo el acta publicada. {nombre.charAt(0).toUpperCase()}
+                {nombre.slice(1)} verá que se actualizó.
+              </span>
+            </div>
+          )}
+          <div className="grid gap-3.5 lg:grid-cols-2">
+            <CampoSeccion titulo="Lo que trabajamos" valor={trabajado} onCambio={setTrabajado} />
+            <CampoSeccion
+              titulo="Errores para tener presente"
+              valor={presente}
+              onCambio={setPresente}
+              ayuda="Uno por renglón: lo que dijo → cómo va."
+            />
+            <Vocabulario palabras={palabras} onCambio={setPalabras} />
+            <CampoSeccion titulo="Lo que sigue" valor={sigue} onCambio={setSigue} />
+          </div>
+
+          {error && <AvisoError mensaje={error.message} />}
+
+          <div className="flex gap-2.5 lg:justify-end">
+            {!borrador && (
+              <button
+                type="button"
+                disabled={ocupado}
+                onClick={() => setCorrigiendo(false)}
+                className="h-14 flex-1 cursor-pointer rounded-pill px-5 text-[16px] font-bold text-ink hover:bg-arena lg:flex-none"
+              >
+                Cancelar
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={ocupado}
+              onClick={() => guardar.mutate()}
+              className="flex h-14 flex-1 cursor-pointer items-center justify-center gap-2 rounded-pill border-[1.5px] border-ink bg-white px-6 text-[16px] font-bold text-ink hover:bg-arena disabled:opacity-60 lg:flex-none"
+            >
+              {guardar.isPending && <Spinner />}
+              {borrador ? "Guardar" : "Guardar cambios"}
+            </button>
+            {borrador && (
+              <button
+                type="button"
+                disabled={ocupado || vacia}
+                onClick={() => publicar.mutate()}
+                className="flex h-14 flex-1 cursor-pointer items-center justify-center gap-2 rounded-pill bg-coral px-8 text-[16px] font-bold text-crema shadow-cta hover:bg-coral-hover disabled:cursor-default disabled:bg-disabled-bg disabled:text-disabled-ink disabled:shadow-none lg:flex-none"
+              >
+                {publicar.isPending && <Spinner />}
+                Publicar
+              </button>
+            )}
+          </div>
+          {borrador && guardado && !ocupado && (
+            <p className="m-0 text-[13px] font-semibold text-ok-icon lg:text-right" aria-live="polite">
+              Guardada. Todavía no la ve {nombre}.
+            </p>
+          )}
+        </>
+      )}
+
       <NotasOriginales texto={acta.rawInput} />
+      {!borrador && <EjerciciosDelActa actaId={acta.id} />}
     </div>
+  );
+}
+
+function SeccionLeida({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <article className="flex flex-col gap-2.5 rounded-tarjeta bg-white px-5 py-[18px]">
+      <h2 className="m-0 text-[13px] font-extrabold tracking-[.08em] text-lavanda-ink uppercase">{titulo}</h2>
+      {children}
+    </article>
+  );
+}
+
+/**
+ * Los errores, uno por renglón: «lo que dijo → cómo va» se lee con lo dicho tachado y lo correcto
+ * en negrita. Un renglón sin flecha va tal cual: el profesor escribe como quiere.
+ */
+function Errores({ texto }: { texto: string | null }) {
+  const renglones = (texto ?? "")
+    .split(/\n+/)
+    .map((r) => r.trim())
+    .filter(Boolean);
+  if (renglones.length === 0) return <p className="m-0 text-[15px] text-ink-2">—</p>;
+  return (
+    <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
+      {renglones.map((r, k) => {
+        const [mal, bien] = r.split(/\s*(?:→|->)\s*/);
+        return (
+          <li key={k} className="flex flex-col gap-0.5 text-[15px]">
+            {bien ? (
+              <>
+                <span lang="en" className="text-ink-2 line-through decoration-[#B8A99B]">
+                  {mal}
+                </span>
+                <strong lang="en">{bien}</strong>
+              </>
+            ) : (
+              <span>{r}</span>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -424,42 +578,35 @@ function CampoSeccion({
   titulo,
   valor,
   onCambio,
-  soloLectura,
+  ayuda,
 }: {
   titulo: string;
   valor: string;
   onCambio: (v: string) => void;
-  soloLectura: boolean;
+  ayuda?: string;
 }) {
   const id = `seccion-${titulo.replace(/\s+/g, "-").toLowerCase()}`;
   return (
-    <div>
-      <label htmlFor={id} className="text-[12px] font-bold uppercase tracking-[0.06em] text-text-secondary">
+    <div className="flex flex-col gap-2 rounded-tarjeta bg-white px-[18px] py-4">
+      <label htmlFor={id} className="text-[13px] font-extrabold tracking-[.08em] text-lavanda-ink uppercase">
         {titulo}
       </label>
       <textarea
         id={id}
         rows={3}
         maxLength={1200}
-        readOnly={soloLectura}
         value={valor}
         onChange={(e) => onCambio(e.target.value)}
-        className="mt-1.5 w-full resize-y rounded-base border border-border bg-accent-peach-soft/40 px-4 py-3 text-[14.5px] leading-relaxed focus-visible:shadow-focus focus-visible:outline-none read-only:bg-surface-sunken"
+        className="min-h-[84px] w-full resize-y rounded-ficha border-[1.5px] border-line px-3.5 py-3 text-[15px] leading-[1.5] outline-none focus:border-2 focus:border-noche focus:shadow-[0_0_0_4px_rgba(185,167,230,.45)]"
       />
+      {ayuda && <span className="text-[12.5px] text-ink-3">{ayuda}</span>}
     </div>
   );
 }
 
-function Vocabulario({
-  palabras,
-  onCambio,
-  soloLectura,
-}: {
-  palabras: Palabra[];
-  onCambio: (p: Palabra[]) => void;
-  soloLectura: boolean;
-}) {
+function Vocabulario({ palabras, onCambio }: { palabras: Palabra[]; onCambio: (p: Palabra[]) => void }) {
   const [nueva, setNueva] = useState("");
+  const [agregando, setAgregando] = useState(false);
   const lleno = palabras.length >= MAX_PALABRAS;
 
   const agregar = () => {
@@ -470,39 +617,47 @@ function Vocabulario({
   };
 
   return (
-    <div>
-      <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-text-secondary">Palabras nuevas</p>
-      <ul className="mt-2 flex flex-wrap gap-2">
+    <div className="flex flex-col gap-2 rounded-tarjeta bg-white px-[18px] py-4">
+      <p className="m-0 text-[13px] font-extrabold tracking-[.08em] text-lavanda-ink uppercase">Palabras nuevas</p>
+      <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
         {palabras.map((p) => (
           <li
             key={p.term}
-            className="inline-flex min-h-9 items-center gap-1 rounded-pill bg-accent-lavender-soft pl-3 pr-1 text-[13px] font-semibold text-[#5e4a8a]"
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-pill bg-durazno-soft py-1 pr-1 pl-3.5 text-[14px]"
           >
-            {p.term}
-            {!soloLectura && (
-              <button
-                type="button"
-                aria-label={`Quitar «${p.term}»`}
-                onClick={() => onCambio(palabras.filter((x) => x.term !== p.term))}
-                // Se ve de 32 px, pero se toca en 44 (brief, A5): el área crece por fuera sin agrandar la pastilla.
-                className="relative grid h-8 w-8 place-items-center rounded-full transition-colors after:absolute after:-inset-1.5 hover:bg-[#e2d7f4] focus-visible:shadow-focus"
-              >
-                <X size={14} strokeWidth={2.2} />
-              </button>
-            )}
+            <strong lang="en">{p.term}</strong>
+            {p.meaning && <span className="text-[#6B3E1A]">{p.meaning}</span>}
+            <button
+              type="button"
+              aria-label={`Quitar «${p.term}»`}
+              onClick={() => onCambio(palabras.filter((x) => x.term !== p.term))}
+              // Se ve de 28 px, pero se toca en 44 (brief, A5): el área crece por fuera sin agrandar la pastilla.
+              className="relative flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-[#6B3E1A] after:absolute after:-inset-2 hover:bg-durazno/40"
+            >
+              <X size={14} strokeWidth={2} />
+            </button>
           </li>
         ))}
-        {palabras.length === 0 && (
-          <li className="text-[13px] text-text-muted">Ninguna todavía.</li>
+        {!lleno && !agregando && (
+          <li>
+            <button
+              type="button"
+              onClick={() => setAgregando(true)}
+              className="min-h-9 cursor-pointer rounded-pill border-[1.5px] border-dashed border-hueco-line px-3.5 text-[14px] font-bold text-ink hover:bg-arena"
+            >
+              + Agregar palabra
+            </button>
+          </li>
         )}
       </ul>
-      {!soloLectura && !lleno && (
-        <div className="mt-2 flex gap-2">
+      {!lleno && agregando && (
+        <div className="flex gap-2">
           <label htmlFor="palabra-nueva" className="sr-only">
             Agregar una palabra
           </label>
           <input
             id="palabra-nueva"
+            autoFocus
             value={nueva}
             maxLength={120}
             onChange={(e) => setNueva(e.target.value)}
@@ -511,9 +666,10 @@ function Vocabulario({
                 e.preventDefault();
                 agregar();
               }
+              if (e.key === "Escape") setAgregando(false);
             }}
-            placeholder="Agregar una palabra"
-            className="min-h-11 min-w-0 flex-1 rounded-pill border border-border bg-surface px-4 text-[14px] focus-visible:shadow-focus focus-visible:outline-none"
+            placeholder="La palabra, en inglés"
+            className="min-h-11 min-w-0 flex-1 rounded-pill border-[1.5px] border-line bg-white px-4 text-[14px] outline-none focus:border-2 focus:border-noche"
           />
           <Boton variante="fantasma" onClick={agregar} aria-label="Agregar la palabra">
             <Plus size={16} strokeWidth={2.2} />
@@ -524,29 +680,16 @@ function Vocabulario({
   );
 }
 
-/** Sus notas en crudo, para contrastar: al lado en escritorio, en un acordeón cerrado en móvil. */
+/** Sus notas en crudo, para contrastar: plegadas, porque ya están ordenadas arriba. Solo el profesor las ve. */
 function NotasOriginales({ texto }: { texto: string }) {
-  const contenido = (
-    <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-text-secondary">{texto}</p>
-  );
   return (
-    <aside>
-      <details className="rounded-card bg-surface-sunken p-4 lg:hidden">
-        <summary className="flex min-h-11 cursor-pointer items-center gap-1.5 text-[13px] font-bold">
-          <NotebookPen size={15} strokeWidth={2} />
-          Tus notas originales
-        </summary>
-        <div className="mt-2">{contenido}</div>
-      </details>
-      <div className="hidden rounded-card bg-surface-sunken p-5 lg:block">
-        <p className="flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-[0.06em] text-text-secondary">
-          <NotebookPen size={14} strokeWidth={2} />
-          Tus notas originales
-        </p>
-        <div className="mt-3">{contenido}</div>
-        <p className="mt-4 text-[12px] text-text-muted">Solo tú las ves.</p>
-      </div>
-    </aside>
+    <details className="group rounded-tarjeta bg-white px-5 py-1">
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between text-[15px] font-bold [&::-webkit-details-marker]:hidden">
+        Tus notas originales
+        <ChevronDown size={18} strokeWidth={1.75} className="transition-transform group-open:rotate-180" aria-hidden />
+      </summary>
+      <p className="m-0 mb-4 text-[14px] leading-[1.6] whitespace-pre-wrap text-ink-2">{texto}</p>
+    </details>
   );
 }
 

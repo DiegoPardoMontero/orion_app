@@ -6,19 +6,11 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Suspense } from "react";
 import { Cargando, Vacio } from "@/components/estados";
-import { Constelacion, formaDe } from "@/components/practica/Constelacion";
+import { Cierre } from "@/components/practica/Cierre";
 import { Juego } from "@/components/practica/Juego";
 import { EstadoDelSet, Inicio } from "@/components/practica/Portada";
-import { Rigel } from "@/components/Rigel";
 import { apiFetch } from "@/lib/api/fetch";
-import {
-  estrellasDe,
-  leerPayload,
-  PUNTOS_CONSTELACION_PERFECTA,
-  PUNTOS_POR_PRACTICA,
-  type Ejercicio,
-  type SetDePractica,
-} from "@/lib/practica";
+import type { Ejercicio, SetDePractica } from "@/lib/practica";
 
 /**
  * Practicar entre clases (Bloque 10, Parte B; rediseño del handoff `design_handoff_orion_practica`).
@@ -101,11 +93,7 @@ function Contenido() {
     case "READY":
       return <Inicio set={s} empezando={empezar.isPending} onEmpezar={() => empezar.mutate()} />;
     case "COMPLETED":
-      return (
-        <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-xl lg:py-8">
-          <Cierre set={s} />
-        </main>
-      );
+      return <Cierre set={s} />;
     default:
       return (
         <Juego
@@ -117,80 +105,4 @@ function Contenido() {
         />
       );
   }
-}
-
-/**
- * El cierre (B5.3): la constelación completa, los puntos, lo logrado y lo que conviene repasar.
- * Nunca «3 de 5» ni un porcentaje en primer plano: la práctica no es un examen y la pantalla no
- * puede insinuar que lo es. Los logros que se encendieron los celebra el armazón de la app.
- */
-function Cierre({ set }: { set: SetDePractica }) {
-  const repasar = set.items.filter((i) => i.correct === false && !i.skipped).map((i) => terminoDe(i)).filter(Boolean);
-  const minutos = set.estimatedMinutes ?? set.itemCount;
-  const total = PUNTOS_POR_PRACTICA + (set.perfect ? PUNTOS_CONSTELACION_PERFECTA : 0);
-  return (
-    <div className="flex flex-col items-center gap-3 rounded-card bg-surface-raised p-7 text-center shadow-sm">
-      <Constelacion
-        estados={estrellasDe(set.items)}
-        forma={formaDe(set.id)}
-        ancho={300}
-        r={11}
-        lineas
-        dibujar
-        perfecta={set.perfect}
-      />
-      <Rigel pose="celebracion" decorativo className="h-20 w-auto" />
-      <h1 className="font-display text-h2 font-bold">
-        {set.perfect ? "¡Constelación perfecta!" : `Listo. ${minutos} minutos bien usados.`}
-      </h1>
-      {repasar.length > 0 ? (
-        <p className="max-w-[340px] text-[14.5px] text-text-secondary">
-          Para repasar antes de tu próxima clase: <strong>{Array.from(new Set(repasar)).join(", ")}</strong>.
-        </p>
-      ) : (
-        <p className="max-w-[340px] text-[14.5px] text-text-secondary">Llegas a tu próxima clase con todo esto fresco.</p>
-      )}
-      <div className="flex flex-col items-center gap-1">
-        <p className="rounded-pill bg-accent-lavender-soft px-4 py-1.5 text-[14px] font-bold text-[#5e4a8a]">
-          +{PUNTOS_POR_PRACTICA} puntos por practicar
-        </p>
-        {set.perfect && (
-          <p className="rounded-pill bg-accent-peach-soft px-4 py-1.5 text-[14px] font-bold text-[#8a5a33]">
-            +{PUNTOS_CONSTELACION_PERFECTA} por la constelación perfecta
-          </p>
-        )}
-        <p className="mt-1 text-[12.5px] font-semibold text-text-muted">Total: +{total} puntos</p>
-      </div>
-      <div className="mt-2 flex flex-wrap justify-center gap-2">
-        {set.bookingId && (
-          <Link
-            href={`/mis-clases/${set.bookingId}/acta`}
-            className="inline-flex min-h-11 items-center rounded-pill border-[1.5px] border-border px-5 text-[14px] font-bold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
-          >
-            Ver el resumen de la clase
-          </Link>
-        )}
-        <Link
-          href="/cuenta?seccion=resumen"
-          className="inline-flex min-h-11 items-center rounded-pill bg-primary px-6 text-[15px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus"
-        >
-          Volver a mi perfil
-        </Link>
-      </div>
-    </div>
-  );
-}
-
-function terminoDe(i: Ejercicio): string {
-  const p = leerPayload<{ term?: string; say?: string }>(i);
-  if (p.term) return p.term;
-  if (i.type === "LISTEN_CHOOSE" && p.say) return p.say;
-  if (i.type === "DICTATION") return "escribir lo que oyes";
-  if (i.type === "SPOT_ERROR") return "encontrar el error";
-  if (i.type === "BUILD_SENTENCE") return "armar frases";
-  if (i.type === "CHOOSE_REPLY") return "responder en una conversación";
-  if (i.type === "FIX_SENTENCE") return "la corrección de frases";
-  if (i.type === "ORDER_DIALOGUE") return "el orden de un diálogo";
-  if (i.type === "MATCH_MEANING") return "los significados";
-  return "completar frases";
 }

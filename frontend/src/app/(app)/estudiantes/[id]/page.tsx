@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Target } from "lucide-react";
+import { ArrowLeft, Check, ChevronRight, Clock, PlayCircle, Target, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Suspense } from "react";
@@ -12,8 +12,9 @@ import type { GoalResponse } from "@/lib/api/types";
 import { etiquetaObjetivo } from "@/lib/i18n";
 import { NIVEL_ESTUDIANTE, type FichaEstudiante } from "@/lib/gamificacion";
 import { useMe } from "@/lib/auth/session";
-import { fechaCorta, fechaLarga } from "@/lib/format";
-import type { PracticaEnLaFicha, ResumenDePractica } from "@/lib/practica";
+import { fechaCorta } from "@/lib/format";
+import { Constelacion, formaDe } from "@/components/practica/Constelacion";
+import { diaCorto, tituloDelSet, type PracticaEnLaFicha, type ResumenDePractica } from "@/lib/practica";
 
 /**
  * El perfil de un estudiante visto por otra persona.
@@ -196,17 +197,30 @@ function EnClaseContigo({ estudianteId }: { estudianteId: string }) {
   );
 }
 
-const ESTADO_EN_LA_FICHA: Record<PracticaEnLaFicha["status"], string> = {
-  READY: "Sin empezar",
-  IN_PROGRESS: "En curso",
-  COMPLETED: "Completada",
-  EXPIRED: "Venció sin hacer",
-};
+/** El chip de cada práctica en el historial (§10.12): verde completada, durazno en curso, lavanda lista. */
+function chipDe(p: PracticaEnLaFicha): { texto: string; fondo: string; tinta: string; borde?: string; I: LucideIcon } {
+  switch (p.status) {
+    case "COMPLETED":
+      return { texto: `Completada${p.completedAt ? ` · ${diaCorto(p.completedAt)}` : ""}`, fondo: "#DEF3E7", tinta: "#1F5238", I: Check };
+    case "IN_PROGRESS":
+      return { texto: "En curso", fondo: "#FFE9D6", tinta: "#6B3E1A", I: PlayCircle };
+    case "EXPIRED":
+      return {
+        texto: p.stars.some((e) => e !== "off") ? "Vencida a medias" : "Vencida sin hacer",
+        fondo: "#FFFFFF",
+        tinta: "#5E4E6B",
+        borde: "1.5px dashed #C9B8A8",
+        I: Clock,
+      };
+    default:
+      return { texto: "Lista", fondo: "#EFE9F9", tinta: "#4A3A75", I: PlayCircle };
+  }
+}
 
 /**
- * Cuánto practicó entre clases (Bloque 10, paso B5.4) y, práctica por práctica, cómo le fue: desde el
- * 24/09/2026 el profesor ve cada ejercicio con lo que respondió su estudiante (decisión de Pardo; el
- * estudiante lo sabe desde la portada de su práctica). El detalle vive en el acta de cada clase.
+ * Cuánto practicó entre clases este mes y, práctica por práctica, su constelación (handoff
+ * `design_handoff_orion_practica`, §10.12). Cada fila abre el acta de esa clase, donde está «Cómo le
+ * fue» con cada ejercicio: el profesor lo ve todo, y el estudiante lo sabe desde el inicio del set.
  */
 function SuPractica({ estudianteId }: { estudianteId: string }) {
   const { data: me } = useMe();
@@ -225,45 +239,67 @@ function SuPractica({ estudianteId }: { estudianteId: string }) {
   });
   const d = resumen.data;
   const sets = historial.data ?? [];
-  const hayResumen = d && (d.ofrecidasEstaSemana > 0 || d.leCosto.length > 0);
+  const hayResumen = d && (d.ofrecidasEsteMes > 0 || d.leCosto.length > 0);
   if (!hayResumen && sets.length === 0) return null;
 
   return (
-    <section className="mt-5 rounded-card border border-border bg-surface-raised p-5">
-      <h2 className="text-[12px] font-bold uppercase tracking-[0.06em] text-text-secondary">Entre clases</h2>
+    <section className="practica mt-5 flex flex-col gap-4">
       {d && hayResumen && (
-        <p className="mt-2 text-[14.5px] leading-relaxed text-text">
-          {d.ofrecidasEstaSemana > 0 ? (
-            <>
+        <div className="flex flex-col gap-2.5 rounded-tarjeta bg-white px-5 py-[18px]">
+          <h2 className="m-0 text-[13px] font-extrabold tracking-[.08em] text-lavanda-ink uppercase">Práctica</h2>
+          <p className="m-0 text-[17px] leading-[1.5]">
+            {d.ofrecidasEsteMes > 0 && (
               <strong>
-                Practicó {d.completadasEstaSemana} de {d.ofrecidasEstaSemana}{" "}
-                {d.ofrecidasEstaSemana === 1 ? "vez" : "veces"} esta semana.
-              </strong>{" "}
-            </>
-          ) : null}
-          {d.leCosto.length > 0 && <>Le costó: {d.leCosto.join(", ")}.</>}
-        </p>
+                Practicó {d.completadasEsteMes} de {d.ofrecidasEsteMes} {d.ofrecidasEsteMes === 1 ? "vez" : "veces"} este mes.
+              </strong>
+            )}
+            {d.ofrecidasEsteMes > 0 && d.leCosto.length > 0 && " "}
+            {d.leCosto.length > 0 && <>Le costó: {d.leCosto.join(", ")}.</>}
+          </p>
+        </div>
       )}
       {sets.length > 0 && (
-        <ul className="mt-3 divide-y divide-border">
-          {sets.map((p) => (
-            <li key={p.id}>
-              <Link
-                href={p.bookingId ? `/mis-clases/${p.bookingId}/acta` : "#"}
-                className="flex min-h-11 items-center justify-between gap-3 py-2 text-[13.5px] transition-colors hover:text-primary-strong focus-visible:shadow-focus"
-              >
-                <span className="min-w-0 truncate">
-                  <span className="font-semibold">
-                    Práctica del {p.classStartsAt ? fechaLarga(p.classStartsAt) : "acta"}
+        <ul className="m-0 flex list-none flex-col rounded-tarjeta bg-white px-2 py-1.5">
+          {sets.map((p, k) => {
+            const chip = chipDe(p);
+            const titulo = tituloDelSet(p) ?? "Práctica";
+            return (
+              <li key={p.id} className={k < sets.length - 1 ? "border-b border-arena" : undefined}>
+                <Link
+                  href={p.bookingId ? `/mis-clases/${p.bookingId}/acta#como-le-fue` : "#"}
+                  className="flex min-h-[72px] items-center gap-3.5 rounded-pareja px-3 py-2.5 text-ink transition-colors hover:bg-crema"
+                >
+                  <span className="shrink-0" style={{ opacity: p.status === "EXPIRED" ? 0.45 : 1 }}>
+                    <Constelacion
+                      estados={p.stars}
+                      forma={formaDe(p.id)}
+                      ancho={76}
+                      r={6}
+                      guias={p.status !== "COMPLETED"}
+                      lineas={p.status === "COMPLETED"}
+                      etiqueta={`${titulo}: ${p.stars.filter((e) => e !== "off").length} de ${p.stars.length} estrellas`}
+                    />
                   </span>
-                  <span className="text-text-muted"> · {ESTADO_EN_LA_FICHA[p.status]}</span>
-                </span>
-                <span className="shrink-0 text-[12.5px] font-bold text-primary-strong">
-                  {p.status === "COMPLETED" ? `${p.correctCount} de ${p.itemCount} · Ver` : "Ver"}
-                </span>
-              </Link>
-            </li>
-          ))}
+                  {/* En el celular el chip va bajo el título: al lado, el título se parte en una
+                      palabra por renglón. */}
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-3.5">
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <strong className="text-[15px]">{titulo}</strong>
+                      {p.classStartsAt && <span className="text-[13px] text-ink-2">De la clase del {diaCorto(p.classStartsAt)}</span>}
+                    </span>
+                    <span
+                      className="mt-1 inline-flex h-7 shrink-0 items-center gap-[5px] self-start rounded-pill px-2.5 text-[12px] font-extrabold whitespace-nowrap sm:mt-0 sm:self-auto"
+                      style={{ background: chip.fondo, color: chip.tinta, border: chip.borde ?? "none" }}
+                    >
+                      <chip.I size={13} strokeWidth={2.2} aria-hidden />
+                      {chip.texto}
+                    </span>
+                  </span>
+                  <ChevronRight size={18} strokeWidth={1.75} className="shrink-0 text-ink-3" aria-hidden />
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
     </section>

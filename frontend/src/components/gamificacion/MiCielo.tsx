@@ -3,55 +3,58 @@
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Flame, Sparkles, Trophy } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 import { Cargando, ErrorCarga } from "@/components/estados";
-import { EstrellaLogro } from "@/components/gamificacion/EstrellaLogro";
+import type { FamiliaLogro } from "@/components/gamificacion/EstrellaLogro";
+import { SelloDeLogro } from "@/components/gamificacion/SelloDeLogro";
+import { Constelacion, formaDe } from "@/components/practica/Constelacion";
 import { Rigel } from "@/components/Rigel";
 import { apiFetch } from "@/lib/api/fetch";
-import {
-  estadoDe,
-  numeralDe,
-  NOMBRE_FAMILIA,
-  ORDEN_FAMILIAS,
-  type Engagement,
-  type Logro,
-} from "@/lib/gamificacion";
+import { NOMBRE_FAMILIA, ORDEN_FAMILIAS, type Engagement, type Logro } from "@/lib/gamificacion";
+import { diaCorto, estrellasDe, tituloDelSet, type SetDePractica } from "@/lib/practica";
 
 /**
- * El cielo: las cinco constelaciones con sus estrellas.
+ * Mi cielo (handoff `design_handoff_orion_practica`, §10.9): arriba, las constelaciones que salieron
+ * de practicar —una por set completo, con su forma y su halo si fue perfecta—; abajo, los logros por
+ * familia, en pestañas, cada uno con su sello y lo que lo enciende.
  *
- * <p>Se apila por familia y no en una cuadrícula uniforme porque cada familia cuenta una historia
- * distinta —la constancia es una escalera, el volumen otra— y mezclarlas convierte el tablero en
- * una lista de iconos. El fondo es el amanecer cortado antes del durazno, para que lo encendido
- * contraste.
+ * <p>Una familia a la vez y no todas apiladas: con seis familias el tablero era una lista de iconos
+ * que había que recorrer entera para encontrar el que importa. La pestaña se puede pedir por la
+ * dirección (`&familia=PRACTICA`), y así «Verlo en Mi cielo» abre justo la del logro nuevo.
  */
 export function MiCielo() {
+  const params = useSearchParams();
   const logros = useQuery({
     queryKey: ["me", "achievements"],
     queryFn: () => apiFetch<Logro[]>("/api/v1/me/achievements"),
   });
-
   const resumen = useQuery({
     queryKey: ["me", "engagement"],
     queryFn: () => apiFetch<Engagement>("/api/v1/me/engagement"),
   });
+  const practicas = useQuery({
+    queryKey: ["me", "practice", "history"],
+    queryFn: () => apiFetch<SetDePractica[]>("/api/v1/me/practice/history"),
+  });
+  const pedida = params.get("familia") as FamiliaLogro | null;
+  const [familia, setFamilia] = useState<FamiliaLogro | null>(pedida && ORDEN_FAMILIAS.includes(pedida) ? pedida : null);
 
   if (logros.isPending || resumen.isPending) return <Cargando filas={3} />;
 
   if (logros.isError || !logros.data || !resumen.data) {
-    return (
-      <ErrorCarga mensaje="No pudimos cargar tu cielo." onReintentar={() => void logros.refetch()} />
-    );
+    return <ErrorCarga mensaje="No pudimos cargar tu cielo." onReintentar={() => void logros.refetch()} />;
   }
 
   const todos = logros.data;
   const encendidos = todos.filter((l) => l.unlocked).length;
-  // La próxima que se puede encender: la de más avance entre las que faltan. Es lo que Rigel señala.
-  const proxima = todos
-    .filter((l) => !l.unlocked)
-    .sort((a, b) => b.progress / b.target - a.progress / a.target)[0];
+  const familias = ORDEN_FAMILIAS.filter((f) => todos.some((l) => l.family === f));
+  const elegida = familia ?? familias[0];
+  const deLaFamilia = todos.filter((l) => l.family === elegida);
+  const completas = (practicas.data ?? []).filter((p) => p.status === "COMPLETED");
 
   return (
-    <section>
+    <section className="practica @container">
       <h2 className="font-display text-[19px] font-bold">Tu cielo</h2>
       <p className="mt-1 text-[14px] text-text-secondary">
         {encendidos === 0
@@ -91,66 +94,81 @@ export function MiCielo() {
         <Dato icono={<Trophy size={15} strokeWidth={2} />} valor={resumen.data.bestStreakWeeks} etiqueta="tu mejor racha" />
       </div>
 
-      {/* El cielo. El degradado es el mismo amanecer del login, cortado antes del durazno. */}
-      <div
-        className="relative mt-5 overflow-hidden rounded-card px-5 py-6 lg:px-8 lg:py-8"
-        style={{ background: "var(--gradient-sky)" }}
-      >
-        {/* Rigel aparece UNA sola vez en todo el tablero, señalando la próxima. No en móvil, y no
-            cuando ya está todo encendido: ahí no hay nada que señalar. */}
-        {proxima && (
-          <div className="pointer-events-none absolute right-4 top-4 hidden items-center gap-2 lg:flex">
-            <p className="max-w-[16ch] text-right text-[12.5px] font-semibold leading-tight text-on-primary/80">
-              La siguiente: {proxima.name}
-            </p>
-            <Rigel pose="guia" decorativo className="h-[90px] w-auto" />
+      {/* Las constelaciones: solo si ya hay alguna. Un panel vacío no enseña nada que el de
+          «Práctica», con sus sellos por encender, no diga mejor. */}
+      {completas.length > 0 && (
+        <div className="mt-5 flex flex-col gap-3 rounded-tarjeta bg-noche p-[18px] text-crema @2xl:gap-3.5 @2xl:rounded-[28px] @2xl:px-7 @2xl:py-6">
+          <div className="flex items-baseline justify-between">
+            <strong className="text-[16px] @2xl:text-[18px]">Tus constelaciones</strong>
+            <span className="text-[13px] text-[#E9DEF5] @2xl:text-[14px]">
+              {completas.length} {completas.length === 1 ? "completa" : "completas"}
+            </span>
           </div>
-        )}
-
-        <div className="flex flex-col gap-7">
-          {ORDEN_FAMILIAS.map((familia) => {
-            const deLaFamilia = todos.filter((l) => l.family === familia);
-            if (deLaFamilia.length === 0) return null;
-            const completa = deLaFamilia.every((l) => l.unlocked);
-
-            return (
-              <section key={familia}>
-                <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-on-primary/70">
-                  {NOMBRE_FAMILIA[familia]}
-                  {completa && <span className="ml-2 text-on-primary">· completa</span>}
-                </p>
-                <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-4">
-                  {deLaFamilia.map((logro) => (
-                    <li key={logro.code} className="w-[86px] text-center">
-                      <EstrellaLogro
-                        familia={logro.family}
-                        brillo={logro.glow}
-                        estado={estadoDe(logro)}
-                        progreso={{ hecho: logro.progress, total: logro.target }}
-                        numeral={numeralDe(logro.code)}
-                        size={72}
-                        sobreCielo
-                        titulo={`${logro.name}. ${logro.description}`}
-                      />
-                      <p className="mt-1.5 text-[11.5px] font-semibold leading-tight text-on-primary">
-                        {logro.name}
-                      </p>
-                      {/* Se nombra lo que la persona hizo. Nunca «te faltan», nunca una ausencia. */}
-                      <p className="mt-0.5 text-[10.5px] leading-tight text-on-primary/65">
-                        {logro.unlocked
-                          ? "Encendida"
-                          : logro.target > 1
-                            ? `${logro.progress} de ${logro.target}`
-                            : logro.description}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            );
-          })}
+          <ul className="m-0 grid list-none grid-cols-2 gap-x-2.5 gap-y-3.5 p-0 @2xl:grid-cols-4 @2xl:gap-4">
+            {completas.map((p) => (
+              <li key={p.id}>
+                <Link href={`/practica/${p.id}`} className="flex flex-col items-center gap-1 rounded-sub p-1 text-center @2xl:gap-1.5">
+                  <Constelacion
+                    estados={estrellasDe(p.items)}
+                    forma={formaDe(p.id)}
+                    ancho={200}
+                    r={8}
+                    lineas
+                    perfecta={p.perfect}
+                    fondo="noche"
+                    etiqueta={`${tituloDelSet(p) ?? "Práctica"}: constelación ${p.perfect ? "perfecta" : "completa"}`}
+                    className="w-[150px] @2xl:w-[200px]"
+                  />
+                  <span className="text-[12px] font-bold @2xl:text-[14px]">{tituloDelSet(p) ?? "Práctica"}</span>
+                  {p.completedAt && <span className="text-[11px] text-[#E9DEF5] @2xl:text-[12px]">{diaCorto(p.completedAt)}</span>}
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
+      )}
+
+      <div role="tablist" aria-label="Familias de logros" className="mt-5 flex flex-wrap gap-2">
+        {familias.map((f) => {
+          const sel = f === elegida;
+          return (
+            <button
+              key={f}
+              type="button"
+              role="tab"
+              aria-selected={sel}
+              aria-controls="logros-de-la-familia"
+              onClick={() => setFamilia(f)}
+              className={`inline-flex h-10 cursor-pointer items-center rounded-pill px-3.5 text-[14px] font-bold whitespace-nowrap @2xl:px-4 ${
+                sel ? "bg-ink text-crema" : "border-[1.5px] border-line bg-white text-ink hover:bg-arena"
+              }`}
+            >
+              {NOMBRE_FAMILIA[f]}
+            </button>
+          );
+        })}
       </div>
+
+      <ul
+        id="logros-de-la-familia"
+        role="tabpanel"
+        aria-label={NOMBRE_FAMILIA[elegida]}
+        className="m-0 mt-3 grid list-none grid-cols-2 gap-3 p-0 @xl:grid-cols-3 @4xl:grid-cols-6 @4xl:gap-3.5"
+      >
+        {deLaFamilia.map((l) => (
+          <li
+            key={l.code}
+            className="flex flex-col items-center gap-2 rounded-tarjeta bg-white px-3 pt-4 pb-3.5 text-center @4xl:pt-[18px] @4xl:pb-4"
+          >
+            <SelloDeLogro logro={l} size={96} />
+            <strong className="font-display text-[15px] leading-[1.15]">{l.name}</strong>
+            <span className="text-[12px] leading-[1.4] text-ink-2">{l.description}</span>
+            <span className={`text-[12px] font-extrabold ${l.unlocked ? "text-ok-icon" : "text-rigel-ink"}`}>
+              {l.unlocked ? `+${l.points} · conseguido` : `+${l.points} puntos`}
+            </span>
+          </li>
+        ))}
+      </ul>
 
       <div className="mt-4 flex flex-wrap gap-2.5">
         <Link
