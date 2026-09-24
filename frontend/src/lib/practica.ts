@@ -56,7 +56,49 @@ export type ResumenDePractica = {
   leCosto: string[];
 };
 
-export function leerPayload<T>(ejercicio: Ejercicio): T {
+/** Un ejercicio tal como lo ve el profesor que escribió el acta: sin nada de lo que hizo el estudiante. */
+export type EjercicioDelActa = {
+  index: number;
+  type: TipoDeEjercicio;
+  prompt: string;
+  payload: string;
+  expected: string | null;
+  explanation: string | null;
+  sourceTerm: string | null;
+};
+
+export type PracticaDelActa = {
+  id: string;
+  status: "PENDING" | "READY" | "IN_PROGRESS" | "COMPLETED" | "EXPIRED" | "FAILED";
+  itemCount: number;
+  expiresAt: string;
+  items: EjercicioDelActa[];
+};
+
+export const NOMBRE_DEL_TIPO: Record<TipoDeEjercicio, string> = {
+  FILL_BLANK: "Completar la frase",
+  FIX_SENTENCE: "Corregir la frase",
+  MATCH_MEANING: "Unir con su significado",
+  ORDER_DIALOGUE: "Ordenar el diálogo",
+  WRITE_SENTENCE: "Escribir una frase propia",
+};
+
+/** La respuesta esperada, legible: los pares y el diálogo llegan como JSON. */
+export function mostrarEsperada(tipo: TipoDeEjercicio, esperada: string): string {
+  try {
+    if (tipo === "MATCH_MEANING") {
+      return Object.entries(JSON.parse(esperada) as Record<string, string>).map(([t, m]) => `${t} = ${m}`).join(" · ");
+    }
+    if (tipo === "ORDER_DIALOGUE") {
+      return (JSON.parse(esperada) as string[]).join(" → ");
+    }
+  } catch {
+    // Si no se puede leer, se muestra tal cual.
+  }
+  return esperada;
+}
+
+export function leerPayload<T>(ejercicio: { payload: string }): T {
   try {
     return JSON.parse(ejercicio.payload) as T;
   } catch {

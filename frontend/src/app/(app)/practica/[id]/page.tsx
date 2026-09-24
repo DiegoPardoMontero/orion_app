@@ -10,6 +10,7 @@ import { Boton, Spinner, Tarjeta } from "@/components/ui";
 import { apiFetch } from "@/lib/api/fetch";
 import {
   leerPayload,
+  mostrarEsperada,
   PUNTOS_POR_PRACTICA,
   type Ejercicio,
   type Resultado,
@@ -184,7 +185,7 @@ function EjercicioActual({ ejercicio, onActualizado }: { ejercicio: Ejercicio; o
           </p>
           {resultado.closed && resultado.item.expected && (
             <p className="mt-1">
-              La respuesta: <strong>{mostrarEsperada(ejercicio, resultado.item.expected)}</strong>
+              La respuesta: <strong>{mostrarEsperada(ejercicio.type, resultado.item.expected)}</strong>
             </p>
           )}
         </div>
@@ -372,21 +373,6 @@ function Ordenar({ ejercicio, onCambio, bloqueado }: { ejercicio: Ejercicio; onC
       ))}
     </ol>
   );
-}
-
-/** La respuesta esperada, legible: los pares y el diálogo llegan como JSON. */
-function mostrarEsperada(ejercicio: Ejercicio, esperada: string): string {
-  try {
-    if (ejercicio.type === "MATCH_MEANING") {
-      return Object.entries(JSON.parse(esperada) as Record<string, string>).map(([t, m]) => `${t} = ${m}`).join(" · ");
-    }
-    if (ejercicio.type === "ORDER_DIALOGUE") {
-      return (JSON.parse(esperada) as string[]).join(" → ");
-    }
-  } catch {
-    // Si no se puede leer, se muestra tal cual.
-  }
-  return esperada;
 }
 
 /**

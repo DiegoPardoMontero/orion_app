@@ -31,8 +31,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 /**
- * La práctica (brief del Bloque 10, paso B3). El estudiante opera sobre sus sets; el profesor solo
- * ve un resumen agregado de sus estudiantes, nunca las respuestas.
+ * La práctica (brief del Bloque 10, paso B3). El estudiante opera sobre sus sets; el profesor ve
+ * un resumen agregado de sus estudiantes y los ejercicios de sus actas, nunca las respuestas.
  *
  * <p><strong>La respuesta esperada no viaja</strong> mientras el ejercicio está abierto: se manda
  * solo cuando ya está cerrado (acertado o sin intentos), para mostrarla con su explicación.
@@ -100,7 +100,33 @@ public class PracticeController {
         return practica.paraElProfesor(principal.user(), id);
     }
 
+    /**
+     * Los ejercicios de un acta, para el profesor que la escribió. Aquí la respuesta esperada sí
+     * viaja —el profesor no está resolviendo nada— y lo del estudiante no viaja nunca. 204 si el
+     * acta todavía no tiene práctica.
+     */
+    @GetMapping("/api/v1/professors/me/lesson-notes/{id}/practice")
+    public ResponseEntity<PracticaDelActa> delActa(@AuthenticationPrincipal OrionUserDetails principal,
+                                                   @PathVariable UUID id) {
+        return practica.delActa(principal.user(), id)
+                .map(c -> ResponseEntity.ok(new PracticaDelActa(c.set().getId(), c.set().getStatus().name(),
+                        c.set().getItemCount(), bogota(c.set().getExpiresAt()),
+                        c.ejercicios().stream().map(i -> new EjercicioDelActa(i.getItemIndex(),
+                                i.getItemType().name(), i.getPrompt(), i.getPayload(), i.getExpected(),
+                                i.getExplanation(), i.getSourceTerm())).toList())))
+                .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
     /* ---------------- vistas ---------------- */
+
+    /** Sin intentos, sin acierto y sin respuesta: nada de lo que hizo el estudiante. */
+    public record EjercicioDelActa(int index, String type, String prompt, String payload, String expected,
+                                   String explanation, String sourceTerm) {
+    }
+
+    public record PracticaDelActa(UUID id, String status, int itemCount, ZonedDateTime expiresAt,
+                                  List<EjercicioDelActa> items) {
+    }
 
     public record RespuestaRequest(@NotNull @Size(max = 600) String answer) {
     }

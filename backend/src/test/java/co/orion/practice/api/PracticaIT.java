@@ -318,4 +318,40 @@ class PracticaIT extends ApiIntegrationSupport {
         assertThat(jdbc.queryForObject("select count(*) from practice_sets", Integer.class)).isZero();
         assertThat(get("/api/v1/me/practice", sesionAna, String.class).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    @Test
+    @DisplayName("El profesor ve los ejercicios de su acta con la respuesta esperada, y nada de lo que hizo el estudiante")
+    void elProfesorVeLosEjerciciosDeSuActa() {
+        Map set = setListo();
+        cerrarTodos(set);
+        String ruta = "/api/v1/professors/me/lesson-notes/" + set.get("lessonNoteId") + "/practice";
+
+        Map vista = get(ruta, sesionMaria, Map.class).getBody();
+
+        assertThat(vista).containsEntry("status", "IN_PROGRESS").containsEntry("itemCount", 4);
+        List<Map> items = (List<Map>) vista.get("items");
+        assertThat(items).hasSize(4).allSatisfy(i -> {
+            assertThat(i).containsOnlyKeys("index", "type", "prompt", "payload", "expected", "explanation", "sourceTerm");
+            assertThat(i.get("explanation")).isNotNull();
+        });
+        assertThat(items).filteredOn(i -> "FILL_BLANK".equals(i.get("type")))
+                .allSatisfy(i -> assertThat(i.get("expected")).isNotNull());
+        // «no sé» fue lo que respondió Ana en todos: no puede aparecer en ninguna parte de la vista.
+        assertThat(get(ruta, sesionMaria, String.class).getBody()).doesNotContain("no sé");
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Test
+    @DisplayName("Los ejercicios de un acta no los ve otro profesor ni el estudiante; sin práctica, 204")
+    void losEjerciciosDelActaSonDeSuProfesor() {
+        Map set = setListo();
+        String ruta = "/api/v1/professors/me/lesson-notes/" + set.get("lessonNoteId") + "/practice";
+
+        assertThat(get(ruta, login("juan@orion.test"), String.class).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(get(ruta, sesionAna, String.class).getStatusCode())
+                .isIn(HttpStatus.FORBIDDEN, HttpStatus.NOT_FOUND);
+        assertThat(get("/api/v1/professors/me/lesson-notes/" + UUID.randomUUID() + "/practice", sesionMaria,
+                String.class).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+    }
 }

@@ -316,6 +316,21 @@ public class PracticeService {
         return new Resumen(estaSemana.size(), completadas, leCosto);
     }
 
+    /**
+     * Los ejercicios que salieron de un acta, para el profesor que la escribió: enunciado, respuesta
+     * esperada y explicación. Solo lectura, y nunca lo que hizo el estudiante —ni sus respuestas, ni
+     * sus intentos, ni si acertó—, por la misma razón que el resumen de arriba: el profesor ve qué se
+     * le propuso, no cómo le fue ejercicio por ejercicio. Vacío si el acta aún no tiene práctica.
+     */
+    @Transactional(readOnly = true)
+    public Optional<ConEjercicios> delActa(User profesor, UUID actaId) {
+        Optional<PracticeSet> set = sets.findByLessonNoteId(actaId);
+        if (set.isPresent() && !set.get().getProfessorId().equals(profesor.getId())) {
+            throw new ResourceNotFoundException("Práctica no encontrada");
+        }
+        return set.map(s -> new ConEjercicios(s, items.findByPracticeSetIdOrderByItemIndexAsc(s.getId())));
+    }
+
     private static String nombreDelTipo(PracticeItem i) {
         return switch (i.getItemType()) {
             case FIX_SENTENCE -> "corregir frases";

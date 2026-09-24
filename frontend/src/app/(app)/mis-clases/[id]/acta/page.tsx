@@ -7,6 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { AvisoError, Cargando, Vacio } from "@/components/estados";
 import { Constelacion } from "@/components/marca";
+import { EjerciciosDelActa } from "@/components/practica/EjerciciosDelActa";
 import { Badge, Bloque, Boton, Spinner, Tarjeta } from "@/components/ui";
 import {
   MAX_NOTAS,
@@ -347,68 +348,71 @@ function Editor({ acta }: { acta: ActaDelProfesor }) {
 
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
-      <Tarjeta>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="font-display text-h2 font-bold">Acta de la clase</h1>
-          {borrador ? (
-            <span className="rounded-pill bg-warning-bg px-3 py-1 text-[12px] font-bold text-warning">
-              Borrador
-            </span>
-          ) : (
-            <Badge tono="menta">
-              <Check size={12} strokeWidth={2.4} />
-              Publicada
-            </Badge>
-          )}
-        </div>
-        <p className="mt-2 text-[13.5px] text-text-secondary">
-          {!acta.editable
-            ? "Ya pasó el plazo para editarla. Tu estudiante la ve tal como quedó."
-            : borrador
-              ? acta.origin === "MANUAL"
-                ? "Escríbela con tus palabras; tus notas están guardadas. Lo que publiques es lo que verá tu estudiante."
-                : "Revísala antes de publicar. Lo que publiques es lo que verá tu estudiante."
-              : "Puedes corregirla un tiempo después de publicarla; tu estudiante verá que se actualizó."}
-        </p>
-
-        <div className="mt-5 space-y-4">
-          <CampoSeccion titulo="Lo que trabajaron" valor={trabajado} onCambio={setTrabajado} soloLectura={!acta.editable} />
-          <CampoSeccion titulo="Para tener presente" valor={presente} onCambio={setPresente} soloLectura={!acta.editable} />
-          <Vocabulario palabras={palabras} onCambio={setPalabras} soloLectura={!acta.editable} />
-          <CampoSeccion titulo="Lo que sigue" valor={sigue} onCambio={setSigue} soloLectura={!acta.editable} />
-        </div>
-
-        {error && (
-          <div className="mt-4">
-            <AvisoError mensaje={error.message} />
-          </div>
-        )}
-
-        {acta.editable && (
-          <div className="mt-5 flex flex-wrap items-center gap-2 sm:justify-end">
-            {guardado && !ocupado && (
-              <span className="text-[12.5px] font-semibold text-success" aria-live="polite">
-                Guardada
+      <div className="grid content-start gap-5">
+        <Tarjeta>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h1 className="font-display text-h2 font-bold">Acta de la clase</h1>
+            {borrador ? (
+              <span className="rounded-pill bg-warning-bg px-3 py-1 text-[12px] font-bold text-warning">
+                Borrador
               </span>
-            )}
-            <Boton
-              variante="contorno"
-              disabled={ocupado}
-              onClick={() => guardar.mutate()}
-              className="flex-1 sm:flex-none"
-            >
-              {guardar.isPending && <Spinner />}
-              {borrador ? "Guardar sin publicar" : "Guardar cambios"}
-            </Boton>
-            {borrador && (
-              <Boton disabled={ocupado || vacia} onClick={() => publicar.mutate()} className="flex-1 sm:flex-none">
-                {publicar.isPending && <Spinner />}
-                Publicar
-              </Boton>
+            ) : (
+              <Badge tono="menta">
+                <Check size={12} strokeWidth={2.4} />
+                Publicada
+              </Badge>
             )}
           </div>
-        )}
-      </Tarjeta>
+          <p className="mt-2 text-[13.5px] text-text-secondary">
+            {!acta.editable
+              ? "Ya pasó el plazo para editarla. Tu estudiante la ve tal como quedó."
+              : borrador
+                ? acta.origin === "MANUAL"
+                  ? "Escríbela con tus palabras; tus notas están guardadas. Lo que publiques es lo que verá tu estudiante."
+                  : "Revísala antes de publicar. Lo que publiques es lo que verá tu estudiante."
+                : "Puedes corregirla un tiempo después de publicarla; tu estudiante verá que se actualizó."}
+          </p>
+  
+          <div className="mt-5 space-y-4">
+            <CampoSeccion titulo="Lo que trabajaron" valor={trabajado} onCambio={setTrabajado} soloLectura={!acta.editable} />
+            <CampoSeccion titulo="Para tener presente" valor={presente} onCambio={setPresente} soloLectura={!acta.editable} />
+            <Vocabulario palabras={palabras} onCambio={setPalabras} soloLectura={!acta.editable} />
+            <CampoSeccion titulo="Lo que sigue" valor={sigue} onCambio={setSigue} soloLectura={!acta.editable} />
+          </div>
+  
+          {error && (
+            <div className="mt-4">
+              <AvisoError mensaje={error.message} />
+            </div>
+          )}
+  
+          {acta.editable && (
+            <div className="mt-5 flex flex-wrap items-center gap-2 sm:justify-end">
+              {guardado && !ocupado && (
+                <span className="text-[12.5px] font-semibold text-success" aria-live="polite">
+                  Guardada
+                </span>
+              )}
+              <Boton
+                variante="contorno"
+                disabled={ocupado}
+                onClick={() => guardar.mutate()}
+                className="flex-1 sm:flex-none"
+              >
+                {guardar.isPending && <Spinner />}
+                {borrador ? "Guardar sin publicar" : "Guardar cambios"}
+              </Boton>
+              {borrador && (
+                <Boton disabled={ocupado || vacia} onClick={() => publicar.mutate()} className="flex-1 sm:flex-none">
+                  {publicar.isPending && <Spinner />}
+                  Publicar
+                </Boton>
+              )}
+            </div>
+          )}
+        </Tarjeta>
+        {!borrador && <EjerciciosDelActa actaId={acta.id} />}
+      </div>
 
       <NotasOriginales texto={acta.rawInput} />
     </div>
