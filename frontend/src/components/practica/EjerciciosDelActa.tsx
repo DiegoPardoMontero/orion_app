@@ -130,5 +130,37 @@ function Material({ ejercicio: e }: { ejercicio: EjercicioDelActa }) {
     }
     case "WRITE_SENTENCE":
       return null;
+    case "SPOT_ERROR": {
+      const p = leerPayload<{ tokens?: string[] }>(e);
+      return <p className="text-text-secondary">Toca la palabra que está mal en «{(p.tokens ?? []).join(" ")}»</p>;
+    }
+    case "BUILD_SENTENCE": {
+      const p = leerPayload<{ tiles?: string[]; guide?: string }>(e);
+      return (
+        <p className="text-text-secondary">
+          {p.guide ? `«${p.guide}» · ` : ""}Fichas: {(p.tiles ?? []).join(" / ")}
+        </p>
+      );
+    }
+    case "CHOOSE_REPLY": {
+      const p = leerPayload<{ from?: string; message?: string; options?: string[] }>(e);
+      return (
+        <p className="text-text-secondary">
+          {p.from ? `${p.from}: ` : ""}«{p.message}» · Opciones: {(p.options ?? []).join(" / ")}
+        </p>
+      );
+    }
+    case "LISTEN_CHOOSE": {
+      const p = leerPayload<{ say?: string; options?: string[] }>(e);
+      return (
+        <p className="text-text-secondary">
+          Oye «{p.say}» · Opciones: {(p.options ?? []).join(", ")}
+        </p>
+      );
+    }
+    case "DICTATION": {
+      const p = leerPayload<{ say?: string }>(e);
+      return <p className="text-text-secondary">Oye «{p.say}» y lo escribe</p>;
+    }
   }
 }

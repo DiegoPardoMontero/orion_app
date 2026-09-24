@@ -119,17 +119,19 @@ class PracticaIT extends ApiIntegrationSupport {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Test
-    @DisplayName("Publicar el acta encola el set; el trabajo lo deja listo con cuatro ejercicios anclados")
+    @DisplayName("Publicar el acta encola el set; el trabajo lo deja listo con ejercicios anclados, uno de cada tipo")
     void delActaALaPractica() {
         Map set = setListo();
 
-        assertThat(set).containsEntry("status", "READY").containsEntry("itemCount", 4)
+        assertThat(set).containsEntry("status", "READY").containsEntry("itemCount", 3)
                 .containsEntry("professorName", "María Gómez");
         List<Map> items = (List<Map>) set.get("items");
-        assertThat(items).hasSize(4);
+        assertThat(items).hasSize(3);
         // Abierto, el ejercicio no trae la respuesta esperada ni la explicación.
         assertThat(items).allSatisfy(i -> assertThat(i).containsEntry("expected", null).containsEntry("explanation", null));
-        assertThat(items).extracting(i -> i.get("type")).contains("FILL_BLANK", "WRITE_SENTENCE");
+        // Sin IA: un ejercicio de cada tipo que el acta alcanza, en el orden de las categorías.
+        assertThat(items).extracting(i -> i.get("type")).containsExactly("FILL_BLANK", "DICTATION", "WRITE_SENTENCE");
+        assertThat(items).extracting(i -> i.get("category")).containsExactly("PALABRAS", "ESCUCHA", "TU_TURNO");
     }
 
     @Test
@@ -329,9 +331,9 @@ class PracticaIT extends ApiIntegrationSupport {
 
         Map vista = get(ruta, sesionMaria, Map.class).getBody();
 
-        assertThat(vista).containsEntry("status", "IN_PROGRESS").containsEntry("itemCount", 4);
+        assertThat(vista).containsEntry("status", "IN_PROGRESS").containsEntry("itemCount", 3);
         List<Map> items = (List<Map>) vista.get("items");
-        assertThat(items).hasSize(4).allSatisfy(i -> {
+        assertThat(items).hasSize(3).allSatisfy(i -> {
             assertThat(i).containsOnlyKeys("index", "type", "prompt", "payload", "expected", "explanation", "sourceTerm");
             assertThat(i.get("explanation")).isNotNull();
         });
@@ -353,5 +355,40 @@ class PracticaIT extends ApiIntegrationSupport {
                 .isIn(HttpStatus.FORBIDDEN, HttpStatus.NOT_FOUND);
         assertThat(get("/api/v1/professors/me/lesson-notes/" + UUID.randomUUID() + "/practice", sesionMaria,
                 String.class).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    @Test
+    @DisplayName("Sin voz en inglés, un ejercicio de escucha se salta: queda cerrado sin contar como error")
+    void saltarLaEscucha() {
+        Map set = setListo();
+        List<Map> items = (List<Map>) set.get("items");
+        Map escucha = items.stream().filter(i -> "DICTATION".equals(i.get("type"))).findFirst().orElseThrow();
+        Map hueco = items.stream().filter(i -> "FILL_BLANK".equals(i.get("type"))).findFirst().orElseThrow();
+
+        ResponseEntity<Map> saltado = post("/api/v1/practice-items/" + escucha.get("id") + "/skip", sesionAna, null, Map.class);
+
+        assertThat(saltado.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(saltado.getBody()).containsEntry("closed", true).containsEntry("skipped", true)
+                .containsEntry("correct", null);
+        assertThat(saltado.getBody().get("explanation")).isNotNull();
+        // Solo se saltan los de escucha, y lo saltado ya no se responde.
+        assertThat(post("/api/v1/practice-items/" + hueco.get("id") + "/skip", sesionAna, null, Map.class)
+                .getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+        assertThat(post("/api/v1/practice-items/" + escucha.get("id") + "/answer", sesionAna,
+                Map.of("answer", "used to"), Map.class).getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+
+        // Con el resto cerrado, el set se completa; lo saltado no es acierto ni fallo.
+        for (Map item : items) {
+            if (item != escucha) {
+                for (int intento = 0; intento < 2; intento++) {
+                    post("/api/v1/practice-items/" + item.get("id") + "/answer", sesionAna, Map.of("answer", "no sé"), Map.class);
+                }
+            }
+        }
+        assertThat(post("/api/v1/practice-sets/" + set.get("id") + "/complete", sesionAna, null, Map.class)
+                .getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(jdbc.queryForObject("select is_correct is null and skipped_at is not null from practice_items where id = ?",
+                Boolean.class, UUID.fromString((String) escucha.get("id")))).isTrue();
     }
 }

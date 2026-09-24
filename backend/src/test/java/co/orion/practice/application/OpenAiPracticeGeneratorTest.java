@@ -108,7 +108,9 @@ class OpenAiPracticeGeneratorTest {
             assertThat(tipos).hasSize(4).doesNotHaveDuplicates();
             vistos.addAll(tipos);
         }
-        assertThat(vistos).containsExactlyInAnyOrder(PracticeItemType.values());
+        // Los cinco que sabe pedir el prompt v4; los tipos nuevos llegan con la generación v5.
+        assertThat(vistos).containsExactlyInAnyOrder(PracticeItemType.FILL_BLANK, PracticeItemType.FIX_SENTENCE,
+                PracticeItemType.MATCH_MEANING, PracticeItemType.ORDER_DIALOGUE, PracticeItemType.WRITE_SENTENCE);
         assertThat(OpenAiPracticeGenerator.entrada(COMPLETA, 4)).contains("Tipos para este set: ");
     }
 

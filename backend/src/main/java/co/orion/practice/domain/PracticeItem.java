@@ -64,6 +64,9 @@ public class PracticeItem {
     @Column(name = "answered_at")
     private Instant answeredAt;
 
+    @Column(name = "skipped_at")
+    private Instant skippedAt;
+
     protected PracticeItem() {
     }
 
@@ -87,6 +90,9 @@ public class PracticeItem {
         if (Boolean.TRUE.equals(correct)) {
             throw new UnprocessableException("Este ya lo resolviste. Sigue con el próximo.");
         }
+        if (skippedAt != null) {
+            throw new UnprocessableException("Este lo saltaste. Sigue con el próximo.");
+        }
         if (attempts >= maxIntentos) {
             throw new UnprocessableException("Ya usaste los intentos de este ejercicio. Sigue con el próximo.");
         }
@@ -96,9 +102,24 @@ public class PracticeItem {
         this.answeredAt = ahora;
     }
 
-    /** Terminado: acertado, o sin intentos. Se muestra la respuesta y se sigue. */
+    /** Terminado: acertado, sin intentos o saltado. Se muestra la respuesta y se sigue. */
     public boolean cerrado(int maxIntentos) {
-        return Boolean.TRUE.equals(correct) || attempts >= maxIntentos;
+        return Boolean.TRUE.equals(correct) || attempts >= maxIntentos || skippedAt != null;
+    }
+
+    /**
+     * Saltar un ejercicio de escucha porque el dispositivo no tiene voz en inglés. No es un fallo:
+     * {@code correct} queda como estaba, así que no aparece entre lo que costó ni resta en nada.
+     * Solo los de escucha, y solo mientras siguen abiertos.
+     */
+    public void saltar(int maxIntentos, Instant ahora) {
+        if (!itemType.seOye()) {
+            throw new UnprocessableException("Solo se pueden saltar los ejercicios de escucha.");
+        }
+        if (cerrado(maxIntentos)) {
+            throw new UnprocessableException("Este ejercicio ya está cerrado. Sigue con el próximo.");
+        }
+        this.skippedAt = ahora;
     }
 
     public UUID getId() { return id; }
@@ -114,4 +135,5 @@ public class PracticeItem {
     public Boolean getCorrect() { return correct; }
     public int getAttempts() { return attempts; }
     public Instant getAnsweredAt() { return answeredAt; }
+    public Instant getSkippedAt() { return skippedAt; }
 }

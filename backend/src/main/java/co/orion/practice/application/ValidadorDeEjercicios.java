@@ -1,11 +1,11 @@
 package co.orion.practice.application;
 
 import java.util.ArrayList;
-import java.util.EnumMap;
+import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import co.orion.practice.domain.Evaluador;
+import co.orion.practice.domain.PracticeCategory;
 import co.orion.practice.domain.PracticeItemType;
 
 /**
@@ -24,7 +25,9 @@ import co.orion.practice.domain.PracticeItemType;
  *       término real del acta; corregir una frase exige que el acta hable de un error recurrente,
  *       y ordenar un diálogo, que diga qué se trabajó. Lo que no se ancla se descarta.</li>
  *   <li>Un ejercicio mal formado se descarta él solo, no el set entero.</li>
- *   <li>Tipos variados: como mucho dos del mismo tipo, nunca cuatro iguales.</li>
+ *   <li>Cada ejercicio de un tipo distinto (pedido de Pardo, 24/09/2026), y primero uno de cada
+ *       categoría: así cinco ejercicios son cinco estilos, no el mismo repetido. El set sale en el
+ *       orden de las categorías, de las palabras a la frase propia.</li>
  * </ul>
  *
  * <p>Clase pura: el material y la salida entran por parámetro.
@@ -32,7 +35,6 @@ import co.orion.practice.domain.PracticeItemType;
 public final class ValidadorDeEjercicios {
 
     private static final ObjectMapper JSON = new ObjectMapper();
-    private static final int MAX_POR_TIPO = 2;
 
     private ValidadorDeEjercicios() {
     }
@@ -41,21 +43,28 @@ public final class ValidadorDeEjercicios {
                                                          Material material, int cuantos) {
         Set<String> terminos = new HashSet<>();
         material.vocabulary().forEach(t -> terminos.add(norma(t.term())));
-        Map<PracticeItemType, Integer> porTipo = new EnumMap<>(PracticeItemType.class);
-        List<PracticeGenerator.Generado> salida = new ArrayList<>();
+        List<PracticeGenerator.Generado> candidatos = new ArrayList<>();
+        Set<PracticeItemType> tipos = EnumSet.noneOf(PracticeItemType.class);
         for (PracticeGenerator.Generado g : generados == null ? List.<PracticeGenerator.Generado>of() : generados) {
-            if (salida.size() >= cuantos) {
-                break;
-            }
-            if (g == null || g.tipo() == null || porTipo.getOrDefault(g.tipo(), 0) >= MAX_POR_TIPO) {
-                continue;
-            }
-            if (valido(g, material, terminos)) {
-                salida.add(g);
-                porTipo.merge(g.tipo(), 1, Integer::sum);
+            if (g != null && g.tipo() != null && !tipos.contains(g.tipo()) && valido(g, material, terminos)) {
+                candidatos.add(g);
+                tipos.add(g.tipo());
             }
         }
-        return salida;
+        List<PracticeGenerator.Generado> elegidos = new ArrayList<>();
+        Set<PracticeCategory> cubiertas = EnumSet.noneOf(PracticeCategory.class);
+        for (PracticeGenerator.Generado g : candidatos) {
+            if (elegidos.size() < cuantos && cubiertas.add(g.tipo().categoria())) {
+                elegidos.add(g);
+            }
+        }
+        for (PracticeGenerator.Generado g : candidatos) {
+            if (elegidos.size() < cuantos && !elegidos.contains(g)) {
+                elegidos.add(g);
+            }
+        }
+        elegidos.sort(Comparator.comparing(g -> g.tipo().categoria()));
+        return elegidos;
     }
 
     static boolean valido(PracticeGenerator.Generado g, Material material, Set<String> terminos) {
@@ -114,6 +123,46 @@ public final class ValidadorDeEjercicios {
                             && !lineas.equals(enOrden) && seTurnan(enOrden);
                 }
                 case WRITE_SENTENCE -> terminos.contains(norma(p.path("term").asText("")));
+                case SPOT_ERROR -> {
+                    List<String> fichas = textos(p.path("tokens"));
+                    JsonNode esperado = JSON.readTree(g.expected());
+                    int indice = esperado.path("index").asInt(-1);
+                    String correccion = esperado.path("correction").asText("");
+                    yield !vacio(material.recurringIssues()) && fichas.size() >= 3 && fichas.size() <= 14
+                            && fichas.stream().noneMatch(ValidadorDeEjercicios::vacio)
+                            && indice >= 0 && indice < fichas.size() && !vacio(correccion)
+                            && !norma(correccion).equals(norma(String.join(" ", fichas)));
+                }
+                case BUILD_SENTENCE -> {
+                    List<String> fichas = textos(p.path("tiles"));
+                    List<String> enOrden = textos(JSON.readTree(g.expected()));
+                    List<String> a = new ArrayList<>(fichas);
+                    List<String> b = new ArrayList<>(enOrden);
+                    a.sort(null);
+                    b.sort(null);
+                    yield (!vacio(material.workedOn()) || !terminos.isEmpty()) && !vacio(p.path("guide").asText(null))
+                            && fichas.size() >= 3 && fichas.size() <= 10 && a.equals(b) && !fichas.equals(enOrden);
+                }
+                case CHOOSE_REPLY -> {
+                    List<String> opciones = textos(p.path("options")).stream().map(ValidadorDeEjercicios::norma).toList();
+                    yield !vacio(material.workedOn()) && !vacio(p.path("message").asText(null))
+                            && opciones.size() >= 2 && opciones.size() <= 4 && new HashSet<>(opciones).size() == opciones.size()
+                            && opciones.contains(norma(g.expected()));
+                }
+                case LISTEN_CHOOSE -> {
+                    List<String> opciones = textos(p.path("options")).stream().map(ValidadorDeEjercicios::norma).toList();
+                    String dice = norma(p.path("say").asText(""));
+                    yield terminos.contains(dice) && dice.equals(norma(g.terminoFuente()))
+                            && opciones.size() >= 2 && opciones.size() <= 4 && new HashSet<>(opciones).size() == opciones.size()
+                            && opciones.contains(norma(g.expected()));
+                }
+                case DICTATION -> {
+                    String dice = p.path("say").asText("");
+                    boolean anclada = terminos.isEmpty() ? !vacio(material.workedOn())
+                            : terminos.stream().anyMatch(t -> norma(dice).contains(t));
+                    yield !vacio(dice) && dice.length() <= 120 && dice.strip().split("\\s+").length <= 12
+                            && norma(dice).equals(norma(g.expected())) && anclada;
+                }
             };
         } catch (Exception ex) {
             return false;
@@ -142,6 +191,12 @@ public final class ValidadorDeEjercicios {
             anterior = quien;
         }
         return true;
+    }
+
+    private static List<String> textos(JsonNode arreglo) {
+        List<String> salida = new ArrayList<>();
+        arreglo.forEach(x -> salida.add(x.asText()));
+        return salida;
     }
 
     private static boolean vacio(String s) {

@@ -429,13 +429,25 @@ test("Ana practica lo de su clase y María lo ve en su ficha", async ({ page }) 
 
   // Un ejercicio por pantalla, hasta que no quede ninguno abierto.
   const verComo = page.getByRole("button", { name: "Ver cómo me fue" });
+  const saltar = page.getByRole("button", { name: "Saltar este" });
+  const dictado = page.getByPlaceholder("Escribe lo que oíste");
   for (let i = 0; i < 8; i++) {
     // Cada vuelta espera a que el ejercicio esté en pantalla antes de decidir cómo responderlo.
-    await expect(page.getByRole("radiogroup").or(page.getByPlaceholder("Tu frase")).or(verComo)).toBeVisible();
+    await expect(
+      page.getByRole("radiogroup").or(page.getByPlaceholder("Tu frase")).or(dictado).or(saltar).or(verComo),
+    ).toBeVisible();
     if (await verComo.isVisible()) break;
+    // El navegador de pruebas no suele traer voz en inglés: el de escucha se salta, sin contar como error.
+    if (await saltar.isVisible()) {
+      await saltar.click();
+      await page.waitForTimeout(800);
+      continue;
+    }
     const opciones = page.getByRole("radio");
     if ((await opciones.count()) > 0) {
       await opciones.first().click();
+    } else if (await dictado.isVisible()) {
+      await dictado.fill("used to");
     } else {
       const termino = (await page.locator("main p[lang='en']").first().textContent())?.trim() ?? "used to";
       await page.getByPlaceholder("Tu frase").fill(`Last year I ${termino} every weekend with my friends.`);
@@ -446,7 +458,7 @@ test("Ana practica lo de su clase y María lo ve en su ficha", async ({ page }) 
     await expect(page.getByText("Así es.").or(otraVez).or(siguiente)).toBeVisible();
     if (await otraVez.isVisible()) {
       await otraVez.click();
-      await page.getByRole("radio").last().click();
+      if ((await page.getByRole("radio").count()) > 0) await page.getByRole("radio").last().click();
       await page.getByRole("button", { name: "Comprobar" }).click();
       await expect(page.getByText("Así es.").or(siguiente)).toBeVisible();
     }

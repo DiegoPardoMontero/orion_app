@@ -8,18 +8,40 @@ export type TipoDeEjercicio =
   | "FIX_SENTENCE"
   | "MATCH_MEANING"
   | "ORDER_DIALOGUE"
-  | "WRITE_SENTENCE";
+  | "WRITE_SENTENCE"
+  | "SPOT_ERROR"
+  | "BUILD_SENTENCE"
+  | "CHOOSE_REPLY"
+  | "LISTEN_CHOOSE"
+  | "DICTATION";
+
+/** Las cinco categorías, en el orden en que se recorren: de las palabras a la frase propia. */
+export type CategoriaDeEjercicio = "PALABRAS" | "FRASES" | "CONVERSACION" | "ESCUCHA" | "TU_TURNO";
+
+export const NOMBRE_DE_CATEGORIA: Record<CategoriaDeEjercicio, string> = {
+  PALABRAS: "Palabras",
+  FRASES: "Frases",
+  CONVERSACION: "Conversación",
+  ESCUCHA: "Escucha",
+  TU_TURNO: "Tu turno",
+};
+
+/** Los que suenan con la voz del dispositivo: sin voz en inglés, se pueden saltar. */
+export const SE_OYEN: TipoDeEjercicio[] = ["LISTEN_CHOOSE", "DICTATION"];
 
 export type Ejercicio = {
   id: string;
   index: number;
   type: TipoDeEjercicio;
+  category: CategoriaDeEjercicio;
   prompt: string;
   /** JSON en texto: las opciones, las piezas o los pares, según el tipo. */
   payload: string;
   attempts: number;
   correct: boolean | null;
   closed: boolean;
+  /** Saltado porque el dispositivo no tenía voz en inglés: cerrado, pero ni acierto ni fallo. */
+  skipped: boolean;
   explanation: string | null;
   expected: string | null;
   answer: string | null;
@@ -76,11 +98,16 @@ export type PracticaDelActa = {
 };
 
 export const NOMBRE_DEL_TIPO: Record<TipoDeEjercicio, string> = {
-  FILL_BLANK: "Completar la frase",
-  FIX_SENTENCE: "Corregir la frase",
-  MATCH_MEANING: "Unir con su significado",
-  ORDER_DIALOGUE: "Ordenar el diálogo",
-  WRITE_SENTENCE: "Escribir una frase propia",
+  FILL_BLANK: "Completa",
+  FIX_SENTENCE: "Corrige",
+  MATCH_MEANING: "Parejas",
+  ORDER_DIALOGUE: "Ordena la conversación",
+  WRITE_SENTENCE: "Tu frase",
+  SPOT_ERROR: "Caza el error",
+  BUILD_SENTENCE: "Arma la frase",
+  CHOOSE_REPLY: "Responde en el chat",
+  LISTEN_CHOOSE: "Escucha y elige",
+  DICTATION: "Escucha y escribe",
 };
 
 /** La respuesta esperada, legible: los pares y el diálogo llegan como JSON. */
@@ -92,10 +119,21 @@ export function mostrarEsperada(tipo: TipoDeEjercicio, esperada: string): string
     if (tipo === "ORDER_DIALOGUE") {
       return (JSON.parse(esperada) as string[]).join(" → ");
     }
+    if (tipo === "BUILD_SENTENCE") {
+      return unirFichas(JSON.parse(esperada) as string[]);
+    }
+    if (tipo === "SPOT_ERROR") {
+      return (JSON.parse(esperada) as { correction?: string }).correction ?? esperada;
+    }
   } catch {
     // Si no se puede leer, se muestra tal cual.
   }
   return esperada;
+}
+
+/** Las fichas de una frase, unidas como se escribe: sin espacio antes de la puntuación. */
+export function unirFichas(fichas: string[]): string {
+  return fichas.join(" ").replace(/\s+([?.!,;:])/g, "$1");
 }
 
 export function leerPayload<T>(ejercicio: { payload: string }): T {

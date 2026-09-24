@@ -31,6 +31,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *   <li>ORDER_DIALOGUE: {@code {"lines": [...desordenadas]}}; expected, el arreglo JSON en orden.
  *       La respuesta, un arreglo JSON.</li>
  *   <li>WRITE_SENTENCE: {@code {"term": "used to"}}; sin expected.</li>
+ *   <li>SPOT_ERROR: {@code {"tokens": ["I", "never", "go", ...]}}; expected, {@code {"index": 2,
+ *       "correction": "I have never been to Canada."}}. La respuesta, el índice de la ficha tocada.</li>
+ *   <li>BUILD_SENTENCE: {@code {"tiles": [...desordenadas], "guide": "¿Dónde está…?"}}; expected, el
+ *       arreglo JSON en orden. La respuesta, un arreglo JSON.</li>
+ *   <li>CHOOSE_REPLY: {@code {"from": "Receptionist", "message": "…", "options": [...]}}; expected, la
+ *       respuesta adecuada.</li>
+ *   <li>LISTEN_CHOOSE: {@code {"say": "layover", "options": [...]}}; expected, la opción correcta.</li>
+ *   <li>DICTATION: {@code {"say": "Here is my boarding pass."}}; expected, la misma frase. Se perdona
+ *       una letra: lo que se practica es oír, no teclear sin errores.</li>
  * </ul>
  */
 public final class Evaluador {
@@ -52,6 +61,10 @@ public final class Evaluador {
                 case MATCH_MEANING -> pares(JSON.readTree(respuesta)).equals(pares(JSON.readTree(expected)));
                 case ORDER_DIALOGUE -> lineas(JSON.readTree(respuesta)).equals(lineas(JSON.readTree(expected)));
                 case WRITE_SENTENCE -> usaElTermino(JSON.readTree(payload).path("term").asText(""), respuesta);
+                case SPOT_ERROR -> Integer.parseInt(respuesta.strip()) == JSON.readTree(expected).path("index").asInt(-1);
+                case BUILD_SENTENCE -> lineas(JSON.readTree(respuesta)).equals(lineas(JSON.readTree(expected)));
+                case CHOOSE_REPLY, LISTEN_CHOOSE -> normalizar(respuesta).equals(normalizar(expected));
+                case DICTATION -> casiIgual(soloPalabras(respuesta), soloPalabras(expected));
             };
         } catch (Exception ex) {
             // Una respuesta que no se puede leer (un JSON roto desde el cliente) es incorrecta, no un 500.
@@ -109,6 +122,32 @@ public final class Evaluador {
         boolean aparece = Pattern.compile("(?<![\\p{L}])" + Pattern.quote(t) + "(?![\\p{L}])").matcher(f).find();
         long palabras = f.strip().split("\\s+").length;
         return aparece && palabras >= PALABRAS_MINIMAS;
+    }
+
+    /** Iguales, o a una sola letra de distancia en frases de diez caracteres o más. */
+    static boolean casiIgual(String a, String b) {
+        if (a.equals(b)) {
+            return true;
+        }
+        if (b.length() < 10 || Math.abs(a.length() - b.length()) > 1) {
+            return false;
+        }
+        int[] previa = new int[b.length() + 1];
+        int[] actual = new int[b.length() + 1];
+        for (int j = 0; j <= b.length(); j++) {
+            previa[j] = j;
+        }
+        for (int i = 1; i <= a.length(); i++) {
+            actual[0] = i;
+            for (int j = 1; j <= b.length(); j++) {
+                int cambio = a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1;
+                actual[j] = Math.min(Math.min(actual[j - 1] + 1, previa[j] + 1), previa[j - 1] + cambio);
+            }
+            int[] t = previa;
+            previa = actual;
+            actual = t;
+        }
+        return previa[b.length()] <= 1;
     }
 
     private static String soloPalabras(String texto) {

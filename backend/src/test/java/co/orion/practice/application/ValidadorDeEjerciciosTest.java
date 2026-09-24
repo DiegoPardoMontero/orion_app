@@ -43,10 +43,74 @@ class ValidadorDeEjerciciosTest {
     }
 
     @Test
-    @DisplayName("Tipos variados: como mucho dos del mismo tipo")
-    void comoMuchoDosIguales() {
+    @DisplayName("Cada ejercicio de un tipo distinto: dos huecos no son dos ejercicios")
+    void unoDeCadaTipo() {
         assertThat(ValidadorDeEjercicios.validos(
-                List.of(hueco("used to"), hueco("deadline"), hueco("used to")), ACTA, 4)).hasSize(2);
+                List.of(hueco("used to"), hueco("deadline"), hueco("used to")), ACTA, 4)).hasSize(1);
+    }
+
+    private static Generado dictado(String frase) {
+        return new Generado(PracticeItemType.DICTATION, "Escucha.", "{\"say\":\"" + frase + "\"}", frase, "x", null);
+    }
+
+    private static Generado frasePropia() {
+        return new Generado(PracticeItemType.WRITE_SENTENCE, "Escribe.", "{\"term\":\"deadline\"}", null, "x", "deadline");
+    }
+
+    private static Generado responder() {
+        return new Generado(PracticeItemType.CHOOSE_REPLY, "Responde.",
+                "{\"from\":\"Mom\",\"message\":\"What did you do as a kid?\",\"options\":[\"I used to swim.\",\"I use to swim.\",\"I swimming.\"]}",
+                "I used to swim.", "x", null);
+    }
+
+    private static Generado errorACazar() {
+        return new Generado(PracticeItemType.SPOT_ERROR, "Caza el error.",
+                "{\"tokens\":[\"I\",\"go\",\"yesterday\"]}", "{\"index\":1,\"correction\":\"I went yesterday.\"}", "x", null);
+    }
+
+    @Test
+    @DisplayName("Primero uno de cada categoría, y el set sale en el orden de las categorías")
+    void unoPorCategoriaYEnOrden() {
+        // Dos de «frases» y uno de cada otra; con cuatro cupos, el segundo de «frases» se queda afuera.
+        Generado armar = new Generado(PracticeItemType.BUILD_SENTENCE, "Arma.",
+                "{\"tiles\":[\"swim\",\"I\",\"used to\"],\"guide\":\"Yo solía nadar\"}",
+                "[\"I\",\"used to\",\"swim\"]", "x", null);
+        var elegidos = ValidadorDeEjercicios.validos(
+                List.of(frasePropia(), errorACazar(), armar, dictado("I used to swim"), responder(), hueco("deadline")), ACTA, 5);
+
+        assertThat(elegidos).extracting(Generado::tipo).containsExactly(PracticeItemType.FILL_BLANK,
+                PracticeItemType.SPOT_ERROR, PracticeItemType.CHOOSE_REPLY, PracticeItemType.DICTATION,
+                PracticeItemType.WRITE_SENTENCE);
+    }
+
+    @Test
+    @DisplayName("Los tipos nuevos se anclan al acta y tienen que poder resolverse")
+    void losTiposNuevos() {
+        // Escuchar y escribir: la frase tiene un término de la clase y es corta.
+        assertThat(ValidadorDeEjercicios.validos(List.of(dictado("Here is my boarding pass")), ACTA, 5)).isEmpty();
+        assertThat(ValidadorDeEjercicios.validos(List.of(dictado("I used to swim every day")), ACTA, 5)).hasSize(1);
+        // Cazar el error exige que el acta hable de uno, y un índice dentro de la frase.
+        Material sinErrores = new Material("EN", ACTA.workedOn(), "", null, ACTA.vocabulary(), null, null);
+        assertThat(ValidadorDeEjercicios.validos(List.of(errorACazar()), sinErrores, 5)).isEmpty();
+        Generado fueraDeRango = new Generado(PracticeItemType.SPOT_ERROR, "Caza.", "{\"tokens\":[\"I\",\"go\",\"yesterday\"]}",
+                "{\"index\":7,\"correction\":\"I went yesterday.\"}", "x", null);
+        assertThat(ValidadorDeEjercicios.validos(List.of(fueraDeRango), ACTA, 5)).isEmpty();
+        // Armar la frase: las mismas fichas, desordenadas.
+        Generado enOrden = new Generado(PracticeItemType.BUILD_SENTENCE, "Arma.",
+                "{\"tiles\":[\"I\",\"used to\",\"swim\"],\"guide\":\"Yo solía nadar\"}",
+                "[\"I\",\"used to\",\"swim\"]", "x", null);
+        assertThat(ValidadorDeEjercicios.validos(List.of(enOrden), ACTA, 5)).isEmpty();
+        // Responder: la esperada está entre las opciones, y no hay opciones repetidas.
+        Generado sinLaEsperada = new Generado(PracticeItemType.CHOOSE_REPLY, "Responde.",
+                "{\"from\":\"Mom\",\"message\":\"Hi?\",\"options\":[\"A\",\"B\"]}", "C", "x", null);
+        assertThat(ValidadorDeEjercicios.validos(List.of(sinLaEsperada), ACTA, 5)).isEmpty();
+        // Escuchar y elegir: lo que suena es un término de la clase.
+        Generado oir = new Generado(PracticeItemType.LISTEN_CHOOSE, "Escucha.",
+                "{\"say\":\"deadline\",\"options\":[\"fecha límite\",\"solía\",\"escala\"]}", "fecha límite", "x", "deadline");
+        Generado oirOtra = new Generado(PracticeItemType.LISTEN_CHOOSE, "Escucha.",
+                "{\"say\":\"layover\",\"options\":[\"escala\",\"solía\"]}", "escala", "x", "layover");
+        assertThat(ValidadorDeEjercicios.validos(List.of(oir), ACTA, 5)).hasSize(1);
+        assertThat(ValidadorDeEjercicios.validos(List.of(oirOtra), ACTA, 5)).isEmpty();
     }
 
     @Test

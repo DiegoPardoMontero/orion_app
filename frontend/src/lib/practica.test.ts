@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { leerPayload, palabrasNuevas, primerNombre, resumirLoTrabajado, type Ejercicio } from "./practica";
+import { leerPayload, mostrarEsperada, palabrasNuevas, primerNombre, resumirLoTrabajado, unirFichas, type Ejercicio } from "./practica";
 
 describe("la invitación a practicar", () => {
   it("resume lo trabajado en una línea, sin punto final y en minúscula para ir tras los dos puntos", () => {
@@ -31,5 +31,20 @@ describe("leerPayload", () => {
   it("un payload ilegible no rompe la pantalla: vuelve vacío", () => {
     const roto = { payload: "{no es json" } as Ejercicio;
     expect(leerPayload<{ term?: string }>(roto)).toEqual({});
+  });
+});
+
+describe("las respuestas de los tipos nuevos", () => {
+  it("une las fichas como se escribe, sin espacio antes de la puntuación", () => {
+    expect(unirFichas(["Where", "is", "my", "luggage", "?"])).toBe("Where is my luggage?");
+    expect(unirFichas(["Yes", ",", "I", "do", "."])).toBe("Yes, I do.");
+  });
+
+  it("muestra la frase armada, y en «caza el error» la frase corregida", () => {
+    expect(mostrarEsperada("BUILD_SENTENCE", '["Where","is","my","luggage","?"]')).toBe("Where is my luggage?");
+    expect(mostrarEsperada("SPOT_ERROR", '{"index":2,"correction":"I have never been to Canada."}')).toBe(
+      "I have never been to Canada.",
+    );
+    expect(mostrarEsperada("LISTEN_CHOOSE", "escala")).toBe("escala");
   });
 });

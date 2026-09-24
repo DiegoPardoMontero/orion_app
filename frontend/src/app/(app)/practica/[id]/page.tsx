@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowLeft, ArrowUp, Check, Sparkles } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, Check, Sparkles, Turtle, Volume2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -11,11 +11,16 @@ import { apiFetch } from "@/lib/api/fetch";
 import {
   leerPayload,
   mostrarEsperada,
+  NOMBRE_DE_CATEGORIA,
+  NOMBRE_DEL_TIPO,
   PUNTOS_POR_PRACTICA,
+  SE_OYEN,
+  unirFichas,
   type Ejercicio,
   type Resultado,
   type SetDePractica,
 } from "@/lib/practica";
+import { useVozEnIngles } from "@/lib/voz";
 
 /**
  * Practicar entre clases (Bloque 10, pasos B5.2 y B5.3). Un ejercicio por pantalla, cuatro puntos
@@ -121,7 +126,7 @@ function Contenido() {
   );
 }
 
-/** Los cuatro puntos que se encienden, uno por ejercicio cerrado. */
+/** Los puntos que se encienden, uno por ejercicio cerrado. */
 function Puntos({ items }: { items: Ejercicio[] }) {
   const cerrados = items.filter((i) => i.closed).length;
   return (
@@ -150,6 +155,12 @@ function EjercicioActual({ ejercicio, onActualizado }: { ejercicio: Ejercicio; o
     ejercicio.type === "ORDER_DIALOGUE" ? JSON.stringify(leerPayload<{ lines?: string[] }>(ejercicio).lines ?? []) : "",
   );
   const [resultado, setResultado] = useState<Resultado | null>(null);
+  const voz = useVozEnIngles();
+  const seOye = SE_OYEN.includes(ejercicio.type);
+  const saltar = useMutation({
+    mutationFn: () => apiFetch<Ejercicio>(`/api/v1/practice-items/${ejercicio.id}/skip`, { method: "POST" }),
+    onSuccess: onActualizado,
+  });
   const responder = useMutation({
     mutationFn: (texto: string) =>
       apiFetch<Resultado>(`/api/v1/practice-items/${ejercicio.id}/answer`, { method: "POST", body: { answer: texto } }),
@@ -167,10 +178,31 @@ function EjercicioActual({ ejercicio, onActualizado }: { ejercicio: Ejercicio; o
 
   return (
     <Tarjeta className="mt-4">
-      <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-text-secondary">{ejercicio.prompt}</p>
-      <div className="mt-3">
-        <Entrada ejercicio={ejercicio} valor={respuesta} onCambio={setRespuesta} bloqueado={responder.isPending || !!resultado} />
-      </div>
+      <p className="text-[11.5px] font-bold uppercase tracking-[0.1em] text-primary-strong">
+        {NOMBRE_DE_CATEGORIA[ejercicio.category]} · {NOMBRE_DEL_TIPO[ejercicio.type]}
+      </p>
+      <p className="mt-1 text-[14px] font-semibold text-text-secondary">{ejercicio.prompt}</p>
+      {seOye && voz.disponible === false ? (
+        // Sin voz en inglés no hay ejercicio de escucha posible; saltarlo no cuenta como error.
+        <div className="mt-3 rounded-base bg-surface-sunken px-4 py-3 text-[14px] text-text-secondary">
+          <p>Tu dispositivo no tiene una voz en inglés, así que este ejercicio no puede sonar. Sáltalo: no cuenta como error.</p>
+          <Boton variante="contorno" className="mt-3" disabled={saltar.isPending} onClick={() => saltar.mutate()}>
+            {saltar.isPending && <Spinner />}
+            Saltar este
+          </Boton>
+          {saltar.isError && <AvisoError mensaje={saltar.error.message} />}
+        </div>
+      ) : (
+        <div className="mt-3">
+          <Entrada
+            ejercicio={ejercicio}
+            valor={respuesta}
+            onCambio={setRespuesta}
+            bloqueado={responder.isPending || !!resultado}
+            voz={voz}
+          />
+        </div>
+      )}
 
       {resultado && resultado.correct && (
         <p className="mt-4 flex items-center gap-2 rounded-base bg-accent-lavender-soft px-4 py-3 text-[14px] font-semibold text-[#5e4a8a]" aria-live="polite">
@@ -197,7 +229,7 @@ function EjercicioActual({ ejercicio, onActualizado }: { ejercicio: Ejercicio; o
       )}
 
       <div className="mt-4 flex flex-wrap justify-end gap-2">
-        {!resultado && (
+        {!resultado && !(seOye && voz.disponible === false) && (
           <Boton disabled={responder.isPending || !respuesta.trim()} onClick={() => enviar(respuesta)}>
             {responder.isPending && <Spinner />}
             Comprobar
@@ -228,11 +260,13 @@ function Entrada({
   valor,
   onCambio,
   bloqueado,
+  voz,
 }: {
   ejercicio: Ejercicio;
   valor: string;
   onCambio: (v: string) => void;
   bloqueado: boolean;
+  voz: ReturnType<typeof useVozEnIngles>;
 }) {
   switch (ejercicio.type) {
     case "FILL_BLANK": {
@@ -288,7 +322,169 @@ function Entrada({
       return <Emparejar ejercicio={ejercicio} onCambio={onCambio} bloqueado={bloqueado} />;
     case "ORDER_DIALOGUE":
       return <Ordenar ejercicio={ejercicio} onCambio={onCambio} bloqueado={bloqueado} />;
+    case "SPOT_ERROR": {
+      const p = leerPayload<{ tokens: string[] }>(ejercicio);
+      return (
+        <div lang="en" className="flex flex-wrap gap-2" role="radiogroup" aria-label="Toca la palabra que está mal">
+          {(p.tokens ?? []).map((t, i) => (
+            <Opcion key={i} elegida={valor === String(i)} bloqueado={bloqueado} onElegir={() => onCambio(String(i))}>
+              {t}
+            </Opcion>
+          ))}
+        </div>
+      );
+    }
+    case "BUILD_SENTENCE":
+      return <Armar ejercicio={ejercicio} onCambio={onCambio} bloqueado={bloqueado} />;
+    case "CHOOSE_REPLY": {
+      const p = leerPayload<{ from?: string; message: string; options: string[] }>(ejercicio);
+      return (
+        <>
+          <div className="max-w-[85%] rounded-[18px] rounded-bl-[6px] bg-surface-sunken px-4 py-3">
+            {p.from && <p className="text-[11.5px] font-bold text-text-muted">{p.from}</p>}
+            <p lang="en" className="text-[15px] text-text">
+              {p.message}
+            </p>
+          </div>
+          <Opciones opciones={p.options} valor={valor} onCambio={onCambio} bloqueado={bloqueado} etiqueta="Respuestas" />
+        </>
+      );
+    }
+    case "LISTEN_CHOOSE": {
+      const p = leerPayload<{ say: string; options: string[] }>(ejercicio);
+      return (
+        <>
+          <Escuchar texto={p.say} voz={voz} />
+          <Opciones opciones={p.options} valor={valor} onCambio={onCambio} bloqueado={bloqueado} etiqueta="Significados" />
+        </>
+      );
+    }
+    case "DICTATION": {
+      const p = leerPayload<{ say: string }>(ejercicio);
+      return (
+        <>
+          <Escuchar texto={p.say} voz={voz} />
+          <TextoLibre valor={valor} onCambio={onCambio} bloqueado={bloqueado} etiqueta="Escribe lo que oíste" />
+        </>
+      );
+    }
   }
+}
+
+function Opcion({
+  elegida,
+  bloqueado,
+  onElegir,
+  children,
+}: {
+  elegida: boolean;
+  bloqueado: boolean;
+  onElegir: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={elegida}
+      disabled={bloqueado}
+      onClick={onElegir}
+      className={`min-h-11 rounded-pill px-4 text-[14px] font-semibold transition-colors focus-visible:shadow-focus ${
+        elegida ? "bg-[#7A4A8C] text-on-primary" : "bg-accent-lavender-soft text-[#5e4a8a] hover:bg-[#e2d7f4]"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Opciones({
+  opciones,
+  valor,
+  onCambio,
+  bloqueado,
+  etiqueta,
+}: {
+  opciones: string[] | undefined;
+  valor: string;
+  onCambio: (v: string) => void;
+  bloqueado: boolean;
+  etiqueta: string;
+}) {
+  return (
+    <div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label={etiqueta}>
+      {(opciones ?? []).map((o) => (
+        <Opcion key={o} elegida={valor === o} bloqueado={bloqueado} onElegir={() => onCambio(o)}>
+          {o}
+        </Opcion>
+      ))}
+    </div>
+  );
+}
+
+/** Lo que dice Meissa: con la voz del dispositivo, y también más despacio. */
+function Escuchar({ texto, voz }: { texto: string; voz: ReturnType<typeof useVozEnIngles> }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Boton disabled={!voz.disponible} onClick={() => voz.hablar(texto)} aria-label="Escuchar">
+        <Volume2 size={17} strokeWidth={2} />
+        {voz.hablando ? "Sonando…" : "Escuchar"}
+      </Boton>
+      <Boton variante="contorno" disabled={!voz.disponible} onClick={() => voz.hablar(texto, true)}>
+        <Turtle size={17} strokeWidth={2} />
+        Más despacio
+      </Boton>
+    </div>
+  );
+}
+
+/** Armar la frase: se tocan las fichas en orden; una ficha puesta vuelve a su lugar tocándola. */
+function Armar({ ejercicio, onCambio, bloqueado }: { ejercicio: Ejercicio; onCambio: (v: string) => void; bloqueado: boolean }) {
+  const p = leerPayload<{ tiles: string[]; guide?: string }>(ejercicio);
+  const fichas = p.tiles ?? [];
+  const [puestas, setPuestas] = useState<number[]>([]);
+  const cambiar = (nuevas: number[]) => {
+    setPuestas(nuevas);
+    onCambio(nuevas.length === fichas.length ? JSON.stringify(nuevas.map((i) => fichas[i])) : "");
+  };
+  return (
+    <>
+      {p.guide && <p className="text-[15px] text-text-secondary">«{p.guide}»</p>}
+      <div
+        lang="en"
+        className="mt-3 flex min-h-14 flex-wrap items-center gap-2 rounded-base border border-dashed border-border px-3 py-2"
+        aria-label={`Tu frase: ${unirFichas(puestas.map((i) => fichas[i]))}`}
+      >
+        {puestas.length === 0 && <span className="text-[13px] text-text-muted">Toca las fichas en orden</span>}
+        {puestas.map((i) => (
+          <button
+            key={i}
+            type="button"
+            disabled={bloqueado}
+            onClick={() => cambiar(puestas.filter((x) => x !== i))}
+            className="min-h-11 rounded-pill bg-[#7A4A8C] px-4 text-[14px] font-semibold text-on-primary focus-visible:shadow-focus"
+          >
+            {fichas[i]}
+          </button>
+        ))}
+      </div>
+      <div lang="en" className="mt-3 flex flex-wrap gap-2">
+        {fichas.map((f, i) =>
+          puestas.includes(i) ? null : (
+            <button
+              key={i}
+              type="button"
+              disabled={bloqueado}
+              onClick={() => cambiar([...puestas, i])}
+              className="min-h-11 rounded-pill bg-accent-lavender-soft px-4 text-[14px] font-semibold text-[#5e4a8a] hover:bg-[#e2d7f4] focus-visible:shadow-focus"
+            >
+              {f}
+            </button>
+          ),
+        )}
+      </div>
+    </>
+  );
 }
 
 function TextoLibre({ valor, onCambio, bloqueado, etiqueta }: { valor: string; onCambio: (v: string) => void; bloqueado: boolean; etiqueta: string }) {
@@ -380,7 +576,7 @@ function Ordenar({ ejercicio, onCambio, bloqueado }: { ejercicio: Ejercicio; onC
  * primer plano: la práctica no es un examen y la pantalla no puede insinuar que lo es.
  */
 function Cierre({ set }: { set: SetDePractica }) {
-  const repasar = set.items.filter((i) => i.correct === false).map((i) => terminoDe(i)).filter(Boolean);
+  const repasar = set.items.filter((i) => i.correct === false && !i.skipped).map((i) => terminoDe(i)).filter(Boolean);
   const minutos = set.estimatedMinutes ?? set.itemCount;
   return (
     <div className="flex flex-col items-center gap-3 rounded-card bg-surface-raised p-8 text-center shadow-sm">
@@ -407,8 +603,13 @@ function Cierre({ set }: { set: SetDePractica }) {
 }
 
 function terminoDe(i: Ejercicio): string {
-  const p = leerPayload<{ term?: string }>(i);
+  const p = leerPayload<{ term?: string; say?: string }>(i);
   if (p.term) return p.term;
+  if (i.type === "LISTEN_CHOOSE" && p.say) return p.say;
+  if (i.type === "DICTATION") return "escribir lo que oyes";
+  if (i.type === "SPOT_ERROR") return "encontrar el error";
+  if (i.type === "BUILD_SENTENCE") return "armar frases";
+  if (i.type === "CHOOSE_REPLY") return "responder en una conversación";
   if (i.type === "FIX_SENTENCE") return "la corrección de frases";
   if (i.type === "ORDER_DIALOGUE") return "el orden de un diálogo";
   if (i.type === "MATCH_MEANING") return "los significados";

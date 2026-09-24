@@ -88,6 +88,12 @@ public class PracticeController {
         return new ResultView(r.correcto(), r.cerrado(), r.intentosQueQuedan(), item(r.ejercicio(), r.cerrado()));
     }
 
+    /** Saltar un ejercicio de escucha: el dispositivo no tiene voz en inglés. No cuenta como error. */
+    @PostMapping("/api/v1/practice-items/{id}/skip")
+    public ItemView saltar(@AuthenticationPrincipal OrionUserDetails principal, @PathVariable UUID id) {
+        return item(practica.saltar(principal.user(), id), true);
+    }
+
     @PostMapping("/api/v1/practice-sets/{id}/complete")
     public SetView completar(@AuthenticationPrincipal OrionUserDetails principal, @PathVariable UUID id) {
         return vista(practica.completar(principal.user(), id));
@@ -131,8 +137,9 @@ public class PracticeController {
     public record RespuestaRequest(@NotNull @Size(max = 600) String answer) {
     }
 
-    public record ItemView(UUID id, int index, String type, String prompt, String payload, int attempts,
-                           Boolean correct, boolean closed, String explanation, String expected, String answer) {
+    public record ItemView(UUID id, int index, String type, String category, String prompt, String payload,
+                           int attempts, Boolean correct, boolean closed, boolean skipped, String explanation,
+                           String expected, String answer) {
     }
 
     public record SetView(UUID id, String status, UUID lessonNoteId, String bookingId, ZonedDateTime classStartsAt,
@@ -163,9 +170,12 @@ public class PracticeController {
      */
     private static ItemView item(PracticeItem i, boolean cerrado) {
         boolean acerto = Boolean.TRUE.equals(i.getCorrect());
-        return new ItemView(i.getId(), i.getItemIndex(), i.getItemType().name(), i.getPrompt(), payload(i, cerrado),
-                i.getAttempts(), i.getCorrect(), cerrado, i.getAttempts() > 0 ? i.getExplanation() : null,
-                cerrado && !acerto ? i.getExpected() : null, i.getAnswer());
+        // Saltado también muestra la explicación: el estudiante no llegó a intentarlo, pero la merece.
+        boolean mostrarExplicacion = i.getAttempts() > 0 || i.getSkippedAt() != null;
+        return new ItemView(i.getId(), i.getItemIndex(), i.getItemType().name(), i.getItemType().categoria().name(),
+                i.getPrompt(), payload(i, cerrado), i.getAttempts(), i.getCorrect(), cerrado, i.getSkippedAt() != null,
+                mostrarExplicacion ? i.getExplanation() : null, cerrado && !acerto ? i.getExpected() : null,
+                i.getAnswer());
     }
 
     /**

@@ -1,6 +1,7 @@
 package co.orion.practice.application;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -17,8 +18,8 @@ import co.orion.practice.domain.PracticeItemType;
 /**
  * La práctica sin IA, para local y pruebas: determinista y solo con lo que el acta dice literal.
  * Por cada término del vocabulario, un hueco en la frase del acta que lo contiene y una frase
- * propia; si hay significados, emparejarlos. Sin corregir frases ni ordenar diálogos: eso exige
- * inventar, y sin IA no se inventa.
+ * propia; si hay significados, emparejarlos; y oír el primero y escribirlo. Sin corregir frases ni
+ * ordenar diálogos: eso exige inventar, y sin IA no se inventa.
  */
 @Component
 @ConditionalOnProperty(name = "orion.assessment.voice.provider", havingValue = "scripted",
@@ -40,6 +41,8 @@ public class GeneradorSinIa implements PracticeGenerator {
                     JSON.createObjectNode().put("term", t.term()).toString(), null,
                     "Cualquier frase tuya que use «" + t.term() + "» vale: lo que importa es usarla.", t.term()));
         }
+        // Escuchar el primer término: lo único de escucha que se puede anclar sin inventar nada.
+        List<Generado> escucha = terminos.stream().limit(1).map(GeneradorSinIa::dictado).toList();
         List<Material.Termino> conSignificado = terminos.stream()
                 .filter(t -> t.meaning() != null && !t.meaning().isBlank()).limit(4).toList();
 
@@ -48,6 +51,10 @@ public class GeneradorSinIa implements PracticeGenerator {
         if (conSignificado.size() >= 2) {
             salida.add(emparejar(conSignificado));
         }
+        salida.addAll(escucha);
+        // La frase propia, desde el último término: con uno de cada tipo, si no, el hueco, la escucha
+        // y la frase propia caerían los tres sobre la misma palabra.
+        Collections.reverse(frases);
         int i = 0;
         while (salida.size() < cuantos && (i < huecos.size() || i < frases.size())) {
             if (i < huecos.size() && salida.size() < cuantos) {
@@ -82,6 +89,12 @@ public class GeneradorSinIa implements PracticeGenerator {
         }
         return new Generado(PracticeItemType.FILL_BLANK, "Completa la frase de tu clase.", payload.toString(),
                 termino, "Aquí va «" + termino + "», como lo trabajaron en clase.", termino);
+    }
+
+    private static Generado dictado(Material.Termino t) {
+        return new Generado(PracticeItemType.DICTATION, "Escucha y escribe lo que dice Meissa.",
+                JSON.createObjectNode().put("say", t.term()).toString(), t.term(),
+                "Es «" + t.term() + "», una de las expresiones de tu clase.", t.term());
     }
 
     private static Generado emparejar(List<Material.Termino> pares) {

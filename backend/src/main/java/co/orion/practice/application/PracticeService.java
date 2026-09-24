@@ -237,6 +237,19 @@ public class PracticeService {
         return new Resultado(ejercicio, correcto, ejercicio.cerrado(max), Math.max(0, max - ejercicio.getAttempts()));
     }
 
+    /** Saltar un ejercicio de escucha: el dispositivo no tiene voz en inglés. No cuenta como error. */
+    @Transactional
+    public PracticeItem saltar(User estudiante, UUID ejercicioId) {
+        PracticeItem ejercicio = items.findById(ejercicioId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ejercicio no encontrado"));
+        PracticeSet set = suyo(estudiante, ejercicio.getPracticeSetId());
+        set.exigirVivo(clock.instant());
+        set.empezar(clock.instant());
+        ejercicio.saltar(settings.getInt("practice_max_attempts"), clock.instant());
+        sets.save(set);
+        return items.save(ejercicio);
+    }
+
     /**
      * Cerrar el set. Idempotente: la segunda vez devuelve el mismo resumen, sin recalcular ni
      * volver a publicar el evento que da los puntos. Y solo con todos los ejercicios cerrados —como
@@ -338,6 +351,11 @@ public class PracticeService {
             case MATCH_MEANING -> "significados";
             case FILL_BLANK -> "completar frases";
             case WRITE_SENTENCE -> "escribir frases propias";
+            case SPOT_ERROR -> "encontrar errores";
+            case BUILD_SENTENCE -> "armar frases";
+            case CHOOSE_REPLY -> "responder en una conversación";
+            case LISTEN_CHOOSE -> "reconocer palabras de oído";
+            case DICTATION -> "escribir lo que oye";
         };
     }
 

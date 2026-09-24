@@ -76,4 +76,42 @@ class EvaluadorTest {
         assertThat(Evaluador.esCorrecta(PracticeItemType.MATCH_MEANING, "{}", "{\"a\":\"b\"}", "no es json")).isFalse();
         assertThat(Evaluador.esCorrecta(PracticeItemType.FILL_BLANK, "{}", "used to", "  ")).isFalse();
     }
+
+    @Test
+    @DisplayName("Cazar el error: cuenta la ficha tocada; una respuesta que no es un índice no rompe nada")
+    void cazarElError() {
+        String esperado = "{\"index\":2,\"correction\":\"I have never been to Canada.\"}";
+        assertThat(Evaluador.esCorrecta(PracticeItemType.SPOT_ERROR, "{}", esperado, "2")).isTrue();
+        assertThat(Evaluador.esCorrecta(PracticeItemType.SPOT_ERROR, "{}", esperado, " 2 ")).isTrue();
+        assertThat(Evaluador.esCorrecta(PracticeItemType.SPOT_ERROR, "{}", esperado, "1")).isFalse();
+        assertThat(Evaluador.esCorrecta(PracticeItemType.SPOT_ERROR, "{}", esperado, "never")).isFalse();
+    }
+
+    @Test
+    @DisplayName("Armar la frase: el orden de las fichas, sin mayúsculas ni puntos de más")
+    void armarLaFrase() {
+        String esperado = "[\"Where\",\"is\",\"my\",\"luggage\",\"?\"]";
+        assertThat(Evaluador.esCorrecta(PracticeItemType.BUILD_SENTENCE, "{}", esperado,
+                "[\"where\",\"is\",\"my\",\"luggage\",\"?\"]")).isTrue();
+        assertThat(Evaluador.esCorrecta(PracticeItemType.BUILD_SENTENCE, "{}", esperado,
+                "[\"Where\",\"my\",\"is\",\"luggage\",\"?\"]")).isFalse();
+    }
+
+    @Test
+    @DisplayName("Responder en el chat y escuchar y elegir: la opción, sin mayúsculas ni el punto")
+    void opciones() {
+        assertThat(Evaluador.esCorrecta(PracticeItemType.CHOOSE_REPLY, "{}", "Yes, under García.", "yes, under García")).isTrue();
+        assertThat(Evaluador.esCorrecta(PracticeItemType.LISTEN_CHOOSE, "{}", "escala", "Escala")).isTrue();
+        assertThat(Evaluador.esCorrecta(PracticeItemType.LISTEN_CHOOSE, "{}", "escala", "equipaje")).isFalse();
+    }
+
+    @Test
+    @DisplayName("Escuchar y escribir: se perdona una letra en una frase, no en una palabra corta")
+    void dictado() {
+        String frase = "Here is my boarding pass.";
+        assertThat(Evaluador.esCorrecta(PracticeItemType.DICTATION, "{}", frase, "here is my boarding pass")).isTrue();
+        assertThat(Evaluador.esCorrecta(PracticeItemType.DICTATION, "{}", frase, "Here is my boardin pass")).isTrue();
+        assertThat(Evaluador.esCorrecta(PracticeItemType.DICTATION, "{}", frase, "Here is my bording pas")).isFalse();
+        assertThat(Evaluador.esCorrecta(PracticeItemType.DICTATION, "{}", "tip", "top")).isFalse();
+    }
 }
