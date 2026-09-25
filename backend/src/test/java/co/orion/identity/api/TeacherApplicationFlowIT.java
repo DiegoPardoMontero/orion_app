@@ -1,6 +1,7 @@
 package co.orion.identity.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.time.Duration;
 import java.util.List;
@@ -213,6 +214,17 @@ class TeacherApplicationFlowIT extends ApiIntegrationSupport {
         ResponseEntity<Map> mine = get(MINE, aspirantSession, Map.class);
         assertThat(mine.getBody().get("status")).isEqualTo("APPROVED");
         assertThat(mailer.approved).isEqualTo("aspirante@orion.test");
+
+        // El aviso de la campana lleva a una pantalla que existe (antes, «/postulacion»).
+        await().atMost(Duration.ofSeconds(5)).until(() -> avisos().stream()
+                .anyMatch(a -> "APPLICATION_APPROVED".equals(a.get("type"))));
+        assertThat(avisos()).filteredOn(a -> "APPLICATION_APPROVED".equals(a.get("type")))
+                .singleElement().extracting(a -> a.get("linkPath")).isEqualTo("/aplicacion/estado");
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> avisos() {
+        return get("/api/v1/me/notifications", aspirantSession, List.class).getBody();
     }
 
     @Test

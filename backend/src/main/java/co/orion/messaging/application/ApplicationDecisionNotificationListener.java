@@ -24,7 +24,9 @@ public class ApplicationDecisionNotificationListener {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onDecided(TeacherApplicationDecidedEvent event) {
-        String linkPath = "/postulacion";
+        // La ruta de verdad del frontend. Era «/postulacion», que no existe: la campana la traducía,
+        // pero cualquier otro camino (un aviso en el dispositivo) habría abierto un 404.
+        String linkPath = "/aplicacion/estado";
         switch (event.decision()) {
             case APPROVED -> notifications.create(event.userId(), "APPLICATION_APPROVED",
                     "¡Tu postulación fue aprobada!",
