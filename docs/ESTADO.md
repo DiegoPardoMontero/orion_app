@@ -6,7 +6,7 @@ Resumen vivo de qué hay construido y desplegado. Se actualiza al cerrar cada pa
 
 **Backend** (Spring Boot 4.1, `co.orion`): identidad + sesión, disponibilidad + `SlotCalculator`,
 reservas, asistencia, notificaciones por correo (con `.ics` + link a Google Calendar), panel admin
-(usuarios, reservas, métricas). **Migraciones Flyway V1–V68.**
+(usuarios, reservas, métricas). **Migraciones Flyway V1–V69.**
 
 Módulos: `identity`, `scheduling`, `catalog`, `billing`, `messaging`, `notifications`, `reputation`,
 `lifecycle`, `admin`, `engagement`, `legal`, `support`, `assessment`, `teaching`, `practice`,
@@ -30,9 +30,12 @@ dentro de `/cuenta`).
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots), con Rigel de protagonista.
 
 ## Verificación
-Al 25/09/2026 por la mañana, con la cuarta tanda del Bloque 11 (pasos 33–36: sin «Tus puntos», el
-estudiante no postula, el diagnóstico voluntario y la clase en curso en «Próximas»):
-- Backend: `./mvnw verify` — **390 unitarios + 603 de integración**, verde.
+Al 25/09/2026 al mediodía, con la cuarta tanda del Bloque 11 (pasos 33–36: sin «Tus puntos», el
+estudiante no postula y la V69 borra las postulaciones que ya había así, el diagnóstico voluntario
+con su número también en español, y la clase en curso en «Próximas»):
+- Backend: `./mvnw verify` — **391 unitarios + 606 de integración**, verde. (Contados sin los
+  reportes viejos que deja `target/`: un `-Dtest=` de una IT deja la suya en `surefire-reports` y
+  infla la cifra; las «390» de la mañana eran 388.)
 - Frontend: `tsc` + `lint` verdes; **125 tests de Vitest** (salieron los dos de las palabras de
   «Cómo se hacen», que ya no se muestran).
 - **E2E Playwright: 84 de 85** en las cinco suites que tocan estos cambios (diagnóstico, humo y las
@@ -751,15 +754,24 @@ Pasos 33–36 del brief, pedidos por Pardo al revisar el Wireflow:
   propia sigue abierto a cualquiera con sesión, porque un aspirante rechazado vuelve a ser
   estudiante y el aviso de la decisión lo lleva a verla. En el frontend, `/aplicacion` deja de ser
   ruta del estudiante (`/aplicacion/estado` sí), y «Enseña con Orión» con sesión de estudiante
-  explica que se crea otra cuenta en vez de ofrecer un botón que terminaría en 403. Consecuencias
-  que Pardo debe conocer: un aspirante rechazado ya no puede volver a postular desde esa cuenta, y
-  las postulaciones que ya existan de cuentas de estudiante no se borraron.
+  explica que se crea otra cuenta en vez de ofrecer un botón que terminaría en 403. Un aspirante
+  rechazado ya no puede volver a postular desde esa cuenta, y la pantalla de estado ya no se lo
+  promete. Las postulaciones que ya existían desde cuentas de estudiante **se borran con la V69**
+  («como si nunca hubiera pasado», Pardo): las de toda cuenta que hoy es de estudiante, en cualquier
+  estado —también las de aspirantes rechazados, que no se distinguen—, con sus documentos, el acuerdo
+  aceptado y el perfil de profesor a medias; no toca a quien tuvo una aprobada.
+  `SinPostulacionesDeEstudiantesIT` siembra los casos y corre encima el mismo archivo de la V69.
 - **El diagnóstico es voluntario, y en español si quieres** (paso 35). La portada, `/diagnostico`,
   «Antes de empezar», las preguntas frecuentes y la tarjeta del perfil lo dicen, con la frase de
   Pardo: «puedes hablarle en español: es solo para que te conozca, entienda tu contexto y por qué
   quieres aprender inglés». Y ofrecen **crear la cuenta sin diagnóstico**, recordando que queda en
-  el perfil. La frase es cierta con el guion de hoy: dos respuestas seguidas en español y Meissa
-  sigue en español (rama `FROM_ZERO`), sin número, con el resumen y los tres profesores.
+  el perfil. El guion no cambió: dos respuestas seguidas en español y Meissa sigue en español (rama
+  `FROM_ZERO`). Lo que cambió, a pedido de Pardo, es que esa rama **también muestra el Confidence
+  Score** y recomienda profesores para empezar. El número mide lo mismo —confianza al hablar inglés—,
+  así que `ConfidenceScoreCalculator.calcularSoloElIngles` cuenta cada turno en español como uno sin
+  inglés (no arrancó, cero palabras, frase sin terminar, se volvió a su idioma): una conversación
+  fluida en español daría, contada tal cual, un número alto. Con menos de cuatro turnos sigue sin
+  número. La etiqueta ya no es siempre «Primeros pasos»: la decide el número.
 - **La clase no sale de «Próximas» al empezar** (paso 36). Se queda, con «En curso» y «Unirse a la
   clase», hasta que le quedan 5 minutos (`BookingQueryService.PASA_A_PASADAS_ANTES_DEL_FINAL`, que
   corta por `ends_at` y no por `starts_at`); ahí pasa a «Pasadas». Mientras está en curso no ofrece
