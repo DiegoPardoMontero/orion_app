@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { aceptarCondiciones, saltarRecorrido, verificarCorreo } from "./apoyo";
+import { aceptarCondiciones, saltarRecorrido } from "./apoyo";
 
 /**
  * El Bloque 8 de punta a punta. Asume backend + docker con la semilla, como el humo.
