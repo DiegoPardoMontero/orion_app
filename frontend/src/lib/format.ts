@@ -108,6 +108,15 @@ export function rangoCompacto(inicioHhmm: string, finHhmm: string): string {
   return meridiano === fin.slice(-2) ? `${inicio.slice(0, -3)}–${fin}` : `${inicio}–${fin}`;
 }
 
+/**
+ * El fin de una clase que empieza en `inicioIso` y dura `minutos`. Para cuando solo se tiene el
+ * inicio —el cupo elegido—: una clase se muestra siempre con su franja, «5:00 – 5:55 PM», porque la
+ * hora de inicio sola parece el comienzo de algo que puede durar media hora (Pardo, 25/09/2026).
+ */
+export function finDeClase(inicioIso: string, minutos: number): string {
+  return new Date(Date.parse(inicioIso) + minutos * 60_000).toISOString();
+}
+
 /** "Mié 15 jul · 10:00–11:00", el encabezado de una tarjeta de clase. */
 export function fechaYRango(inicioIso: string, finIso: string): string {
   const fecha = fechaCorta(inicioIso);

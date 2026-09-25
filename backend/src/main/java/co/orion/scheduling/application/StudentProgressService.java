@@ -61,7 +61,8 @@ public class StudentProgressService {
                                      int lessons, Instant lastLessonAt) {
     }
 
-    public record ProximaClase(UUID id, Instant startsAt, String modality, String meetingLink,
+    /** Con su fin: «Tu próxima clase» se dice con su franja, no solo con la hora de inicio. */
+    public record ProximaClase(UUID id, Instant startsAt, Instant endsAt, String modality, String meetingLink,
                                UUID professorId, String professorName, String professorPhotoUrl) {
     }
 
@@ -120,6 +121,7 @@ public class StudentProgressService {
                     return new ProximaClase(
                             booking.getId(),
                             booking.getStartsAt(),
+                            booking.getEndsAt(),
                             booking.getModality().name(),
                             booking.getMeetingLink(),
                             booking.getProfessorId(),

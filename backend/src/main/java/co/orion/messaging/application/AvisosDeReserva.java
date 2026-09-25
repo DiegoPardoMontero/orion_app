@@ -48,10 +48,12 @@ public class AvisosDeReserva {
         String clase = b.isTrial() ? "clase de prueba" : "clase";
         notifications.create(b.getStudentId(), "BOOKING_CREATED",
                 "Tu " + clase + " con " + nombre(b.getProfessorId()) + " quedó agendada",
-                capital(cuando) + ". Entras desde «Mis clases» a la hora de la clase.", enlace);
+                capital(cuando) + " (" + FechasEnPalabras.duracion(b.getStartsAt(), b.getEndsAt())
+                        + "). Entras desde «Mis clases» a la hora de la clase.", enlace);
         notifications.create(b.getProfessorId(), "BOOKING_RECEIVED",
                 (b.isTrial() ? "Nueva clase de prueba con " : "Nueva clase con ") + nombre(b.getStudentId()),
-                capital(cuando) + ". Ya está en tu agenda.", enlace);
+                capital(cuando) + " (" + FechasEnPalabras.duracion(b.getStartsAt(), b.getEndsAt())
+                        + "). Ya está en tu agenda.", enlace);
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -77,8 +79,9 @@ public class AvisosDeReserva {
         }
     }
 
+    /** «jueves 26 de septiembre, de 7:00 a 7:55 PM»: con su franja, no solo con la hora de inicio. */
     private static String cuando(Booking b) {
-        return FechasEnPalabras.dia(b.getStartsAt()) + " a las " + FechasEnPalabras.hora(b.getStartsAt());
+        return FechasEnPalabras.dia(b.getStartsAt()) + ", " + FechasEnPalabras.franja(b.getStartsAt(), b.getEndsAt());
     }
 
     private static String capital(String s) {

@@ -74,14 +74,16 @@ public class CorreosDeAviso {
         }
         String enlace = baseUrl + "/mis-clases?clase=" + b.getId();
         if (event.kind() == ClassReminderKind.DAY_BEFORE) {
-            String cuando = FechasEnPalabras.cuando(b.getStartsAt(), clock.instant());
+            String cuando = FechasEnPalabras.cuandoConFranja(b.getStartsAt(), b.getEndsAt(), clock.instant());
             enviar(estudiante.get(), "Tu clase con " + primer(profe.get()) + " es " + cuando,
-                    "Tu clase con " + profe.get().getFullName() + " es " + cuando + " (hora de Colombia).",
+                    "Tu clase con " + profe.get().getFullName() + " es " + cuando + " (hora de Colombia). Dura "
+                            + FechasEnPalabras.duracion(b.getStartsAt(), b.getEndsAt()) + ".",
                     "Entras desde «Mis clases» unos minutos antes. Si al final no puedes ir, cancélala con tiempo:"
                             + " así el cupo le sirve a otra persona.",
                     "Ver mi clase", enlace);
             enviar(profe.get(), "Tu clase con " + primer(estudiante.get()) + " es " + cuando,
-                    "Tu clase con " + estudiante.get().getFullName() + " es " + cuando + " (hora de Colombia).",
+                    "Tu clase con " + estudiante.get().getFullName() + " es " + cuando + " (hora de Colombia). Dura "
+                            + FechasEnPalabras.duracion(b.getStartsAt(), b.getEndsAt()) + ".",
                     "Échale un vistazo a su ficha antes de empezar: ahí está para qué quiere el idioma.",
                     "Ver la clase", enlace);
         } else if (event.kind() == ClassReminderKind.RATE && !reviews.existsByBookingId(b.getId())) {

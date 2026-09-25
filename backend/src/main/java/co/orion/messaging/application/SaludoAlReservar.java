@@ -104,14 +104,15 @@ public class SaludoAlReservar {
         }
         boolean primera = bookings.countEarlierTogether(reserva.getStudentId(), reserva.getProfessorId(),
                 reserva.getCreatedAt(), List.of(BookingStatus.CONFIRMED, BookingStatus.COMPLETED)) == 0;
+        String dia = FechasEnPalabras.dia(reserva.getStartsAt());
+        String franja = FechasEnPalabras.franja(reserva.getStartsAt(), reserva.getEndsAt());
+        String duracion = FechasEnPalabras.duracion(reserva.getStartsAt(), reserva.getEndsAt());
         String cuerpo = reserva.isTrial()
                 ? textoDePrueba(FechasEnPalabras.primerNombre(estudiante.getFullName()),
-                        FechasEnPalabras.primerNombre(profe.getFullName()),
-                        FechasEnPalabras.dia(reserva.getStartsAt()), FechasEnPalabras.hora(reserva.getStartsAt()),
+                        FechasEnPalabras.primerNombre(profe.getFullName()), dia, franja, duracion,
                         objetivoDe(estudiante.getId()))
                 : texto(FechasEnPalabras.primerNombre(estudiante.getFullName()),
-                        FechasEnPalabras.primerNombre(profe.getFullName()),
-                        FechasEnPalabras.dia(reserva.getStartsAt()), FechasEnPalabras.hora(reserva.getStartsAt()),
+                        FechasEnPalabras.primerNombre(profe.getFullName()), dia, franja, duracion,
                         primera, objetivoDe(estudiante.getId()));
 
         Conversation conversacion = conversations
@@ -126,16 +127,19 @@ public class SaludoAlReservar {
     }
 
     /**
-     * El texto. Primera clase juntos o no, y el objetivo de la ficha si lo hay.
+     * El texto. Primera clase juntos o no, y el objetivo de la ficha si lo hay. La clase va con su
+     * franja y su duración («de 7:00 a 7:55 PM», «55 minutos»): con la hora de inicio sola parecía
+     * que podía durar media hora (Pardo, 25/09/2026).
      *
      * @param objetivo para qué quiere el idioma, ya dicho en frase («tus viajes»), o {@code null}
      */
-    static String texto(String estudiante, String profe, String dia, String hora, boolean primera, String objetivo) {
+    static String texto(String estudiante, String profe, String dia, String franja, String duracion,
+                        boolean primera, String objetivo) {
         StringBuilder t = new StringBuilder();
         if (primera) {
             t.append("¡Hola, ").append(estudiante).append("! ⭐ Soy ").append(profe)
                     .append(", tu profe en Orión. Te confirmo nuestra primera clase: el ").append(dia)
-                    .append(" a las ").append(hora).append(" (hora de Colombia).");
+                    .append(", ").append(franja).append(" (hora de Colombia). Son ").append(duracion).append(".");
             if (objetivo != null) {
                 t.append(" Vi en tu ficha que lo quieres para ").append(objetivo)
                         .append(": lo tengo en cuenta para prepararla.");
@@ -143,19 +147,21 @@ public class SaludoAlReservar {
             t.append(" Si quieres contarme algo antes de empezar, escríbeme por aquí. ¡Nos vemos en el aula!");
         } else {
             t.append("¡Hola de nuevo, ").append(estudiante).append("! ⭐ Soy ").append(profe)
-                    .append(". Ya quedó agendada nuestra próxima clase: el ").append(dia).append(" a las ")
-                    .append(hora).append(" (hora de Colombia). Si hay algo que quieras repasar de la última,"
-                            + " cuéntamelo por aquí. ¡Nos vemos!");
+                    .append(". Ya quedó agendada nuestra próxima clase: el ").append(dia).append(", ")
+                    .append(franja).append(" (hora de Colombia). Son ").append(duracion)
+                    .append(". Si hay algo que quieras repasar de la última, cuéntamelo por aquí. ¡Nos vemos!");
         }
         return t.toString();
     }
 
     /** El de la clase de prueba: es para conocerse, y el saludo lo dice. */
-    static String textoDePrueba(String estudiante, String profe, String dia, String hora, String objetivo) {
+    static String textoDePrueba(String estudiante, String profe, String dia, String franja, String duracion,
+                                String objetivo) {
         StringBuilder t = new StringBuilder();
         t.append("¡Hola, ").append(estudiante).append("! ⭐ Soy ").append(profe)
-                .append(". Te confirmo nuestra clase de prueba: el ").append(dia).append(" a las ").append(hora)
-                .append(" (hora de Colombia). Es para conocernos: veremos tu nivel y lo que buscas");
+                .append(". Te confirmo nuestra clase de prueba: el ").append(dia).append(", ").append(franja)
+                .append(" (hora de Colombia), ").append(duracion)
+                .append(". Es para conocernos: veremos tu nivel y lo que buscas");
         if (objetivo != null) {
             t.append(" —vi en tu ficha que lo quieres para ").append(objetivo).append("—");
         }

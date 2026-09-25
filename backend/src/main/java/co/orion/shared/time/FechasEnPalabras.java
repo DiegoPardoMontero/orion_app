@@ -1,6 +1,7 @@
 package co.orion.shared.time;
 
 import java.text.NumberFormat;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
@@ -43,16 +44,45 @@ public final class FechasEnPalabras {
 
     /** «hoy a las 7:00 PM», «mañana a las 7:00 PM» o «el jueves 26 de septiembre a las 7:00 PM». */
     public static String cuando(Instant instante, Instant ahora) {
+        return diaRelativo(instante, ahora) + " a las " + hora(instante);
+    }
+
+    /**
+     * «de 7:00 a 7:55 PM», o «de 11:30 AM a 12:25 PM» si cruza el mediodía: el meridiano se dice una
+     * vez cuando es el mismo, como en la app («7:00 – 7:55 PM»). Una clase se dice siempre con su
+     * franja y no con su hora de inicio: sola, una hora parece el comienzo de algo que puede durar
+     * media hora (Pardo, 25/09/2026).
+     */
+    public static String franja(Instant desde, Instant hasta) {
+        String inicio = hora(desde);
+        String fin = hora(hasta);
+        String meridiano = inicio.substring(inicio.length() - 2);
+        return fin.endsWith(meridiano)
+                ? "de " + inicio.substring(0, inicio.length() - 3) + " a " + fin
+                : "de " + inicio + " a " + fin;
+    }
+
+    /** «hoy de 7:00 a 7:55 PM», «mañana de …» o «el jueves 26 de septiembre de 7:00 a 7:55 PM». */
+    public static String cuandoConFranja(Instant desde, Instant hasta, Instant ahora) {
+        return diaRelativo(desde, ahora) + " " + franja(desde, hasta);
+    }
+
+    /** «55 minutos». */
+    public static String duracion(Instant desde, Instant hasta) {
+        long minutos = Duration.between(desde, hasta).toMinutes();
+        return minutos + (minutos == 1 ? " minuto" : " minutos");
+    }
+
+    private static String diaRelativo(Instant instante, Instant ahora) {
         long dias = ChronoUnit.DAYS.between(
                 ahora.atZone(BusinessZone.BOGOTA).toLocalDate(), instante.atZone(BusinessZone.BOGOTA).toLocalDate());
-        String a = " a las " + hora(instante);
         if (dias == 0) {
-            return "hoy" + a;
+            return "hoy";
         }
         if (dias == 1) {
-            return "mañana" + a;
+            return "mañana";
         }
-        return "el " + dia(instante) + a;
+        return "el " + dia(instante);
     }
 
     /** «$ 180.000». */

@@ -14,9 +14,14 @@ import co.orion.scheduling.domain.Booking;
  * {@code checkoutUrl} solo viene mientras el pago siga pendiente: es la forma de volver a la
  * pasarela sin perder el cupo. En cualquier otro estado es null.
  *
+ * {@code startsAt} y {@code endsAt} son la franja de la clase: la pantalla la confirma de «x a y» y
+ * con su duración, que es lo que el estudiante acaba de comprar.
+ *
  * Sin {@code commissionCop}: ni aquí ni en ninguna respuesta al estudiante.
  */
 public record PaymentStatusResponse(UUID bookingId,
+                                    Instant startsAt,
+                                    Instant endsAt,
                                     String bookingStatus,
                                     String paymentStatus,
                                     long amountCop,
@@ -29,6 +34,8 @@ public record PaymentStatusResponse(UUID bookingId,
     public static PaymentStatusResponse of(Booking booking, Payment payment, String checkoutUrl) {
         return new PaymentStatusResponse(
                 booking.getId(),
+                booking.getStartsAt(),
+                booking.getEndsAt(),
                 booking.getStatus().name(),
                 payment.getStatus().name(),
                 payment.getAmountCop(),

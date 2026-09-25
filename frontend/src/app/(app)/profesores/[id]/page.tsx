@@ -48,9 +48,11 @@ import {
   esGratis,
   fechaCorta,
   fechaRelativa,
+  finDeClase,
   horaBogota,
   minutoDelDiaBogota,
   precioCop,
+  rangoHoras,
   tarifaClase,
 } from "@/lib/format";
 import { etiquetaNivel, etiquetaObjetivo } from "@/lib/i18n";
@@ -194,9 +196,10 @@ export default function AgendaProfesorPage() {
 
   const detalle = profesor.data;
 
+  // Con su franja y su duración: «mié 15 jul · 5:00 – 5:55 PM (55 minutos) · Virtual».
   const resumen =
     cupoElegido
-      ? `${fechaCorta(cupoElegido)} · ${horaBogota(cupoElegido)} · Virtual`
+      ? `${fechaCorta(cupoElegido)} · ${rangoHoras(cupoElegido, finDeClase(cupoElegido, cifras.classMinutes))} (${minutos(cifras.classMinutes)}) · Virtual`
       : null;
 
   const idiomasQueEnsena = detalle.languages ?? [];
@@ -547,7 +550,12 @@ export default function AgendaProfesorPage() {
             <ErrorCarga mensaje="No pudimos cargar la agenda." onReintentar={() => void cupos.refetch()} />
           ) : esDesktop ? (
             <div className="space-y-5">
-              <AgendaSemanal profesorId={id} cupoElegido={cupoElegido} onElegir={setCupoElegido} />
+              <AgendaSemanal
+                profesorId={id}
+                cupoElegido={cupoElegido}
+                onElegir={setCupoElegido}
+                minutosDeClase={cifras.classMinutes}
+              />
               {controles}
             </div>
           ) : dias.length === 0 ? (
@@ -589,18 +597,24 @@ export default function AgendaProfesorPage() {
                 {cuposDelDia.length === 0 ? (
                   <p className="text-[13px] text-[#5e4a8a]">Elige un día para ver sus horarios.</p>
                 ) : (
-                  <div className="grid grid-cols-3 gap-2.5">
-                    {cuposDelDia.map((cupo) => (
-                      <Chip
-                        key={cupo.startsAt}
-                        familia="hora"
-                        activo={cupo.startsAt === cupoElegido}
-                        onClick={() => setCupoElegido(cupo.startsAt!)}
-                      >
-                        {horaBogota(cupo.startsAt!)}
-                      </Chip>
-                    ))}
-                  </div>
+                  <>
+                    <p className="mb-2.5 text-[12.5px] text-[#5e4a8a]">
+                      Cada clase dura {minutos(cifras.classMinutes)}.
+                    </p>
+                    {/* Dos columnas y no tres: cada cupo dice de qué hora a qué hora va. */}
+                    <div role="group" aria-label="Horarios del día" className="grid grid-cols-2 gap-2.5">
+                      {cuposDelDia.map((cupo) => (
+                        <Chip
+                          key={cupo.startsAt}
+                          familia="hora"
+                          activo={cupo.startsAt === cupoElegido}
+                          onClick={() => setCupoElegido(cupo.startsAt!)}
+                        >
+                          {rangoHoras(cupo.startsAt!, cupo.endsAt ?? finDeClase(cupo.startsAt!, cifras.classMinutes))}
+                        </Chip>
+                      ))}
+                    </div>
+                  </>
                 )}
               </Bloque>
 
@@ -735,10 +749,12 @@ function AgendaSemanal({
   profesorId,
   cupoElegido,
   onElegir,
+  minutosDeClase,
 }: {
   profesorId: string;
   cupoElegido: string | null;
   onElegir: (startsAt: string) => void;
+  minutosDeClase: number;
 }) {
   const [offset, setOffset] = useState(0);
   const hoy = diaBogota(new Date().toISOString());
@@ -809,7 +825,13 @@ function AgendaSemanal({
           Sin cupos esta semana. Prueba con la siguiente →
         </p>
       ) : (
-        <div className="mt-4 overflow-x-auto">
+        <>
+        {/* Una fila por hora de inicio; sin esto, una casilla se podía leer como una clase de
+            media hora (Pardo, 25/09/2026). Cada casilla dice además su franja. */}
+        <p className="mt-4 text-[13px] font-semibold text-text-secondary">
+          Cada clase dura {minutos(minutosDeClase)}.
+        </p>
+        <div className="mt-3 overflow-x-auto">
           <div
             className="grid min-w-[440px] gap-1"
             style={{ gridTemplateColumns: "44px repeat(7, minmax(52px, 1fr))" }}
@@ -846,7 +868,7 @@ function AgendaSemanal({
                           : "bg-accent-lavender-soft text-[#5e4a8a] hover:bg-[#e2d7f4]"
                       }`}
                     >
-                      {hora}
+                      {rangoHoras(slot.startsAt, slot.endsAt ?? finDeClase(slot.startsAt, minutosDeClase))}
                     </button>
                   );
                 })}
@@ -854,6 +876,7 @@ function AgendaSemanal({
             ))}
           </div>
         </div>
+        </>
       )}
     </div>
   );

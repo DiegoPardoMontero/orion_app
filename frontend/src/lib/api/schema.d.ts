@@ -4104,6 +4104,8 @@ export interface components {
             id?: string;
             /** Format: date-time */
             startsAt?: string;
+            /** Format: date-time */
+            endsAt?: string;
             modality?: string;
             meetingLink?: string;
             /** Format: uuid */
@@ -4396,6 +4398,10 @@ export interface components {
         PaymentStatusResponse: {
             /** Format: uuid */
             bookingId?: string;
+            /** Format: date-time */
+            startsAt?: string;
+            /** Format: date-time */
+            endsAt?: string;
             bookingStatus?: string;
             paymentStatus?: string;
             /** Format: int64 */

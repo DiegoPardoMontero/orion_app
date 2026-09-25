@@ -38,16 +38,6 @@ async function logout(page: Page) {
   await page.waitForURL("**/login");
 }
 
-/**
- * El cupo se anuncia como «8:00 AM» y la tarjeta de la clase lo muestra como «8:00 – 9:00 AM»: el
- * meridiano va una sola vez, al final del rango. Buscar la tarjeta por el texto del cupo no
- * encuentra nada, y buscarla solo por «8:00» encuentra también la de las 8 de la noche.
- */
-function comoEnLaTarjeta(hora: string): RegExp {
-  const [inicio, meridiano] = hora.split(/\s+/);
-  return new RegExp(`${inicio.replace(":", "\\:")}\\s*[–-]\\s*\\d{1,2}\\:\\d{2}\\s*${meridiano}`);
-}
-
 test.describe.configure({ mode: "serial" });
 
 test("cada rol entra y sale de su propio home", async ({ page }) => {
@@ -72,7 +62,7 @@ test("Ana reserva un cupo de María: aparece en Mis clases y desaparece de la ag
   await page.getByRole("link", { name: /Ver agenda/ }).first().click();
   await expect(page.getByText("Cupos disponibles")).toBeVisible();
 
-  const cupos = page.locator("main .grid-cols-3 button");
+  const cupos = page.locator("main [aria-label='Horarios del día'] button");
   const hora = (await cupos.first().innerText()).trim();
   await cupos.first().click();
   await page.getByRole("button", { name: "Confirmar reserva" }).click();
@@ -86,7 +76,7 @@ test("Ana reserva un cupo de María: aparece en Mis clases y desaparece de la ag
   await page.goto("/profesores");
   await page.getByRole("link", { name: /Ver agenda/ }).first().click();
   await expect(page.getByText("Cupos disponibles")).toBeVisible();
-  await expect(page.locator("main .grid-cols-3 button", { hasText: hora })).toHaveCount(0);
+  await expect(page.locator("main [aria-label='Horarios del día'] button", { hasText: hora })).toHaveCount(0);
 });
 
 test("María ve en sus próximas clases la reserva de Ana", async ({ page }) => {
@@ -103,7 +93,7 @@ test("Ana reserva un cupo lejano y lo cancela: el cupo vuelve a la agenda", asyn
   // El último día del rango (lunes de la semana que viene) está a más de 24 h → cancelable.
   const dias = page.locator("main .flex-wrap button");
   await dias.last().click();
-  const cupos = page.locator("main .grid-cols-3 button");
+  const cupos = page.locator("main [aria-label='Horarios del día'] button");
   const hora = (await cupos.last().innerText()).trim();
   await cupos.last().click();
   await page.getByRole("button", { name: "Confirmar reserva" }).click();
@@ -114,7 +104,8 @@ test("Ana reserva un cupo lejano y lo cancela: el cupo vuelve a la agenda", asyn
   // y el cupo que verificamos abajo nunca reaparecería.
   const cancelar = page
     .locator("main li")
-    .filter({ hasText: comoEnLaTarjeta(hora) })
+    // El cupo y la tarjeta dicen la clase igual, con su franja: «8:00 – 8:55 AM» (25/09/2026).
+    .filter({ hasText: hora })
     .getByRole("button", { name: "Cancelar" });
   await expect(cancelar).toBeEnabled();
   await cancelar.click();
@@ -126,7 +117,7 @@ test("Ana reserva un cupo lejano y lo cancela: el cupo vuelve a la agenda", asyn
   await page.getByRole("link", { name: /Ver agenda/ }).first().click();
   await expect(page.getByText("Cupos disponibles")).toBeVisible();
   await dias.last().click();
-  await expect(page.locator("main .grid-cols-3 button", { hasText: hora })).toBeVisible();
+  await expect(page.locator("main [aria-label='Horarios del día'] button", { hasText: hora })).toBeVisible();
 });
 
 test("un estudiante nuevo se registra desde el login y aterriza dentro", async ({ page }) => {
@@ -224,7 +215,7 @@ test("María ofrece una clase de prueba gratis y una estudiante nueva la reserva
   const perfilDeMaria = new URL(page.url()).pathname;
   await expect(page.getByText("Primera clase gratis")).toBeVisible();
   await expect(page.getByText("Cupos disponibles")).toBeVisible();
-  await page.locator("main .grid-cols-3 button").first().click();
+  await page.locator("main [aria-label='Horarios del día'] button").first().click();
   await page.getByRole("button", { name: /^Clase de prueba/ }).click();
   await page.getByRole("button", { name: "Confirmar reserva" }).click();
 
@@ -332,7 +323,7 @@ test("una estudiante sin saldo sale hacia Wompi y su cupo queda apartado", async
   await page.goto("/profesores");
   await page.getByRole("link", { name: /Ver agenda/ }).first().click();
   await expect(page.getByText("Cupos disponibles")).toBeVisible();
-  const cupos = page.locator("main .grid-cols-3 button");
+  const cupos = page.locator("main [aria-label='Horarios del día'] button");
   const hora = (await cupos.first().innerText()).trim();
   await cupos.first().click();
 
@@ -356,7 +347,7 @@ test("una estudiante sin saldo sale hacia Wompi y su cupo queda apartado", async
   await page.goto("/profesores");
   await page.getByRole("link", { name: /Ver agenda/ }).first().click();
   await expect(page.getByText("Cupos disponibles")).toBeVisible();
-  await expect(page.locator("main .grid-cols-3 button", { hasText: hora })).toHaveCount(0);
+  await expect(page.locator("main [aria-label='Horarios del día'] button", { hasText: hora })).toHaveCount(0);
 });
 
 /**

@@ -164,7 +164,7 @@ class StudentProgressIT extends ApiIntegrationSupport {
     void laProximaClaseEsLaConfirmadaMasCercana() {
         bookings.save(TestBookings.confirmed(ana.getId(), maria.getId(),
                 enBogota(LocalDate.of(2026, 7, 24), 18), BookingModality.VIRTUAL, null, ana.getId()));
-        bookings.save(TestBookings.confirmed(ana.getId(), juan.getId(),
+        Booking laMasCercana = bookings.save(TestBookings.confirmed(ana.getId(), juan.getId(),
                 enBogota(LocalDate.of(2026, 7, 22), 18), BookingModality.VIRTUAL, null, ana.getId()));
 
         MyProgressResponse progreso = progreso();
@@ -172,6 +172,8 @@ class StudentProgressIT extends ApiIntegrationSupport {
         assertThat(progreso.nextLesson()).isNotNull();
         assertThat(progreso.nextLesson().professorName()).isEqualTo("Juan Torres");
         assertThat(progreso.nextLesson().startsAt().toLocalDate()).isEqualTo(LocalDate.of(2026, 7, 22));
+        // Con su fin: la tarjeta la dice «de x a y», no solo con la hora de inicio.
+        assertThat(progreso.nextLesson().endsAt().toInstant()).isEqualTo(laMasCercana.getEndsAt());
     }
 
     /** La que está en curso sigue siendo la próxima, con su enlace para entrar, hasta sus últimos 5 minutos. */

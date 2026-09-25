@@ -99,7 +99,7 @@ test("[e-perfil-profe.1 e-perfil-profe.2 e-perfil-profe.3] el perfil del profe c
   await entrar(page, SEMILLA.ana);
   await perfilDeMaria(page);
   await expect(page.getByRole("heading", { name: "Reseñas" })).toBeVisible();
-  await expect(page.locator("main .grid-cols-3 button").first()).toBeVisible();
+  await expect(page.locator("main [aria-label='Horarios del día'] button").first()).toBeVisible();
   await page.getByRole("button", { name: /Enviar mensaje/ }).click();
   await expect(page).toHaveURL(/\/mensajes\/[0-9a-f-]+$/);
 });
@@ -107,7 +107,7 @@ test("[e-perfil-profe.1 e-perfil-profe.2 e-perfil-profe.3] el perfil del profe c
 test("[e-reservar.1 e-reservar.2] el desglose descuenta el saldo a favor", async ({ page }) => {
   await entrar(page, SEMILLA.ana);
   await perfilDeMaria(page);
-  await page.locator("main .grid-cols-3 button").first().click();
+  await page.locator("main [aria-label='Horarios del día'] button").first().click();
   await expect(page.getByText("Tu saldo a favor")).toBeVisible();
   await expect(page.getByText(/Cubierto con tu saldo|Total a pagar/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Confirmar reserva" })).toBeEnabled();
@@ -118,7 +118,7 @@ test("[e-prueba.1 e-prueba.2 e-prueba.3 e-prueba.4 e-rigel.3 e-mis-clases.3] la 
   await perfilDeMaria(page);
   const perfil = new URL(page.url()).pathname;
   await expect(page.getByText("¿Cómo quieres tu primera clase?")).toBeVisible();
-  await page.locator("main .grid-cols-3 button").first().click();
+  await page.locator("main [aria-label='Horarios del día'] button").first().click();
   await page.getByRole("button", { name: /^Clase de prueba/ }).click();
   await expect(page.getByText(/Clase de prueba de \d+ minutos/)).toBeVisible();
   await page.getByRole("button", { name: "Confirmar reserva" }).click();
@@ -149,12 +149,13 @@ test("[e-reservar.4] con el correo sin verificar no se reserva, y se dice por qu
   await page.locator("#nombre").fill("Sin Verificar");
   await page.locator("#email").fill(email);
   await page.locator("#password").fill("orion123*");
+  await page.locator("#whatsapp").fill("3001234567");
   for (const id of ["#mayor-de-edad", "#acepta-terminos", "#acepta-datos"]) await page.locator(id).check();
   await page.getByRole("button", { name: "Crear cuenta" }).click();
   await page.waitForURL(/\/profesores/);
   await page.getByRole("dialog").getByRole("button", { name: /^(Ahora no|Saltar)$/ }).click();
   await perfilDeMaria(page);
-  await page.locator("main .grid-cols-3 button").first().click();
+  await page.locator("main [aria-label='Horarios del día'] button").first().click();
   await page.getByRole("button", { name: /^Clase de prueba/ }).click();
   await page.getByRole("button", { name: "Confirmar reserva" }).click();
   await expect(page.getByText(/Confirma tu correo antes de reservar/)).toBeVisible();
@@ -167,7 +168,7 @@ test("[e-reservar.5] dos personas al mismo cupo: la segunda sabe que se lo ganar
   await estudianteNueva(otra, "Segunda Lenta");
   for (const p of [page, otra]) {
     await perfilDeMaria(p);
-    await p.locator("main .grid-cols-3 button").first().click();
+    await p.locator("main [aria-label='Horarios del día'] button").first().click();
     await p.getByRole("button", { name: /^Clase de prueba/ }).click();
   }
   await page.getByRole("button", { name: "Confirmar reserva" }).click();
@@ -199,7 +200,7 @@ test("[p-agenda.2 e-prueba.4] cancelar la prueba gratis no promete dinero, y el 
   const vale = await estudianteNueva(page, nombre);
   await perfilDeMaria(page);
   await page.locator("main .flex-wrap button").last().click();
-  await page.locator("main .grid-cols-3 button").first().click();
+  await page.locator("main [aria-label='Horarios del día'] button").first().click();
   await page.getByRole("button", { name: /Clase de prueba/ }).click();
   await page.getByRole("button", { name: /Confirmar|Reservar/ }).last().click();
   await expect(page).toHaveURL(/\/mis-clases/);
@@ -223,7 +224,7 @@ test("[p-agenda.2 e-prueba.4] cancelar la prueba gratis no promete dinero, y el 
   await entrar(page, vale);
   await perfilDeMaria(page);
   await page.locator("main .flex-wrap button").last().click();
-  await page.locator("main .grid-cols-3 button").first().click();
+  await page.locator("main [aria-label='Horarios del día'] button").first().click();
   await expect(page.getByRole("button", { name: /Clase de prueba/ })).toBeVisible();
 });
 
@@ -232,14 +233,14 @@ test("[e-cancelar.1 e-cancelar.3 e-cancelar.4] cancelar con tiempo: elige adónd
   await perfilDeMaria(page);
   const dias = page.locator("main .flex-wrap button");
   await dias.last().click();
-  const cupos = page.locator("main .grid-cols-3 button");
+  const cupos = page.locator("main [aria-label='Horarios del día'] button");
   const hora = (await cupos.last().innerText()).trim();
   await cupos.last().click();
   await page.getByRole("button", { name: "Confirmar reserva" }).click();
   await expect(page).toHaveURL(/\/mis-clases/);
   await cerrarCelebraciones(page);
-  const [ini, mer] = hora.split(/\s+/);
-  const tarjeta = page.locator("main li").filter({ hasText: new RegExp(`${ini.replace(":", "\\:")}\\s*[–-]\\s*\\d{1,2}\\:\\d{2}\\s*${mer}`) }).first();
+  // El cupo y la tarjeta dicen la clase igual, con su franja: «8:00 – 8:55 AM» (25/09/2026).
+  const tarjeta = page.locator("main li").filter({ hasText: hora }).first();
   await tarjeta.getByRole("button", { name: "Cancelar" }).click();
   await expect(page.getByText("A mi saldo en Orión")).toBeVisible();
   await expect(page.getByText("Al medio de pago que usé")).toBeVisible();
@@ -249,7 +250,7 @@ test("[e-cancelar.1 e-cancelar.3 e-cancelar.4] cancelar con tiempo: elige adónd
   expect(await ultimoCorreo(page, SEMILLA.maria.email, /cancel/i)).not.toBeNull();
   await perfilDeMaria(page);
   await dias.last().click();
-  await expect(page.locator("main .grid-cols-3 button", { hasText: hora })).toBeVisible();
+  await expect(page.locator("main [aria-label='Horarios del día'] button", { hasText: hora })).toBeVisible();
 });
 
 test("[e-pasadas.1 e-resumen.1] los resúmenes de las clases pasadas", async ({ page }) => {

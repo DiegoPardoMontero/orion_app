@@ -1212,6 +1212,7 @@ function ModalAsistencia({ clase, onCerrar }: { clase: MyBookingResponse; onCerr
 
 function BannerReserva() {
   const params = useSearchParams();
+  const cifras = useCifras();
   if (params.get("reservada") !== "1") return null;
 
   // El momento de deleite: Rigel celebra la reserva recién confirmada.
@@ -1221,7 +1222,8 @@ function BannerReserva() {
       <div>
         <p className="font-display text-[17px] font-bold text-success">¡Clase reservada!</p>
         <p className="mt-1 text-[13px] leading-relaxed text-text-secondary">
-          Te enviamos la confirmación al correo, con la invitación al calendario.
+          Dura {minutos(cifras.classMinutes)}: la ves abajo con su hora de inicio y de fin. Te enviamos la
+          confirmación al correo, con la invitación al calendario.
         </p>
       </div>
     </div>

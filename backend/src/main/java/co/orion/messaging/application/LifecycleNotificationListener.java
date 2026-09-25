@@ -1,5 +1,6 @@
 package co.orion.messaging.application;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -22,7 +23,8 @@ import co.orion.scheduling.domain.RescheduleRequested;
 import co.orion.scheduling.domain.RescheduleResolved;
 import co.orion.scheduling.persistence.BookingRepository;
 import co.orion.scheduling.persistence.RescheduleRequestRepository;
-import co.orion.shared.time.BusinessZone;
+import co.orion.shared.time.ClassLength;
+import co.orion.shared.time.FechasEnPalabras;
 
 /**
  * Avisos in-app del ciclo de vida de una clase.
@@ -157,9 +159,13 @@ public class LifecycleNotificationListener {
                 : booking.getStudentId();
     }
 
+    /**
+     * «el jueves 26 de septiembre, de 5:00 a 5:55 PM»: como todos los avisos de una clase, con su
+     * franja y en AM/PM (decía «26 de septiembre a las 17:00»).
+     */
     private String whenIs(RescheduleRequest request) {
-        return request.getProposedStartsAt().atZone(BusinessZone.BOGOTA)
-                .format(java.time.format.DateTimeFormatter.ofPattern("d 'de' MMMM 'a las' HH:mm",
-                        java.util.Locale.forLanguageTag("es-CO")));
+        Instant inicio = request.getProposedStartsAt();
+        return "el " + FechasEnPalabras.dia(inicio) + ", "
+                + FechasEnPalabras.franja(inicio, inicio.plus(ClassLength.DURATION));
     }
 }

@@ -27,7 +27,8 @@ public record MyProgressResponse(int lessonsTaken,
                                  LocalDate mapFrom,
                                  LocalDate today) {
 
-    public record NextLesson(UUID id, ZonedDateTime startsAt, String modality, String meetingLink,
+    /** Con su fin: «Tu próxima clase» se dice con su franja, «5:00 – 5:55 PM». */
+    public record NextLesson(UUID id, ZonedDateTime startsAt, ZonedDateTime endsAt, String modality, String meetingLink,
                              UUID professorId, String professorName, String professorPhotoUrl) {
     }
 
@@ -44,6 +45,7 @@ public record MyProgressResponse(int lessonsTaken,
                 progreso.nextLesson() == null ? null : new NextLesson(
                         progreso.nextLesson().id(),
                         progreso.nextLesson().startsAt().atZone(BusinessZone.BOGOTA),
+                        progreso.nextLesson().endsAt().atZone(BusinessZone.BOGOTA),
                         progreso.nextLesson().modality(),
                         progreso.nextLesson().meetingLink(),
                         progreso.nextLesson().professorId(),

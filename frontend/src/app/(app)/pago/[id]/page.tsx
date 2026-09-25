@@ -10,7 +10,8 @@ import { LineaImporte } from "@/components/dinero";
 import { Boton, BotonPrincipal, Tarjeta } from "@/components/ui";
 import { apiFetch } from "@/lib/api/fetch";
 import type { PaymentStatusResponse } from "@/lib/api/types";
-import { precioCop } from "@/lib/format";
+import { minutos } from "@/lib/cifras";
+import { fechaYRango, precioCop } from "@/lib/format";
 
 /**
  * La vuelta de la pasarela. Wompi redirige aquí en cuanto el usuario termina, pero "terminar" no
@@ -75,6 +76,16 @@ function EstadoDelPago() {
     <main className="mx-auto w-full max-w-md px-7 py-8">
       <Tarjeta className="text-center">
         <Encabezado {...cabecera} />
+
+        {/* Lo que compró: la clase con su franja y su duración, no solo con la hora de inicio. */}
+        {estado.startsAt && estado.endsAt && (
+          <p className="mt-4 text-[14px] font-bold text-text">
+            {fechaYRango(estado.startsAt, estado.endsAt)}
+            <span className="block text-[12.5px] font-semibold text-text-secondary">
+              Clase de {minutos(Math.round((Date.parse(estado.endsAt) - Date.parse(estado.startsAt)) / 60_000))}
+            </span>
+          </p>
+        )}
 
         <div className="mt-5 rounded-base border border-border bg-surface-sunken px-4 py-3 text-left text-[13px]">
           <LineaImporte etiqueta="Valor de la clase" valor={precioCop(estado.amountCop)} />

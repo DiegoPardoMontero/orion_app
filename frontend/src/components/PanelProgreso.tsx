@@ -8,12 +8,13 @@ import { Constelacion } from "@/components/marca";
 import { Rigel, type RigelPose } from "@/components/Rigel";
 import { apiFetch } from "@/lib/api/fetch";
 import type { Engagement, MapaRacha, SemanaRacha } from "@/lib/gamificacion";
-import { diaBogota, fechaCorta, horaBogota } from "@/lib/format";
+import { diaBogota, fechaCorta, horaBogota, rangoHoras } from "@/lib/format";
 import { cifraDePuntos } from "@/lib/puntos";
 
 type ProximaClase = {
   id: string;
   startsAt: string;
+  endsAt?: string;
   modality: string;
   meetingLink: string | null;
   professorId: string;
@@ -310,7 +311,8 @@ function ProximaClaseTarjeta({ clase, hoy }: { clase: ProximaClase; hoy: string 
         <Avatar nombre={clase.professorName ?? ""} fotoUrl={clase.professorPhotoUrl} />
         <div className="min-w-0 flex-1">
           <p className="font-display text-[16px] font-bold">
-            {cuandoEs(clase.startsAt, hoy)} · {horaBogota(clase.startsAt)}
+            {/* Sin fin (un backend de antes de la franja), la hora de inicio: nunca «Invalid time value». */}
+            {cuandoEs(clase.startsAt, hoy)} · {clase.endsAt ? rangoHoras(clase.startsAt, clase.endsAt) : horaBogota(clase.startsAt)}
           </p>
           <p className="truncate text-[13px] text-text-secondary">
             con {clase.professorName ?? "tu profesor"}

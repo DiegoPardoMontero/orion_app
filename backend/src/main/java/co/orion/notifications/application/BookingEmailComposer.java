@@ -1,8 +1,6 @@
 package co.orion.notifications.application;
 
 import java.time.Clock;
-import java.time.format.DateTimeFormatter;
-import java.time.format.TextStyle;
 import java.util.Locale;
 
 import org.springframework.stereotype.Component;
@@ -12,7 +10,7 @@ import co.orion.catalog.persistence.LanguageRepository;
 import co.orion.identity.domain.User;
 import co.orion.scheduling.domain.Booking;
 import co.orion.scheduling.domain.BookingModality;
-import co.orion.shared.time.BusinessZone;
+import co.orion.shared.time.FechasEnPalabras;
 
 /**
  * Redacta los correos con la voz de marca: cercana, clara y positiva. Nada de lenguaje de miedo
@@ -25,7 +23,6 @@ import co.orion.shared.time.BusinessZone;
 public class BookingEmailComposer {
 
     private static final Locale ES_CO = Locale.forLanguageTag("es-CO");
-    private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("hh:mm a", ES_CO);
 
     private final IcsGenerator icsGenerator;
     private final GoogleCalendarLinkBuilder calendarLinks;
@@ -106,6 +103,7 @@ public class BookingEmailComposer {
                 <p>%s</p>
                 <ul>
                   <li><strong>Cuándo:</strong> %s</li>
+                  <li><strong>Duración:</strong> %s</li>
                   %s
                   <li><strong>Modalidad:</strong> %s</li>
                   %s
@@ -120,6 +118,7 @@ public class BookingEmailComposer {
                 h(greeting),
                 h(opening),
                 when,
+                duration(booking),
                 language != null ? "<li><strong>Idioma:</strong> " + h(language) + "</li>" : "",
                 modality,
                 booking.getLocationNote() != null
@@ -135,6 +134,7 @@ public class BookingEmailComposer {
                 %s
 
                 Cuándo: %s
+                Duración: %s
                 %sModalidad: %s
                 Con: %s
                 %sCoordinen los detalles dentro de Orión, en la sección de Mensajes.
@@ -143,7 +143,7 @@ public class BookingEmailComposer {
 
                 ¡Nos vemos en clase!
                 El equipo de Orión
-                """.formatted(greeting, opening, when,
+                """.formatted(greeting, opening, when, duration(booking),
                 language != null ? "Idioma: " + language + "\n" : "",
                 modality, counterpart.getFullName(), meetingText, calendarLink);
 
@@ -202,13 +202,18 @@ public class BookingEmailComposer {
         return HtmlUtils.htmlEscape(texto, "UTF-8");
     }
 
-    /** "mié 15 jul, 08:00 a. m., hora de Bogotá" */
+    /**
+     * "miércoles 15 de julio, de 8:00 a 8:55 AM (hora de Colombia)": con su franja y no con la hora
+     * de inicio sola, que hacía parecer que la clase podía durar media hora (Pardo, 25/09/2026). La
+     * hora, como en el resto de Orión (AM/PM y no "a. m.").
+     */
     private String humanWhen(Booking booking) {
-        var local = booking.getStartsAt().atZone(BusinessZone.BOGOTA);
-        String day = local.getDayOfWeek().getDisplayName(TextStyle.SHORT, ES_CO);
-        String month = local.getMonth().getDisplayName(TextStyle.SHORT, ES_CO);
-        return "%s %d %s, %s, hora de Bogotá".formatted(
-                day, local.getDayOfMonth(), month, TIME.format(local));
+        return FechasEnPalabras.dia(booking.getStartsAt()) + ", "
+                + FechasEnPalabras.franja(booking.getStartsAt(), booking.getEndsAt()) + " (hora de Colombia)";
+    }
+
+    private String duration(Booking booking) {
+        return FechasEnPalabras.duracion(booking.getStartsAt(), booking.getEndsAt());
     }
 
     private String modalityOf(Booking booking) {

@@ -187,7 +187,8 @@ class BookingNotificationIT extends ApiIntegrationSupport {
                 "select sender_id, body, booking_id from messages where automated");
         assertThat(saludo.get("sender_id")).isEqualTo(maria.getId());
         assertThat((String) saludo.get("body")).startsWith("¡Hola, Ana! ⭐ Soy María")
-                .contains("primera clase").contains("miércoles 15 de julio a las 9:00 AM");
+                .contains("primera clase").contains("miércoles 15 de julio, de 9:00 a 9:55 AM (hora de Colombia)")
+                .contains("Son 55 minutos");
         assertThat(jdbc.queryForObject(
                 "select count(*) from notifications where user_id = ? and type = 'BOOKING_RECEIVED'", Integer.class,
                 maria.getId())).isEqualTo(1);
@@ -295,9 +296,11 @@ class BookingNotificationIT extends ApiIntegrationSupport {
                 .findFirst()
                 .orElseThrow();
 
-        // La hora se muestra en Bogotá (09:00), no en UTC (14:00).
-        assertThat(toAna).contains("09:00");
-        assertThat(toAna).contains("hora de Bogot");
+        // La clase se dice con su franja y en hora de Bogotá (9:00), no en UTC (14:00), y con su
+        // duración: la hora de inicio sola parecía una clase de media hora (25/09/2026).
+        assertThat(toAna).contains("de 9:00 a 9:55 AM");
+        assertThat(toAna).contains("hora de Colombia");
+        assertThat(toAna).contains("55 minutos");
         // D4: el contacto ocurre dentro de Orión (mensajería), no por WhatsApp. Ya no hay wa.me.
         assertThat(toAna).doesNotContain("wa.me");
         assertThat(toAna).doesNotContain("WhatsApp");

@@ -57,7 +57,7 @@ public class AvisosDeClase {
     public void on(ClassReminderDueEvent event) {
         seguro("recordatorio " + event.kind() + " de " + event.bookingId(), () -> bookings.findById(event.bookingId())
                 .ifPresent(b -> {
-                    String cuando = FechasEnPalabras.cuando(b.getStartsAt(), clock.instant());
+                    String cuando = FechasEnPalabras.cuandoConFranja(b.getStartsAt(), b.getEndsAt(), clock.instant());
                     String clase = "/mis-clases?clase=" + b.getId();
                     switch (event.kind()) {
                         case DAY_BEFORE -> {
@@ -73,11 +73,11 @@ public class AvisosDeClase {
                             String aula = "/mis-clases/" + b.getId() + "/aula";
                             notifications.create(b.getStudentId(), "CLASS_SOON",
                                     "En una hora: tu clase con " + nombre(b.getProfessorId()),
-                                    "Empieza a las " + FechasEnPalabras.hora(b.getStartsAt())
+                                    "Es " + FechasEnPalabras.franja(b.getStartsAt(), b.getEndsAt())
                                             + ". Busca un lugar tranquilo y con buena señal.", aula);
                             notifications.create(b.getProfessorId(), "CLASS_SOON",
                                     "En una hora: tu clase con " + nombre(b.getStudentId()),
-                                    "Empieza a las " + FechasEnPalabras.hora(b.getStartsAt()) + ".", aula);
+                                    "Es " + FechasEnPalabras.franja(b.getStartsAt(), b.getEndsAt()) + ".", aula);
                         }
                         case RATE -> {
                             if (!reviews.existsByBookingId(b.getId())) {

@@ -117,6 +117,9 @@ export type PaymentTicket = {
 
 export type PaymentStatusResponse = {
   bookingId: string;
+  /** La franja de la clase que se pagó: la pantalla la confirma «de x a y» y con su duración. */
+  startsAt: string;
+  endsAt: string;
   bookingStatus: string;
   paymentStatus: "PENDING" | "PAID" | "RELEASED" | "REFUNDED" | "DISPUTED" | "CANCELLED";
   amountCop: number;
