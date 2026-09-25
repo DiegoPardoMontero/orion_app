@@ -279,6 +279,65 @@ test("[v-invitacion.1 ad-usuarios.2] el profesor invitado completa su perfil y c
   await ctx.close();
 });
 
+test("[p-bienvenida.1 p-bienvenida.2 p-bienvenida.3] con video: la bienvenida una vez, «Lo veo después» y Rigel ofrece el recorrido", async ({ page, browser }) => {
+  await entrar(page, SEMILLA.admin);
+  // Los profesores de la semilla ya la vieron: la ve uno recién invitado, que nace aprobado.
+  const video = "https://www.youtube.com/watch?v=aqz-KE-bpKQ";
+  expect((await api(page, "PUT", "/api/v1/admin/settings/professor_welcome_video_url", { value: video })).status).toBe(200);
+  try {
+    await page.goto("/admin/usuarios");
+    await page.getByRole("button", { name: /Invitar profesor/ }).click();
+    const correo = `wf.bienvenida.${Date.now()}@orion.local`;
+    await page.getByPlaceholder("profesor@correo.com").fill(correo);
+    await page.getByRole("dialog").getByRole("button", { name: /Invitar|Enviar/ }).last().click();
+    const texto = await ultimoCorreo(page, correo, /invitacion\?token=/);
+    const enlace = texto!.match(/https?:\/\/[^"\\\s]*\/invitacion\?token=[A-Za-z0-9_-]+/)![0];
+    const ctx = await browser.newContext();
+    const profe = await ctx.newPage();
+    await profe.goto(enlace.replace(/^https?:\/\/[^/]+/, ""));
+    await profe.locator("#nombre").fill("Bienvenida Prueba");
+    await profe.locator("#password").fill("orion123*");
+    await profe.locator('button[type="submit"]').first().click();
+
+    // El enlace de invitación no pide la mayoría de edad: la pide el diálogo, hablándole como profe.
+    const antesDeSeguir = profe.getByRole("dialog", { name: "Antes de seguir" });
+    await expect(antesDeSeguir.getByText(/seguir dando clases/)).toBeVisible({ timeout: 20_000 });
+    await expect(antesDeSeguir.getByText(/saldo/)).toHaveCount(0);
+    await antesDeSeguir.getByLabel(/mayor de 18 años/).check();
+    await antesDeSeguir.getByRole("button", { name: "Confirmar" }).click();
+
+    const bienvenida = profe.getByRole("dialog", { name: "Bienvenida a Orión" });
+    await expect(bienvenida).toBeVisible({ timeout: 20_000 });
+    await expect(bienvenida.getByRole("button", { name: "Empezar el recorrido" }).first()).toBeVisible();
+    await bienvenida.getByRole("button", { name: "Lo veo después" }).first().click();
+    await expect(bienvenida).toBeHidden();
+    await expect(profe).toHaveURL(/\/mis-clases/);
+
+    // Rigel lo ofrece en la agenda, y el recorrido lleva de pantalla en pantalla.
+    const aviso = profe.getByRole("complementary", { name: "El recorrido de Orión" });
+    await expect(aviso).toBeVisible();
+    await aviso.getByRole("button", { name: "Empezar el recorrido" }).click();
+    const recorrido = profe.getByRole("dialog");
+    await expect(recorrido.getByRole("heading", { name: "Te muestro Orión en 8 pasos" })).toBeVisible();
+    await recorrido.getByRole("button", { name: "Empezar" }).click();
+    await expect(recorrido.getByText(/^1 de \d/)).toBeVisible();
+    const antes = profe.url();
+    await recorrido.getByRole("button", { name: "Siguiente" }).click();
+    await expect(recorrido.getByText(/^2 de \d/)).toBeVisible();
+    await expect.poll(() => profe.url()).not.toBe(antes);
+    await recorrido.getByRole("button", { name: /^(Saltar|Ahora no)$/ }).click();
+
+    // Una sola vez: ni la bienvenida ni el aviso vuelven.
+    await profe.goto("/mis-clases");
+    await profe.waitForTimeout(1500);
+    await expect(profe.getByRole("dialog", { name: "Bienvenida a Orión" })).toHaveCount(0);
+    await expect(profe.getByRole("complementary", { name: "El recorrido de Orión" })).toHaveCount(0);
+    await ctx.close();
+  } finally {
+    await api(page, "PUT", "/api/v1/admin/settings/professor_welcome_video_url", { value: "" });
+  }
+});
+
 test("[p-acta-publicada.1] el acta publicada se corrige hasta la fecha que dice", async ({ page }) => {
   await entrar(page, SEMILLA.maria);
   await page.goto("/mis-clases?scope=past");
