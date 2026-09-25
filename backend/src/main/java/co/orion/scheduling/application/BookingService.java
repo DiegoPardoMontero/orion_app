@@ -424,6 +424,12 @@ public class BookingService {
             return new Prueba(true, false,
                     "La clase de prueba es para conocer al profesor, y tú ya tienes clases con él.");
         }
+        // Cancelarla cuando ya empezó no la devuelve: si no, se podía tomar entera, cancelarla antes
+        // de que se cerrara y pedir otra gratis, sin fin. El índice de la V67 lo sostiene en la base.
+        if (bookings.existsTrialCancelledOnceStarted(studentId, professorId)) {
+            return new Prueba(true, false,
+                    "Ya usaste tu clase de prueba con este profesor: la cancelaste cuando ya había empezado.");
+        }
         return new Prueba(true, true, null);
     }
 

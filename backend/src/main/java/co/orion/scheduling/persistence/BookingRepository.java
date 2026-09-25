@@ -155,4 +155,14 @@ public interface BookingRepository extends JpaRepository<Booking, UUID>,
             """)
     long countEarlierTogether(@Param("studentId") UUID studentId, @Param("professorId") UUID professorId,
                               @Param("antesDe") Instant antesDe, @Param("estados") Collection<BookingStatus> estados);
+
+    /** La prueba que el estudiante canceló cuando ya había empezado: cuenta como usada (V67). */
+    @Query("""
+            select count(b) > 0 from Booking b
+             where b.studentId = :studentId and b.professorId = :professorId and b.trial = true
+               and b.status = co.orion.scheduling.domain.BookingStatus.CANCELLED_BY_STUDENT
+               and b.cancelledAt >= b.startsAt
+            """)
+    boolean existsTrialCancelledOnceStarted(@Param("studentId") UUID studentId,
+                                            @Param("professorId") UUID professorId);
 }

@@ -905,13 +905,16 @@ function ModalCancelar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
       {/* Lo que de verdad hay que saber antes de pulsar es qué pasa con el dinero, y depende de
           quién cancela y de cuándo. Decirlo aquí es lo que convierte una regla del contrato en
           algo que la persona conoce en el momento de decidir. */}
-      {/* La prueba es gratis (V65): no hay dinero que devolver, y cancelada deja de contar, así que
-          se puede volver a pedir con el mismo profesor. */}
+      {/* La prueba es gratis (V65): no hay dinero que devolver, y cancelada antes de empezar deja de
+          contar, así que se puede volver a pedir. Si el estudiante la cancela ya empezada, la gasta
+          (V67): si no, se podía tomar entera y pedir otra. */}
       {!sinPagar && clase.trial && (
         <p className="mt-3 rounded-base bg-surface-sunken px-4 py-3 text-[13px] leading-relaxed text-text-secondary">
           {esProfesor
             ? "Es su clase de prueba gratis: no hay dinero de por medio, y podrá pedirla otra vez."
-            : "Es tu clase de prueba gratis: no hay dinero de por medio, y podrás pedirla otra vez con este profesor."}
+            : new Date(clase.startsAt!).getTime() <= new Date().getTime()
+              ? "Es tu clase de prueba gratis y ya empezó: aunque la canceles, cuenta como tu prueba con este profesor."
+              : "Es tu clase de prueba gratis: no hay dinero de por medio, y podrás pedirla otra vez con este profesor."}
         </p>
       )}
 

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.Duration;
@@ -215,6 +216,33 @@ class ClaseDePruebaDelEstudianteIT extends ApiIntegrationSupport {
                 () -> payments.findByBookingId(id).orElseThrow().getStatus() == PaymentStatus.REFUNDED);
         assertThat(jdbc.queryForObject("select count(*) from student_credits where booking_id = ?", Integer.class, id))
                 .isZero();
+    }
+
+    /**
+     * El hueco que abrió la prueba gratis: tomarla entera, cancelarla antes de que se cerrara y pedir
+     * otra. Cancelarla cuando ya empezó la gasta, y la base lo sostiene aunque el servicio no mire.
+     */
+    @SuppressWarnings("rawtypes")
+    @Test
+    @DisplayName("Cancelarla cuando ya empezó la gasta: no hay una segunda prueba gratis")
+    void laCanceladaYaEmpezadaCuenta() {
+        ofrecer(true);
+        UUID id = post("/api/v1/bookings", anaSession, reserva(9, true), BookingResponse.class).getBody().id();
+        jdbc.update("update bookings set starts_at = ?, ends_at = ? where id = ?",
+                Timestamp.from(FROZEN_NOW.minusSeconds(3600)), Timestamp.from(FROZEN_NOW), id);
+        assertThat(post("/api/v1/bookings/" + id + "/cancel", anaSession, Map.of(), Map.class).getStatusCode()
+                .is2xxSuccessful()).isTrue();
+
+        assertThat(get("/api/v1/professors/" + maria.getId() + "/trial", anaSession, Map.class).getBody())
+                .containsEntry("available", false);
+        assertThat(post("/api/v1/bookings", anaSession, reserva(10, true), Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+
+        var usada = bookings.findById(id).orElseThrow();
+        Booking otra = TestBookings.confirmed(usada.getStudentId(), usada.getProfessorId(),
+                FROZEN_NOW.plusSeconds(3 * 86400), BookingModality.VIRTUAL, null, usada.getStudentId());
+        otra.markAsTrial();
+        assertThrows(DataIntegrityViolationException.class, () -> bookings.saveAndFlush(otra));
     }
 
     @Test
