@@ -159,7 +159,7 @@ export const preguntas = (c: PublicFigures): Record<Lista, Pregunta[]> => {
       },
       {
         p: "¿Qué es el diagnóstico inicial y es obligatorio?",
-        r: `Una conversación de ${minutos(c.assessmentMinutes)} en inglés, gratis y sin crear cuenta. Al terminar ves tu punto de partida y tienes tres profesores elegidos por lo que contaste. No es obligatorio: puedes reservar sin hacerlo.`,
+        r: `Una conversación de ${minutos(c.assessmentMinutes)} con Meissa, gratis y sin crear cuenta. Puedes hablarle en español: es solo para que te conozca, entienda tu contexto y por qué quieres aprender inglés. Al terminar ves tu punto de partida y tienes tres profesores elegidos por lo que contaste. No es obligatorio: puedes crear tu cuenta y reservar sin hacerlo, y hacerlo después desde tu perfil.`,
       },
       {
         p: "¿Qué es el Método ORION™?",

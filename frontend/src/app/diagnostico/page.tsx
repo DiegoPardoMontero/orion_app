@@ -11,6 +11,12 @@ import { Meissa } from "@/components/Meissa";
  * bloque de condiciones y otro de privacidad, y había que bajar para encontrar el botón; ahora es
  * el diseño «antes» del handoff de Meissa sin la lista de pasos, y cabe sin scroll en un teléfono.
  *
+ * <p><strong>Voluntario, y en español si quieres</strong> (Pardo, 25/09/2026): hay quien le teme a
+ * que lo «diagnostiquen» y le digan que está mal. Por eso la página lo dice así, y ofrece crear la
+ * cuenta sin hacerlo, recordando que lo tiene en su perfil cuando quiera. Hablarle en español es
+ * cierto, no un consuelo: dos respuestas seguidas en español y Meissa sigue en español, sin número
+ * (la rama FROM_ZERO del guion), con el resumen y los tres profesores de siempre.
+ *
  * <p>Pública y sin cuenta: el nombre y las dos casillas se piden en la pantalla siguiente, justo
  * antes de hablar. Meissa aparece hablando, con su burbuja; Rigel no sale aquí, porque es quien
  * recibe a la persona en el registro y nunca comparten pantalla.
@@ -45,7 +51,7 @@ export default function DiagnosticoPage() {
             Prueba tu inglés hablando.
           </h1>
           <p className="mt-3 text-[15px] text-on-primary/80">
-            Dos minutos de conversación. Sin cuenta, sin tarjeta, sin nota.
+            Dos minutos de conversación, si quieres. Sin cuenta, sin tarjeta, sin nota.
           </p>
         </div>
       </div>
@@ -56,8 +62,9 @@ export default function DiagnosticoPage() {
             Habla dos minutos con Meissa
           </h2>
           <p className="mt-2 text-[15px] leading-relaxed text-text-secondary">
-            Te hace preguntas sencillas sobre ti y tu día. Respondes en inglés como puedas: si te
-            trabas, está bien. Sin cuenta, sin tarjeta, sin nota.
+            Es voluntario y no es un examen. <strong className="text-text">Puedes hablarle en español</strong>:
+            es solo para que te conozca, entienda tu contexto y por qué quieres aprender inglés. Si te
+            animas en inglés, también vale.
           </p>
 
           <p className="mt-5 flex items-start gap-3 rounded-[16px] border border-border bg-surface-raised p-4 text-[13px] leading-relaxed text-[#5E4E6B]">
@@ -72,6 +79,15 @@ export default function DiagnosticoPage() {
           >
             Empezar con Meissa
           </Link>
+          <Link
+            href="/registro"
+            className="mt-3 inline-flex h-[52px] w-full items-center justify-center rounded-pill border-[1.5px] border-border px-7 text-[15px] font-bold text-text transition-colors hover:border-primary hover:text-primary-strong focus-visible:shadow-focus"
+          >
+            Crear mi cuenta sin diagnóstico
+          </Link>
+          <p className="mt-2 text-center text-[12.5px] text-text-muted">
+            El diagnóstico te queda en tu perfil, para cuando quieras hacerlo.
+          </p>
           <p className="mt-4 text-center text-[13px] text-text-secondary">
             ¿Prefieres que te llame una persona?{" "}
             <Link

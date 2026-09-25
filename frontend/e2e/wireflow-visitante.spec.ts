@@ -44,6 +44,20 @@ test("[v-portada.3 v-diagnostico.1 v-diagnostico.2 v-diagnostico.3] el diagnóst
   await expect(page).toHaveURL(/\/diagnostico\/empezar/);
 });
 
+test("[v-portada.6 v-diagnostico.4 v-diag-empezar.7] el diagnóstico es voluntario: se crea la cuenta sin hacerlo", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("link", { name: "Crea tu cuenta", exact: true }).first().click();
+  await expect(page).toHaveURL(/\/registro$/);
+  await page.goto("/diagnostico");
+  await expect(page.getByText(/Puedes hablarle en español/).first()).toBeVisible();
+  await expect(page.getByText(/te queda en tu perfil/)).toBeVisible();
+  await page.getByRole("link", { name: "Crear mi cuenta sin diagnóstico" }).click();
+  await expect(page).toHaveURL(/\/registro$/);
+  await page.goto("/diagnostico/empezar");
+  await page.getByRole("link", { name: "Crea tu cuenta sin diagnóstico" }).click();
+  await expect(page).toHaveURL(/\/registro$/);
+});
+
 test("[v-diag-empezar.1 v-diag-empezar.2] sin las dos casillas no se empieza", async ({ page }) => {
   await page.goto("/diagnostico/empezar");
   await page.waitForLoadState("networkidle");

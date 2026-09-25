@@ -41,7 +41,7 @@ export function TarjetaDiagnostico() {
             Prueba tu inglés en 2 minutos
           </span>
           <span className="mt-0.5 block text-[13px] text-text-on-night/80">
-            Sin examen. Recibes tu Confidence Score y tres profesores.
+            Cuando quieras y sin examen; puedes hablarle en español. Te recomienda tres profesores.
           </span>
         </span>
         <ArrowRight size={17} strokeWidth={2.2} className="shrink-0" />

@@ -264,8 +264,20 @@ export default async function PortadaPage() {
                 </Link>
               </div>
               <p className="mt-3 max-w-[56ch] text-[13.5px] leading-relaxed text-on-primary/85">
-                {duracion} de conversación, gratis y sin cuenta: al terminar sabes cómo arrancas y tienes tres
-                profesores elegidos para ti.
+                {duracion} de conversación, gratis, sin cuenta y en español si quieres: al terminar sabes cómo
+                arrancas y tienes tres profesores elegidos para ti.
+              </p>
+              {/* Voluntario (Pardo, 25/09/2026): el diagnóstico sigue siendo el primer paso que Orión
+                  propone, pero quien no quiere hacerlo tiene la puerta directa a su cuenta. */}
+              <p className="mt-2 max-w-[56ch] text-[13.5px] leading-relaxed text-on-primary/85">
+                Es opcional. ¿Prefieres ir directo?{" "}
+                <Link
+                  href="/registro"
+                  className="rounded-base font-bold text-on-primary underline underline-offset-2 focus-visible:shadow-focus"
+                >
+                  Crea tu cuenta
+                </Link>{" "}
+                y hazlo cuando quieras desde tu perfil.
               </p>
               <p className="mt-6 text-[13px] font-semibold tracking-[0.02em] text-on-primary">
                 ✦ Sin permanencia · Sin renovación automática · Profesores verificados
@@ -519,8 +531,9 @@ export default async function PortadaPage() {
           <div>
             <h2 className="text-balance font-display text-h2 font-bold text-on-primary">¿No sabes por dónde empezar?</h2>
             <p className="mt-3 max-w-[54ch] text-[15.5px] leading-relaxed text-on-primary/90">
-              Haz tu diagnóstico gratis. En {duracion} de conversación sabes cómo arrancas y te recomendamos tres
-              profesores elegidos por lo que contaste. Te lo entregamos aunque todavía no reserves ninguna clase.
+              Haz tu diagnóstico gratis, si quieres: es voluntario y puedes hablarle en español. En {duracion} de
+              conversación sabes cómo arrancas y te recomendamos tres profesores elegidos por lo que contaste. Te lo
+              entregamos aunque todavía no reserves ninguna clase.
             </p>
             <Link
               href="/diagnostico"

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { Mic, ShieldCheck } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api/fetch";
 import type { GoalResponse } from "@/lib/api/types";
@@ -174,8 +175,26 @@ export function Puerta({
 
       <p className="mt-3 flex items-start gap-2 text-[12.5px] leading-relaxed text-text-muted">
         <ShieldCheck size={15} strokeWidth={2} className="mt-0.5 shrink-0" />
-        <span>Nadie te va a corregir mientras hablas. De eso se trata.</span>
+        <span>
+          Nadie te va a corregir mientras hablas. Puedes hablarle en español: es solo para que te
+          conozca, entienda tu contexto y por qué quieres aprender inglés.
+        </span>
       </p>
+
+      {/* Voluntario (Pardo, 25/09/2026): quien llegó hasta aquí y lo piensa mejor tiene por dónde
+          seguir sin hacerlo. Solo sin cuenta: quien ya la tiene vino a propósito desde su perfil. */}
+      {sinCuenta && (
+        <p className="mt-4 text-center text-[13px] leading-relaxed text-text-secondary">
+          ¿Prefieres no hacerlo ahora?{" "}
+          <Link
+            href="/registro"
+            className="rounded-base font-bold text-primary-strong underline underline-offset-2 focus-visible:shadow-focus"
+          >
+            Crea tu cuenta sin diagnóstico
+          </Link>
+          . Lo tienes en tu perfil cuando quieras.
+        </p>
+      )}
     </main>
   );
 }
