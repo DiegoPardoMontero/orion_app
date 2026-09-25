@@ -67,6 +67,7 @@ export default function AdminUsuariosPage() {
             value={busqueda}
             onChange={(event) => setBusqueda(event.target.value)}
             placeholder="Buscar por nombre o correo"
+            aria-label="Buscar usuarios por nombre o correo"
             icono={<Search size={16} strokeWidth={2.2} />}
           />
         </div>

@@ -211,7 +211,8 @@ test("[ad-panel.1 ad-aplicaciones.1 ad-reservas.1 ad-pagos.1 ad-devoluciones.1 a
 test("[ad-usuarios.1 ad-usuarios.2] buscar usuarios e invitar a un profesor", async ({ page }) => {
   await entrar(page, SEMILLA.admin);
   await page.goto("/admin/usuarios");
-  await page.getByPlaceholder("Buscar por nombre o correo").fill("ana@orion.local");
+  // Por su nombre accesible, no por el texto de ejemplo: un lector de pantalla no lee el placeholder.
+  await page.getByRole("searchbox", { name: "Buscar usuarios por nombre o correo" }).fill("ana@orion.local");
   await expect(page.getByText("ana@orion.local").first()).toBeVisible();
   await page.getByRole("button", { name: /Invitar profesor/ }).click();
   const correo = `wf.invitado.${Date.now()}@orion.local`;
