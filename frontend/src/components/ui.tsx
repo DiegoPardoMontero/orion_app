@@ -203,6 +203,8 @@ export function Segmento<T extends string>({
         <button
           key={opcion.valor}
           type="button"
+          // Lo elegido se anuncia, no solo se pinta: sin esto un lector de pantalla no sabía cuál estaba.
+          aria-pressed={valor === opcion.valor}
           onClick={() => onCambio(opcion.valor)}
           className={`flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-pill py-2 text-[13px] transition-colors focus-visible:shadow-focus ${
             valor === opcion.valor
