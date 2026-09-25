@@ -70,7 +70,9 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={tituloId}
-        className={`anim-sheet w-full rounded-t-[24px] bg-surface-raised p-7 shadow-lg outline-none sm:rounded-card sm:[animation:modal-in_220ms_var(--ease-out)_both] ${amplio ? "sm:max-w-[720px]" : "sm:max-w-[440px]"}`}
+        // Con tope de alto y scroll propio: la hoja se alinea abajo, y un contenido más alto que la
+        // pantalla —los filtros con sus horas— dejaba su parte de arriba fuera, sin forma de llegar.
+        className={`anim-sheet max-h-[calc(100dvh-16px)] w-full overflow-y-auto overscroll-contain rounded-t-[24px] bg-surface-raised p-7 shadow-lg outline-none sm:max-h-[calc(100dvh-40px)] sm:rounded-card sm:[animation:modal-in_220ms_var(--ease-out)_both] ${amplio ? "sm:max-w-[720px]" : "sm:max-w-[440px]"}`}
         onClick={(event) => event.stopPropagation()}
       >
         <h2 id={tituloId} className="font-display text-[22px] font-bold text-text">
