@@ -32,14 +32,14 @@ dentro de `/cuenta`).
 ## Verificación
 Al 25/09/2026 de madrugada, tras la noche autónoma (el wireflow probado, la revisión de seguridad
 del Bloque 11 y las sesiones en la base):
-- Backend: `./mvnw verify` — **390 unitarios + 596 de integración**, verde.
+- Backend: `./mvnw verify` — **390 unitarios + 599 de integración**, verde.
 - Frontend: `tsc` + `lint` verdes; **127 tests de Vitest**.
 - **E2E Playwright: 92 de 93** sobre base recreada y con el caché de fetch de Next limpio (la de
   Wompi, fuera; la que se salta pide una clase dentro del plazo de reclamo, que la base recién
   sembrada no trae, y la cubre el backend). Incluye las cuatro suites del wireflow.
 - **Sesiones**: con la cookie de un login, se apagó el backend y se arrancó otro proceso; la misma
   cookie siguió dentro (`/auth/me` 200).
-- **Wireflow**: 232 de 253 casos probados por Claude (204 en el navegador, 28 en el backend); el
+- **Wireflow**: 241 de 253 casos probados por Claude (211 en el navegador, 30 en el backend); el
   resultado se ve en la página debajo de cada caso.
 - **Celular y escritorio**: 47 pantallas de los cuatro roles recorridas a 360, 390 y 1280 px buscando
   desbordes laterales y textos cortados: ninguna.
@@ -729,9 +729,11 @@ Trabajo autónomo con la lista que aprobó Pardo. El reporte completo está publ
 https://claude.ai/artifact/LvkmUM9K9kvGMQyq4bMNxD
 
 - **El wireflow, caso por caso**: cuatro suites e2e (`e2e/wireflow-*.spec.ts`) cuyos títulos
-  llevan los ids de los casos que cubren. De los 253 casos, **Claude probó 232 por su cuenta** (204
-  en el navegador, 28 con pruebas del backend); 20 necesitan a una persona (Google, Wompi, micrófono,
-  Cloudinary, VAPID, una clase real) y 1 es una nota para decidir. El resultado vive en la colección
+  llevan los ids de los casos que cubren. De los 253 casos, **Claude probó 241 por su cuenta** (211
+  en el navegador, 30 con pruebas del backend); 11 necesitan a una persona (Google, Wompi, micrófono
+  y OpenAI, Cloudinary, VAPID) y 1 es una nota para decidir. La bienvenida con el video de Sofía, la
+  antesala del profesor y «la sala se abre sin recargar» se prueban con el aula simulada y el reloj
+  de Playwright. El resultado vive en la colección
   `claude` del artifact y la página lo muestra debajo de cada caso sin tocar las marcas de Pardo y
   Sofía; el filtro «Necesita a una persona» junta lo que falta.
 - **Bugs arreglados** que salieron al recorrerlo: pedir «Llámame» sin cuenta daba 403 (el primer
@@ -761,6 +763,11 @@ https://claude.ai/artifact/LvkmUM9K9kvGMQyq4bMNxD
   (estudiante, profesor, admin) viven en `lib/estadosDePago.ts` y una prueba exige que cubran todos
   los estados del backend. Las preguntas frecuentes leen de Ajustes el plazo para pagar (decían «20
   minutos» fijo).
+- **El profesor invitado** se encuentra, al aceptar, el diálogo de mayoría de edad (la invitación no
+  la pide): ahora le habla de «dar clases» y no de reservar ni de saldo. Para decidir: la invitación
+  tampoco le hace aceptar los Términos ni la política de datos.
+- **Pruebas que faltaban**: «Mi desempeño» del profesor y el recálculo nocturno de métricas no tenían
+  ninguna prueba de integración (`MiDesempenoIT`).
 - **Carrera al crear la cuenta**: el navegador lanza varias peticiones a la vez con la cookie del
   diagnóstico sin cuenta, y cada una mudaba lo mismo; ahora el reclamo es un `UPDATE` condicional
   y solo muda quien lo gana.
