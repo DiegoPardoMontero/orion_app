@@ -29,6 +29,7 @@ public class IntentosDeAcceso {
     private static final Duration VENTANA_LOGIN = Duration.ofMinutes(15);
     private static final Duration VENTANA_HORA = Duration.ofHours(1);
     private static final Duration VENTANA_DIA = Duration.ofDays(1);
+    private static final int PRUEBAS_DE_AVISO_POR_HORA = 5;
 
     private final RateLimiter limiter = new RateLimiter();
     private final Clock clock;
@@ -145,6 +146,16 @@ public class IntentosDeAcceso {
     public void antesDeDictar(java.util.UUID profesor) {
         exigir("dictar:" + profesor, maxDictadosPorProfesor, VENTANA_DIA, clock.instant(),
                 "Ya dictaste muchas veces hoy. Puedes escribir tus notas en la caja.");
+    }
+
+    /**
+     * «Probar» los avisos manda uno a cada navegador suscrito, uno detrás de otro y dentro de la
+     * petición. Cinco por hora bastan para comprobar que suena; sin tope, era una forma de hacer que
+     * Orión golpeara los servicios de push en bucle.
+     */
+    public void antesDeProbarAvisos(java.util.UUID persona) {
+        exigir("probar-avisos:" + persona, PRUEBAS_DE_AVISO_POR_HORA, VENTANA_HORA, clock.instant(),
+                "Ya probaste los avisos varias veces. Intenta de nuevo en un rato.");
     }
 
     /** El «te llamamos» es público y deja un teléfono a nuestro cargo: cinco por conexión al día. */

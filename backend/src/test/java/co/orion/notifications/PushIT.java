@@ -35,6 +35,7 @@ import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.messaging.application.NotificationService;
 import co.orion.notifications.application.PushGateway;
+import co.orion.notifications.persistence.PushSubscriptions;
 import co.orion.support.ApiIntegrationSupport;
 
 /**
@@ -154,6 +155,33 @@ class PushIT extends ApiIntegrationSupport {
         post("/api/v1/me/push-subscriptions/remove", anaSession, Map.of("endpoint", FCM), Void.class);
         assertThat(suscripciones()).isZero();
         verify(gateway, never()).enviar(any(), any(), anyMap());
+    }
+
+    @Test
+    @DisplayName("Cada persona guarda como mucho diez navegadores: al pasarse, se olvida el más viejo")
+    void topePorPersona() {
+        for (int i = 1; i <= 12; i++) {
+            var cuerpo = Map.of("endpoint", FCM + "-" + i, "keys", suscripcion.get("keys"));
+            assertThat(post("/api/v1/me/push-subscriptions", anaSession, cuerpo, Void.class).getStatusCode())
+                    .isEqualTo(HttpStatus.NO_CONTENT);
+        }
+
+        assertThat(suscripciones()).isEqualTo(PushSubscriptions.MAXIMO_POR_PERSONA);
+        assertThat(jdbc.queryForList("select endpoint from push_subscriptions", String.class))
+                .doesNotContain(FCM + "-1", FCM + "-2").contains(FCM + "-3", FCM + "-12");
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Test
+    @DisplayName("«Probar» tiene tope: cinco por hora, y la sexta frena con un 429")
+    void probarTieneTope() {
+        post("/api/v1/me/push-subscriptions", anaSession, suscripcion, Void.class);
+        for (int i = 0; i < 5; i++) {
+            assertThat(post("/api/v1/me/push-subscriptions/test", anaSession, null, Map.class).getStatusCode())
+                    .isEqualTo(HttpStatus.OK);
+        }
+        assertThat(post("/api/v1/me/push-subscriptions/test", anaSession, null, Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
     }
 
     private static KeyPair parP256() throws Exception {

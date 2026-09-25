@@ -16,6 +16,7 @@ import co.orion.notifications.application.AvisosEnElDispositivo;
 import co.orion.notifications.application.Vapid;
 import co.orion.notifications.persistence.PushSubscriptions;
 import co.orion.shared.error.UnprocessableException;
+import co.orion.shared.security.IntentosDeAcceso;
 import co.orion.shared.security.OrionUserDetails;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -54,11 +55,14 @@ public class PushController {
     private final Vapid vapid;
     private final PushSubscriptions suscripciones;
     private final AvisosEnElDispositivo avisos;
+    private final IntentosDeAcceso intentos;
 
-    public PushController(Vapid vapid, PushSubscriptions suscripciones, AvisosEnElDispositivo avisos) {
+    public PushController(Vapid vapid, PushSubscriptions suscripciones, AvisosEnElDispositivo avisos,
+                          IntentosDeAcceso intentos) {
         this.vapid = vapid;
         this.suscripciones = suscripciones;
         this.avisos = avisos;
+        this.intentos = intentos;
     }
 
     @GetMapping("/api/v1/push/config")
@@ -90,6 +94,7 @@ public class PushController {
     /** «Probar»: un aviso a todos tus navegadores suscritos, para ver que de verdad suena. */
     @PostMapping("/api/v1/me/push-subscriptions/test")
     public TestPushResponse probar(@AuthenticationPrincipal OrionUserDetails principal) {
+        intentos.antesDeProbarAvisos(principal.user().getId());
         return new TestPushResponse(avisos.enviar(principal.user().getId(), "Así se ven los avisos de Orión ✦",
                 "Te avisaremos una hora antes de cada clase y cuando algo te espere.", "/", "TEST"));
     }
