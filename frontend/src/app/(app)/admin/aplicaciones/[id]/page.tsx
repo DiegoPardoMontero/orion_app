@@ -316,7 +316,7 @@ function DatosEnviados({
         />
         <Dato etiqueta="Formación" valor={perfil.education} />
         <Dato etiqueta="Certificación docente" valor={perfil.certified ? "Sí" : "No"} />
-        <Dato etiqueta="Ofrece clase de prueba" valor={perfil.acceptsTrial ? "Sí" : "No"} />
+        <Dato etiqueta="Ofrece la primera clase gratis" valor={perfil.acceptsTrial ? "Sí" : "No"} />
         {perfil.hourlyRateCop ? <Dato etiqueta="Tarifa por hora" valor={precioCop(perfil.hourlyRateCop)} /> : null}
       </Bloque>
 

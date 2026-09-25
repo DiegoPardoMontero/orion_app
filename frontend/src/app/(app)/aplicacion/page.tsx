@@ -467,9 +467,9 @@ function Wizard({
               <label className="flex items-center justify-between gap-3 rounded-card bg-surface-raised p-4 shadow-sm">
                 <span className="flex items-center gap-2 text-[13.5px] font-semibold text-text">
                   <Sparkles size={16} strokeWidth={2} className="text-primary-strong" />
-                  Ofrezco clase de prueba
+                  Ofrezco la primera clase gratis
                 </span>
-                <Toggle activo={acceptsTrial} onCambio={setAcceptsTrial} etiqueta="Clase de prueba" />
+                <Toggle activo={acceptsTrial} onCambio={setAcceptsTrial} etiqueta="Primera clase gratis" />
               </label>
             </div>
           </section>
@@ -812,7 +812,7 @@ function Resumen({
           <DatoResumen etiqueta="Estudios" valor={r?.education} />
           <div className="flex flex-wrap gap-1.5">
             {r?.certified && <Badge tono="menta">Certificado</Badge>}
-            {r?.acceptsTrial && <Badge tono="melocoton">Acepta clase de prueba</Badge>}
+            {r?.acceptsTrial && <Badge tono="melocoton">Primera clase gratis</Badge>}
           </div>
         </BloqueResumen>
 

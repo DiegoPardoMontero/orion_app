@@ -144,13 +144,12 @@ public class CheckoutService implements PaymentInitiator {
     private long priceOf(Booking booking) {
         ProfessorProfile profile = profiles.findById(booking.getProfessorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Profesor no encontrado"));
-        // La clase de prueba cuesta lo que el profesor fijó para ella (0 = gratis), con la misma
-        // comisión que cualquier otra (Q7).
+        // La clase de prueba es gratis (V65): se confirma sin pasarela, como una pagada con saldo.
         if (booking.isTrial()) {
-            if (profile.getTrialPriceCop() == null) {
+            if (!profile.acceptsTrial()) {
                 throw new UnprocessableException("Este profesor no ofrece clase de prueba.");
             }
-            return profile.getTrialPriceCop();
+            return 0;
         }
         Long rate = profile.getHourlyRateCop();
         if (rate == null) {

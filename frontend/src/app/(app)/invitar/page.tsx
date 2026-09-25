@@ -9,7 +9,6 @@ import { Rigel } from "@/components/Rigel";
 import { apiFetch } from "@/lib/api/fetch";
 import type { ProfileResponse } from "@/lib/api/types";
 import { useMe } from "@/lib/auth/session";
-import { esGratis, precioCop } from "@/lib/format";
 
 /**
  * Invitar estudiantes (24/09/2026: «que me genere un link para compartir en redes sociales o
@@ -46,12 +45,7 @@ export default function InvitarPage() {
   // Sin el corto (un fallo al crearlo), el del perfil de siempre: más largo, pero funciona igual.
   const enlace = corto.data?.slug ? `${origen}/p/${corto.data.slug}` : `${origen}/profesores/${me.id}`;
   const p = perfil.data;
-  const prueba =
-    p?.acceptsTrial && p.trialPriceCop != null
-      ? esGratis(p.trialPriceCop)
-        ? " La primera clase de prueba es gratis."
-        : ` La clase de prueba cuesta ${precioCop(p.trialPriceCop)}.`
-      : "";
+  const prueba = p?.acceptsTrial ? " La primera clase, de prueba, es gratis." : "";
   const mensajeInicial = `¡Hola! Ya doy clases de inglés en Orión. Ahí ves mis horarios y reservas tu clase conmigo en un minuto.${prueba}`;
 
   return <Invitar enlace={enlace} publicado={p?.isPublished ?? false} mensajeInicial={mensajeInicial} />;

@@ -104,17 +104,15 @@ export default function AgendaProfesorPage() {
     staleTime: 5 * 60_000,
   });
 
-  // La clase de prueba con este profe: si la ofrece, cuánto cuesta y si a este estudiante le toca
+  // La clase de prueba con este profe —gratis, V65—: si la ofrece y si a este estudiante le toca
   // (es una por pareja, y para conocerse). Solo lo pregunta un estudiante.
   const prueba = useQuery({
     queryKey: ["professor", id, "trial"],
     queryFn: () =>
-      apiFetch<{ offered: boolean; priceCop: number | null; available: boolean; reason: string | null }>(
-        `/api/v1/professors/${id}/trial`,
-      ),
+      apiFetch<{ offered: boolean; available: boolean; reason: string | null }>(`/api/v1/professors/${id}/trial`),
     enabled: me?.role === "STUDENT",
   });
-  const pruebaDisponible = prueba.data?.available === true && prueba.data.priceCop != null;
+  const pruebaDisponible = prueba.data?.available === true;
   const reservandoPrueba = comoPrueba && pruebaDisponible;
 
   // Los próximos 7 días alimentan los chips de móvil (y el estado de carga/vacío inicial).
@@ -207,7 +205,7 @@ export default function AgendaProfesorPage() {
   const idiomaDeLaClase =
     idiomasQueEnsena.length === 1 ? (idiomasQueEnsena[0].code ?? null) : idioma;
 
-  const precio = reservandoPrueba ? (prueba.data?.priceCop ?? null) : (detalle.hourlyRateCop ?? null);
+  const precio = reservandoPrueba ? 0 : (detalle.hourlyRateCop ?? null);
   // La misma regla que aplica el backend, mínimo de la pasarela incluido: si el desglose de aquí y
   // el del checkout no coinciden al peso, el estudiante ve cambiar el precio entre dos pantallas.
   const { creditoAplicadoCop: creditoAplicado, aPagarCop: aPagar } = aplicarSaldo(
@@ -223,7 +221,7 @@ export default function AgendaProfesorPage() {
         <Bloque tono="melocoton" titulo="¿Cómo quieres tu primera clase?" icono={<Sparkles size={16} strokeWidth={1.75} />}>
           <div className="grid gap-2 sm:grid-cols-2">
             {[
-              { valor: true, titulo: "Clase de prueba", detalle: esGratis(prueba.data!.priceCop) ? "Gratis" : precioCop(prueba.data!.priceCop!) },
+              { valor: true, titulo: "Clase de prueba", detalle: "Gratis" },
               { valor: false, titulo: "Clase normal", detalle: detalle.hourlyRateCop != null ? (esGratis(detalle.hourlyRateCop) ? "Gratis" : precioCop(detalle.hourlyRateCop)) : "" },
             ].map((o) => (
               <button
@@ -405,10 +403,10 @@ export default function AgendaProfesorPage() {
                 <BadgeCheck size={12} strokeWidth={2.4} /> Certificado
               </Badge>
             )}
-            {detalle.acceptsTrial && detalle.trialPriceCop != null && (
+            {detalle.acceptsTrial && (
               <Badge tono="coral">
                 <Sparkles size={12} strokeWidth={2.4} />
-                {esGratis(detalle.trialPriceCop) ? "Clase de prueba gratis" : `Clase de prueba · ${precioCop(detalle.trialPriceCop)}`}
+                Primera clase gratis
               </Badge>
             )}
           </div>

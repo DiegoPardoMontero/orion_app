@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RestController;
 import co.orion.identity.application.ProfessorProfileService;
 import co.orion.shared.security.OrionUserDetails;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.PositiveOrZero;
 
 @RestController
 @RequestMapping("/api/v1/me/profile")
@@ -41,13 +40,6 @@ public class MyProfileController {
         return profileService.setRate(principal.user().getId(), body.hourlyRateCop());
     }
 
-    /** La clase de prueba: si la ofrece y a qué precio (0 = gratis). */
-    @PutMapping("/trial")
-    public ProfileResponse setTrial(@AuthenticationPrincipal OrionUserDetails principal,
-                                    @Valid @RequestBody TrialRequest body) {
-        return profileService.setTrial(principal.user().getId(), body.acceptsTrial(), body.trialPriceCop());
-    }
-
     public record InviteLinkResponse(String slug) {
     }
 
@@ -55,10 +47,6 @@ public class MyProfileController {
     @GetMapping("/invite-link")
     public InviteLinkResponse inviteLink(@AuthenticationPrincipal OrionUserDetails principal) {
         return new InviteLinkResponse(profileService.enlaceParaInvitar(principal.user().getId()));
-    }
-
-    public record TrialRequest(boolean acceptsTrial,
-                               @PositiveOrZero Long trialPriceCop) {
     }
 
     /** Desglose SIN guardar, para pintarlo mientras el profesor escribe la tarifa. */

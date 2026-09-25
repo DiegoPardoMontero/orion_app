@@ -11,14 +11,14 @@ import co.orion.scheduling.application.BookingService;
 import co.orion.shared.security.OrionUserDetails;
 
 /**
- * La clase de prueba con un profesor, vista por el estudiante (Q7): si la ofrece, cuánto cuesta y
+ * La clase de prueba con un profesor, vista por el estudiante: si la ofrece —siempre gratis, V65— y
  * si le toca. La pantalla solo ofrece reservarla cuando {@code available} es verdadero, y el motivo
  * dice por qué no cuando no.
  */
 @RestController
 public class TrialController {
 
-    public record TrialResponse(boolean offered, Long priceCop, boolean available, String reason) {
+    public record TrialResponse(boolean offered, boolean available, String reason) {
     }
 
     private final BookingService bookings;
@@ -30,6 +30,6 @@ public class TrialController {
     @GetMapping("/api/v1/professors/{id}/trial")
     public TrialResponse trial(@PathVariable UUID id, @AuthenticationPrincipal OrionUserDetails principal) {
         BookingService.Prueba p = bookings.pruebaCon(principal.user().getId(), id);
-        return new TrialResponse(p.ofrecida(), p.precioCop(), p.disponible(), p.motivo());
+        return new TrialResponse(p.ofrecida(), p.disponible(), p.motivo());
     }
 }

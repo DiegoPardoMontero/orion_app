@@ -11,6 +11,8 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -27,7 +29,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 import co.orion.TestcontainersConfiguration;
 import co.orion.billing.persistence.PaymentRepository;
@@ -46,9 +47,9 @@ import co.orion.shared.time.BusinessZone;
 import co.orion.support.ApiIntegrationSupport;
 
 /**
- * La clase de prueba del estudiante (Q7): el profesor fija si la ofrece y a qué precio, cuesta eso
- * con la misma comisión, hay una por pareja y es para conocerse. Distinta del ensayo del admin, que
- * sigue su camino (ClaseDePruebaIT).
+ * La clase de prueba del estudiante: GRATIS si el profesor la ofrece (V65; antes tenía precio
+ * propio), una por pareja y para conocerse. Distinta del ensayo del admin, que sigue su camino
+ * (ClaseDePruebaIT).
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
@@ -79,9 +80,6 @@ class ClaseDePruebaDelEstudianteIT extends ApiIntegrationSupport {
     @Autowired
     private PaymentRepository payments;
 
-    @Autowired
-    private JdbcTemplate jdbc;
-
     private User maria;
     private Session anaSession;
     private Session mariaSession;
@@ -106,12 +104,15 @@ class ClaseDePruebaDelEstudianteIT extends ApiIntegrationSupport {
         mariaSession = login("maria@orion.test");
     }
 
-    record Oferta(boolean acceptsTrial, Long trialPriceCop) {
-    }
-
+    /** María la enciende desde su perfil, como en la pantalla: un interruptor, sin precio. */
     @SuppressWarnings("rawtypes")
-    private ResponseEntity<Map> ofrecer(Long precio) {
-        return put("/api/v1/me/profile/trial", mariaSession, new Oferta(true, precio), Map.class);
+    private ResponseEntity<Map> ofrecer(boolean si) {
+        Map<String, Object> perfil = new HashMap<>();
+        perfil.put("acceptsTrial", si);
+        perfil.put("isPublished", true);
+        perfil.put("languages", List.of());
+        perfil.put("goals", List.of());
+        return put("/api/v1/me/profile", mariaSession, perfil, Map.class);
     }
 
     private CreateBookingRequest reserva(int hora, boolean prueba) {
@@ -121,10 +122,10 @@ class ClaseDePruebaDelEstudianteIT extends ApiIntegrationSupport {
 
     @SuppressWarnings("rawtypes")
     @Test
-    @DisplayName("El interruptor solo no es una oferta: sin precio, nadie ve ni reserva una prueba")
-    void sinPrecioNoHayPrueba() {
+    @DisplayName("Un profesor nuevo no la ofrece: regalar una hora lo decide él")
+    void apagadaPorDefecto() {
         Map detalle = get("/api/v1/professors/" + maria.getId(), anaSession, Map.class).getBody();
-        assertThat(detalle).containsEntry("acceptsTrial", false).containsEntry("trialPriceCop", null);
+        assertThat(detalle).containsEntry("acceptsTrial", false).doesNotContainKey("trialPriceCop");
 
         assertThat(get("/api/v1/professors/" + maria.getId() + "/trial", anaSession, Map.class).getBody())
                 .containsEntry("offered", false).containsEntry("available", false);
@@ -132,60 +133,46 @@ class ClaseDePruebaDelEstudianteIT extends ApiIntegrationSupport {
                 .isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
     }
 
-    @Test
-    @DisplayName("El precio de prueba es 0 o está entre el mínimo y la tarifa del profe")
-    void elPrecioTieneReglas() {
-        assertThat(ofrecer(3_000L).getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
-        assertThat(ofrecer(70_000L).getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
-        assertThat(ofrecer(0L).getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(ofrecer(15_000L).getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(profiles.findById(maria.getId()).orElseThrow().getTrialPriceCop()).isEqualTo(15_000L);
-    }
-
     @SuppressWarnings("rawtypes")
     @Test
-    @DisplayName("Encendida y sin precio se guarda sin error, pero no es una oferta")
-    void encendidaSinPrecio() {
-        assertThat(ofrecer(null).getStatusCode()).isEqualTo(HttpStatus.OK);
+    @DisplayName("Encendida, es gratis: se confirma en el acto, sin pasarela ni comisión, y queda marcada como prueba")
+    void esGratis() {
+        assertThat(ofrecer(true).getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(get("/api/v1/professors/" + maria.getId(), anaSession, Map.class).getBody())
-                .containsEntry("acceptsTrial", false);
-    }
-
-    @SuppressWarnings("rawtypes")
-    @Test
-    @DisplayName("Se reserva a precio de prueba, con la misma comisión, y queda marcada como prueba")
-    void seReservaAPrecioDePrueba() {
-        ofrecer(15_000L);
-        Map detalle = get("/api/v1/professors/" + maria.getId(), anaSession, Map.class).getBody();
-        assertThat(detalle).containsEntry("acceptsTrial", true).containsEntry("trialPriceCop", 15_000);
+                .containsEntry("acceptsTrial", true);
         assertThat(get("/api/v1/professors/" + maria.getId() + "/trial", anaSession, Map.class).getBody())
-                .containsEntry("available", true).containsEntry("priceCop", 15_000);
+                .containsEntry("offered", true).containsEntry("available", true).doesNotContainKey("priceCop");
 
         ResponseEntity<BookingResponse> creada = post("/api/v1/bookings", anaSession, reserva(9, true), BookingResponse.class);
 
         assertThat(creada.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(creada.getBody().status()).isEqualTo(BookingStatus.CONFIRMED.name());
         UUID id = creada.getBody().id();
         assertThat(bookings.findById(id).orElseThrow().isTrial()).isTrue();
         var pago = payments.findByBookingId(id).orElseThrow();
-        assertThat(pago.getAmountCop()).isEqualTo(15_000);
-        // La misma comisión que cualquier clase: la vigente, sobre el precio de prueba.
-        int vigente = jdbc.queryForObject(
-                "select value::int from platform_settings where key = 'commission_rate_bps'", Integer.class);
-        assertThat(pago.getCommissionCop()).isEqualTo(15_000L * vigente / 10_000);
+        assertThat(pago.getAmountCop()).isZero();
+        assertThat(pago.getChargedCop()).isZero();
+        assertThat(pago.getCommissionCop()).isZero();
+    }
 
-        // Mientras espera el pago, la pantalla dice eso, no «ya tienes clases con él».
-        Map prueba = get("/api/v1/professors/" + maria.getId() + "/trial", anaSession, Map.class).getBody();
-        assertThat(prueba).containsEntry("available", false);
-        assertThat((String) prueba.get("reason")).contains("esperando el pago");
+    @SuppressWarnings("rawtypes")
+    @Test
+    @DisplayName("Apagarla la quita del perfil y de la reserva")
+    void seApaga() {
+        ofrecer(true);
+        assertThat(ofrecer(false).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(get("/api/v1/professors/" + maria.getId() + "/trial", anaSession, Map.class).getBody())
+                .containsEntry("offered", false);
+        assertThat(post("/api/v1/bookings", anaSession, reserva(9, true), Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
     }
 
     @SuppressWarnings("rawtypes")
     @Test
     @DisplayName("Una por pareja: con la prueba en curso, no hay segunda; tampoco para quien ya tiene clases")
     void unaPorPareja() {
-        ofrecer(0L);
+        ofrecer(true);
         ResponseEntity<BookingResponse> primera = post("/api/v1/bookings", anaSession, reserva(9, true), BookingResponse.class);
-        // Gratis: se confirma en el acto, sin pasarela.
         assertThat(primera.getBody().status()).isEqualTo(BookingStatus.CONFIRMED.name());
 
         ResponseEntity<Map> segunda = post("/api/v1/bookings", anaSession, reserva(10, true), Map.class);
@@ -201,7 +188,7 @@ class ClaseDePruebaDelEstudianteIT extends ApiIntegrationSupport {
     @Test
     @DisplayName("Si la prueba se cancela, no se gasta: se puede volver a reservar")
     void laCanceladaNoCuenta() {
-        ofrecer(0L);
+        ofrecer(true);
         UUID id = post("/api/v1/bookings", anaSession, reserva(9, true), BookingResponse.class).getBody().id();
         assertThat(post("/api/v1/bookings/" + id + "/cancel", anaSession, Map.of(), Map.class).getStatusCode().is2xxSuccessful())
                 .isTrue();
@@ -213,7 +200,7 @@ class ClaseDePruebaDelEstudianteIT extends ApiIntegrationSupport {
     @Test
     @DisplayName("El índice de la base es el árbitro final: dos pruebas activas de la misma pareja no entran")
     void elIndiceEsElArbitro() {
-        ofrecer(0L);
+        ofrecer(true);
         UUID id = post("/api/v1/bookings", anaSession, reserva(9, true), BookingResponse.class).getBody().id();
         var otra = bookings.findById(id).orElseThrow();
         Booking copia = TestBookings.confirmed(otra.getStudentId(), otra.getProfessorId(),

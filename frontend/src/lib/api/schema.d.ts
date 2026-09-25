@@ -68,22 +68,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/me/profile/trial": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put: operations["setTrial"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/me/profile/rate": {
         parameters: {
             query?: never;
@@ -3007,8 +2991,6 @@ export interface components {
             certified?: boolean;
             acceptsTrial?: boolean;
             /** Format: int64 */
-            trialPriceCop?: number;
-            /** Format: int64 */
             hourlyRateCop?: number;
             compensationModel?: string;
             languages?: components["schemas"]["ProfileLanguage"][];
@@ -3069,11 +3051,6 @@ export interface components {
         };
         StudentVisibilityRequest: {
             isPublic: boolean;
-        };
-        TrialRequest: {
-            acceptsTrial?: boolean;
-            /** Format: int64 */
-            trialPriceCop?: number;
         };
         RateRequest: {
             /** Format: int64 */
@@ -3880,8 +3857,6 @@ export interface components {
             certified?: boolean;
             acceptsTrial?: boolean;
             /** Format: int64 */
-            trialPriceCop?: number;
-            /** Format: int64 */
             hourlyRateCop?: number;
             /** Format: double */
             ratingAvg?: number;
@@ -3892,8 +3867,6 @@ export interface components {
         };
         TrialResponse: {
             offered?: boolean;
-            /** Format: int64 */
-            priceCop?: number;
             available?: boolean;
             reason?: string;
         };
@@ -4818,30 +4791,6 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UpdateProfileRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ProfileResponse"];
-                };
-            };
-        };
-    };
-    setTrial: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["TrialRequest"];
             };
         };
         responses: {

@@ -19,10 +19,8 @@ public record ProfessorDetail(
         Short yearsExperience,
         String education,
         boolean certified,
-        /** Si ofrece clase de prueba: el interruptor encendido y un precio fijado. */
+        /** Si ofrece la primera clase gratis (V65). */
         boolean acceptsTrial,
-        /** El precio de su clase de prueba (0 = gratis), o null si no la ofrece. */
-        Long trialPriceCop,
         Long hourlyRateCop,
         Double ratingAvg,
         int ratingCount,

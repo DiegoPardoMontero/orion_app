@@ -87,10 +87,6 @@ public class ProfessorProfile {
     @Column(name = "accepts_trial", nullable = false)
     private boolean acceptsTrial;
 
-    /** Lo que cuesta su clase de prueba (V62): 0 es gratis; sin precio, no la ofrece todavía. */
-    @Column(name = "trial_price_cop")
-    private Long trialPriceCop;
-
     /** El nombre corto de su enlace para invitar (V63): «maria-gomez». Nulo hasta que lo pide. */
     @Column(name = "public_slug", length = 60)
     private String publicSlug;
@@ -108,7 +104,8 @@ public class ProfessorProfile {
         this.published = false;
         // Q1: los profesores nuevos nacen bajo el modelo de comisión.
         this.compensationModel = CompensationModel.COMMISSION;
-        this.acceptsTrial = true;
+        // Ofrecer la clase de prueba es regalar una hora (V65): lo decide el profesor, no un valor por defecto.
+        this.acceptsTrial = false;
         this.certified = false;
     }
 
@@ -254,18 +251,6 @@ public class ProfessorProfile {
         return certified;
     }
 
-    /** Fija la clase de prueba: si la ofrece y a qué precio. Las reglas del precio las valida el servicio. */
-    public void changeTrial(boolean acepta, Long precioCop) {
-        this.acceptsTrial = acepta;
-        if (precioCop != null) {
-            this.trialPriceCop = precioCop;
-        }
-    }
-
-    public Long getTrialPriceCop() {
-        return trialPriceCop;
-    }
-
     public String getPublicSlug() {
         return publicSlug;
     }
@@ -277,14 +262,7 @@ public class ProfessorProfile {
         }
     }
 
-    /**
-     * Si un estudiante puede reservarle una clase de prueba: el interruptor encendido <em>y</em> un
-     * precio fijado. El interruptor solo, que nace encendido, no es una oferta: no dice cuánto cuesta.
-     */
-    public boolean offersTrial() {
-        return acceptsTrial && trialPriceCop != null;
-    }
-
+    /** Si ofrece la primera clase gratis a quien todavía no ha tomado clases con él (V65). */
     public boolean acceptsTrial() {
         return acceptsTrial;
     }

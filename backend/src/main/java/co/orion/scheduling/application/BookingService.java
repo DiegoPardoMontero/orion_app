@@ -404,36 +404,27 @@ public class BookingService {
     }
 
     /**
-     * La clase de prueba de este estudiante con este profesor: si la ofrece, a qué precio, y si le
+     * La clase de prueba —gratis, V65— de este estudiante con este profesor: si la ofrece y si le
      * toca. {@code motivo} dice por qué no, en palabras, cuando no.
      */
-    public record Prueba(boolean ofrecida, Long precioCop, boolean disponible, String motivo) {
+    public record Prueba(boolean ofrecida, boolean disponible, String motivo) {
     }
 
     @Transactional(readOnly = true)
     public Prueba pruebaCon(UUID studentId, UUID professorId) {
-        Long precio = professorProfiles.findById(professorId)
-                .filter(p -> p.offersTrial())
-                .map(p -> p.getTrialPriceCop())
-                .orElse(null);
-        if (precio == null) {
-            return new Prueba(false, null, false, "Este profesor no ofrece clase de prueba.");
-        }
-        // Una prueba a medio pagar todavía aparta su lugar: se dice así, y no «ya tienes clases».
-        if (bookings.existsByStudentIdAndProfessorIdAndTrialTrueAndStatus(studentId, professorId,
-                BookingStatus.PENDING_PAYMENT)) {
-            return new Prueba(true, precio, false, "Ya reservaste tu clase de prueba con este profesor y está "
-                    + "esperando el pago. Si no la pagas, en unos minutos se libera y puedes volver a reservarla.");
+        boolean ofrecida = professorProfiles.findById(professorId).map(p -> p.acceptsTrial()).orElse(false);
+        if (!ofrecida) {
+            return new Prueba(false, false, "Este profesor no ofrece clase de prueba.");
         }
         // Una prueba dictada o a la que faltó el estudiante cuenta; lo mismo que cualquier clase
         // normal con él: la prueba es para conocerse.
         if (bookings.countEarlierTogether(studentId, professorId, clock.instant().plusSeconds(1),
                 List.of(BookingStatus.PENDING_PAYMENT, BookingStatus.CONFIRMED, BookingStatus.UNDER_REVIEW,
                         BookingStatus.COMPLETED, BookingStatus.NO_SHOW_STUDENT)) > 0) {
-            return new Prueba(true, precio, false,
+            return new Prueba(true, false,
                     "La clase de prueba es para conocer al profesor, y tú ya tienes clases con él.");
         }
-        return new Prueba(true, precio, true, null);
+        return new Prueba(true, true, null);
     }
 
     /** El chequeo amable de la clase de prueba; la regla de fondo la guarda el índice de la V62. */

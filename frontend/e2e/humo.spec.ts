@@ -185,15 +185,17 @@ test("un estudiante nuevo se registra desde el login y aterriza dentro", async (
 });
 
 /**
- * La clase de prueba (Q7): María la ofrece gratis desde su perfil y una estudiante nueva —que aún
- * no tiene clases con ella— la reserva; sin pasarela, queda confirmada y marcada como prueba.
+ * La clase de prueba, siempre gratis (V65): María la enciende desde su perfil y una estudiante nueva
+ * —que aún no tiene clases con ella— la reserva; sin pasarela, queda confirmada y marcada como prueba.
  */
 test("María ofrece una clase de prueba gratis y una estudiante nueva la reserva", async ({ page }) => {
   await login(page, USERS.maria);
+  await page.waitForURL((u) => !u.pathname.startsWith("/login"));
   await page.goto("/perfil");
   await page.getByRole("button", { name: "Editar mi perfil" }).click();
-  // El interruptor nace encendido, pero sin precio no es una oferta.
-  await page.locator("#precio-prueba").fill("0");
+  // Nace apagada: regalar una hora lo decide el profesor. Si una corrida anterior ya la encendió, se deja.
+  const gratis = page.getByRole("switch", { name: "Primera clase gratis" });
+  if ((await gratis.getAttribute("aria-checked")) !== "true") await gratis.click();
   await page.getByRole("button", { name: "Guardar cambios" }).click();
   await expect(page.getByText("Listo, tu perfil quedó actualizado.")).toBeVisible();
   await logout(page);
@@ -215,7 +217,7 @@ test("María ofrece una clase de prueba gratis y una estudiante nueva la reserva
   await page.getByRole("link", { name: /Ver agenda/ }).first().click();
   await page.waitForURL(/\/profesores\/[0-9a-f-]+$/);
   const perfilDeMaria = new URL(page.url()).pathname;
-  await expect(page.getByText("Clase de prueba gratis")).toBeVisible();
+  await expect(page.getByText("Primera clase gratis")).toBeVisible();
   await expect(page.getByText("Cupos disponibles")).toBeVisible();
   await page.locator("main .grid-cols-3 button").first().click();
   await page.getByRole("button", { name: /^Clase de prueba/ }).click();
