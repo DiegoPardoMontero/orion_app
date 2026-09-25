@@ -13,6 +13,7 @@ import { misPuntosKey } from "@/lib/puntos";
 import type { GoalResponse, LanguageResponse } from "@/lib/api/types";
 import {
   estadoDe,
+  NOMBRE_FAMILIA,
   numeralDe,
   NIVEL_ESTUDIANTE,
   type Engagement,
@@ -154,7 +155,12 @@ export function MiFicha() {
   );
 }
 
-/** Las tres últimas encendidas. Sin ninguna, se invita en vez de dejar el hueco. */
+/**
+ * Las tres últimas encendidas, con nombre. Iban solas, y tres estrellas de colores sin rótulo no
+ * dicen nada (24/09/2026: «no entiendo qué significan, por qué tienen distintos colores»): cada una
+ * es un logro, y el color es el de su familia, así que se dicen las dos cosas. Sin ninguna, se invita
+ * en vez de dejar el hueco.
+ */
 function UltimasEstrellas({ logros }: { logros?: Logro[] }) {
   const recientes = (logros ?? [])
     .filter((l) => l.unlocked && l.unlockedAt)
@@ -170,20 +176,37 @@ function UltimasEstrellas({ logros }: { logros?: Logro[] }) {
   }
 
   return (
-    <ul className="mt-3 flex justify-center gap-2 sm:justify-start">
-      {recientes.map((logro) => (
-        <li key={logro.code}>
-          <EstrellaLogro
-            familia={logro.family}
-            brillo={logro.glow}
-            estado={estadoDe(logro)}
-            numeral={numeralDe(logro.code)}
-            size={38}
-            titulo={`${logro.name}. ${logro.description}`}
-          />
-        </li>
-      ))}
-    </ul>
+    <div className="mt-3">
+      <p className="text-[11.5px] font-bold uppercase tracking-[0.06em] text-text-secondary">
+        Tus últimos logros
+      </p>
+      <ul className="mt-2 flex flex-wrap justify-center gap-2 sm:justify-start">
+        {recientes.map((logro) => (
+          <li key={logro.code}>
+            <Link
+              href="/logros"
+              title={logro.description}
+              className="flex items-center gap-2 rounded-pill bg-surface-sunken py-1 pl-1 pr-3.5 text-left transition-colors hover:bg-border/60 focus-visible:shadow-focus"
+            >
+              <EstrellaLogro
+                familia={logro.family}
+                brillo={logro.glow}
+                estado={estadoDe(logro)}
+                numeral={numeralDe(logro.code)}
+                size={30}
+              />
+              <span className="leading-tight">
+                <span className="block text-[12.5px] font-bold text-text">{logro.name}</span>
+                <span className="block text-[11px] text-text-muted">{NOMBRE_FAMILIA[logro.family]}</span>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-1.5 text-[11.5px] text-text-muted">
+        Cada logro enciende una estrella; su color es el de su familia. Todas están en «Mi cielo».
+      </p>
+    </div>
   );
 }
 
