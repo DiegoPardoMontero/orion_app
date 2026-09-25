@@ -337,9 +337,7 @@ function MobileHeader({ me }: { me: { fullName: string; email: string; role: Rol
       <Wordmark className="text-[16px] text-primary" />
       <div className="flex items-center gap-1">
         {me.role === "STUDENT" && (
-          <Link href="/cuenta?seccion=resumen#puntos" className="mr-1 rounded-pill focus-visible:shadow-focus">
-            <MisPuntosChip compacto />
-          </Link>
+          <MisPuntosChip compacto className="mr-1" />
         )}
         <CampanaNotificaciones />
         <MenuUsuario me={me} posicion="abajo" />
@@ -612,13 +610,7 @@ function MenuUsuario({
               <p className="truncate text-[13px] font-bold text-text">{me.fullName}</p>
               <p className="truncate text-[11.5px] text-text-muted">{me.email}</p>
               {me.role === "STUDENT" && (
-                <Link
-                  href="/cuenta?seccion=resumen#puntos"
-                  onClick={() => setAbierto(false)}
-                  className="mt-2 inline-flex rounded-pill focus-visible:shadow-focus"
-                >
-                  <MisPuntosChip />
-                </Link>
+                <MisPuntosChip className="mt-2" />
               )}
             </div>
             {/* La barra inferior de móvil está topada en cinco entradas y ya está llena, así que

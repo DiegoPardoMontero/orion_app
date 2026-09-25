@@ -306,12 +306,20 @@ test("[e-hilo.1 e-hilo.2 e-hilo.3] el chat con el profe: saludo de Orión y tel�
   await expect(page.getByText("3001234567")).toHaveCount(0);
 });
 
-test("[e-perfil.1 e-perfil.2] Mi perfil: racha y puntos con cómo se hacen", async ({ page }) => {
+test("[e-perfil.1 e-perfil.2 e-ficha.5] Mi perfil: racha y puntos junto al nombre, sin explicarlos ni ofrecer postular", async ({ page }) => {
   await entrar(page, SEMILLA.ana);
   await page.goto("/cuenta");
   await expect(page.getByText(/semanas? en racha|racha/i).first()).toBeVisible();
-  await expect(page.getByText("Tus puntos").first()).toBeVisible();
-  await expect(page.getByText("Cómo se hacen")).toBeVisible();
+  await expect(page.getByTitle("Tus puntos en Orión").first()).toBeVisible();
+  // Pardo, 25/09/2026: los puntos no se explican.
+  await expect(page.getByText("Tus puntos", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Cómo se hacen")).toHaveCount(0);
+  // Y desde la cuenta de estudiante no se postula a profesor.
+  await page.goto("/cuenta?seccion=ficha");
+  await expect(page.getByText("Solo para ti")).toBeVisible();
+  await expect(page.getByText(/Enseña en Orión|Postúlate como profesor/)).toHaveCount(0);
+  await page.goto("/aplicacion");
+  await page.waitForURL((u) => !u.pathname.startsWith("/aplicacion"));
 });
 
 test("[e-campana.1 e-campana.2] las notificaciones llevan a su pantalla y se marcan leídas", async ({ page }) => {
