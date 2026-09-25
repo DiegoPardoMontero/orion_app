@@ -365,11 +365,12 @@ export default function AgendaProfesorPage() {
           <div className="flex items-center gap-4">
             <Avatar nombre={detalle.fullName ?? ""} fotoUrl={detalle.photoUrl} size="lg" className="lg:hidden" />
             <Avatar nombre={detalle.fullName ?? ""} fotoUrl={detalle.photoUrl} size="xl" className="hidden lg:block" />
+            {/* El nombre y la descripción corta se leen enteros: nunca se cortan con «…». */}
             <div className="min-w-0">
-              <h1 className="truncate font-display text-[20px] font-bold lg:text-[30px]">
+              <h1 className="font-display text-[20px] leading-tight font-bold text-balance wrap-break-word lg:text-[30px]">
                 {detalle.fullName}
               </h1>
-              <p className="truncate text-[13px] text-text-secondary lg:text-[15px]">
+              <p className="mt-1 text-[13px] leading-snug text-pretty wrap-break-word text-text-secondary lg:text-[15px]">
                 {detalle.headline}
               </p>
             </div>
