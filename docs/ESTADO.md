@@ -32,16 +32,17 @@ dentro de `/cuenta`).
 ## Verificación
 Al 25/09/2026 de madrugada, tras la noche autónoma (el wireflow probado, la revisión de seguridad
 del Bloque 11 y las sesiones en la base):
-- Backend: `./mvnw verify` — **390 unitarios + 594 de integración**, verde.
+- Backend: `./mvnw verify` — **390 unitarios + 596 de integración**, verde.
 - Frontend: `tsc` + `lint` verdes; **121 tests de Vitest**.
-- **E2E Playwright: 90 de 93** sobre base recreada y con el caché de fetch de Next limpio (la de
-  Wompi, fuera; 3 se saltan porque la base recién sembrada no tiene el dato que piden, p. ej. una
-  clase dentro del plazo de reclamo, y las cubre el backend). Incluye las cuatro suites del
-  wireflow.
+- **E2E Playwright: 92 de 93** sobre base recreada y con el caché de fetch de Next limpio (la de
+  Wompi, fuera; la que se salta pide una clase dentro del plazo de reclamo, que la base recién
+  sembrada no trae, y la cubre el backend). Incluye las cuatro suites del wireflow.
+- **Sesiones**: con la cookie de un login, se apagó el backend y se arrancó otro proceso; la misma
+  cookie siguió dentro (`/auth/me` 200).
 - **Wireflow**: 232 de 253 casos probados por Claude (204 en el navegador, 28 en el backend); el
   resultado se ve en la página debajo de cada caso.
-- **Celular**: 47 pantallas de los cuatro roles recorridas a 390 px buscando desbordes laterales y
-  textos cortados: ninguna.
+- **Celular y escritorio**: 47 pantallas de los cuatro roles recorridas a 360, 390 y 1280 px buscando
+  desbordes laterales y textos cortados: ninguna.
 - **Reporte de la noche**: https://claude.ai/artifact/LvkmUM9K9kvGMQyq4bMNxD
 
 Al 24/09/2026 por la noche, con la tercera tanda del Bloque 11 (pasos 19–25: editar sin modo
@@ -752,6 +753,11 @@ https://claude.ai/artifact/LvkmUM9K9kvGMQyq4bMNxD
   la memoria del proceso. `User` es serializable con `serialVersionUID` fijo, y una sesión guardada
   que un despliegue deje ilegible se lee como vacía —la persona vuelve a entrar— en vez de dar un 500
   (`SesionesEnLaBase`). La cookie sigue siendo `ORION_SESSION` y el tiempo de inactividad, 30 min.
+  Un 401 anónimo ya no abre sesión (sin «petición guardada»): antes cada visitante sin cuenta
+  habría dejado una fila.
+- **Carrera al crear la cuenta**: el navegador lanza varias peticiones a la vez con la cookie del
+  diagnóstico sin cuenta, y cada una mudaba lo mismo; ahora el reclamo es un `UPDATE` condicional
+  y solo muda quien lo gana.
 - **Pruebas nuevas del backend** para los casos que solo él puede probar: la comisión nueva no toca
   lo ya reservado, confirmar o descartar una sanción propuesta, el tope de «Llámame» y el panel
   cuadrando con las liquidaciones.
