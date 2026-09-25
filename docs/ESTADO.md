@@ -30,6 +30,17 @@ dentro de `/cuenta`).
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots), con Rigel de protagonista.
 
 ## Verificación
+Al 24/09/2026 por la noche, con la tercera tanda del Bloque 11 (pasos 19–25: editar sin modo
+edición, la clase minimizable, las estrellas de «Mi ficha», filtrar por horas exactas, los mensajes
+de Rigel, la clase de prueba gratis y el wireflow):
+- Backend: `./mvnw verify` — **387 unitarios + 580 de integración**, verde.
+- Frontend: `tsc` + `lint` verdes; **118 tests de Vitest**.
+- **E2E Playwright: 23 de 24** sobre base recreada (la de Wompi pide llaves de *sandbox*). La clase
+  minimizable no la cubre la e2e —en local no hay JaaS—: se probó con el aula y Jitsi simulados en
+  Playwright (el contador del iframe sigue al minimizar, navegar y volver; Jitsi se monta una vez).
+- **Wireflow de toda la app**, con 85 pantallas capturadas y 253 casos para marcar entre dos:
+  https://claude.ai/artifact/DneCWSQzDYH16wr7kYBqmj — reemplaza a la lista de flujos para probar.
+
 Al 24/09/2026, con la segunda tanda del Bloque 11 (pasos 12–18: escritorio ancho, recordar la
 práctica, país con bandera, la franja del perfil del profesor, horarios dentro del perfil, Rigel en
 el hero del celular e «Invitar estudiantes»):
@@ -727,7 +738,7 @@ están en [`orion-bloque-11-refinamiento.md`](./briefs/orion-bloque-11-refinamie
   solo con el JDK, y solo hacia servicios de push conocidos (sin SSRF). Suenan lo urgente y lo
   esperado; logros y confirmaciones se quedan en la campana.
 - **Bienvenida y recorrido idénticos al diseño**, y el recorrido **cambia de pantalla** en cada paso.
-- **Clase de prueba** (V62, Q7): precio del profe (0 = gratis, o entre `trial_min_price_cop` y su
+- **Clase de prueba** (V62, Q7; desde la tercera tanda, **siempre gratis**, ver abajo): precio del profe (0 = gratis, o entre `trial_min_price_cop` y su
   tarifa), la misma comisión, una por pareja por índice, solo para quien aún no tiene clases con
   él. La marca vieja de los ensayos del admin pasó a llamarse `is_rehearsal`.
 
@@ -757,6 +768,33 @@ están en [`orion-bloque-11-refinamiento.md`](./briefs/orion-bloque-11-refinamie
   puede cambiar (menciona la clase de prueba si la ofrece) y botones para WhatsApp, Facebook,
   LinkedIn, X, Telegram, correo, compartir desde el celular y copiar. Instagram y TikTok no dejan
   compartir un enlace desde afuera: se copia el mensaje.
+
+**Tercera tanda** (pasos 19–25, esa noche):
+- **La clase de prueba es GRATIS** si el profesor la ofrece (V65): un interruptor, «Ofrezco la
+  primera clase gratis», sin precio; se confirma en el acto, sin pasarela ni comisión. Regalar una
+  hora es decisión del profesor, así que nace apagada: la V65 la deja encendida solo a quien ya la
+  había puesto en 0. Se fueron `trial_price_cop`, `trial_min_price_cop` y `PUT /me/profile/trial`.
+- **Las estrellas de «Mi ficha»** se explican solas: «Tus últimos logros», con el nombre y la
+  familia de cada una (el color es el de la familia), y llevan a Mi cielo.
+- **Filtrar por horas exactas, varias a la vez**: chips de 5 AM a 11 PM; «Mañana · todas» marca o
+  desmarca las suyas. El backend recibe `hour=HH:00` repetible: una hora es el cupo en punto, así que
+  la clase entera tiene que caber en la franja publicada. `schedule=` de la portada sigue sirviendo.
+- **Editar sin «modo edición»**: los perfiles (profesor, ficha y datos del estudiante) se editan
+  directo; al cambiar algo aparece una barra fija «Tienes cambios sin guardar · Descartar · Guardar
+  cambios», y salir con cambios pregunta (los enlaces de la app se atajan en captura). La tarifa del
+  profesor entra en el mismo guardado, antes que el resto (publicar exige tarifa).
+- **Mensajes de Rigel** (V66): un hilo fijo arriba de «Mensajes», de solo lectura, con la
+  bienvenida (al profesor, cuando ya está aprobado), la primera reserva y la primera clase de cada
+  lado —una vez cada uno, por índice— y «¿Seguimos?» al estudiante sin clase en dos semanas, a lo
+  sumo una vez al mes. Botones a rutas de la app; sin campana, correo ni push: solo el número sin
+  leer de «Mensajes». La bienvenida se deja al abrir el hilo, así llega también a quien ya existía.
+- **La clase sigue al salir del aula**: la videollamada vive en el armazón (`ClaseEnCurso`), en un
+  contenedor fijo que no se mueve del DOM (mover un iframe lo recarga). Minimizar, «atrás» o el menú
+  la encogen, deslizándose, a una ventana flotante arrastrable con micrófono, cámara, volver y colgar;
+  volver la agranda sin reconectar. En el aula, la barra «Quedan X min» con una estrella que avanza y
+  el aviso «María entró a la clase». Recargar o salir de la zona autenticada sí corta (se advierte).
+- **Arreglado al capturar el wireflow**: el login decía «Invalid credentials» y la validación
+  «Validation failed», en inglés.
 
 ## La práctica, rediseñada y gamificada (24/09/2026)
 
@@ -955,9 +993,10 @@ su test; lo que cambia el comportamiento o pide una decisión está abajo, en Pe
 - **Las sesiones se pierden en cada despliegue** (viven en memoria de Tomcat): el login con Google ya
   no depende de ellas, pero cualquier despliegue saca a todo el mundo. Guardarlas en la base (Spring
   Session JDBC) exige que el usuario de la sesión sea serializable; hoy guarda la entidad `User`.
-- **Los profesores actuales pierden la insignia «Ofrece clase de prueba»** hasta que fijen un precio
-  de prueba: antes la insignia salía sin que hubiera nada detrás. El asistente de postulación tiene el
-  interruptor pero no el precio.
+- **La clase de prueba nace apagada** (V65): los profesores que no la habían puesto en 0 tienen que
+  encender «Ofrezco la primera clase gratis» en su perfil si quieren ofrecerla.
+- **El wireflow usa la base compartida del artifact**: solo lo abre quien esté en la organización de
+  Pardo o sea invitado por correo; para marcar, Colaborador o Editor.
 - **Config de producción**: `ORION_APP_BASE_URL`, `WOMPI_*`, `RESEND_API_KEY`,
   `NEXT_PUBLIC_SUPPORT_WHATSAPP`, `NEXT_PUBLIC_SITE_URL`, `ORION_LEGAL_*` y `ORION_ALERTS_TO`
   en Railway.
