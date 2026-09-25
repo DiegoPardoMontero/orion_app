@@ -229,8 +229,10 @@ test("[ad-usuarios.4] el admin quita y vuelve a dar el beneficio de profe fundad
   // Los profes que ya estaban son fundadores (V70; la semilla hace lo mismo).
   await expect(fila.getByText(/^Fundador · 15 %/)).toBeVisible();
   await fila.getByRole("button", { name: "Quitar fundador" }).click();
-  await expect(fila.getByText("Solo cambia las reservas nuevas.")).toBeVisible();
-  await fila.getByRole("button", { name: "Quitar", exact: true }).click();
+  // La confirmación es un diálogo: dentro de la fila la estiraba hasta pedir scroll horizontal.
+  const confirmar = page.getByRole("dialog", { name: "¿Quitar el beneficio de fundador?" });
+  await expect(confirmar.getByText("Solo cambia las reservas nuevas.")).toBeVisible();
+  await confirmar.getByRole("button", { name: "Quitar", exact: true }).click();
   await expect(fila.getByText("Sin beneficio de fundador")).toBeVisible();
   await fila.getByRole("button", { name: "Hacer fundador" }).click();
   await expect(fila.getByText(/^Fundador · 15 %/)).toBeVisible();

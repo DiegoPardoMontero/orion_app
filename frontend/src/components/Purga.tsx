@@ -5,7 +5,7 @@ import { AlertTriangle, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Modal } from "@/components/Modal";
 import { AvisoError, Cargando } from "@/components/estados";
-import { Boton, Campo, Spinner } from "@/components/ui";
+import { Boton, BotonIcono, Campo, Spinner } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type { PurgePreview } from "@/lib/api/types";
 import { precioCop } from "@/lib/format";
@@ -24,25 +24,34 @@ export function BotonPurga({
   tipo,
   id,
   etiqueta = "Borrar definitivamente",
+  soloIcono = false,
   onBorrado,
 }: {
   tipo: "booking" | "user";
   id: string;
   etiqueta?: string;
+  /** En las tablas del admin: el bote de basura solo, con la etiqueta como nombre. */
+  soloIcono?: boolean;
   onBorrado?: () => void;
 }) {
   const [abierto, setAbierto] = useState(false);
 
   return (
     <>
-      <Boton
-        variante="peligro"
-        className="h-9 px-3 text-[13px]"
-        onClick={() => setAbierto(true)}
-      >
-        <Trash2 size={15} strokeWidth={1.75} />
-        {etiqueta}
-      </Boton>
+      {soloIcono ? (
+        <BotonIcono etiqueta={etiqueta} variante="peligro" onClick={() => setAbierto(true)}>
+          <Trash2 size={17} strokeWidth={1.75} />
+        </BotonIcono>
+      ) : (
+        <Boton
+          variante="peligro"
+          className="h-9 px-3 text-[13px]"
+          onClick={() => setAbierto(true)}
+        >
+          <Trash2 size={15} strokeWidth={1.75} />
+          {etiqueta}
+        </Boton>
+      )}
       {abierto && (
         <ModalPurga tipo={tipo} id={id} onCerrar={() => setAbierto(false)} onBorrado={onBorrado} />
       )}

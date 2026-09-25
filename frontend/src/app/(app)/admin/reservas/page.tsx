@@ -5,6 +5,7 @@ import { CalendarRange, Sparkles } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { BotonPurga } from "@/components/Purga";
+import { tablaAdmin as t } from "@/components/tablaAdmin";
 import { Badge, Campo } from "@/components/ui";
 import { apiFetch } from "@/lib/api/fetch";
 import type { AdminBookingResponse, AdminUserResponse, MetricsResponse } from "@/lib/api/types";
@@ -137,44 +138,45 @@ export default function AdminReservasPage() {
         )}
 
         {!!reservas.data?.length && (
-          <div className="overflow-x-auto rounded-card bg-surface-raised shadow-md">
-            <table className="w-full text-[13px]">
-              <thead>
-                <tr className="bg-surface text-left text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted">
-                  <th className="px-4 py-3">Cuándo</th>
-                  <th className="px-4 py-3">Estudiante</th>
-                  <th className="px-4 py-3">Profesor</th>
-                  <th className="px-4 py-3">Modalidad</th>
-                  <th className="px-4 py-3">Estado</th>
-                  <th className="px-4 py-3">Autoservicio</th>
-                  <th className="px-4 py-3 text-right">Limpieza</th>
+          <div className={t.contenedor}>
+            <table className={t.tabla}>
+              <thead className={t.cabecera}>
+                <tr className={t.filaCabecera}>
+                  <th className={t.th}>Cuándo</th>
+                  <th className={t.th}>Estudiante y profesor</th>
+                  <th className={t.th}>Estado</th>
+                  <th className={t.th}>Autoservicio</th>
+                  <th className={`${t.th} text-right`}>Limpieza</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className={t.cuerpo}>
                 {reservas.data.map((reserva) => (
-                  <tr key={reserva.id} className="border-t border-surface-sunken hover:bg-surface">
-                    <td className="px-4 py-3 font-semibold">
+                  <tr key={reserva.id} className={t.fila}>
+                    <td className={`${t.celda} font-semibold`}>
                       {fechaYRango(reserva.startsAt!, reserva.endsAt!)}
                     </td>
-                    <td className="px-4 py-3">{reserva.studentName}</td>
-                    <td className="px-4 py-3">{reserva.professorName}</td>
-                    <td className="px-4 py-3">
-                      <Badge tono={reserva.modality === "VIRTUAL" ? "menta" : "melocoton"}>
-                        {reserva.modality === "VIRTUAL" ? "Virtual" : "Presencial"}
-                      </Badge>
+                    <td className={t.celda}>
+                      <span className="block">
+                        <span className="text-text-muted">Estudiante: </span>
+                        {reserva.studentName}
+                      </span>
+                      <span className="block">
+                        <span className="text-text-muted">Profesor: </span>
+                        {reserva.professorName}
+                      </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <Badge tono={tonoEstado(reserva.status)}>
-                        {etiquetaEstado(reserva.status)}
-                      </Badge>
+                    <td className={t.celda}>
+                      {/* Sin columna de modalidad: desde la V30 todas las clases son virtuales. */}
+                      <Badge tono={tonoEstado(reserva.status)}>{etiquetaEstado(reserva.status)}</Badge>
                     </td>
-                    <td className="px-4 py-3 text-text-secondary">
+                    <td className={`${t.celda} text-text-secondary`}>
+                      <span className="lg:hidden">Autoservicio: </span>
                       {reserva.selfService ? "Sí" : "No"}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className={t.acciones}>
                       {/* Borrado DEFINITIVO, en cualquier estado. Para limpiar datos de prueba
                           antes de abrir al público; el modal enseña qué se lleva por delante. */}
-                      <BotonPurga tipo="booking" id={reserva.id!} etiqueta="Borrar" />
+                      <BotonPurga tipo="booking" id={reserva.id!} etiqueta="Borrar" soloIcono />
                     </td>
                   </tr>
                 ))}

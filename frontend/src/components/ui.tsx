@@ -21,6 +21,11 @@ const VARIANTES: Record<Variante, string> = {
   peligro: "border-[1.5px] border-[#f0beb6] text-error hover:bg-error-bg",
 };
 
+// El relleno y el cuerpo de letra van aparte: el botón de ícono no los lleva. Dos clases de la misma
+// propiedad (px-4 y px-0) no se pisan por el orden en que se escriben, sino por el de la hoja de estilos.
+const BASE =
+  "inline-flex min-h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-pill font-bold transition-[transform,background-color,box-shadow,border-color,color] duration-[140ms] ease-standard focus-visible:shadow-focus active:scale-[0.98] disabled:pointer-events-none disabled:opacity-[0.42]";
+
 export function Boton({
   variante = "primario",
   className = "",
@@ -34,7 +39,31 @@ export function Boton({
       // min-h-11 (44 px) es el mínimo de área táctil accesible y no se baja de ahí; lo que se
       // recorta es el relleno horizontal y el cuerpo de letra, que era lo que los hacía ver
       // desproporcionados junto al texto de las tarjetas.
-      className={`inline-flex min-h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-pill px-4 text-[14px] font-bold transition-[transform,background-color,box-shadow,border-color,color] duration-[140ms] ease-standard focus-visible:shadow-focus active:scale-[0.98] disabled:pointer-events-none disabled:opacity-[0.42] ${VARIANTES[variante]} ${className}`}
+      className={`${BASE} px-4 text-[14px] ${VARIANTES[variante]} ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+/**
+ * Botón de solo ícono, redondo y de 44 px (el área táctil mínima). La etiqueta es su nombre para un
+ * lector de pantalla y el texto que aparece al pasar el mouse: sin ella, un ícono solo se adivina.
+ */
+export function BotonIcono({
+  etiqueta,
+  variante = "contorno",
+  className = "",
+  children,
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & { etiqueta: string; variante?: Variante }) {
+  return (
+    <button
+      type="button"
+      {...props}
+      aria-label={etiqueta}
+      title={etiqueta}
+      className={`${BASE} h-11 w-11 shrink-0 ${VARIANTES[variante]} ${className}`}
     >
       {children}
     </button>

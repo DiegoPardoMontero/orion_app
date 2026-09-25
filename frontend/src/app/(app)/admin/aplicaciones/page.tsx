@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Avatar } from "@/components/Avatar";
-import { Badge, Boton } from "@/components/ui";
+import { tablaAdmin as t } from "@/components/tablaAdmin";
+import { Badge } from "@/components/ui";
 import { apiFetch } from "@/lib/api/fetch";
 import type { PagedApplications } from "@/lib/api/types";
 import { estadoAplicacion, ESTADOS_ADMIN } from "@/lib/aplicacion";
@@ -69,42 +70,46 @@ export default function AdminAplicacionesPage() {
         )}
 
         {!!data?.content?.length && (
-          <div className="overflow-x-auto rounded-card bg-surface-raised shadow-md">
-            <table className="w-full text-[13px]">
-              <thead>
-                <tr className="bg-surface text-left text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted">
-                  <th className="px-4 py-3">Profesor</th>
-                  <th className="px-4 py-3">Estado</th>
-                  <th className="px-4 py-3">Enviada</th>
-                  <th className="px-4 py-3 text-right">Acción</th>
+          <div className={t.contenedor}>
+            <table className={t.tabla}>
+              <thead className={t.cabecera}>
+                <tr className={t.filaCabecera}>
+                  <th className={t.th}>Profesor</th>
+                  <th className={t.th}>Estado</th>
+                  <th className={t.th}>Enviada</th>
+                  <th className={`${t.th} text-right`}>Acción</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className={t.cuerpo}>
                 {data.content.map((sol) => {
                   const cfg = estadoAplicacion(sol.status);
                   const fecha = sol.submittedAt ?? sol.createdAt;
                   return (
-                    <tr key={sol.id} className="border-t border-surface-sunken hover:bg-surface">
-                      <td className="px-4 py-3">
+                    <tr key={sol.id} className={t.fila}>
+                      <td className={t.celda}>
                         <div className="flex items-center gap-3">
                           <Avatar nombre={sol.fullName ?? ""} size="sm" />
                           <div className="min-w-0">
-                            <p className="truncate font-semibold text-text">{sol.fullName}</p>
-                            <p className="truncate text-[11.5px] text-text-muted">{sol.email}</p>
+                            <p className="font-semibold text-text">{sol.fullName}</p>
+                            <p className="break-all text-[11.5px] text-text-muted">{sol.email}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className={t.celda}>
                         <Badge tono={cfg.tono} punto={cfg.punto}>
                           {cfg.label}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3 text-text-secondary">{fecha ? fechaCorta(fecha) : "—"}</td>
-                      <td className="px-4 py-3 text-right">
-                        <Link href={`/admin/aplicaciones/${sol.id}`}>
-                          <Boton variante="contorno" className="h-9">
-                            Revisar
-                          </Boton>
+                      <td className={`${t.celda} text-text-secondary`}>
+                        <span className="lg:hidden">Enviada: </span>
+                        {fecha ? fechaCorta(fecha) : "—"}
+                      </td>
+                      <td className={t.acciones}>
+                        <Link
+                          href={`/admin/aplicaciones/${sol.id}`}
+                          className="inline-flex min-h-11 items-center justify-center rounded-pill border-[1.5px] border-border px-4 text-[14px] font-bold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
+                        >
+                          Revisar
                         </Link>
                       </td>
                     </tr>

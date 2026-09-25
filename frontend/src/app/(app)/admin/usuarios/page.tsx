@@ -1,13 +1,14 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Copy, Mail, RefreshCw, Search, UserPlus } from "lucide-react";
+import { Award, BadgeDollarSign, Check, Copy, Mail, RefreshCw, Search, UserCheck, UserPlus, UserX } from "lucide-react";
 import { useState } from "react";
 import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Modal } from "@/components/Modal";
 import { PhoneInput } from "@/components/PhoneInput";
 import { BotonPurga } from "@/components/Purga";
-import { Badge, Boton, Campo, Spinner } from "@/components/ui";
+import { tablaAdmin as t } from "@/components/tablaAdmin";
+import { Badge, Boton, BotonIcono, Campo, Spinner } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type { AdminUserResponse } from "@/lib/api/types";
 import { estadoDeFundador } from "@/lib/fundador";
@@ -106,19 +107,17 @@ export default function AdminUsuariosPage() {
         )}
 
         {!!usuarios.data?.length && (
-          <div className="overflow-x-auto rounded-card bg-surface-raised shadow-md">
-            <table className="w-full text-[13px]">
-              <thead>
-                <tr className="bg-surface text-left text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted">
-                  <th className="px-3 py-3">Nombre</th>
-                  <th className="px-3 py-3">Correo</th>
-                  <th className="px-3 py-3">WhatsApp</th>
-                  <th className="px-3 py-3">Rol</th>
-                  <th className="px-3 py-3">Estado</th>
-                  <th className="px-3 py-3 text-right">Acción</th>
+          <div className={t.contenedor}>
+            <table className={t.tabla}>
+              <thead className={t.cabecera}>
+                <tr className={t.filaCabecera}>
+                  <th className={t.th}>Usuario</th>
+                  <th className={t.th}>WhatsApp</th>
+                  <th className={t.th}>Rol y estado</th>
+                  <th className={`${t.th} text-right`}>Acciones</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className={t.cuerpo}>
                 {usuarios.data.map((usuario) => (
                   <FilaUsuario key={usuario.id} usuario={usuario} />
                 ))}
@@ -288,45 +287,44 @@ function FilaUsuario({ usuario }: { usuario: AdminUserResponse }) {
   });
 
   return (
-    <tr className="border-t border-surface-sunken hover:bg-surface">
-      <td className="px-3 py-3 font-semibold">
-        {usuario.fullName}
+    <tr className={t.fila}>
+      <td className={t.celda}>
+        <span className="block font-semibold text-text">{usuario.fullName}</span>
+        {/* El correo entero, partido donde haga falta: cortado con «…» no se puede copiar ni leer. */}
+        <span className="block break-all text-text-secondary">{usuario.email}</span>
         {usuario.role === "PROFESSOR" && (
           <span className="mt-0.5 block text-[11.5px] font-medium text-text-muted">{estadoDeFundador(usuario.founder)}</span>
         )}
       </td>
-      <td className="px-3 py-3 text-text-secondary">
-        <span className="block max-w-[190px] truncate" title={usuario.email ?? undefined}>
-          {usuario.email}
+      <td className={`${t.celda} whitespace-nowrap text-text-secondary`}>
+        <span className="lg:hidden">WhatsApp: </span>
+        {usuario.whatsappPhone ?? "—"}
+      </td>
+      <td className={t.celda}>
+        <span className="flex flex-wrap gap-1.5">
+          <Badge
+            tono={
+              usuario.role === "PROFESSOR" ? "lavanda" : usuario.role === "ADMIN" ? "coral" : "menta"
+            }
+          >
+            {ETIQUETA_ROL[usuario.role ?? ""] ?? usuario.role}
+          </Badge>
+          <Badge tono={activo ? "menta" : "melocoton"}>{activo ? "Activo" : "Inactivo"}</Badge>
         </span>
       </td>
-      <td className="px-3 py-3 text-text-secondary">{usuario.whatsappPhone ?? "—"}</td>
-      <td className="px-3 py-3">
-        <Badge
-          tono={
-            usuario.role === "PROFESSOR" ? "lavanda" : usuario.role === "ADMIN" ? "coral" : "menta"
-          }
-        >
-          {ETIQUETA_ROL[usuario.role ?? ""] ?? usuario.role}
-        </Badge>
-      </td>
-      <td className="px-3 py-3">
-        <Badge tono={activo ? "menta" : "melocoton"}>{activo ? "Activo" : "Inactivo"}</Badge>
-      </td>
-      <td className="whitespace-nowrap px-3 py-3 text-right">
-        <div className="flex items-center justify-end gap-2">
-          <Boton
-            variante="contorno"
+      <td className={t.acciones}>
+        <div className="flex items-center gap-2 lg:justify-end">
+          <BotonIcono
+            etiqueta={activo ? "Inactivar" : "Activar"}
             disabled={cambiarEstado.isPending || usuario.role === "ADMIN"}
             onClick={() => cambiarEstado.mutate()}
-            className="h-9 px-3"
           >
-            {activo ? "Inactivar" : "Activar"}
-          </Boton>
+            {activo ? <UserX size={17} strokeWidth={1.75} /> : <UserCheck size={17} strokeWidth={1.75} />}
+          </BotonIcono>
           {usuario.role === "PROFESSOR" && <BotonTarifa profesorId={usuario.id!} />}
           {usuario.role === "PROFESSOR" && <BotonFundador profesorId={usuario.id!} esFundador={!!usuario.founder} />}
           {/* Inactivar oculta; borrar destruye. Son cosas distintas y por eso conviven. */}
-          <BotonPurga tipo="user" id={usuario.id!} etiqueta="Borrar" />
+          <BotonPurga tipo="user" id={usuario.id!} etiqueta="Borrar" soloIcono />
         </div>
       </td>
     </tr>
@@ -350,28 +348,32 @@ function BotonFundador({ profesorId, esFundador }: { profesorId: string; esFunda
     },
   });
 
-  if (esFundador && confirmando) {
-    return (
-      <span className="inline-flex items-center gap-2">
-        <span className="text-[12px] text-text-secondary">Solo cambia las reservas nuevas.</span>
-        <Boton variante="peligro" disabled={cambiar.isPending} onClick={() => cambiar.mutate()} className="h-9 px-3">
-          Quitar
-        </Boton>
-        <Boton variante="fantasma" onClick={() => setConfirmando(false)} className="h-9 px-3">
-          No
-        </Boton>
-      </span>
-    );
-  }
   return (
-    <Boton
-      variante="contorno"
-      disabled={cambiar.isPending}
-      onClick={() => (esFundador ? setConfirmando(true) : cambiar.mutate())}
-      className="h-9 px-3"
-    >
-      {esFundador ? "Quitar fundador" : "Hacer fundador"}
-    </Boton>
+    <>
+      {/* Encendido, el ícono va relleno: se ve de un vistazo quién es fundador. */}
+      <BotonIcono
+        etiqueta={esFundador ? "Quitar fundador" : "Hacer fundador"}
+        variante={esFundador ? "tinta" : "contorno"}
+        disabled={cambiar.isPending}
+        onClick={() => (esFundador ? setConfirmando(true) : cambiar.mutate())}
+      >
+        <Award size={17} strokeWidth={1.75} />
+      </BotonIcono>
+      {/* La confirmación va en un diálogo y no dentro de la fila: ahí la estiraba hasta pedir scroll. */}
+      {confirmando && (
+        <Modal titulo="¿Quitar el beneficio de fundador?" onCerrar={() => setConfirmando(false)}>
+          <p className="text-[14px] text-text-secondary">Solo cambia las reservas nuevas.</p>
+          <div className="mt-5 flex gap-3">
+            <Boton variante="contorno" onClick={() => setConfirmando(false)} className="h-11 flex-1">
+              No
+            </Boton>
+            <Boton variante="peligro" disabled={cambiar.isPending} onClick={() => cambiar.mutate()} className="h-11 flex-1">
+              Quitar
+            </Boton>
+          </div>
+        </Modal>
+      )}
+    </>
   );
 }
 
@@ -386,9 +388,9 @@ function BotonTarifa({ profesorId }: { profesorId: string }) {
 
   return (
     <>
-      <Boton variante="contorno" onClick={() => setAbierto(true)} className="h-9 px-3">
-        Tarifa
-      </Boton>
+      <BotonIcono etiqueta="Tarifa" onClick={() => setAbierto(true)}>
+        <BadgeDollarSign size={17} strokeWidth={1.75} />
+      </BotonIcono>
       {abierto && <ModalTarifa profesorId={profesorId} onCerrar={() => setAbierto(false)} />}
     </>
   );
