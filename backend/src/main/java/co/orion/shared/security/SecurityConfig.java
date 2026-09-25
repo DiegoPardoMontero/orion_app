@@ -118,6 +118,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/bookings/*/reschedule-requests").hasAnyRole("STUDENT", "PROFESSOR", "ADMIN")
                 .requestMatchers("/api/v1/reschedule-requests/**").hasAnyRole("STUDENT", "PROFESSOR", "ADMIN")
                 .requestMatchers("/api/v1/me/reschedule-requests").hasAnyRole("STUDENT", "PROFESSOR")
+                // El hilo de Rigel: mensajes oficiales, de estudiantes y profesores.
+                .requestMatchers("/api/v1/me/rigel", "/api/v1/me/rigel/**").hasAnyRole("STUDENT", "PROFESSOR")
                 // El diagnóstico de confianza es del estudiante: el profesor no se autoevalúa aquí,
                 // y el aspirante todavía no tiene experiencia de estudiante. El servicio vuelve a
                 // comprobar la propiedad y responde 404 si la evaluación no es suya.

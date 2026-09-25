@@ -1,11 +1,14 @@
 "use client";
 
+import { BadgeCheck } from "lucide-react";
 import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
+import { Rigel } from "@/components/Rigel";
 import { Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import type { ConversationSummary } from "@/lib/api/types";
 import { diaBogota, fechaCorta, horaBogota } from "@/lib/format";
 import { useConversaciones } from "@/lib/mensajeria";
+import { useRigel } from "@/lib/rigel";
 
 /** Hora si el mensaje es de hoy; si no, la fecha corta. Igual criterio que un chat cualquiera. */
 function cuando(iso: string | undefined): string {
@@ -32,6 +35,57 @@ function extracto(conv: ConversationSummary): { texto: string; sistema: boolean 
  * en móvil) y `/mensajes/[id]` (columna izquierda en desktop, con el hilo activo resaltado).
  */
 export function ListaConversaciones({ activaId }: { activaId?: string }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      {/* Rigel va fijo arriba: son los mensajes oficiales de Orión, no una conversación más. */}
+      <FilaDeRigel activa={activaId === "rigel"} />
+      <Conversaciones activaId={activaId} />
+    </div>
+  );
+}
+
+/** El hilo de Rigel en la bandeja: su último mensaje y los que no has leído. */
+function FilaDeRigel({ activa }: { activa: boolean }) {
+  const { data } = useRigel();
+  const ultimo = data?.messages?.at(-1);
+  if (!ultimo) return null;
+  const noLeidos = data?.unread ?? 0;
+
+  return (
+    <Link
+      href="/mensajes/rigel"
+      aria-current={activa ? "page" : undefined}
+      className={`flex items-center gap-3 rounded-card p-3 transition-colors ${
+        activa ? "bg-primary-soft" : "bg-rigel-soft/70 shadow-sm hover:bg-rigel-soft"
+      }`}
+    >
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-rigel-soft ring-2 ring-rigel/60">
+        <Rigel pose="guia" decorativo className="h-auto w-9" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="flex min-w-0 items-center gap-1 truncate text-[14px] font-bold text-text">
+            Rigel · Orión
+            <BadgeCheck size={14} strokeWidth={2.2} className="shrink-0 text-rigel-ink" aria-label="Oficial" />
+          </span>
+          <span className="shrink-0 text-[11.5px] text-text-muted">{cuando(ultimo.createdAt)}</span>
+        </div>
+        <div className="mt-0.5 flex items-center justify-between gap-2">
+          <span className={`truncate text-[12.5px] ${noLeidos > 0 ? "font-semibold text-text" : "text-text-secondary"}`}>
+            {ultimo.title}
+          </span>
+          {noLeidos > 0 && (
+            <span className="grid h-[18px] min-w-[18px] shrink-0 place-items-center rounded-pill bg-primary px-1.5 text-[11px] font-bold text-on-primary">
+              {noLeidos > 9 ? "9+" : noLeidos}
+            </span>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function Conversaciones({ activaId }: { activaId?: string }) {
   const { data, isPending, isError, refetch } = useConversaciones();
 
   if (isPending) {
@@ -51,7 +105,7 @@ export function ListaConversaciones({ activaId }: { activaId?: string }) {
     return (
       <Vacio
         mascota
-        titulo="Aún no tienes mensajes"
+        titulo="Aún no tienes conversaciones"
         texto="Cuando escribas a un profesor (o un estudiante te escriba) la conversación aparecerá aquí. Todo se coordina dentro de Orión."
       />
     );

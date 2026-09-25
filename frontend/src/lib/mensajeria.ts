@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/fetch";
+import { useRigel } from "@/lib/rigel";
 import type {
   ConversationSummary,
   NotificationResponse,
@@ -28,10 +29,14 @@ export function useConversaciones(habilitado = true) {
   });
 }
 
-/** Total de mensajes sin leer sumando los hilos: alimenta el badge de "Mensajes" en la nav. */
+/**
+ * Total de mensajes sin leer sumando los hilos: alimenta el badge de "Mensajes" en la nav. Cuenta
+ * también los de Rigel: sin campana ni correo, ese número es su único aviso.
+ */
 export function useMensajesNoLeidos(habilitado = true): number {
   const { data } = useConversaciones(habilitado);
-  return (data ?? []).reduce((total, conv) => total + (conv.unreadCount ?? 0), 0);
+  const rigel = useRigel(habilitado);
+  return (data ?? []).reduce((total, conv) => total + (conv.unreadCount ?? 0), 0) + (rigel.data?.unread ?? 0);
 }
 
 /** Las notificaciones in-app del usuario autenticado. Se piden al abrir la campana. */

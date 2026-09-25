@@ -436,6 +436,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/rigel/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["leidos"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/push-subscriptions": {
         parameters: {
             query?: never;
@@ -1724,6 +1740,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["racha"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/rigel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["hilo"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3983,6 +4015,26 @@ export interface components {
             weekStart?: string;
             status?: string;
         };
+        RigelButton: {
+            label?: string;
+            href?: string;
+        };
+        RigelMessageResponse: {
+            /** Format: uuid */
+            id?: string;
+            kind?: string;
+            title?: string;
+            body?: string;
+            buttons?: components["schemas"]["RigelButton"][];
+            /** Format: date-time */
+            createdAt?: string;
+            read?: boolean;
+        };
+        RigelThreadResponse: {
+            /** Format: int32 */
+            unread?: number;
+            messages?: components["schemas"]["RigelMessageResponse"][];
+        };
         MyProgressResponse: {
             /** Format: int32 */
             lessonsTaken?: number;
@@ -5403,6 +5455,24 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["TicketThread"];
                 };
+            };
+        };
+    };
+    leidos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -7462,6 +7532,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["MyStreakResponse"];
+                };
+            };
+        };
+    };
+    hilo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RigelThreadResponse"];
                 };
             };
         };

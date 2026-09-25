@@ -57,6 +57,8 @@ export type PublicReviewResponse = Schemas["PublicReviewResponse"];
 
 export type ConversationSummary = Schemas["ConversationSummaryResponse"];
 export type MessageResponse = Schemas["MessageResponse"];
+export type RigelThreadResponse = Schemas["RigelThreadResponse"];
+export type RigelMessageResponse = Schemas["RigelMessageResponse"];
 export type NotificationResponse = Schemas["NotificationResponse"];
 export type UnreadCountResponse = Schemas["UnreadCountResponse"];
 
