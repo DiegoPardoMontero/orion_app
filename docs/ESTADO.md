@@ -755,7 +755,10 @@ https://claude.ai/artifact/LvkmUM9K9kvGMQyq4bMNxD
   cobrado sobre una clase que no fue; **cerrar sesión no soltaba los avisos push** del navegador (en
   un computador compartido seguían llegando los de quien salió); y una cuenta podía registrar miles
   de suscripciones push (ahora diez por persona, y «Probar» cinco por hora). Rigel, el enlace corto,
-  el filtro por horas, el aula y el CSRF salieron limpios.
+  el filtro por horas, el aula y el CSRF salieron limpios. Al final de la noche se revisó con el
+  mismo criterio el backend escrito esa noche (sesiones en la base, deserializador tolerante,
+  reclamo del lead, consultas del panel y de Ganancias): limpio, y con las sesiones en la base el
+  login sigue rotando el id (una cookie plantada antes deja de valer).
 - **Las sesiones sobreviven a los despliegues** (Spring Session JDBC, V68): viven en Postgres y no en
   la memoria del proceso. `User` es serializable con `serialVersionUID` fijo, y una sesión guardada
   que un despliegue deje ilegible se lee como vacía —la persona vuelve a entrar— en vez de dar un 500
