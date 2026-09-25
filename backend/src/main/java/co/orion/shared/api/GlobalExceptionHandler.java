@@ -56,18 +56,22 @@ public class GlobalExceptionHandler {
         List<String> details = ex.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .toList();
+        // En español: este texto llega tal cual a la pantalla.
         return ResponseEntity.badRequest()
-                .body(Map.of("error", "Validation failed", "details", details));
+                .body(Map.of("error", "Revisa los datos: hay campos que no son válidos.", "details", details));
     }
 
     /**
      * Credenciales malas y usuario inactivo responden idéntico a propósito: decir cuál de los
      * dos falló le regalaría al atacante la confirmación de que el email existe.
      */
+    /** Lo que ve quien se equivoca al entrar. Salía en inglés («Invalid credentials») en la pantalla de login. */
+    public static final String MENSAJE_CREDENCIALES = "Correo o contraseña incorrectos.";
+
     @ExceptionHandler({BadCredentialsException.class, DisabledException.class, AuthenticationException.class})
     public ResponseEntity<Map<String, Object>> handleAuthentication(AuthenticationException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("error", "Invalid credentials"));
+                .body(Map.of("error", MENSAJE_CREDENCIALES));
     }
 
     @ExceptionHandler(BusinessRuleViolationException.class)

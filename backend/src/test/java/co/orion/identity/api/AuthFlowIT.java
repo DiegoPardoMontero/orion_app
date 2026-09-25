@@ -71,7 +71,7 @@ class AuthFlowIT {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         // El mensaje no puede decir si falló el email o la clave: sería un oráculo de emails.
-        assertThat(response.getBody()).containsEntry("error", "Invalid credentials");
+        assertThat(response.getBody()).containsEntry("error", "Correo o contraseña incorrectos.");
     }
 
     @Test
@@ -80,7 +80,7 @@ class AuthFlowIT {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         // Idéntico a una clave errada: tampoco revelamos que la cuenta existe pero está inactiva.
-        assertThat(response.getBody()).containsEntry("error", "Invalid credentials");
+        assertThat(response.getBody()).containsEntry("error", "Correo o contraseña incorrectos.");
     }
 
     @Test
