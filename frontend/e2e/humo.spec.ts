@@ -437,9 +437,10 @@ test("el admin invita a un profesor; un enlace inválido se rechaza", async ({ p
   await dialog.getByRole("button", { name: "Enviar invitación" }).click();
   await expect(page.getByText(/Le enviamos la invitación/)).toBeVisible();
 
-  // Un enlace de invitación inválido no deja pasar.
-  await page.goto("/invitacion?token=token-inventado");
-  await expect(page.getByRole("heading", { name: "Invitación no válida" })).toBeVisible();
+  // Un enlace de invitación inválido no deja pasar: se ve como vencido y no ofrece aceptarlo.
+  await page.goto("/invitacion/token-inventado");
+  await expect(page.getByRole("heading", { name: "Esta invitación ya venció." })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Aceptar la invitación" })).toHaveCount(0);
 });
 
 /**

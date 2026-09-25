@@ -964,22 +964,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/accept-invite": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["acceptInvite"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/assessments": {
         parameters: {
             query?: never;
@@ -1279,6 +1263,22 @@ export interface paths {
         put?: never;
         post: operations["confirm_2"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/professors/{professorId}/founder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["grantFounder"];
+        delete: operations["revokeFounder"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2580,6 +2580,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/professors/invite/defaults": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["inviteDefaults"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/practice/metrics": {
         parameters: {
             query?: never;
@@ -3015,6 +3031,17 @@ export interface components {
             /** Format: date-time */
             uploadedAt?: string;
         };
+        FounderView: {
+            /** Format: int32 */
+            rateBps?: number;
+            /** Format: int32 */
+            periodMonths?: number;
+            /** Format: date-time */
+            startedAt?: string;
+            /** Format: date-time */
+            until?: string;
+            status?: string;
+        };
         ProfileLanguage: {
             code?: string;
             nameEs?: string;
@@ -3046,6 +3073,9 @@ export interface components {
             rate?: components["schemas"]["RateBreakdownResponse"];
             isPublished?: boolean;
             canPublish?: boolean;
+            /** Format: int32 */
+            baseRateBps?: number;
+            founder?: components["schemas"]["FounderView"];
         };
         RateBreakdownResponse: {
             /** Format: int64 */
@@ -3578,6 +3608,7 @@ export interface components {
             adult?: boolean;
             acceptsTerms?: boolean;
             acceptsDataPolicy?: boolean;
+            inviteToken?: string;
         };
         LoginRequest: {
             /** Format: email */
@@ -3587,14 +3618,6 @@ export interface components {
         ForgotPasswordRequest: {
             /** Format: email */
             email: string;
-        };
-        AcceptInviteRequest: {
-            token: string;
-            fullName: string;
-            password: string;
-            whatsappPhone?: string;
-            headline?: string;
-            bio?: string;
         };
         StartAssessmentRequest: {
             languageCode?: string;
@@ -3685,6 +3708,7 @@ export interface components {
             whatsappPhone?: string;
             role?: string;
             status?: string;
+            founder?: components["schemas"]["FounderView"];
         };
         ReviewDecisionRequest: {
             note?: string;
@@ -3752,6 +3776,9 @@ export interface components {
         InviteProfessorRequest: {
             /** Format: email */
             email: string;
+            professorName?: string;
+            founder?: boolean;
+            inviterTitle?: string;
         };
         MarkPayoutPaidRequest: {
             reference: string;
@@ -4405,6 +4432,24 @@ export interface components {
             email?: string;
             provider?: string;
         };
+        FounderOffer: {
+            /** Format: int32 */
+            rateBps?: number;
+            /** Format: int32 */
+            periodMonths?: number;
+            /** Format: int32 */
+            baseRateBps?: number;
+        };
+        InvitationView: {
+            state?: string;
+            email?: string;
+            professorName?: string;
+            invitedByName?: string;
+            invitedByTitle?: string;
+            /** Format: date-time */
+            expiresAt?: string;
+            founder?: components["schemas"]["FounderOffer"];
+        };
         Money: {
             /** Format: int64 */
             paymentsCop?: number;
@@ -4527,6 +4572,10 @@ export interface components {
             reportedReason?: string;
             /** Format: date-time */
             createdAt?: string;
+        };
+        InviteDefaults: {
+            inviterName?: string;
+            inviterTitle?: string;
         };
         Panel: {
             /** Format: int64 */
@@ -6367,30 +6416,6 @@ export interface operations {
             };
         };
     };
-    acceptInvite: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AcceptInviteRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["UserResponse"];
-                };
-            };
-        };
-    };
     start: {
         parameters: {
             query?: never;
@@ -6859,6 +6884,48 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["RefundResponse"];
                 };
+            };
+        };
+    };
+    grantFounder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FounderView"];
+                };
+            };
+        };
+    };
+    revokeFounder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -8293,9 +8360,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": {
-                        [key: string]: string;
-                    };
+                    "*/*": components["schemas"]["InvitationView"];
                 };
             };
         };
@@ -8631,6 +8696,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["RefundResponse"][];
+                };
+            };
+        };
+    };
+    inviteDefaults: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["InviteDefaults"];
                 };
             };
         };

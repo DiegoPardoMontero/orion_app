@@ -258,8 +258,11 @@ test("[v-recuperar.1 v-recuperar.2 v-restablecer.1 v-restablecer.2] recuperar la
 test("[v-verificar.2 v-invitacion.2] los enlaces inválidos dicen qué hacer", async ({ page }) => {
   await page.goto("/verificar?token=invalido");
   await expect(page.getByText("No pudimos confirmar tu correo")).toBeVisible();
+  // El enlace viejo (?token=) lleva a la pantalla de ahora; uno que no existe se ve vencido.
   await page.goto("/invitacion?token=invalido");
-  await expect(page.getByText(/no es válido o ya expiró/)).toBeVisible();
+  await expect(page).toHaveURL(/\/invitacion\/invalido$/);
+  await expect(page.getByRole("heading", { name: "Esta invitación ya venció." })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Aceptar la invitación" })).toHaveCount(0);
 });
 
 test("[v-terminos.1 v-privacidad.1] los documentos legales tienen versión y responsable", async ({ page }) => {

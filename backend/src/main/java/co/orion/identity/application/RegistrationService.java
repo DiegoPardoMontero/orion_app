@@ -29,16 +29,19 @@ public class RegistrationService {
     private final UserRepository users;
     private final StudentProfileService studentProfiles;
     private final PasswordEncoder passwordEncoder;
+    private final ProfessorInviteService invites;
     private final Clock clock;
     private final SecureRandom random = new SecureRandom();
 
     public RegistrationService(UserRepository users,
                                StudentProfileService studentProfiles,
                                PasswordEncoder passwordEncoder,
+                               ProfessorInviteService invites,
                                Clock clock) {
         this.users = users;
         this.studentProfiles = studentProfiles;
         this.passwordEncoder = passwordEncoder;
+        this.invites = invites;
         this.clock = clock;
     }
 
@@ -86,6 +89,18 @@ public class RegistrationService {
     @Transactional
     public User register(String fullName, String email, String rawPassword, String whatsappPhone,
                          boolean wantsToTeach, boolean adult) {
+        return register(fullName, email, rawPassword, whatsappPhone, wantsToTeach, adult, null);
+    }
+
+    /**
+     * @param inviteToken el enlace de una invitación de profesor, si llegó por ahí: la cuenta nace
+     *                    como aspirante y la invitación queda usada en esta misma transacción, así
+     *                    que una invitación vencida o de otro correo deshace el alta entera
+     */
+    @Transactional
+    public User register(String fullName, String email, String rawPassword, String whatsappPhone,
+                         boolean wantsToTeach, boolean adult, String inviteToken) {
+        boolean porInvitacion = inviteToken != null && !inviteToken.isBlank();
         if (rawPassword == null || rawPassword.length() < MIN_PASSWORD_LENGTH) {
             throw new BusinessRuleViolationException(
                     "La contraseña debe tener al menos " + MIN_PASSWORD_LENGTH + " caracteres");
@@ -106,7 +121,8 @@ public class RegistrationService {
         User user = new User(email, passwordEncoder.encode(rawPassword), fullName, UserRole.STUDENT);
         user.changeWhatsappPhone(PhoneNumbers.toE164(whatsappPhone));
         user.confirmAdulthood(clock.instant());
-        if (wantsToTeach) {
+        // Quien llega por una invitación viene a enseñar, aunque el formulario dijera otra cosa.
+        if (wantsToTeach || porInvitacion) {
             user.intendsToTeach();
         }
 
@@ -117,6 +133,9 @@ public class RegistrationService {
             // del aspirante: si mañana su postulación se rechaza, la cuenta sigue siendo una cuenta
             // de estudiante completa, sin nada que reparar.
             studentProfiles.createFor(creado);
+            if (porInvitacion) {
+                invites.consume(inviteToken, creado);
+            }
             return creado;
         } catch (DataIntegrityViolationException ex) {
             // Cierra la ventana entre el chequeo y el INSERT: dos altas del mismo correo a la vez.

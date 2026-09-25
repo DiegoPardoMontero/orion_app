@@ -35,6 +35,7 @@ import co.orion.identity.domain.UserRole;
 import co.orion.legal.domain.AgreementAcceptance;
 import co.orion.legal.persistence.AgreementAcceptanceRepository;
 import co.orion.identity.persistence.ProfessorGoalRepository;
+import co.orion.identity.persistence.ProfessorInviteRepository;
 import co.orion.identity.persistence.ProfessorLanguageLevelRepository;
 import co.orion.identity.persistence.ProfessorLanguageRepository;
 import co.orion.identity.persistence.ProfessorProfileRepository;
@@ -75,6 +76,8 @@ public class TeacherApplicationService {
     private final ProfessorProfileService profileService;
     private final PlatformSettingsService settings;
     private final AdminAuditService audit;
+    private final ProfessorInviteRepository invites;
+    private final FounderService founders;
     private final ApplicationEventPublisher publisher;
     private final Clock clock;
 
@@ -90,6 +93,8 @@ public class TeacherApplicationService {
                                      ProfessorProfileService profileService,
                                      PlatformSettingsService settings,
                                      AdminAuditService audit,
+                                     ProfessorInviteRepository invites,
+                                     FounderService founders,
                                      ApplicationEventPublisher publisher,
                                      Clock clock) {
         this.applications = applications;
@@ -104,6 +109,8 @@ public class TeacherApplicationService {
         this.profileService = profileService;
         this.settings = settings;
         this.audit = audit;
+        this.invites = invites;
+        this.founders = founders;
         this.publisher = publisher;
         this.clock = clock;
     }
@@ -249,6 +256,11 @@ public class TeacherApplicationService {
             users.save(user);
             if (profiles.findById(user.getId()).isEmpty()) {
                 profiles.save(new ProfessorProfile(user));
+            }
+            // Quien entró por una invitación de fundador recibe el beneficio al quedar como profe,
+            // con la comisión y los meses vigentes hoy (brief del profe fundador, paso 2).
+            if (invites.existsByUserIdAndFounderTrue(user.getId())) {
+                founders.grantOnApproval(user.getId());
             }
         });
     }

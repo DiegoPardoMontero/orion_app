@@ -8,162 +8,130 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.Locale;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import co.orion.identity.domain.ApplicationEventType;
-import co.orion.identity.domain.ApplicationStatus;
+import co.orion.catalog.application.PlatformSettingsService;
+import co.orion.identity.api.InvitationView;
 import co.orion.identity.domain.ProfessorInvite;
-import co.orion.identity.domain.ProfessorProfile;
-import co.orion.identity.domain.TeacherApplication;
-import co.orion.identity.domain.TeacherApplicationEvent;
 import co.orion.identity.domain.User;
-import co.orion.identity.domain.UserRole;
 import co.orion.identity.persistence.ProfessorInviteRepository;
-import co.orion.identity.persistence.ProfessorProfileRepository;
-import co.orion.identity.persistence.TeacherApplicationEventRepository;
-import co.orion.identity.persistence.TeacherApplicationRepository;
 import co.orion.identity.persistence.UserRepository;
-import co.orion.shared.PhoneNumbers;
-import co.orion.shared.error.BusinessRuleViolationException;
 import co.orion.shared.error.ConflictException;
 import co.orion.shared.error.UnprocessableException;
+import co.orion.shared.time.BusinessZone;
 
 /**
- * Alta de profesores por INVITACIÓN del admin (preserva la curaduría de academia, no marketplace).
- * El profesor nace INACTIVE con perfil vacío; al aceptar el enlace completa sus datos, fija su
- * contraseña y la cuenta pasa a ACTIVE. Mismo modelo de token que la recuperación de contraseña:
- * hash en la base, un solo uso, caducidad (7 días). Reenviar invalida el token anterior.
+ * Invitaciones de profesores (decisión de Pardo del 25/09/2026, brief del profe fundador).
+ *
+ * <p>La invitación ya no crea la cuenta: guarda el correo, el nombre con el que se saluda al profe,
+ * quién lo invita y si trae el beneficio de fundador. El invitado abre el enlace, ve la pantalla de
+ * invitación y crea su cuenta en el registro de profesor, con ese correo y sin poder cambiarlo. Ahí
+ * acepta los Términos y la política de datos, lleva su postulación y Sofía la aprueba como la de
+ * cualquier aspirante. El beneficio de fundador se otorga al aprobarse.
+ *
+ * <p>Mismo modelo de token que la recuperación de contraseña: hash en la base, un solo uso, 7 días.
+ * Reenviar invalida la anterior sin usar del mismo correo.
  */
 @Service
 public class ProfessorInviteService {
 
     private static final Duration TTL = Duration.ofDays(7);
-    private static final int MIN_PASSWORD_LENGTH = 8;
+    private static final String BASE_RATE_KEY = "commission_rate_bps";
 
     private final UserRepository users;
-    private final ProfessorProfileRepository profiles;
     private final ProfessorInviteRepository invites;
-    private final TeacherApplicationRepository applications;
-    private final TeacherApplicationEventRepository applicationEvents;
-    private final PasswordEncoder passwordEncoder;
+    private final PlatformSettingsService settings;
     private final ProfessorInviteMailer mailer;
     private final Clock clock;
     private final String baseUrl;
     private final SecureRandom random = new SecureRandom();
 
     public ProfessorInviteService(UserRepository users,
-                                  ProfessorProfileRepository profiles,
                                   ProfessorInviteRepository invites,
-                                  TeacherApplicationRepository applications,
-                                  TeacherApplicationEventRepository applicationEvents,
-                                  PasswordEncoder passwordEncoder,
+                                  PlatformSettingsService settings,
                                   ProfessorInviteMailer mailer,
                                   Clock clock,
                                   @Value("${orion.app.base-url}") String baseUrl) {
         this.users = users;
-        this.profiles = profiles;
         this.invites = invites;
-        this.applications = applications;
-        this.applicationEvents = applicationEvents;
-        this.passwordEncoder = passwordEncoder;
+        this.settings = settings;
         this.mailer = mailer;
         this.clock = clock;
         this.baseUrl = baseUrl;
     }
 
+    /**
+     * El admin invita a un profe por correo. Si ya hay una cuenta con ese correo no se invita: si es
+     * un profe, el beneficio de fundador se le otorga desde Usuarios.
+     *
+     * @param inviterTitle el cargo del admin, si lo escribió: queda en su cuenta para las siguientes
+     */
     @Transactional
-    public void invite(String email) {
-        User professor = users.findByEmailIgnoreCase(email).map(existing -> {
-            // Solo se puede (re)invitar a un profesor que aún no aceptó (INACTIVE). Cualquier otro
-            // usuario con ese correo —activo, estudiante o admin— es un conflicto.
-            if (existing.getRole() != UserRole.PROFESSOR || existing.isActive()) {
-                throw new ConflictException("Ya existe un usuario con ese correo");
-            }
-            return existing;
-        }).orElseGet(() -> createPendingProfessor(email));
+    public void invite(UUID adminId, String email, String professorName, boolean founder, String inviterTitle) {
+        String correo = email.trim().toLowerCase(Locale.ROOT);
+        if (users.existsByEmailIgnoreCase(correo)) {
+            throw new ConflictException(
+                    "Ya existe una cuenta con ese correo. Si es un profe, dale el beneficio de fundador desde Usuarios.");
+        }
+        User admin = users.findById(adminId).orElse(null);
+        if (admin != null && inviterTitle != null) {
+            admin.changeJobTitle(inviterTitle);
+            users.save(admin);
+        }
 
-        invites.deleteByUserId(professor.getId());
+        invites.deleteUnusedByEmail(correo);
         String rawToken = randomToken();
-        invites.saveAndFlush(new ProfessorInvite(
-                professor.getId(), sha256Hex(rawToken), clock.instant().plus(TTL)));
+        ProfessorInvite invite = invites.saveAndFlush(new ProfessorInvite(correo, professorName, adminId, founder,
+                sha256Hex(rawToken), clock.instant().plus(TTL)));
 
-        mailer.sendInvite(professor.getEmail(), baseUrl + "/invitacion?token=" + rawToken);
+        mailer.sendInvite(correo, invite.getProfessorName(), admin == null ? null : admin.getFullName(),
+                baseUrl + "/invitacion/" + rawToken);
     }
 
-    /** Correo invitado (valida el token) para poder mostrarlo en la pantalla de invitación. */
+    /** Lo que ve quien abre el enlace. Nunca falla: un token que no existe se muestra como vencido. */
     @Transactional(readOnly = true)
-    public String invitedEmail(String rawToken) {
-        return professorOf(usableInvite(rawToken)).getEmail();
+    public InvitationView view(String rawToken) {
+        ProfessorInvite invite = rawToken == null ? null
+                : invites.findByTokenHash(sha256Hex(rawToken)).orElse(null);
+        if (invite == null) {
+            return InvitationView.soloEstado(ProfessorInvite.State.EXPIRED.name());
+        }
+        ProfessorInvite.State state = invite.state(clock.instant());
+        if (state != ProfessorInvite.State.VALID) {
+            return InvitationView.soloEstado(state.name());
+        }
+        User admin = invite.getInvitedBy() == null ? null : users.findById(invite.getInvitedBy()).orElse(null);
+        InvitationView.FounderOffer founder = invite.isFounder()
+                ? new InvitationView.FounderOffer(settings.getInt(FounderService.RATE_KEY),
+                        settings.getInt(FounderService.MONTHS_KEY), settings.getInt(BASE_RATE_KEY))
+                : null;
+        return new InvitationView(state.name(), invite.getEmail(), invite.getProfessorName(),
+                admin == null ? null : admin.getFullName(),
+                admin == null ? null : admin.getJobTitle(),
+                invite.getExpiresAt().atZone(BusinessZone.BOGOTA),
+                founder);
     }
 
+    /**
+     * El invitado creó su cuenta: la invitación queda usada y ligada a ella. La llama el registro, en
+     * su misma transacción, así que una invitación inválida deshace también el alta.
+     */
     @Transactional
-    public User accept(String rawToken, String fullName, String password,
-                       String whatsappPhone, String headline, String bio) {
-        if (password == null || password.length() < MIN_PASSWORD_LENGTH) {
-            throw new BusinessRuleViolationException(
-                    "La contraseña debe tener al menos " + MIN_PASSWORD_LENGTH + " caracteres");
+    public void consume(String rawToken, User newUser) {
+        ProfessorInvite invite = invites.findByTokenHash(sha256Hex(rawToken))
+                .filter(i -> i.state(clock.instant()) == ProfessorInvite.State.VALID)
+                .orElseThrow(() -> new UnprocessableException(
+                        "La invitación ya venció o ya se usó. Escríbele a quien te invitó y te enviamos un enlace nuevo."));
+        if (!invite.isFor(newUser.getEmail())) {
+            throw new UnprocessableException("Esta invitación es para otro correo.");
         }
-
-        ProfessorInvite invite = usableInvite(rawToken);
-        User professor = professorOf(invite);
-
-        professor.changeFullName(fullName.trim());
-        professor.changePasswordHash(passwordEncoder.encode(password));
-        professor.changeWhatsappPhone(PhoneNumbers.toE164(whatsappPhone));
-        professor.activate();
-        users.save(professor);
-
-        ProfessorProfile profile = profiles.findByIdWithUser(professor.getId())
-                .orElseGet(() -> new ProfessorProfile(professor));
-        profile.describe(headline, bio); // sin publicar: publicarse es un paso aparte, como siempre
-        profiles.save(profile);
-
-        // El invitado del admin nace APPROVED: hay UNA sola regla de visibilidad (una postulación
-        // APPROVED). Sin admin invitador a mano, reviewed_by queda null pero el estado sí es APPROVED.
-        if (!applications.existsByUserIdAndStatus(professor.getId(), ApplicationStatus.APPROVED)) {
-            TeacherApplication application = applications.saveAndFlush(new TeacherApplication(
-                    professor.getId(), ApplicationStatus.APPROVED, null, clock.instant()));
-            applicationEvents.save(new TeacherApplicationEvent(
-                    application.getId(), ApplicationEventType.APPROVED, null,
-                    "Alta por invitación del administrador"));
-        }
-
-        invite.markUsed(clock.instant()); // de un solo uso
+        invite.consume(newUser.getId(), clock.instant());
         invites.save(invite);
-        return professor;
-    }
-
-    private User createPendingProfessor(String email) {
-        // Contraseña aleatoria imposible de adivinar: el profesor fija la suya real al aceptar.
-        User professor = new User(email, passwordEncoder.encode(randomToken()),
-                "Profesor invitado", UserRole.PROFESSOR);
-        professor.replacePasswordWithUnknown(professor.getPasswordHash());
-        professor.deactivate();
-
-        User saved;
-        try {
-            saved = users.saveAndFlush(professor);
-        } catch (DataIntegrityViolationException ex) {
-            throw new ConflictException("Ya existe un usuario con ese correo");
-        }
-        profiles.save(new ProfessorProfile(saved));
-        return saved;
-    }
-
-    private ProfessorInvite usableInvite(String rawToken) {
-        return invites.findByTokenHash(sha256Hex(rawToken))
-                .filter(invite -> invite.isUsable(clock.instant()))
-                .orElseThrow(() -> new UnprocessableException("La invitación no es válida o ya expiró"));
-    }
-
-    private User professorOf(ProfessorInvite invite) {
-        return users.findById(invite.getUserId())
-                .orElseThrow(() -> new UnprocessableException("La invitación no es válida o ya expiró"));
     }
 
     private String randomToken() {

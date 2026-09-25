@@ -32,5 +32,13 @@ public record RegisterRequest(
         @AssertTrue(message = "Debes aceptar los Términos y condiciones para crear tu cuenta.")
         boolean acceptsTerms,
         @AssertTrue(message = "Necesitamos tu autorización para tratar tus datos personales.")
-        boolean acceptsDataPolicy) {
+        boolean acceptsDataPolicy,
+        /** El token de una invitación de profesor, si llegó por ella (V71). */
+        @Size(max = 100) String inviteToken) {
+
+    /** Sin invitación: el alta de siempre. */
+    public RegisterRequest(String fullName, String email, String password, String whatsappPhone,
+                           boolean wantsToTeach, boolean adult, boolean acceptsTerms, boolean acceptsDataPolicy) {
+        this(fullName, email, password, whatsappPhone, wantsToTeach, adult, acceptsTerms, acceptsDataPolicy, null);
+    }
 }

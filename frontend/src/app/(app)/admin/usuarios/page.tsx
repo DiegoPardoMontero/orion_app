@@ -10,6 +10,7 @@ import { BotonPurga } from "@/components/Purga";
 import { Badge, Boton, Campo, Spinner } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type { AdminUserResponse } from "@/lib/api/types";
+import { estadoDeFundador } from "@/lib/fundador";
 import { generarClave } from "@/lib/password";
 
 type Rol = "" | "STUDENT" | "PROFESSOR" | "ADMIN";
@@ -133,19 +134,40 @@ export default function AdminUsuariosPage() {
   );
 }
 
+/**
+ * La invitación a un profe (V71): ya no crea la cuenta. El profe abre el enlace, ve la pantalla de
+ * invitación, crea su cuenta de aspirante con este correo y lleva su postulación, que se aprueba
+ * aquí mismo, en Postulaciones. El nombre es con el que se le saluda, y el cargo de quien invita
+ * queda en su cuenta para las siguientes.
+ */
 function ModalInvitarProfesor({ onCerrar }: { onCerrar: () => void }) {
   const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
+  const [nombre, setNombre] = useState("");
+  const [cargo, setCargo] = useState<string | null>(null);
+  const [fundador, setFundador] = useState(true);
   const [enviado, setEnviado] = useState(false);
+
+  const firma = useQuery({
+    queryKey: ["admin", "invite-defaults"],
+    queryFn: () =>
+      apiFetch<{ inviterName: string; inviterTitle: string | null }>("/api/v1/admin/professors/invite/defaults"),
+  });
+  const cargoMostrado = cargo ?? firma.data?.inviterTitle ?? "";
 
   const invitar = useMutation({
     mutationFn: () =>
       apiFetch<void>("/api/v1/admin/professors/invite", {
         method: "POST",
-        body: { email: email.trim() },
+        body: {
+          email: email.trim(),
+          professorName: nombre.trim() || undefined,
+          founder: fundador,
+          inviterTitle: cargoMostrado.trim() || undefined,
+        },
       }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin", "invite-defaults"] });
       setEnviado(true);
     },
   });
@@ -157,8 +179,8 @@ function ModalInvitarProfesor({ onCerrar }: { onCerrar: () => void }) {
       {enviado ? (
         <>
           <p className="text-[13px] text-text-secondary">
-            Le enviamos la invitación a <span className="font-semibold text-text">{email.trim()}</span>.
-            Aparecerá como profesor inactivo hasta que complete su perfil.
+            Le enviamos la invitación a <span className="font-semibold text-text">{email.trim()}</span>. El enlace
+            vence en 7 días. Cuando cree su cuenta y envíe su postulación, la verás en Postulaciones.
           </p>
           <Boton variante="primario" onClick={onCerrar} className="mt-5 h-12 w-full">
             Entendido
@@ -167,8 +189,8 @@ function ModalInvitarProfesor({ onCerrar }: { onCerrar: () => void }) {
       ) : (
         <>
           <p className="text-[13px] text-text-secondary">
-            Le enviamos un correo para que complete su perfil y active su cuenta. Nada de claves
-            temporales.
+            Le llega un correo con su invitación personal. Crea su cuenta con este correo, completa su postulación y
+            tú la apruebas.
           </p>
           <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="invite-email">
             Correo
@@ -181,6 +203,47 @@ function ModalInvitarProfesor({ onCerrar }: { onCerrar: () => void }) {
             placeholder="profesor@correo.com"
             className="mt-1.5"
           />
+          <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="invite-nombre">
+            Nombre <span className="font-semibold text-text-muted">(opcional, para saludarlo)</span>
+          </label>
+          <Campo
+            id="invite-nombre"
+            type="text"
+            maxLength={80}
+            value={nombre}
+            onChange={(event) => setNombre(event.target.value)}
+            placeholder="Mariana"
+            className="mt-1.5"
+          />
+          <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="invite-cargo">
+            Tu cargo <span className="font-semibold text-text-muted">(lo ve el profe)</span>
+          </label>
+          <Campo
+            id="invite-cargo"
+            type="text"
+            maxLength={80}
+            value={cargoMostrado}
+            onChange={(event) => setCargo(event.target.value)}
+            placeholder="directora académica"
+            className="mt-1.5"
+          />
+          <p className="mt-1.5 text-[12px] text-text-muted">
+            Así se lee: «Te invita {firma.data?.inviterName ?? "tu nombre"}
+            {cargoMostrado.trim() ? `, ${cargoMostrado.trim()}` : ""}».
+          </p>
+          <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-base bg-surface-sunken p-3" htmlFor="invite-fundador">
+            <input
+              id="invite-fundador"
+              type="checkbox"
+              checked={fundador}
+              onChange={(event) => setFundador(event.target.checked)}
+              className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--color-primary)]"
+            />
+            <span className="text-[13px] leading-relaxed text-text">
+              <span className="font-bold">Profe fundador.</span> Paga la comisión de fundador sus primeros meses de
+              clases, con lo que diga Ajustes el día que se apruebe su postulación.
+            </span>
+          </label>
 
           {error && (
             <div className="mt-3">
@@ -226,7 +289,12 @@ function FilaUsuario({ usuario }: { usuario: AdminUserResponse }) {
 
   return (
     <tr className="border-t border-surface-sunken hover:bg-surface">
-      <td className="px-3 py-3 font-semibold">{usuario.fullName}</td>
+      <td className="px-3 py-3 font-semibold">
+        {usuario.fullName}
+        {usuario.role === "PROFESSOR" && (
+          <span className="mt-0.5 block text-[11.5px] font-medium text-text-muted">{estadoDeFundador(usuario.founder)}</span>
+        )}
+      </td>
       <td className="px-3 py-3 text-text-secondary">
         <span className="block max-w-[190px] truncate" title={usuario.email ?? undefined}>
           {usuario.email}
@@ -256,11 +324,54 @@ function FilaUsuario({ usuario }: { usuario: AdminUserResponse }) {
             {activo ? "Inactivar" : "Activar"}
           </Boton>
           {usuario.role === "PROFESSOR" && <BotonTarifa profesorId={usuario.id!} />}
+          {usuario.role === "PROFESSOR" && <BotonFundador profesorId={usuario.id!} esFundador={!!usuario.founder} />}
           {/* Inactivar oculta; borrar destruye. Son cosas distintas y por eso conviven. */}
           <BotonPurga tipo="user" id={usuario.id!} etiqueta="Borrar" />
         </div>
       </td>
     </tr>
+  );
+}
+
+/**
+ * Otorga o quita el beneficio de profe fundador (brief del profe fundador, paso 2). Otorgarlo copia
+ * la comisión y los meses de Ajustes; quitarlo solo cambia las reservas nuevas, y por eso pide una
+ * segunda confirmación que lo dice.
+ */
+function BotonFundador({ profesorId, esFundador }: { profesorId: string; esFundador: boolean }) {
+  const queryClient = useQueryClient();
+  const [confirmando, setConfirmando] = useState(false);
+  const cambiar = useMutation({
+    mutationFn: () =>
+      apiFetch<unknown>(`/api/v1/admin/professors/${profesorId}/founder`, { method: esFundador ? "DELETE" : "POST" }),
+    onSuccess: () => {
+      setConfirmando(false);
+      void queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+  });
+
+  if (esFundador && confirmando) {
+    return (
+      <span className="inline-flex items-center gap-2">
+        <span className="text-[12px] text-text-secondary">Solo cambia las reservas nuevas.</span>
+        <Boton variante="peligro" disabled={cambiar.isPending} onClick={() => cambiar.mutate()} className="h-9 px-3">
+          Quitar
+        </Boton>
+        <Boton variante="fantasma" onClick={() => setConfirmando(false)} className="h-9 px-3">
+          No
+        </Boton>
+      </span>
+    );
+  }
+  return (
+    <Boton
+      variante="contorno"
+      disabled={cambiar.isPending}
+      onClick={() => (esFundador ? setConfirmando(true) : cambiar.mutate())}
+      className="h-9 px-3"
+    >
+      {esFundador ? "Quitar fundador" : "Hacer fundador"}
+    </Boton>
   );
 }
 

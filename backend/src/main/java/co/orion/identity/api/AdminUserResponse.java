@@ -9,15 +9,22 @@ public record AdminUserResponse(UUID id,
                                 String fullName,
                                 String whatsappPhone,
                                 String role,
-                                String status) {
+                                String status,
+                                /** El beneficio de profe fundador, o {@code null} si no lo tiene. */
+                                FounderView founder) {
 
     public static AdminUserResponse from(User user) {
+        return from(user, null);
+    }
+
+    public static AdminUserResponse from(User user, FounderView founder) {
         return new AdminUserResponse(
                 user.getId(),
                 user.getEmail(),
                 user.getFullName(),
                 user.getWhatsappPhone(),
                 user.getRole().name(),
-                user.getStatus().name());
+                user.getStatus().name(),
+                founder);
     }
 }

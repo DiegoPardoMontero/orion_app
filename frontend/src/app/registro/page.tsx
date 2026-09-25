@@ -19,13 +19,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState, type FormEvent } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Suspense, useEffect, useState, type FormEvent } from "react";
 import { AvisoError } from "@/components/estados";
 import { Constelacion, Wordmark } from "@/components/marca";
 import { PhoneInput } from "@/components/PhoneInput";
 import { Rigel, type RigelPose } from "@/components/Rigel";
 import { BotonPrincipal, Campo, Segmento, Spinner } from "@/components/ui";
-import { ApiError } from "@/lib/api/fetch";
+import { ApiError, apiFetch } from "@/lib/api/fetch";
 import { destinoAlEntrar } from "@/lib/auth/roles";
 import { destinoSeguro, entrarYVolver } from "@/lib/auth/volver";
 import { useRegister } from "@/lib/auth/session";
@@ -88,8 +89,23 @@ function Registro() {
   const rolInicial = params.get("rol");
   // Quien venía de reservar en un perfil sin cuenta vuelve a ese perfil (solo si viene a aprender).
   const volver = destinoSeguro(params.get("volver"));
+  // Quien llega desde la pantalla de invitación (V71): la cuenta es de profesor y el correo es el de
+  // la invitación, puesto y sin poder cambiarlo. El token se consume al crear la cuenta.
+  const tokenDeInvitacion = params.get("invitacion");
+  const invitacion = useQuery({
+    queryKey: ["invitacion", tokenDeInvitacion],
+    queryFn: () =>
+      apiFetch<{ state: string; email: string | null; founder: { rateBps: number; periodMonths: number; baseRateBps: number } | null }>(
+        `/api/v1/auth/invite?token=${encodeURIComponent(tokenDeInvitacion ?? "")}`,
+        { redirectOn401: false },
+      ),
+    enabled: !!tokenDeInvitacion,
+    retry: false,
+  });
+  const invitado = invitacion.data?.state === "VALID" ? invitacion.data : null;
+  const invitacionCaida = !!tokenDeInvitacion && !!invitacion.data && !invitado;
   const [intencion, setIntencion] = useState<Intencion>(
-    rolInicial === "profesor" ? "ensenar" : "aprender",
+    rolInicial === "profesor" || tokenDeInvitacion ? "ensenar" : "aprender",
   );
   const copy = COPY[intencion];
   const cifras = useCifras();
@@ -102,13 +118,23 @@ function Registro() {
           { icono: NotebookPen, texto: "Después de cada clase, un resumen y práctica hecha para ti." },
         ]
       : [
-          { icono: Wallet, texto: `Tú pones tu tarifa, y Orión retiene el ${cifras.commissionPercent} %: lo ves desde el día uno.` },
+          {
+            icono: Wallet,
+            texto: invitado?.founder
+              ? `Tú pones tu tarifa. Como profe fundador, Orión retiene el ${invitado.founder.rateBps / 100} % tus primeros ${invitado.founder.periodMonths} meses de clases; después, el ${invitado.founder.baseRateBps / 100} %.`
+              : `Tú pones tu tarifa, y Orión retiene el ${cifras.commissionPercent} %: lo ves desde el día uno.`,
+          },
           { icono: CalendarDays, texto: "Tus horarios, sin mínimos ni permanencia." },
           { icono: Mic, texto: "Un minuto de audio al terminar y el seguimiento de tu estudiante queda listo." },
         ];
 
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
+  // El correo de la invitación llega después del primer render: se pone en cuanto llega.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- el correo de la invitación, una vez
+    if (invitado?.email) setEmail(invitado.email);
+  }, [invitado?.email]);
   const [password, setPassword] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [verClave, setVerClave] = useState(false);
@@ -144,6 +170,7 @@ function Registro() {
         adult: mayorDeEdad,
         acceptsTerms: aceptaTerminos,
         acceptsDataPolicy: aceptaDatos,
+        inviteToken: invitado ? (tokenDeInvitacion ?? undefined) : undefined,
       },
       {
         // Quien viene a enseñar entra directo a su postulación; quien viene a aprender, al
@@ -200,7 +227,14 @@ function Registro() {
           <h2 className="font-display text-[26px] font-bold lg:text-[34px]">Crea tu cuenta</h2>
           <p className="mt-1 text-[14px] text-text-secondary">{copy.subtitulo}</p>
 
-          <div className="mt-5">
+          {invitacionCaida && (
+            <div className="mt-4">
+              <AvisoError mensaje="Esta invitación ya venció o ya se usó. Escríbele a quien te invitó y te enviamos un enlace nuevo." />
+            </div>
+          )}
+
+          {/* Con invitación no hay nada que elegir: la cuenta es de profesor. */}
+          <div className={`mt-5 ${tokenDeInvitacion ? "hidden" : ""}`}>
             <Segmento<Intencion>
               valor={intencion}
               onCambio={setIntencion}
@@ -226,9 +260,12 @@ function Registro() {
 
           {/* En las dos pestañas: desde «Quiero enseñar», la intención viaja con la ida al
               proveedor y la cuenta nace como aspirante a profesor, como con contraseña. */}
-          <div className="mt-5">
-            <BotonesSociales ensenar={intencion === "ensenar"} />
-          </div>
+          {/* Con invitación, solo correo y contraseña: una cuenta de Google podría traer otro correo. */}
+          {!tokenDeInvitacion && (
+            <div className="mt-5">
+              <BotonesSociales ensenar={intencion === "ensenar"} />
+            </div>
+          )}
 
           <label
             className="mt-6 block text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary"
@@ -264,8 +301,13 @@ function Registro() {
             icono={<Mail size={18} strokeWidth={1.75} />}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className={`mt-1.5 ${error ? "border-error" : ""}`}
+            readOnly={!!invitado}
+            aria-readonly={!!invitado}
+            className={`mt-1.5 ${error ? "border-error" : ""} ${invitado ? "bg-surface-sunken text-text-secondary" : ""}`}
           />
+          {invitado && (
+            <p className="mt-1.5 text-[12px] text-text-muted">Es el correo de tu invitación: con él entras a Orión.</p>
+          )}
 
           <label
             className="mt-4 block text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary"

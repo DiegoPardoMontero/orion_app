@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { api, aparece, apartarCelebraciones, entrar, estudianteNueva, horariosAmplios, SEMILLA, ultimoCorreo } from "./apoyo";
+import { api, aparece, apartarCelebraciones, entrar, estudianteNueva, horariosAmplios, SEMILLA, sqlLocal, ultimoCorreo } from "./apoyo";
 
 /**
  * El wireflow del profesor y del admin (24/09/2026). María es la profesora de la semilla; lo que
@@ -218,7 +218,22 @@ test("[ad-usuarios.1 ad-usuarios.2] buscar usuarios e invitar a un profesor", as
   const correo = `wf.invitado.${Date.now()}@orion.local`;
   await page.getByPlaceholder("profesor@correo.com").fill(correo);
   await page.getByRole("dialog").getByRole("button", { name: /Invitar|Enviar/ }).last().click();
-  expect(await ultimoCorreo(page, correo, /invitacion\?token=/)).not.toBeNull();
+  expect(await ultimoCorreo(page, correo, /invitacion\//)).not.toBeNull();
+});
+
+test("[ad-usuarios.4] el admin quita y vuelve a dar el beneficio de profe fundador", async ({ page }) => {
+  await entrar(page, SEMILLA.admin);
+  await page.goto("/admin/usuarios");
+  await page.getByRole("searchbox", { name: "Buscar usuarios por nombre o correo" }).fill("juan@orion.local");
+  const fila = page.locator("tr", { hasText: "juan@orion.local" });
+  // Los profes que ya estaban son fundadores (V70; la semilla hace lo mismo).
+  await expect(fila.getByText(/^Fundador · 15 %/)).toBeVisible();
+  await fila.getByRole("button", { name: "Quitar fundador" }).click();
+  await expect(fila.getByText("Solo cambia las reservas nuevas.")).toBeVisible();
+  await fila.getByRole("button", { name: "Quitar", exact: true }).click();
+  await expect(fila.getByText("Sin beneficio de fundador")).toBeVisible();
+  await fila.getByRole("button", { name: "Hacer fundador" }).click();
+  await expect(fila.getByText(/^Fundador · 15 %/)).toBeVisible();
 });
 
 test("[ad-ajustes.2 ad-sistema.1 ad-sistema.2] el historial de ajustes y el correo de prueba", async ({ page }) => {
@@ -261,46 +276,67 @@ test("[a-postulacion.2 a-postulacion.4 a-estado.1] la postulación: país con ba
   await expect(page.getByText("Te falta por completar")).toBeVisible();
 });
 
-test("[v-invitacion.1 ad-usuarios.2] el profesor invitado completa su perfil y cae en sus horarios", async ({ page, browser }) => {
+test("[v-invitacion.1 v-invitacion.3 v-invitacion.4 ad-usuarios.2] la invitación: la pantalla, el registro con su correo y el enlace ya usado", async ({ page, browser }) => {
   await entrar(page, SEMILLA.admin);
   await page.goto("/admin/usuarios");
   await page.getByRole("button", { name: /Invitar profesor/ }).click();
   const correo = `wf.invitada.${Date.now()}@orion.local`;
-  await page.getByPlaceholder("profesor@correo.com").fill(correo);
-  await page.getByRole("dialog").getByRole("button", { name: /Invitar|Enviar/ }).last().click();
-  const texto = await ultimoCorreo(page, correo, /invitacion\?token=/);
-  const enlace = texto!.match(/https?:\/\/[^"\\\s]*\/invitacion\?token=[A-Za-z0-9_-]+/)![0];
+  const dialogo = page.getByRole("dialog");
+  await dialogo.locator("#invite-email").fill(correo);
+  await dialogo.locator("#invite-nombre").fill("Mariana");
+  await dialogo.locator("#invite-cargo").fill("directora académica");
+  await dialogo.getByRole("button", { name: /Enviar invitación/ }).click();
+  await expect(page.getByText(/Le enviamos la invitación/)).toBeVisible();
+  const texto = await ultimoCorreo(page, correo, /invitacion\//);
+  const enlace = texto!.match(/https?:\/\/[^"\\\s]*\/invitacion\/[A-Za-z0-9_-]+/)![0].replace(/^https?:\/\/[^/]+/, "");
+
   const ctx = await browser.newContext();
   const invitada = await ctx.newPage();
-  await invitada.goto(enlace.replace(/^https?:\/\/[^/]+/, ""));
-  await invitada.locator("#nombre").fill("Invitada Prueba");
+  await invitada.goto(enlace);
+  await expect(invitada.getByRole("heading", { name: "Mariana, queremos que seas de los primeros profes de Orión." })).toBeVisible();
+  await expect(invitada.getByText("Invitación personal · Profes fundadores")).toBeVisible();
+  await expect(invitada.getByText(/Te invita/)).toContainText("directora académica");
+  await expect(invitada.getByText(/Como profe fundador, tienes 15 %/)).toBeVisible();
+  await invitada.getByRole("link", { name: "Aceptar la invitación" }).click();
+
+  // El registro de profesor con el correo de la invitación, sin poder cambiarlo ni elegir «aprender».
+  await expect(invitada).toHaveURL(/\/registro\?invitacion=/);
+  await expect(invitada.locator("#email")).toHaveValue(correo);
+  await expect(invitada.locator("#email")).toHaveAttribute("readonly", "");
+  await expect(invitada.getByRole("button", { name: /Quiero aprender/ })).toBeHidden();
+  await invitada.locator("#nombre").fill("Mariana Ruiz");
   await invitada.locator("#password").fill("orion123*");
-  await invitada.locator('button[type="submit"]').first().click();
-  await expect(invitada).toHaveURL(/\/perfil\?seccion=horarios/, { timeout: 20_000 });
+  for (const id of ["#mayor-de-edad", "#acepta-terminos", "#acepta-datos"]) await invitada.locator(id).check();
+  await invitada.getByRole("button", { name: "Crear cuenta y postularme" }).click();
+  await invitada.waitForURL(/\/aplicacion/);
+
+  // El mismo enlace, ya usado: no se vuelve a usar y lleva a iniciar sesión.
+  await invitada.goto(enlace);
+  await expect(invitada.getByRole("heading", { name: "Esta invitación ya se usó." })).toBeVisible();
+  await expect(invitada.getByRole("link", { name: "Inicia sesión" }).first()).toBeVisible();
   await ctx.close();
 });
 
 test("[p-bienvenida.1 p-bienvenida.2 p-bienvenida.3] con video: la bienvenida una vez, «Lo veo después» y Rigel ofrece el recorrido", async ({ page, browser }) => {
   await entrar(page, SEMILLA.admin);
-  // Los profesores de la semilla ya la vieron: la ve uno recién invitado, que nace aprobado.
+  // Los profesores de la semilla ya la vieron: la ve uno recién aprobado. Desde la V71 la invitación
+  // pasa por la postulación, que en local no se completa sin Cloudinary: el admin crea al profe y la
+  // aprobación se escribe en la base, como la dejaba el enlace de invitación de antes.
   const video = "https://www.youtube.com/watch?v=aqz-KE-bpKQ";
   expect((await api(page, "PUT", "/api/v1/admin/settings/professor_welcome_video_url", { value: video })).status).toBe(200);
   try {
-    await page.goto("/admin/usuarios");
-    await page.getByRole("button", { name: /Invitar profesor/ }).click();
     const correo = `wf.bienvenida.${Date.now()}@orion.local`;
-    await page.getByPlaceholder("profesor@correo.com").fill(correo);
-    await page.getByRole("dialog").getByRole("button", { name: /Invitar|Enviar/ }).last().click();
-    const texto = await ultimoCorreo(page, correo, /invitacion\?token=/);
-    const enlace = texto!.match(/https?:\/\/[^"\\\s]*\/invitacion\?token=[A-Za-z0-9_-]+/)![0];
+    expect(
+      (await api(page, "POST", "/api/v1/admin/users", { email: correo, fullName: "Bienvenida Prueba", role: "PROFESSOR", password: "orion123*" })).status,
+    ).toBe(201);
+    sqlLocal(
+      `insert into teacher_applications (user_id, status, reviewed_at) select id, 'APPROVED', now() from users where email = '${correo}'`,
+    );
     const ctx = await browser.newContext();
     const profe = await ctx.newPage();
-    await profe.goto(enlace.replace(/^https?:\/\/[^/]+/, ""));
-    await profe.locator("#nombre").fill("Bienvenida Prueba");
-    await profe.locator("#password").fill("orion123*");
-    await profe.locator('button[type="submit"]').first().click();
+    await entrar(profe, { email: correo, pass: "orion123*" });
 
-    // El enlace de invitación no pide la mayoría de edad: la pide el diálogo, hablándole como profe.
+    // La cuenta que crea el admin no declaró la mayoría de edad: la pide el diálogo, hablándole como profe.
     const antesDeSeguir = profe.getByRole("dialog", { name: "Antes de seguir" });
     await expect(antesDeSeguir.getByText(/seguir dando clases/)).toBeVisible({ timeout: 20_000 });
     await expect(antesDeSeguir.getByText(/saldo/)).toHaveCount(0);

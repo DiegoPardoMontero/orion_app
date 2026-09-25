@@ -79,6 +79,8 @@ export type RegisterInput = {
   fullName: string;
   email: string;
   password: string;
+  /** El token de la invitación de profesor con la que llegó (V71): la cuenta nace como aspirante. */
+  inviteToken?: string;
   whatsappPhone?: string;
   /** Se registró desde «Postúlate para dar clases»: la cuenta nace como aspirante, no estudiante. */
   wantsToTeach?: boolean;

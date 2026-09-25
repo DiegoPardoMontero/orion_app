@@ -1,4 +1,5 @@
 import { expect, type Browser, type Locator, type Page } from "@playwright/test";
+import { execFileSync } from "node:child_process";
 
 /**
  * Las tres casillas obligatorias del registro (Bloque 9).
@@ -245,4 +246,15 @@ export async function apartarCelebraciones(page: Page) {
   await page.addLocatorHandler(page.locator('[role="dialog"][aria-labelledby="logro-nuevo"]'), async (logro) => {
     await logro.getByRole("button").last().click();
   });
+}
+
+/**
+ * SQL directo en la base local de `docker compose`. Solo para lo que la e2e no puede hacer por la
+ * aplicación: en local no hay Cloudinary, así que una postulación no se completa (foto y hoja de
+ * vida), y un profe aprobado de cero hay que escribirlo en la base. Nunca para verificar.
+ */
+export function sqlLocal(consulta: string): string {
+  return execFileSync("docker", ["exec", "-i", "orion-postgres", "psql", "-U", "orion", "-d", "orion", "-At", "-c", consulta], {
+    encoding: "utf8",
+  }).trim();
 }

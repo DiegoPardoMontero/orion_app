@@ -62,6 +62,10 @@ public class User implements Serializable {
     @Column(name = "photo_url", length = 500)
     private String photoUrl;
 
+    /** El cargo de un admin, como lo ven sus invitados: «directora académica» (V71). */
+    @Column(name = "job_title", length = 80)
+    private String jobTitle;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, length = 20)
     private UserRole role;
@@ -249,6 +253,14 @@ public class User implements Serializable {
 
     public String getWhatsappPhone() {
         return whatsappPhone;
+    }
+
+    public String getJobTitle() {
+        return jobTitle;
+    }
+
+    public void changeJobTitle(String jobTitle) {
+        this.jobTitle = jobTitle == null || jobTitle.isBlank() ? null : jobTitle.trim();
     }
 
     public String getPhotoUrl() {

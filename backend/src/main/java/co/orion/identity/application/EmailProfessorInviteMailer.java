@@ -20,18 +20,20 @@ public class EmailProfessorInviteMailer implements ProfessorInviteMailer {
     }
 
     @Override
-    public void sendInvite(String toEmail, String inviteLink) {
-        String text = "Hola,\n\n"
-                + "Sofía te invita a hacer parte del equipo de profesores de Orión. Completa tu"
-                + " perfil en este enlace (vence en 7 días):\n" + inviteLink + "\n\n"
+    public void sendInvite(String toEmail, String professorName, String inviterName, String inviteLink) {
+        String saludo = professorName == null || professorName.isBlank() ? "Hola" : "Hola, " + professorName.trim();
+        String quien = inviterName == null || inviterName.isBlank() ? "El equipo de Orión" : inviterName.trim();
+        String text = saludo + ",\n\n"
+                + quien + " te invita a ser de los primeros profes de Orión. Acepta la invitación en"
+                + " este enlace (vence en 7 días):\n" + inviteLink + "\n\n"
                 + "Nos vemos adentro.\nEl equipo de Orión";
-        String html = "<p>Hola,</p>"
-                + "<p>Sofía te invita a hacer parte del equipo de profesores de <strong>Orión</strong>."
-                + " Completa tu perfil para empezar a recibir estudiantes. El enlace vence en 7 días.</p>"
-                + "<p><a href=\"" + escape(inviteLink) + "\">Aceptar la invitación</a></p>"
+        String html = "<p>" + escape(saludo) + ",</p>"
+                + "<p>" + escape(quien) + " te invita a ser de los primeros profes de <strong>Orión</strong>."
+                + " El enlace es solo para ti y vence en 7 días.</p>"
+                + "<p><a href=\"" + escape(inviteLink) + "\">Ver la invitación</a></p>"
                 + "<p>Nos vemos adentro.<br>El equipo de Orión</p>";
         try {
-            transport.send(OutgoingEmail.plain(toEmail, "Sofía te invita a enseñar en Orión", text, html));
+            transport.send(OutgoingEmail.plain(toEmail, quien + " te invita a enseñar en Orión", text, html));
         } catch (Exception ex) {
             log.warn("No se pudo enviar la invitación a {}: {}", toEmail, ex.getMessage());
         }

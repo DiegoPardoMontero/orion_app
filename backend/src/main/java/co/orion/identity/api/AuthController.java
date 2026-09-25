@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Map;
 
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -88,7 +87,7 @@ public class AuthController {
                                  HttpServletResponse response) {
         intentos.antesDeRegistro(request);
         User creado = registrationService.register(body.fullName(), body.email(), body.password(),
-                body.whatsappPhone(), body.wantsToTeach(), body.adult());
+                body.whatsappPhone(), body.wantsToTeach(), body.adult(), body.inviteToken());
 
         // La constancia, con IP y user-agent, en la misma petición en que se dio. El art. 9 de la
         // Ley 1581 de 2012 exige poder PROBAR la autorización: una casilla marcada que no deja
@@ -134,23 +133,14 @@ public class AuthController {
         passwordResetService.reset(body.token(), body.newPassword());
     }
 
-    /** Datos mínimos de una invitación (valida el token) para pintar la pantalla /invitacion. */
-    @GetMapping("/invite")
-    public Map<String, String> inviteInfo(@RequestParam String token) {
-        return Map.of("email", professorInviteService.invitedEmail(token));
-    }
-
     /**
-     * El profesor acepta la invitación: completa sus datos y su contraseña, la cuenta pasa a ACTIVE
-     * y abrimos sesión (mismo camino que login) para que aterrice directo en su disponibilidad.
+     * La pantalla de invitación, antes de tener cuenta: vigente (con el correo, a quién se saluda,
+     * quién invita, cuándo vence y el beneficio), vencida o usada. Un token que no existe se muestra
+     * como vencido; sin token, 400 como cualquier parámetro que falta.
      */
-    @PostMapping("/accept-invite")
-    public UserResponse acceptInvite(@Valid @RequestBody AcceptInviteRequest body,
-                                     HttpServletRequest request,
-                                     HttpServletResponse response) {
-        User professor = professorInviteService.accept(body.token(), body.fullName(), body.password(),
-                body.whatsappPhone(), body.headline(), body.bio());
-        return authenticateAndOpenSession(professor.getEmail(), body.password(), request, response);
+    @GetMapping("/invite")
+    public InvitationView inviteInfo(@RequestParam String token) {
+        return professorInviteService.view(token);
     }
 
     private UserResponse authenticateAndOpenSession(String email, String password,

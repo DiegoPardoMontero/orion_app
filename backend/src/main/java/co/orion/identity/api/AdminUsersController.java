@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import co.orion.identity.application.AdminUserService;
+import co.orion.identity.application.FounderService;
+import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.shared.error.BusinessRuleViolationException;
 import jakarta.validation.Valid;
@@ -25,16 +27,22 @@ import jakarta.validation.Valid;
 public class AdminUsersController {
 
     private final AdminUserService adminUsers;
+    private final FounderService founders;
 
-    public AdminUsersController(AdminUserService adminUsers) {
+    public AdminUsersController(AdminUserService adminUsers, FounderService founders) {
         this.adminUsers = adminUsers;
+        this.founders = founders;
     }
 
     @GetMapping
     public List<AdminUserResponse> list(@RequestParam(required = false) String role,
                                         @RequestParam(required = false) String q) {
-        return adminUsers.search(parseRole(role), q).stream()
-                .map(AdminUserResponse::from)
+        List<User> encontrados = adminUsers.search(parseRole(role), q);
+        // El beneficio de fundador de cada profe de la lista, en una sola consulta.
+        var fundadores = founders.viewsOf(encontrados.stream()
+                .filter(u -> u.getRole() == UserRole.PROFESSOR).map(User::getId).toList());
+        return encontrados.stream()
+                .map(u -> AdminUserResponse.from(u, fundadores.get(u.getId())))
                 .toList();
     }
 
