@@ -93,7 +93,11 @@ export default function EstadoAplicacionPage() {
     UNDER_REVIEW: `Nuestro equipo está revisando tu postulación. Tendrás respuesta dentro del plazo de ${plazo} que te prometimos.`,
     CHANGES_REQUESTED: "La revisión pide algunos ajustes. Cámbialos y vuelve a enviar tu postulación.",
     APPROVED: "¡Felicidades! Tu postulación fue aprobada. Ya puedes completar y publicar tu perfil de profesor.",
-    REJECTED: "Esta vez tu postulación no fue aprobada. Gracias por tu interés; puedes volver a intentarlo más adelante.",
+    // Rechazado, el aspirante vuelve a ser estudiante y desde esa cuenta ya no postula (25/09/2026):
+    // prometerle «volver a intentarlo» sería mandarlo a una puerta cerrada. El profesor invitado sí puede.
+    REJECTED: puedePostular
+      ? "Esta vez tu postulación no fue aprobada. Gracias por tu interés; puedes volver a intentarlo más adelante."
+      : "Esta vez tu postulación no fue aprobada. Gracias por tu interés; tu cuenta sigue abierta para tomar clases.",
   };
 
   return (
