@@ -159,14 +159,20 @@ export function ClaseEnCurso({ children }: { children: ReactNode }) {
           },
         });
 
+        // Un evento que llega de una instancia ya soltada (la caída suelta el iframe colgando
+        // primero) no puede mover la llamada: convertiría «Se cayó la conexión» en «La clase terminó».
+        const vigente = () => api.current === instancia;
+
         // Colgar es terminar: sube el cierre, aunque la llamada estuviera minimizada.
         instancia.addListener("readyToClose", () => {
+          if (!vigente()) return;
           const minutos = minutosDentro();
           soltar();
           setLlamada((l) => (l ? { ...l, fase: "cierre", minutos } : l));
         });
         // Perder la conexión NO es terminar: a quien se queda sin internet le quedan minutos pagados.
         const caida = () => {
+          if (!vigente()) return;
           const minutos = minutosDentro();
           setLlamada((l) => (l && l.fase === "dentro" ? { ...l, fase: "caida", minutos } : l));
         };
