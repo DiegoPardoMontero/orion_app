@@ -30,6 +30,15 @@ dentro de `/cuenta`).
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots), con Rigel de protagonista.
 
 ## Verificación
+Al 25/09/2026 por la mañana, con la cuarta tanda del Bloque 11 (pasos 33–36: sin «Tus puntos», el
+estudiante no postula, el diagnóstico voluntario y la clase en curso en «Próximas»):
+- Backend: `./mvnw verify` — **390 unitarios + 603 de integración**, verde.
+- Frontend: `tsc` + `lint` verdes; **125 tests de Vitest** (salieron los dos de las palabras de
+  «Cómo se hacen», que ya no se muestran).
+- **E2E Playwright: 84 de 85** en las cinco suites que tocan estos cambios (diagnóstico, humo y las
+  tres del wireflow de visitante, estudiante y profesor), sobre base recreada y sin la de Wompi; la
+  que se salta es la de reclamar, como siempre. **Wireflow: 260 casos**, los 7 nuevos con su prueba.
+
 Al 25/09/2026 de madrugada, tras la noche autónoma (el wireflow probado, la revisión de seguridad
 del Bloque 11 y las sesiones en la base):
 - Backend: `./mvnw verify` — **390 unitarios + 599 de integración**, verde.
@@ -727,6 +736,37 @@ como la videollamada.
   objetivo es un dato, y el vocabulario no admite el error como palabra nueva («since two years»)
   ni la traducción repetida al revés (esta última también se limpia en código). En 12 corridas:
   todo en español, la inyección ignorada y el vocabulario limpio.
+
+## Cuarta tanda del Bloque 11 (25/09/2026, mañana)
+
+Pasos 33–36 del brief, pedidos por Pardo al revisar el Wireflow:
+
+- **Sin «Tus puntos» en el perfil** (paso 33). La tarjeta que explicaba el total, lo último y «Cómo
+  se hacen» salió, y los chips de puntos (cabecera, menú, perfil) ya no enlazan a ninguna
+  explicación. Los puntos se siguen sumando y se ven junto al nombre. Queda otra mención que no se
+  tocó —la franja «Completa tu ficha y gana “Ficha completa” (+25 puntos)»—, anotada para Pardo.
+- **Un estudiante no postula a profesor desde su cuenta** (paso 34). Fuera el botón «Enseña en
+  Orión» del final de «Mi ficha y mis datos». En `SecurityConfig`, crear, guardar, subir documentos,
+  aceptar el acuerdo y enviar la postulación piden `TEACHER_APPLICANT` o `PROFESSOR`; leer la
+  propia sigue abierto a cualquiera con sesión, porque un aspirante rechazado vuelve a ser
+  estudiante y el aviso de la decisión lo lleva a verla. En el frontend, `/aplicacion` deja de ser
+  ruta del estudiante (`/aplicacion/estado` sí), y «Enseña con Orión» con sesión de estudiante
+  explica que se crea otra cuenta en vez de ofrecer un botón que terminaría en 403. Consecuencias
+  que Pardo debe conocer: un aspirante rechazado ya no puede volver a postular desde esa cuenta, y
+  las postulaciones que ya existan de cuentas de estudiante no se borraron.
+- **El diagnóstico es voluntario, y en español si quieres** (paso 35). La portada, `/diagnostico`,
+  «Antes de empezar», las preguntas frecuentes y la tarjeta del perfil lo dicen, con la frase de
+  Pardo: «puedes hablarle en español: es solo para que te conozca, entienda tu contexto y por qué
+  quieres aprender inglés». Y ofrecen **crear la cuenta sin diagnóstico**, recordando que queda en
+  el perfil. La frase es cierta con el guion de hoy: dos respuestas seguidas en español y Meissa
+  sigue en español (rama `FROM_ZERO`), sin número, con el resumen y los tres profesores.
+- **La clase no sale de «Próximas» al empezar** (paso 36). Se queda, con «En curso» y «Unirse a la
+  clase», hasta que le quedan 5 minutos (`BookingQueryService.PASA_A_PASADAS_ANTES_DEL_FINAL`, que
+  corta por `ends_at` y no por `starts_at`); ahí pasa a «Pasadas». Mientras está en curso no ofrece
+  «Cancelar», y sí lo que antes daba «Pasadas» desde el inicio: reportar un problema y registrar
+  asistencia. La sala ya dejaba entrar hasta 15 minutos después del final: lo que se perdía era el
+  botón. «Tu próxima clase» del perfil sigue la misma regla. `MyBookingsIT` fija el borde (a los 49
+  minutos sigue; a los 50, pasa) y `StudentProgressIT`, la próxima clase en curso.
 
 ## La noche del 24 al 25/09/2026: el wireflow probado, seguridad y sesiones
 

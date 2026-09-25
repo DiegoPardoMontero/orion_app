@@ -152,6 +152,23 @@ comportamiento para los usuarios se anota, no se toca; nada fuera de los briefs.
 
 Lo que salió está en `docs/ESTADO.md` («La noche del 24 al 25/09/2026»).
 
+## Cuarta tanda (25/09, mañana)
+
+Pedidos de Pardo del 25/09, en sus palabras donde importan:
+
+33. **Quitar «Tus puntos» del perfil del estudiante**: «no quiero que le expliques nada de cómo
+    funcionan, qué hacen». Los puntos siguen junto al nombre, sin enlace a una explicación.
+34. **Sin «Enseñar en Orión» al final de «Mi ficha y mis datos»**, y sin postulación desde una cuenta
+    de estudiante: «no lo quiero así». Postula quien entra por «Quiero enseñar» (y el profesor
+    invitado por el admin); un estudiante que quiera enseñar crea otra cuenta.
+35. **El diagnóstico es voluntario**: «hay personas con miedo a que la diagnostiquen y que le digan
+    que está mal». Mostrar la opción de registrarse directamente sin hacerlo, recordar que queda
+    disponible más adelante, y decirles: «puedes hablarle en español, simplemente para que te
+    conozca, entienda tu contexto y por qué quieres aprender inglés».
+36. **Una clase no sale de «Próximas» al empezar** («si se me cae la conexión, llego un minuto tarde
+    o lo que sea, ya no puedo verla»): pasa a «Pasadas» cuando le quedan 5 minutos, y hasta entonces
+    conserva «Unirse a la clase».
+
 ## Auditoría del recorrido contra el handoff (paso 9)
 
 Diferencias encontradas y corregidas:
