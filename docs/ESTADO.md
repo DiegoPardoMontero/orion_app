@@ -34,9 +34,11 @@ Al 25/09/2026 de madrugada, tras la noche autónoma (el wireflow probado, la rev
 del Bloque 11 y las sesiones en la base):
 - Backend: `./mvnw verify` — **390 unitarios + 599 de integración**, verde.
 - Frontend: `tsc` + `lint` verdes; **127 tests de Vitest**.
-- **E2E Playwright: 92 de 93** sobre base recreada y con el caché de fetch de Next limpio (la de
-  Wompi, fuera; la que se salta pide una clase dentro del plazo de reclamo, que la base recién
-  sembrada no trae, y la cubre el backend). Incluye las cuatro suites del wireflow.
+- **E2E Playwright: 95 de 96** sobre base recreada, con `next dev` recién arrancado y su caché de
+  fetch borrado (la de Wompi, fuera; la que se salta pide una clase dentro del plazo de reclamo, que
+  la base recién sembrada no trae, y la cubre el backend). Incluye las cuatro suites del wireflow.
+  Ojo al repetirla: `/p/[slug]` cachea el slug en Next y un `next dev` que sobrevive a una base
+  recreada redirige al id de la base anterior.
 - **Sesiones**: con la cookie de un login, se apagó el backend y se arrancó otro proceso; la misma
   cookie siguió dentro (`/auth/me` 200).
 - **Wireflow**: 241 de 253 casos probados por Claude (211 en el navegador, 30 en el backend); el
