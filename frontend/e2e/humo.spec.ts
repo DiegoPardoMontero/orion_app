@@ -28,6 +28,8 @@ async function login(page: Page, user: { email: string; pass: string }) {
   await page.locator("#email").fill(user.email);
   await page.locator("#password").fill(user.pass);
   await page.getByRole("button", { name: "Entrar" }).click();
+  // Hasta salir del login la sesión no está puesta: navegar antes cancela la petición y rebota.
+  await page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 20_000 });
 }
 
 async function logout(page: Page) {

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { api, apartarCelebraciones, cerrarCelebraciones, entrar, estudianteNueva, horariosAmplios, SEMILLA, ultimoCorreo } from "./apoyo";
+import { api, aparece, apartarCelebraciones, cerrarCelebraciones, entrar, estudianteNueva, horariosAmplios, SEMILLA, ultimoCorreo } from "./apoyo";
 
 /**
  * El wireflow del estudiante (24/09/2026). Lo que cambia datos lo hace una estudiante recién
@@ -267,11 +267,13 @@ test("[e-pasadas.2] calificar una clase dictada", async ({ page }) => {
   await entrar(page, SEMILLA.ana);
   await page.goto("/mis-clases?scope=past");
   const calificar = page.getByRole("button", { name: "Calificar" }).first();
-  test.skip(!(await calificar.isVisible().catch(() => false)), "Ana ya calificó todas sus clases en esta base");
+  test.skip(!(await aparece(calificar)), "Ana ya calificó todas sus clases en esta base");
   await calificar.click();
-  await page.getByRole("button", { name: /5 estrellas|Cinco estrellas|5 de 5/ }).first().click();
-  await page.getByRole("dialog").locator("textarea").fill("Muy buena clase, practicamos lo del trabajo.");
-  await page.getByRole("dialog").getByRole("button", { name: "Enviar" }).click();
+  const dialogo = page.getByRole("dialog", { name: /¿Cómo estuvo tu clase con/ });
+  await expect(dialogo.getByRole("button", { name: "Enviar reseña" })).toBeDisabled();
+  await dialogo.getByRole("radio", { name: "5 estrellas" }).click();
+  await dialogo.getByLabel("Comentario (opcional)").fill("Muy buena clase, practicamos lo del trabajo.");
+  await dialogo.getByRole("button", { name: "Enviar reseña" }).click();
   await expect(page.getByText("¡Gracias! Ya calificaste esta clase.").first()).toBeVisible();
 });
 
@@ -458,7 +460,7 @@ test("[e-buscar.3] la tarjeta de práctica se cierra hasta la práctica siguient
   await entrar(page, SEMILLA.ana);
   await page.goto("/profesores");
   const cerrar = page.getByRole("button", { name: "Ocultar hasta la próxima práctica" });
-  test.skip(!(await cerrar.isVisible({ timeout: 3000 }).catch(() => false)), "Ana no tiene una práctica pendiente en esta base");
+  test.skip(!(await aparece(cerrar)), "Ana no tiene una práctica pendiente en esta base");
   await cerrar.click();
   await expect(cerrar).toHaveCount(0);
   await page.reload();
@@ -470,7 +472,7 @@ test("[e-pasadas.3 ad-reclamos.1] reportar un problema de una clase llega a los 
   await entrar(page, SEMILLA.ana);
   await page.goto("/mis-clases?scope=past");
   const reportar = page.getByRole("button", { name: "Reportar un problema" }).first();
-  test.skip(!(await reportar.isVisible({ timeout: 3000 }).catch(() => false)), "Ninguna clase de Ana está dentro del plazo para reclamar");
+  test.skip(!(await aparece(reportar)), "Ninguna clase de Ana está dentro del plazo para reclamar");
   await reportar.click();
   const dialogo = page.getByRole("dialog", { name: "Reportar un problema" });
   await dialogo.getByText("Hubo un problema técnico").click();

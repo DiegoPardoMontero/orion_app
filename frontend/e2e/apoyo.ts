@@ -1,4 +1,4 @@
-import { expect, type Browser, type Page } from "@playwright/test";
+import { expect, type Browser, type Locator, type Page } from "@playwright/test";
 
 /**
  * Las tres casillas obligatorias del registro (Bloque 9).
@@ -220,9 +220,19 @@ export async function cerrarCelebraciones(page: Page) {
     // `isVisible` no espera (ignora su timeout): hay que darle al aviso tiempo de llegar.
     const llego = await logro.waitFor({ state: "visible", timeout: 1500 }).then(() => true, () => false);
     if (!llego) return;
-    await logro.getByRole("button").last().click();
+    // Si la página tiene `apartarCelebraciones`, el manejador puede cerrarlo antes que este clic.
+    await logro.getByRole("button").last().click({ timeout: 3000 }).catch(() => {});
     await page.waitForTimeout(300);
   }
+}
+
+/**
+ * Si algo aparece en pantalla dentro del plazo. Para las pruebas que se saltan cuando a la base le
+ * faltan datos: `isVisible` contesta al instante, antes de que la página cargue, y las saltaba sin
+ * motivo.
+ */
+export async function aparece(locator: Locator, timeout = 8000): Promise<boolean> {
+  return locator.first().waitFor({ state: "visible", timeout }).then(() => true, () => false);
 }
 
 /**

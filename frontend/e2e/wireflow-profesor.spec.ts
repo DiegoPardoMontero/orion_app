@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { api, apartarCelebraciones, entrar, estudianteNueva, horariosAmplios, SEMILLA, ultimoCorreo } from "./apoyo";
+import { api, aparece, apartarCelebraciones, entrar, estudianteNueva, horariosAmplios, SEMILLA, ultimoCorreo } from "./apoyo";
 
 /**
  * El wireflow del profesor y del admin (24/09/2026). María es la profesora de la semilla; lo que
@@ -285,7 +285,7 @@ test("[p-acta-publicada.1] el acta publicada se corrige hasta la fecha que dice"
   // Las etiquetas del acta llegan con su propia consulta: se espera a la primera antes de decidir.
   await page.getByRole("link", { name: /Ver el acta|Terminar el acta|Contar cómo estuvo/ }).first().waitFor({ timeout: 10_000 }).catch(() => {});
   const publicada = page.getByRole("link", { name: "Ver el acta" }).first();
-  test.skip(!(await publicada.isVisible().catch(() => false)), "Sin actas publicadas en esta base");
+  test.skip(!(await aparece(publicada, 2000)), "Sin actas publicadas en esta base");
   await publicada.click();
   await expect(page.getByText(/corregirla hasta|corregir hasta/i).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Corregir" })).toBeVisible();
