@@ -4264,6 +4264,7 @@ export interface components {
             counterpart?: components["schemas"]["Counterpart"];
             rehearsal?: boolean;
             trial?: boolean;
+            inProgress?: boolean;
         };
         EligibilityResponse: {
             eligible?: boolean;

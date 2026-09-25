@@ -27,6 +27,7 @@ import co.orion.identity.domain.UserRole;
 import co.orion.scheduling.domain.Booking;
 import co.orion.scheduling.domain.BookingModality;
 import co.orion.scheduling.persistence.BookingRepository;
+import co.orion.shared.time.ClassLength;
 import co.orion.support.ApiIntegrationSupport;
 
 /** Reloj congelado en el lunes 2026-07-13 a las 12:00 de Bogotá (= 17:00 UTC). */
@@ -84,6 +85,12 @@ class MyBookingsIT extends ApiIntegrationSupport {
     private Booking booking(Instant startsAt) {
         return bookings.save(TestBookings.confirmed(ana.getId(), maria.getId(), startsAt,
                 BookingModality.VIRTUAL, "Meet", ana.getId()));
+    }
+
+    /** Con la duración real de una clase, que es la que decide cuándo le quedan cinco minutos. */
+    private Booking clase(Instant startsAt) {
+        return bookings.save(TestBookings.confirmed(ana.getId(), maria.getId(), startsAt,
+                startsAt.plus(ClassLength.DURATION), BookingModality.VIRTUAL, "Meet", ana.getId()));
     }
 
     @Test
@@ -152,8 +159,42 @@ class MyBookingsIT extends ApiIntegrationSupport {
         assertThat(response.getBody()[0].lateCancel()).isFalse();
     }
 
+    /**
+     * Una clase en curso sigue en «Próximas» —con su botón para entrar— hasta que le quedan cinco
+     * minutos (Pardo, 25/09/2026): a quien se le cae la conexión o llega tarde le hace falta volver.
+     * Dura 55: empezada hace 49 minutos le quedan 6 y sigue; hace 50 le quedan 5 y pasa a «Pasadas».
+     */
     @Test
-    void upcomingOnlyShowsConfirmedClassesThatHaveNotStarted() {
+    void aClassInProgressStaysInUpcomingUntilFiveMinutesAreLeft() {
+        Instant hace49 = FROZEN_NOW.minus(java.time.Duration.ofMinutes(49));
+        Instant hace50 = FROZEN_NOW.minus(java.time.Duration.ofMinutes(50));
+        clase(hace49);
+        clase(hace50);
+
+        MyBookingResponse[] proximas = get(MY_BOOKINGS, anaSession, MyBookingResponse[].class).getBody();
+        MyBookingResponse[] pasadas = get(MY_BOOKINGS + "?scope=past", anaSession, MyBookingResponse[].class).getBody();
+
+        assertThat(proximas).singleElement().satisfies(clase -> {
+            assertThat(clase.startsAt().toInstant()).isEqualTo(hace49);
+            assertThat(clase.inProgress()).isTrue();
+        });
+        assertThat(pasadas).singleElement().satisfies(clase ->
+                assertThat(clase.startsAt().toInstant()).isEqualTo(hace50));
+
+        // Del otro lado, igual: el profesor también vuelve a entrar si se le cae la conexión.
+        assertThat(get(MY_BOOKINGS, mariaSession, MyBookingResponse[].class).getBody())
+                .singleElement().satisfies(clase -> assertThat(clase.inProgress()).isTrue());
+    }
+
+    @Test
+    void aClassThatHasNotStartedIsNotInProgress() {
+        booking(SOON);
+
+        assertThat(get(MY_BOOKINGS, anaSession, MyBookingResponse[].class).getBody()[0].inProgress()).isFalse();
+    }
+
+    @Test
+    void upcomingOnlyShowsActiveClassesThatAreNotAboutToEnd() {
         booking(FAR_FUTURE);
         booking(PAST);
         Booking cancelled = booking(FROZEN_NOW.plus(java.time.Duration.ofDays(4)));

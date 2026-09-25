@@ -453,15 +453,21 @@ function TarjetaClase({
   });
   const puedeEscribir = !!contraparte?.id;
 
+  // Ya empezó y sigue en «Próximas» hasta que le quedan 5 minutos (Pardo, 25/09/2026): el botón para
+  // entrar se queda, para volver si se cae la conexión; cancelar ya no. Lo que antes ofrecía «Pasadas»
+  // desde el inicio —reportar, registrar asistencia— se ofrece aquí mientras tanto.
+  const enCurso = scope === "upcoming" && !!clase.inProgress;
+  const yaEmpezo = scope === "past" || enCurso;
+
   // El profesor registra asistencia de lo que ya ocurrió y sigue confirmado.
-  const puedeRegistrar = esProfesor && scope === "past" && clase.status === "CONFIRMED";
+  const puedeRegistrar = esProfesor && yaEmpezo && clase.status === "CONFIRMED";
 
   // El estudiante califica una clase pasada que se dio (confirmada o completada). El backend arbitra
   // el plazo/estado real (422) y el duplicado (409); aquí basta con ofrecer el botón en ese rango.
   // Reportar un problema: del estudiante, sobre una clase pasada que todavía no se cerró. El
   // backend arbitra la ventana real (desde 15 min después de empezar y hasta 24 h después de
   // terminar); aquí basta con ofrecer el botón en ese rango.
-  const puedeReportar = !esProfesor && scope === "past" && clase.status === "CONFIRMED";
+  const puedeReportar = !esProfesor && yaEmpezo && clase.status === "CONFIRMED";
 
   // Un ensayo del admin no se califica: movería la reputación del profesor por una clase que no
   // existió (el servidor también lo rechaza). La clase de prueba de un estudiante sí: es una clase.
@@ -499,10 +505,16 @@ function TarjetaClase({
           <span className="flex items-center gap-2 text-[13.5px] font-bold">
             <Clock size={15} strokeWidth={1.9} className="text-primary" />
             {rangoHoras(clase.startsAt!, clase.endsAt!)}
-            {esLaSiguiente && (
-              <span className="rounded-pill bg-primary-soft px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.06em] text-primary-strong">
-                La siguiente
+            {enCurso ? (
+              <span className="rounded-pill bg-primary px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.06em] text-on-primary">
+                En curso
               </span>
+            ) : (
+              esLaSiguiente && (
+                <span className="rounded-pill bg-primary-soft px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.06em] text-primary-strong">
+                  La siguiente
+                </span>
+              )
             )}
           </span>
           <span className="flex flex-wrap items-center justify-end gap-1.5">
@@ -635,7 +647,7 @@ function TarjetaClase({
             </Boton>
           )}
 
-          {scope === "upcoming" && clase.status === "CONFIRMED" && (
+          {scope === "upcoming" && clase.status === "CONFIRMED" && !enCurso && (
             <>
               {/* Sin `disabled`: cancelar se puede siempre. Deshabilitarlo dentro de la ventana
                   obligaba a quien ya sabía que no iba a ir a dejar la clase en pie, y el profesor

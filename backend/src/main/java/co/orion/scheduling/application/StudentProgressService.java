@@ -107,9 +107,12 @@ public class StudentProgressService {
      * anunciarla en el panel con su cuenta atrás sería prometer algo que puede vencer en 20 minutos.
      */
     private ProximaClase proximaClase(User student, Instant ahora) {
+        // La que está en curso sigue siendo «la próxima» hasta que le quedan cinco minutos: es la
+        // misma regla de «Próximas» en Mis clases, y así su botón para entrar no desaparece al empezar.
         return bookings
-                .findByStudentIdAndStatusInAndStartsAtAfterOrderByStartsAtAsc(
-                        student.getId(), List.of(BookingStatus.CONFIRMED), ahora)
+                .findByStudentIdAndStatusInAndEndsAtAfterOrderByStartsAtAsc(
+                        student.getId(), List.of(BookingStatus.CONFIRMED),
+                        ahora.plus(BookingQueryService.PASA_A_PASADAS_ANTES_DEL_FINAL))
                 .stream()
                 .findFirst()
                 .map(booking -> {

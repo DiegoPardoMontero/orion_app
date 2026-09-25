@@ -37,7 +37,12 @@ public record MyBookingResponse(UUID id,
                                 /** Ensayo del admin (aula o acta): no se califica ni cuenta. */
                                 boolean rehearsal,
                                 /** La clase de prueba del estudiante (Q7): una clase de verdad, gratis desde la V65. */
-                                boolean trial) {
+                                boolean trial,
+                                /**
+                                 * Ya empezó y todavía no termina. Sigue en «Próximas» para poder
+                                 * entrar (o volver a entrar), pero ya no se cancela desde la lista.
+                                 */
+                                boolean inProgress) {
 
     /**
      * La otra parte: el profesor si mira un estudiante, el estudiante si mira un profesor. La foto
@@ -71,6 +76,7 @@ public record MyBookingResponse(UUID id,
                 booking.isConfirmed() && !booking.isCancellableAt(now, cancellationWindow),
                 Counterpart.of(counterpart, counterpartPhotoUrl, counterpartHeadline),
                 booking.isRehearsal(),
-                booking.isTrial());
+                booking.isTrial(),
+                booking.isConfirmed() && !now.isBefore(booking.getStartsAt()) && now.isBefore(booking.getEndsAt()));
     }
 }

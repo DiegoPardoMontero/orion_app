@@ -48,12 +48,9 @@ public interface BookingRepository extends JpaRepository<Booking, UUID>,
 
     boolean existsByStudentIdAndStatus(UUID studentId, BookingStatus status);
 
-    /** Próximas: activas y que aún no empiezan, de la más cercana a la más lejana. */
+    /** Activas y que aún no empiezan, de la más cercana a la más lejana. */
     List<Booking> findByStudentIdAndStatusInAndStartsAtAfterOrderByStartsAtAsc(
             UUID studentId, Collection<BookingStatus> statuses, Instant now);
-
-    List<Booking> findByProfessorIdAndStatusInAndStartsAtAfterOrderByStartsAtAsc(
-            UUID professorId, Collection<BookingStatus> statuses, Instant now);
 
     /** Las reservas cuyo plazo para pagar ya se cumplió: la entrada del job de expiración. */
     List<Booking> findByStatusAndExpiresAtLessThanEqual(BookingStatus status, Instant deadline);
@@ -69,6 +66,38 @@ public interface BookingRepository extends JpaRepository<Booking, UUID>,
      */
     List<Booking> findByStatusAndEndsAtLessThanAndCompletedAtIsNull(
             BookingStatus status, Instant deadline);
+
+    /**
+     * Próximas, vistas por quien tiene la clase: las activas que no están por terminar. El corte lo
+     * pone {@code BookingQueryService#PASA_A_PASADAS_ANTES_DEL_FINAL}: una clase en curso sigue aquí,
+     * con su botón para entrar, hasta que le quedan cinco minutos.
+     */
+    List<Booking> findByStudentIdAndStatusInAndEndsAtAfterOrderByStartsAtAsc(
+            UUID studentId, Collection<BookingStatus> statuses, Instant corte);
+
+    List<Booking> findByProfessorIdAndStatusInAndEndsAtAfterOrderByStartsAtAsc(
+            UUID professorId, Collection<BookingStatus> statuses, Instant corte);
+
+    /** Pasadas, vistas por quien tuvo la clase: lo que terminó (o está por terminar) o ya no está activo. */
+    @Query("""
+            select b from Booking b
+            where b.studentId = :userId
+              and (b.status not in :activeStatuses or b.endsAt <= :corte)
+            order by b.startsAt desc
+            """)
+    List<Booking> findEndedOfStudent(@Param("userId") UUID studentId,
+                                     @Param("activeStatuses") Collection<BookingStatus> activeStatuses,
+                                     @Param("corte") Instant corte);
+
+    @Query("""
+            select b from Booking b
+            where b.professorId = :userId
+              and (b.status not in :activeStatuses or b.endsAt <= :corte)
+            order by b.startsAt desc
+            """)
+    List<Booking> findEndedOfProfessor(@Param("userId") UUID professorId,
+                                       @Param("activeStatuses") Collection<BookingStatus> activeStatuses,
+                                       @Param("corte") Instant corte);
 
     /** Pasadas: todo lo demás — ya ocurrieron o están en un estado terminal. */
     @Query("""

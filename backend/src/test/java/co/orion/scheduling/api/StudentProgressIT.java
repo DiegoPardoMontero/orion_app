@@ -32,6 +32,7 @@ import co.orion.scheduling.domain.BookingModality;
 import co.orion.scheduling.domain.BookingStatus;
 import co.orion.shared.time.BusinessZone;
 import co.orion.scheduling.persistence.BookingRepository;
+import co.orion.shared.time.ClassLength;
 import co.orion.support.ApiIntegrationSupport;
 
 /**
@@ -171,6 +172,18 @@ class StudentProgressIT extends ApiIntegrationSupport {
         assertThat(progreso.nextLesson()).isNotNull();
         assertThat(progreso.nextLesson().professorName()).isEqualTo("Juan Torres");
         assertThat(progreso.nextLesson().startsAt().toLocalDate()).isEqualTo(LocalDate.of(2026, 7, 22));
+    }
+
+    /** La que está en curso sigue siendo la próxima, con su enlace para entrar, hasta sus últimos 5 minutos. */
+    @Test
+    void laClaseEnCursoSigueSiendoLaProxima() {
+        Instant empezo = FROZEN_NOW.minus(java.time.Duration.ofMinutes(20));
+        bookings.save(TestBookings.confirmed(ana.getId(), juan.getId(), empezo,
+                empezo.plus(ClassLength.DURATION), BookingModality.VIRTUAL, null, ana.getId()));
+        bookings.save(TestBookings.confirmed(ana.getId(), maria.getId(),
+                enBogota(LocalDate.of(2026, 7, 22), 18), BookingModality.VIRTUAL, null, ana.getId()));
+
+        assertThat(progreso().nextLesson().professorName()).isEqualTo("Juan Torres");
     }
 
     /**

@@ -333,6 +333,24 @@ test("[e-campana.1 e-campana.2] las notificaciones llevan a su pantalla y se mar
   }
 });
 
+test("[e-mis-clases.5] una clase en curso sigue en Próximas con «Unirse a la clase» y sin «Cancelar»", async ({ page }) => {
+  await entrar(page, SEMILLA.ana);
+  // El backend decide qué está en curso con su reloj (MyBookingsIT lo prueba con el reloj congelado);
+  // aquí se marca en curso la primera clase confirmada para ver cómo la pinta la pantalla.
+  await page.route("**/api/v1/me/bookings?scope=upcoming", async (route) => {
+    const respuesta = await route.fetch();
+    const clases = (await respuesta.json()) as { status: string; inProgress?: boolean }[];
+    const i = clases.findIndex((c) => c.status === "CONFIRMED");
+    if (i >= 0) clases[i].inProgress = true;
+    await route.fulfill({ response: respuesta, json: clases });
+  });
+  await page.goto("/mis-clases");
+  const tarjeta = page.locator("li", { has: page.getByText("En curso", { exact: true }) }).first();
+  await expect(tarjeta).toBeVisible();
+  await expect(tarjeta.getByRole("link", { name: /Unirse a la clase/ })).toBeVisible();
+  await expect(tarjeta.getByRole("button", { name: "Cancelar", exact: true })).toHaveCount(0);
+});
+
 test("[v-ensena.3] con la sesión de un estudiante, «Enseña con Orión» no ofrece postular", async ({ page }) => {
   await entrar(page, SEMILLA.ana);
   await page.goto("/ensena-con-orion");

@@ -33,6 +33,14 @@ public class BookingQueryService {
         PAST
     }
 
+    /**
+     * Una clase sigue en «Próximas» —con su botón para entrar— hasta que le quedan cinco minutos
+     * (Pardo, 25/09/2026). Antes salía apenas empezaba, y el botón con ella: a quien se le caía la
+     * conexión o llegaba un minuto tarde no le quedaba por dónde volver a entrar, aunque la sala
+     * siguiera abierta. No es un ajuste: es cómo se agrupa una lista, no una regla de negocio.
+     */
+    public static final Duration PASA_A_PASADAS_ANTES_DEL_FINAL = Duration.ofMinutes(5);
+
     private final BookingRepository bookings;
     private final UserRepository users;
     private final ProfessorProfileRepository profiles;
@@ -58,15 +66,16 @@ public class BookingQueryService {
         // La política de cancelación se pregunta una vez por petición, no por reserva.
         Duration window = bookingService.cancellationWindowFor(viewer.getRole());
 
+        Instant corte = now.plus(PASA_A_PASADAS_ANTES_DEL_FINAL);
         List<Booking> found = switch (scope) {
             case UPCOMING -> asStudent
-                    ? bookings.findByStudentIdAndStatusInAndStartsAtAfterOrderByStartsAtAsc(
-                            viewer.getId(), ACTIVE_STATUSES, now)
-                    : bookings.findByProfessorIdAndStatusInAndStartsAtAfterOrderByStartsAtAsc(
-                            viewer.getId(), ACTIVE_STATUSES, now);
+                    ? bookings.findByStudentIdAndStatusInAndEndsAtAfterOrderByStartsAtAsc(
+                            viewer.getId(), ACTIVE_STATUSES, corte)
+                    : bookings.findByProfessorIdAndStatusInAndEndsAtAfterOrderByStartsAtAsc(
+                            viewer.getId(), ACTIVE_STATUSES, corte);
             case PAST -> asStudent
-                    ? bookings.findPastOfStudent(viewer.getId(), ACTIVE_STATUSES, now)
-                    : bookings.findPastOfProfessor(viewer.getId(), ACTIVE_STATUSES, now);
+                    ? bookings.findEndedOfStudent(viewer.getId(), ACTIVE_STATUSES, corte)
+                    : bookings.findEndedOfProfessor(viewer.getId(), ACTIVE_STATUSES, corte);
         };
 
         Map<UUID, User> counterparts = loadCounterparts(found, asStudent);
