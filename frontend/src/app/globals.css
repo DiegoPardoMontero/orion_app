@@ -957,3 +957,25 @@ body {
   to { transform: none; opacity: 1; }
 }
 .pr-bono { animation: pr-bono 240ms ease-out both; }
+
+/* La clase en curso, minimizada (24/09/2026): la ventana flotante respira con un halo de amanecer,
+   para que se note que sigue viva sin llamar la atención de más. */
+.clase-flotante {
+  box-shadow: 0 0 0 2px rgb(255 193 137 / 0.75), 0 18px 40px rgb(46 30 78 / 0.35);
+  animation: clase-flotante-halo 2.8s ease-in-out infinite;
+}
+@keyframes clase-flotante-halo {
+  0%, 100% { box-shadow: 0 0 0 2px rgb(255 193 137 / 0.75), 0 18px 40px rgb(46 30 78 / 0.35); }
+  50% { box-shadow: 0 0 0 5px rgb(255 193 137 / 0.3), 0 18px 40px rgb(46 30 78 / 0.35); }
+}
+/* «Ana entró a la clase»: baja y se asienta. */
+.aviso-llegada {
+  animation: aviso-llegada 380ms cubic-bezier(.2, .8, .2, 1) both;
+}
+@keyframes aviso-llegada {
+  from { opacity: 0; transform: translate(-50%, -12px) scale(0.96); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .clase-flotante, .aviso-llegada { animation: none; }
+}

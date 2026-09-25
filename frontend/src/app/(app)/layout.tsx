@@ -38,6 +38,7 @@ import { AvisoCorreoSinVerificar } from "@/components/AvisoCorreoSinVerificar";
 import { AvisoMayoriaDeEdad } from "@/components/AvisoMayoriaDeEdad";
 import { Bienvenida } from "@/components/bienvenida/Bienvenida";
 import { Encendido } from "@/components/gamificacion/Encendido";
+import { ClaseEnCurso } from "@/components/aula/ClaseEnCurso";
 import { FranjaDeFicha } from "@/components/FranjaDeFicha";
 import { FranjaDelPerfil } from "@/components/FranjaDelPerfil";
 import { Wordmark } from "@/components/marca";
@@ -105,6 +106,15 @@ const ETIQUETA_ROL: Record<Role, string> = {
  * fija de 248 px. El item activo se marca con color + peso + pastilla, nunca por color solo.
  */
 export default function AppLayout({ children }: { children: ReactNode }) {
+  // La clase en curso envuelve todo el armazón: así sigue viva al navegar fuera del aula.
+  return (
+    <ClaseEnCurso>
+      <Armazon>{children}</Armazon>
+    </ClaseEnCurso>
+  );
+}
+
+function Armazon({ children }: { children: ReactNode }) {
   const { data: me, isPending, isError } = useMe();
   const router = useRouter();
   const pathname = usePathname();
@@ -164,14 +174,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     me.role === "PROFESSOR" && RUTAS_PROFESOR_APROBADO.some((r) => pathname.startsWith(r));
 
   /**
-   * El aula va a pantalla completa, sin lateral ni barra inferior.
-   *
-   * <p>No es solo estética. Mientras estabas en clase, el menú te dejaba navegar a otra sección con
-   * un clic, y salir así no colgaba: la conferencia te daba por dentro un rato más y, al volver,
-   * aparecías dos veces. Con dos personas eso parecen tres.
-   *
-   * <p>Quitando el armazón, la única salida es el botón de la propia aula, que cuelga antes de irse.
-   * Se entra desde «Mis clases» y se sale por ahí: una puerta, y siempre la misma.
+   * El aula va a pantalla completa, sin lateral ni barra inferior: la clase es lo único que importa
+   * ahí. Salir de ella ya no corta la llamada (24/09/2026): la videollamada vive en `ClaseEnCurso`,
+   * que envuelve este armazón, y fuera del aula sigue en una ventana flotante. El fantasma de antes
+   * —aparecer dos veces al volver— venía de soltar el iframe sin colgar; ahora el iframe no se
+   * suelta al navegar, y colgar sigue siendo lo primero que hace «Salir».
    */
   const enClase = /^\/mis-clases\/[^/]+\/aula$/.test(pathname);
 
