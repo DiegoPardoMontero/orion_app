@@ -453,9 +453,6 @@ function TarjetaClase({
   });
   const puedeEscribir = !!contraparte?.id;
 
-  // Una clase futura y confirmada que NO se puede cancelar solo puede ser por la regla de 24 h.
-  const dentroDeLas24 = scope === "upcoming" && clase.status === "CONFIRMED" && !clase.canCancel;
-
   // El profesor registra asistencia de lo que ya ocurrió y sigue confirmado.
   const puedeRegistrar = esProfesor && scope === "past" && clase.status === "CONFIRMED";
 
@@ -697,14 +694,6 @@ function TarjetaClase({
           <p className="mt-2.5 flex items-center justify-center gap-1.5 text-center text-[12px] font-semibold text-success">
             <Check size={13} strokeWidth={2.2} />
             ¡Gracias! Ya calificaste esta clase.
-          </p>
-        )}
-
-        {/* El servidor decide con canCancel; aquí solo se explica por qué está bloqueado. */}
-        {dentroDeLas24 && (
-          <p className="mt-2.5 flex items-center justify-center gap-1.5 text-center text-[11.5px] text-text-muted">
-            <AlertCircle size={13} strokeWidth={2.2} />
-            Faltan menos de 24 h, así que la clase se considera impartida
           </p>
         )}
       </Tarjeta>
