@@ -6,6 +6,7 @@ import { Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Rigel, type RigelPose } from "@/components/Rigel";
 import { Badge, Boton } from "@/components/ui";
 import { estadoAplicacion, etiquetaFaltante, useMiAplicacion } from "@/lib/aplicacion";
+import { useMe } from "@/lib/auth/session";
 
 /**
  * Estado de la postulación del profesor: en qué punto está, qué dijo la revisión y qué sigue. Cada
@@ -13,6 +14,10 @@ import { estadoAplicacion, etiquetaFaltante, useMiAplicacion } from "@/lib/aplic
  */
 export default function EstadoAplicacionPage() {
   const app = useMiAplicacion();
+  // Un estudiante ve su postulación (la de antes de un rechazo), pero no la lleva: para enseñar se
+  // abre otra cuenta por «Quiero enseñar» (Pardo, 25/09/2026).
+  const { data: me } = useMe();
+  const puedePostular = me?.role === "TEACHER_APPLICANT" || me?.role === "PROFESSOR";
 
   if (app.isPending) {
     return (
@@ -23,6 +28,18 @@ export default function EstadoAplicacionPage() {
   }
 
   // 404 = aún no ha postulado: no es un error, es una invitación a empezar.
+  if (app.noAplico && me && !puedePostular) {
+    return (
+      <main className="mx-auto w-full max-w-lg px-5 py-8">
+        <Vacio
+          mascota
+          titulo="Tu cuenta es de estudiante"
+          texto="Desde aquí no se postula a profesor. Para enseñar en Orión, crea una cuenta aparte con otro correo, desde «Quiero enseñar»."
+        />
+      </main>
+    );
+  }
+
   if (app.noAplico) {
     return (
       <main className="mx-auto w-full max-w-lg px-5 py-8">
@@ -129,7 +146,7 @@ export default function EstadoAplicacionPage() {
             </Boton>
           </Link>
         )}
-        {status === "CHANGES_REQUESTED" && (
+        {status === "CHANGES_REQUESTED" && puedePostular && (
           <Link href="/aplicacion">
             <Boton variante="primario" className="h-[52px] w-full">
               <PencilLine size={17} strokeWidth={2} />
@@ -137,7 +154,7 @@ export default function EstadoAplicacionPage() {
             </Boton>
           </Link>
         )}
-        {status === "DRAFT" && (
+        {status === "DRAFT" && puedePostular && (
           <Link href="/aplicacion">
             <Boton variante="primario" className="h-[52px] w-full">
               <Sparkles size={17} strokeWidth={2} />

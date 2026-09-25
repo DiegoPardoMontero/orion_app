@@ -325,6 +325,13 @@ test("[e-campana.1 e-campana.2] las notificaciones llevan a su pantalla y se mar
   }
 });
 
+test("[v-ensena.3] con la sesión de un estudiante, «Enseña con Orión» no ofrece postular", async ({ page }) => {
+  await entrar(page, SEMILLA.ana);
+  await page.goto("/ensena-con-orion");
+  await expect(page.getByText(/desde ella no se postula/).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: /Empieza tu postulación/ })).toHaveCount(0);
+});
+
 test("[e-ficha.1 e-ficha.4] los últimos logros dicen qué son; cambiar la contraseña", async ({ page }) => {
   await entrar(page, SEMILLA.ana);
   await page.goto("/cuenta?seccion=ficha");

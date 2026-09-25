@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, GraduationCap, KeyRound, Lock, Mail, User } from "lucide-react";
+import { KeyRound, Lock, Mail, User } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -17,7 +17,6 @@ import { PhoneInput } from "@/components/PhoneInput";
 import { EdicionEnPagina, useFormularioEditable } from "@/components/edicion/EdicionEnPagina";
 import { Campo } from "@/components/ui";
 import { apiFetch } from "@/lib/api/fetch";
-import { useMiAplicacion } from "@/lib/aplicacion";
 import { meQueryKey } from "@/lib/auth/session";
 
 type Cuenta = {
@@ -157,7 +156,6 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
             texto="Tu correo, tu WhatsApp y tu contraseña. No los ve ningún profesor ni otro estudiante."
           />
           <MisDatos inicial={inicial} onCambiarClave={() => setCambiandoClave(true)} />
-          <EnseñarCta />
         </div>
       </EdicionEnPagina>
 
@@ -234,35 +232,5 @@ function MisDatos({ inicial, onCambiarClave }: { inicial: Cuenta; onCambiarClave
         {etiquetaDeClave}
       </button>
     </div>
-  );
-}
-
-/**
- * Puente hacia la postulación de profesor desde el perfil del estudiante. Si ya empezó una, lleva a
- * su estado; si no, lo invita a postular. Sin postulación viva, no muestra nada llamativo de más.
- */
-function EnseñarCta() {
-  const aplic = useMiAplicacion();
-  const tieneApp = !aplic.noAplico && !!aplic.status;
-  const destino = tieneApp ? "/aplicacion/estado" : "/aplicacion";
-
-  return (
-    <Link
-      href={destino}
-      className="mt-6 flex items-center gap-3 rounded-card bg-accent-lavender-soft p-4 transition-colors hover:bg-[#e2d7f4] focus-visible:shadow-focus"
-    >
-      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[#5e4a8a]">
-        <GraduationCap size={20} strokeWidth={1.9} />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-[13.5px] font-bold text-[#5e4a8a]">
-          {tieneApp ? "Ver mi solicitud" : "Enseña en Orión"}
-        </span>
-        <span className="block text-[12px] text-[#5e4a8a]/85">
-          {tieneApp ? "Revisa el estado de tu postulación." : "¿Quieres dar clases? Postúlate como profesor."}
-        </span>
-      </span>
-      <ArrowRight size={18} strokeWidth={2} className="shrink-0 text-[#5e4a8a]" />
-    </Link>
   );
 }

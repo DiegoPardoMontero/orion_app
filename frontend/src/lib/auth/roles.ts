@@ -195,9 +195,12 @@ const ACCESS: { prefix: string; roles: Role[] }[] = [
   { prefix: "/disponibilidad", roles: ["PROFESSOR"] },
   { prefix: "/perfil", roles: ["PROFESSOR"] },
   { prefix: "/invitar", roles: ["PROFESSOR"] },
-  // La postulación a profesor: la abre un estudiante que quiere enseñar o un profesor recién
-  // creado por el admin que aún no completa su perfil. El admin revisa desde /admin/aplicaciones.
-  { prefix: "/aplicacion", roles: ["STUDENT", "PROFESSOR", "TEACHER_APPLICANT"] },
+  // La postulación a profesor: la lleva quien entró por «Quiero enseñar» o un profesor recién
+  // creado por el admin que aún no completa su perfil; un estudiante no postula desde su cuenta
+  // (Pardo, 25/09/2026). El estado sí lo ve: un aspirante rechazado vuelve a ser estudiante y el
+  // aviso de la decisión lo lleva ahí. El admin revisa desde /admin/aplicaciones.
+  { prefix: "/aplicacion/estado", roles: ["STUDENT", "PROFESSOR", "TEACHER_APPLICANT"] },
+  { prefix: "/aplicacion", roles: ["PROFESSOR", "TEACHER_APPLICANT"] },
   // Ayuda: todos los que estén dentro, incluido el aspirante. Va explícito y no por el "todo lo
   // no listado se permite" para que se lea como una decisión y no como un olvido.
   { prefix: "/ayuda", roles: ["STUDENT", "PROFESSOR", "TEACHER_APPLICANT", "ADMIN"] },

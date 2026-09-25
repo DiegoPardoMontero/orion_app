@@ -202,21 +202,54 @@ class AspiranteAProfesorIT extends ApiIntegrationSupport {
                 .isEqualTo(HttpStatus.OK);
     }
 
-    /** Quien se registró para aprender y luego postula NO pierde nada: sigue siendo estudiante. */
+    /**
+     * Quien se registró para aprender no postula desde esa cuenta (Pardo, 25/09/2026): aprobarla la
+     * convertiría en una cuenta de profesor con sus clases y su saldo adentro. Ninguna de las puertas
+     * de la postulación le abre —ni crearla, ni guardarla, ni el acuerdo, ni enviarla—, y la cuenta
+     * sigue siendo de estudiante.
+     */
     @Test
     @SuppressWarnings("rawtypes")
-    void unEstudianteQuePostulaSigueSiendoEstudiante() {
+    void unEstudianteNoPostulaDesdeSuCuenta() {
         ResponseEntity<Map> alta = rest.postForEntity(REGISTRO,
                 new RegisterRequest("Ana Ramírez", "ana@orion.test", CLAVE, null, false, true, true, true), Map.class);
         assertThat(alta.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         Session sesion = login("ana@orion.test");
 
-        post("/api/v1/teacher-applications", sesion, null, Map.class);
+        assertThat(post("/api/v1/teacher-applications", sesion, null, Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(put(MINE, sesion, Map.of(), Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(post("/api/v1/me/agreements/TEACHER_AGREEMENT/accept", sesion, null, Map.class)
+                .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(post(SUBMIT, sesion, null, Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.FORBIDDEN);
 
+        assertThat(applications.count()).isZero();
         assertThat(get("/api/v1/auth/me", sesion, Map.class).getBody().get("role"))
                 .isEqualTo("STUDENT");
-        assertThat(get("/api/v1/me/credits", sesion, Map.class).getStatusCode())
-                .isEqualTo(HttpStatus.OK);
+    }
+
+    /**
+     * Rechazado, el aspirante vuelve a ser estudiante: ya no puede llevar una postulación, pero el
+     * aviso de la decisión lo lleva a ver la suya, y esa lectura le sigue abierta.
+     */
+    @Test
+    @SuppressWarnings("rawtypes")
+    void elRechazadoYaNoPostulaPeroVeLaSuya() {
+        Session sesion = registrarAspirante("aspi@orion.test");
+        completarPostulacion(sesion, "aspi@orion.test");
+        post(SUBMIT, sesion, null, Map.class);
+        String id = idDeLaPostulacionDe("aspi@orion.test");
+        post(ADMIN + "/" + id + "/start-review", adminSession, null, Map.class);
+        post(ADMIN + "/" + id + "/reject", adminSession,
+                new ReviewDecisionRequest("Nos faltan certificaciones verificables."), Void.class);
+
+        ResponseEntity<Map> suya = get(MINE, sesion, Map.class);
+        assertThat(suya.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(suya.getBody().get("status")).isEqualTo("REJECTED");
+        assertThat(post("/api/v1/teacher-applications", sesion, null, Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.FORBIDDEN);
     }
 
     /* ---- La decisión ---- */

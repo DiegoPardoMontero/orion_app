@@ -7,10 +7,13 @@ import { apiFetch } from "@/lib/api/fetch";
 import { type Me } from "@/lib/auth/session";
 
 /**
- * CTA de "Enseña en Orión". Isla cliente que decide el destino según la sesión: con sesión lleva
- * directo al wizard de postulación (/aplicacion); sin sesión, al registro con `?rol=profesor`, que
- * ajusta el copy y deja al recién registrado en su postulación en vez de en el buscador. Postularse
- * siempre exige cuenta: la postulación cuelga de un usuario.
+ * CTA de "Enseña en Orión". Isla cliente que decide el destino según la sesión: el aspirante o el
+ * profesor van directo al wizard de postulación (/aplicacion); sin sesión, al registro con
+ * `?rol=profesor`, que ajusta el copy y deja al recién registrado en su postulación en vez de en el
+ * buscador. Postularse siempre exige cuenta: la postulación cuelga de un usuario.
+ *
+ * <p>Con la sesión de un estudiante no hay botón (Pardo, 25/09/2026): desde esa cuenta no se postula,
+ * y un enlace al wizard terminaría en un 403. Se le dice cómo, que es con otra cuenta.
  */
 export function EnsenaCta({ className = "", etiqueta }: { className?: string; etiqueta?: string }) {
   const { data: me } = useQuery({
@@ -19,6 +22,16 @@ export function EnsenaCta({ className = "", etiqueta }: { className?: string; et
     retry: false,
     staleTime: 60_000,
   });
+
+  if (me?.role === "STUDENT") {
+    return (
+      // Sobre superficie propia: la CTA vive tanto en el amanecer como en fondo claro.
+      <p className={`max-w-[46ch] rounded-card bg-surface px-5 py-3.5 text-left text-[14px] leading-relaxed text-text shadow-sm ${className}`}>
+        Estás con tu cuenta de estudiante, y desde ella no se postula. Para enseñar en Orión, crea una cuenta
+        aparte con otro correo desde «Quiero enseñar».
+      </p>
+    );
+  }
 
   const href = me ? "/aplicacion" : "/registro?rol=profesor";
   const texto = me ? "Empieza tu postulación" : (etiqueta ?? "Crea tu cuenta y postúlate");

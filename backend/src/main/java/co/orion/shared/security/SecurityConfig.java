@@ -105,10 +105,16 @@ public class SecurityConfig {
                 // llevar su postulación, mantener su cuenta y leer sus avisos. Todo lo demás cuelga
                 // de ROLE_STUDENT, que no tiene, así que se cierra solo.
                 .requestMatchers("/api/v1/me/account", "/api/v1/me/account/**").authenticated()
-                // Postulación a profesor: cualquier usuario autenticado puede aspirar y llevar su wizard.
-                .requestMatchers("/api/v1/teacher-applications").authenticated()
-                .requestMatchers("/api/v1/me/teacher-application", "/api/v1/me/teacher-application/**").authenticated()
-                .requestMatchers("/api/v1/me/agreements/**").authenticated()
+                // Postulación a profesor: la llevan quien entró por «Quiero enseñar» y el profesor
+                // invitado por el admin. Un estudiante no postula desde su cuenta (Pardo, 25/09/2026):
+                // aprobarla la convertiría en cuenta de profesor con sus clases y su saldo adentro.
+                // Leer la suya sí puede cualquiera con sesión: el aspirante rechazado vuelve a ser
+                // estudiante, y el aviso de la decisión lo lleva a verla.
+                .requestMatchers(HttpMethod.GET, "/api/v1/me/teacher-application").authenticated()
+                .requestMatchers("/api/v1/teacher-applications").hasAnyRole("TEACHER_APPLICANT", "PROFESSOR")
+                .requestMatchers("/api/v1/me/teacher-application", "/api/v1/me/teacher-application/**")
+                        .hasAnyRole("TEACHER_APPLICANT", "PROFESSOR")
+                .requestMatchers("/api/v1/me/agreements/**").hasAnyRole("TEACHER_APPLICANT", "PROFESSOR")
                 .requestMatchers("/api/v1/me/availability/**").hasRole("PROFESSOR")
                 // /** para cubrir también /me/profile/rate y /me/profile/rate/preview (solo profesor).
                 .requestMatchers("/api/v1/me/profile/**").hasRole("PROFESSOR")
