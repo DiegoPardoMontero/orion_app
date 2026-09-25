@@ -185,8 +185,10 @@ export async function simularAula(page: Page, bookingId: string, extra: Record<s
     }
     dispose() { this.f.remove(); }
   };`;
+  // Se sirve el objeto tal como esté en cada consulta: la prueba puede cambiarle el estado a mitad.
   await page.route(`**/api/v1/bookings/${bookingId}/classroom`, (r) => r.fulfill({ json: aula }));
   await page.route("https://jitsi.falso.test/**", (r) => r.fulfill({ body: jitsi, contentType: "application/javascript" }));
+  return aula;
 }
 
 /** El contador del iframe de la clase simulada: sube solo mientras el iframe siga vivo. */

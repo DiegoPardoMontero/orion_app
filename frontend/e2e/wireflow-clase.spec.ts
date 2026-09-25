@@ -144,6 +144,65 @@ test("[e-aula.4] si se cae la conexión, se puede volver a entrar", async ({ pag
   await expect(page.getByText(/Quedan \d+ min/)).toBeVisible();
 });
 
+test("[e-antesala.3] cuando llega la hora, la sala se abre sin recargar", async ({ page }) => {
+  await page.clock.install();
+  await entrar(page, SEMILLA.ana);
+  const id = await proximaClaseDeAna(page);
+  const ahora = Date.now();
+  const aula = await simularAula(page, id, {
+    state: "CLOSED",
+    opensAt: new Date(ahora + 30_000).toISOString(),
+    startsAt: new Date(ahora + 10 * 60_000).toISOString(),
+    endsAt: new Date(ahora + 65 * 60_000).toISOString(),
+  });
+  await page.goto(`/mis-clases/${id}/aula`);
+  await expect(page.getByText(/La sala abre a las/)).toBeVisible();
+  // La antesala vuelve a preguntar cada minuto; se adelanta el reloj en vez de esperarlo.
+  aula.state = "OPEN";
+  await page.clock.runFor(61_000);
+  await expect(page.getByText("Sala abierta")).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Entrar/ }).first()).toBeEnabled();
+});
+
+test("[p-antesala.1 p-antesala.2 p-antesala.3] el profe abre la sala antes, ve si el estudiante entró y también minimiza", async ({ page }) => {
+  await entrar(page, SEMILLA.maria);
+  const r = await api(page, "GET", "/api/v1/me/bookings?scope=upcoming");
+  const clase = (r.json as { id: string; status: string }[]).find((c) => c.status === "CONFIRMED");
+  expect(clase, "María necesita una clase confirmada por delante").toBeTruthy();
+  const ahora = Date.now();
+  const aula = await simularAula(page, clase!.id, {
+    state: "OPEN",
+    moderator: true,
+    counterpart: { name: "Ana Ramírez", firstName: "Ana", photoUrl: null, headline: null },
+    counterpartPresent: false,
+    displayName: "María Gómez",
+    opensAt: new Date(ahora - 2 * 60_000).toISOString(),
+    startsAt: new Date(ahora + 8 * 60_000).toISOString(),
+    endsAt: new Date(ahora + 63 * 60_000).toISOString(),
+  });
+  await page.goto(`/mis-clases/${clase!.id}/aula`);
+  await expect(page.getByText("Sala abierta")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Abrir la sala" })).toBeEnabled();
+
+  // Ya empezó y Ana entró: la antesala lo dice.
+  Object.assign(aula, {
+    state: "STARTED",
+    counterpartPresent: true,
+    startsAt: new Date(ahora - 3 * 60_000).toISOString(),
+    endsAt: new Date(ahora + 52 * 60_000).toISOString(),
+  });
+  await page.reload();
+  await expect(page.getByText("Ana te espera")).toBeVisible();
+  await page.getByRole("button", { name: "Entrar con Ana" }).click();
+  await expect(page.frameLocator("iframe").first().locator("#t")).toBeVisible();
+
+  // Y minimiza como el estudiante: la clase sigue en la ventana flotante.
+  await page.getByRole("button", { name: /Minimizar/ }).click();
+  await expect(page).toHaveURL(/\/mis-clases$/);
+  await expect(page.locator(".clase-flotante")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Volver a la clase" }).first()).toBeVisible();
+});
+
 test("[e-mini.6] con la clase en curso, recargar pregunta antes de salir", async ({ page }) => {
   await entrarAClase(page);
   await page.getByRole("button", { name: /^Entrar/ }).first().click();
