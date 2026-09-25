@@ -118,6 +118,20 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID>,
             """)
     long sumEarningsByStatusAllProfessors(@Param("status") PaymentStatus status);
 
+    /**
+     * Lo que los profesores ya se ganaron y Orión todavía no les transfirió: liberado y fuera de
+     * toda liquidación pagada. Un pago sigue RELEASED después de transferido —la liquidación es la
+     * que cambia—, así que sumar solo por estado contaba dos veces lo ya pagado.
+     */
+    @Query("""
+            select coalesce(sum(p.professorEarningsCop), 0) from Payment p
+            where p.status = co.orion.billing.domain.PaymentStatus.RELEASED
+              and not exists (select 1 from PayoutItem i, Payout o
+                              where i.id.paymentId = p.id and o.id = i.id.payoutId
+                                and o.status = co.orion.billing.domain.PayoutStatus.PAID)
+            """)
+    long sumPayableAllProfessors();
+
     /** Lo que ya salió hacia las cuentas de los profesores. */
     @Query("""
             select coalesce(sum(p.professorEarningsCop), 0) from Payment p

@@ -99,7 +99,7 @@ public class DashboardService {
 
         var money = new DashboardResponse.Money(
                 payments.sumEarningsByStatusAllProfessors(PaymentStatus.PAID),
-                payments.sumEarningsByStatusAllProfessors(PaymentStatus.RELEASED),
+                payments.sumPayableAllProfessors(),
                 payments.sumTransferred(),
                 payments.sumCommissionOn(List.of(PaymentStatus.PAID, PaymentStatus.RELEASED)),
                 credits.sumOutstanding(now));

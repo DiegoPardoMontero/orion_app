@@ -29,6 +29,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import co.orion.TestcontainersConfiguration;
+import co.orion.admin.api.DashboardResponse;
 import co.orion.billing.domain.PaymentStatus;
 import co.orion.billing.persistence.PaymentRepository;
 import co.orion.billing.persistence.StudentCreditRepository;
@@ -232,6 +233,44 @@ class EarningsAndPayoutsIT extends ApiIntegrationSupport {
         await().atMost(Duration.ofSeconds(5)).until(() -> jdbc.queryForObject(
                 "select count(*) from notifications where user_id = ? and type = 'PAYOUT_PAID'", Integer.class,
                 maria.getId()) == 1);
+    }
+
+    /**
+     * El panel del admin cuadra con las liquidaciones: la ganancia de una clase pasa de retenida a
+     * por transferir a transferida, y en cada momento está en una sola de las tres.
+     */
+    @Test
+    void theAdminPanelMoneyMovesFromHeldToPayableToTransferredWithoutCountingTwice() {
+        DashboardResponse.Money antes = panel();
+
+        UUID bookingId = bookAndPay(maria, 9);
+        assertThat(delta(panel(), antes)).containsExactly(EARNINGS_COP, 0L, 0L, COMMISSION_COP);
+
+        recordAttendance(bookingId, mariaSession);
+        assertThat(delta(panel(), antes)).containsExactly(0L, EARNINGS_COP, 0L, COMMISSION_COP);
+
+        // Liquidada pero sin transferir: sigue siendo algo que Orión tiene que pagar.
+        PayoutResponse payout = post("/api/v1/admin/payouts/generate", adminSession,
+                new GeneratePayoutsRequest(WEDNESDAY.minusDays(7), WEDNESDAY.plusDays(1)),
+                PayoutResponse[].class).getBody()[0];
+        assertThat(delta(panel(), antes)).containsExactly(0L, EARNINGS_COP, 0L, COMMISSION_COP);
+
+        post("/api/v1/admin/payouts/" + payout.id() + "/mark-paid", adminSession,
+                new MarkPayoutPaidRequest("BANCOLOMBIA-1"), PayoutResponse.class);
+        assertThat(delta(panel(), antes)).containsExactly(0L, 0L, EARNINGS_COP, COMMISSION_COP);
+    }
+
+    private DashboardResponse.Money panel() {
+        return get("/api/v1/admin/dashboard", adminSession, DashboardResponse.class).getBody().money();
+    }
+
+    /** Retenido, por transferir, transferido y comisión, como diferencia con la foto inicial. */
+    private static long[] delta(DashboardResponse.Money ahora, DashboardResponse.Money antes) {
+        return new long[] {
+                ahora.heldCop() - antes.heldCop(),
+                ahora.payableCop() - antes.payableCop(),
+                ahora.transferredCop() - antes.transferredCop(),
+                ahora.commissionEarnedCop() - antes.commissionEarnedCop()};
     }
 
     /** Una clase que no ocurrió no se le paga a nadie: la liquidación solo mira lo liberado. */
