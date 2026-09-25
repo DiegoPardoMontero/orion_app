@@ -506,12 +506,12 @@ function TarjetaClase({
             <Clock size={15} strokeWidth={1.9} className="text-primary" />
             {rangoHoras(clase.startsAt!, clase.endsAt!)}
             {enCurso ? (
-              <span className="rounded-pill bg-primary px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.06em] text-on-primary">
+              <span className="whitespace-nowrap rounded-pill bg-primary px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.06em] text-on-primary">
                 En curso
               </span>
             ) : (
               esLaSiguiente && (
-                <span className="rounded-pill bg-primary-soft px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.06em] text-primary-strong">
+                <span className="whitespace-nowrap rounded-pill bg-primary-soft px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.06em] text-primary-strong">
                   La siguiente
                 </span>
               )
