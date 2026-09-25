@@ -42,7 +42,9 @@ public class JobWatchdog {
             new Vigilado("professor-metrics", "Métricas y ranking", Duration.ofHours(30),
                     "El orden del buscador se queda congelado en el de ayer."),
             new Vigilado("class-reminders", "Recordatorios de clase", Duration.ofMinutes(30),
-                    "Nadie recibe el aviso de su clase de mañana ni el de una hora antes."));
+                    "Nadie recibe el aviso de su clase de mañana ni el de una hora antes."),
+            new Vigilado("founder-expiry", "Aviso de fin del beneficio de fundador", Duration.ofHours(3),
+                    "Los profes fundadores no se enteran a tiempo de que su comisión sube a la estándar."));
 
     private final JobRunRegistry runs;
     private final AlertService alerts;
