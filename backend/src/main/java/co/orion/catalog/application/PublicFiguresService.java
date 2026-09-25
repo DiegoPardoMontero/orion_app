@@ -42,7 +42,9 @@ public class PublicFiguresService {
                 settings.getInt("auto_complete_hours"),
                 settings.getInt("application_review_business_days"),
                 settings.getInt("assessment_max_minutes"),
-                settings.getInt("assessment_lead_retention_days"));
+                settings.getInt("assessment_lead_retention_days"),
+                settings.getInt("founder_commission_rate_bps") / 100,
+                settings.getInt("founder_period_months"));
     }
 
     /**

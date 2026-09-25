@@ -20,6 +20,7 @@ import type {
   RateBreakdownResponse,
 } from "@/lib/api/types";
 import { precioCop } from "@/lib/format";
+import { ayudaDeTarifa, type Fundador } from "@/lib/fundador";
 import { etiquetaNivel, NIVELES } from "@/lib/i18n";
 import { estadoBio, estadoTitular } from "@/lib/perfil-profesor";
 import { minutos, useCifras } from "@/lib/cifras";
@@ -319,7 +320,13 @@ function CamposDelPerfil({ inicial }: { inicial: ProfileResponse }) {
   return (
     <>
       {/* — Tarifa — */}
-      <WidgetTarifa valor={tarifa} onValor={setTarifa} guardada={inicial.rate ?? undefined} />
+      <WidgetTarifa
+        valor={tarifa}
+        onValor={setTarifa}
+        guardada={inicial.rate ?? undefined}
+        baseBps={inicial.baseRateBps}
+        fundador={inicial.founder}
+      />
 
       {/* — Presentación — */}
       <label className="mt-6 block text-[12.5px] font-bold text-text-secondary" htmlFor="headline">
@@ -569,10 +576,15 @@ function WidgetTarifa({
   valor,
   onValor,
   guardada,
+  baseBps,
+  fundador,
 }: {
   valor: string;
   onValor: (valor: string) => void;
   guardada?: RateBreakdownResponse;
+  /** La comisión de Orión, para decir qué recibirá cuando termine su beneficio de fundador. */
+  baseBps?: number;
+  fundador?: Fundador | null;
 }) {
   const numero = Number(valor);
   const valido = Number.isFinite(numero) && numero >= 20000 && numero <= 500000;
@@ -626,6 +638,12 @@ function WidgetTarifa({
         <p className="mt-2 text-[12px] font-semibold text-error">
           La tarifa debe estar entre $20.000 y $500.000.
         </p>
+      )}
+
+      {/* El profe fundador ve su 15 % y lo que recibirá después (brief del profe fundador, paso 3);
+          se recalcula mientras escribe, con el mismo redondeo que el backend. */}
+      {valido && baseBps != null && (
+        <p className="mt-3 text-[12.5px] leading-relaxed text-[#8a5a33]">{ayudaDeTarifa(numero, baseBps, fundador)}</p>
       )}
 
       {desglose && (

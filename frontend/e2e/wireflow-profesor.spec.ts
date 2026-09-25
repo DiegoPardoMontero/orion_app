@@ -236,6 +236,15 @@ test("[ad-usuarios.4] el admin quita y vuelve a dar el beneficio de profe fundad
   await expect(fila.getByText(/^Fundador · 15 %/)).toBeVisible();
 });
 
+test("[p-perfil.6] la tarifa dice cuánto recibe el profe fundador y cuánto después", async ({ page }) => {
+  await entrar(page, SEMILLA.maria);
+  await page.goto("/perfil");
+  const tarifa = page.locator("#tarifa");
+  await tarifa.fill("60000");
+  await expect(page.getByText(/Recibes \$51\.000 por clase: 15 % de comisión como profe fundador/)).toBeVisible();
+  await expect(page.getByText(/Después recibirás \$48\.000 \(20 %\)/)).toBeVisible();
+});
+
 test("[ad-ajustes.2 ad-sistema.1 ad-sistema.2] el historial de ajustes y el correo de prueba", async ({ page }) => {
   await entrar(page, SEMILLA.admin);
   await page.goto("/admin/ajustes");

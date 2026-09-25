@@ -110,9 +110,10 @@ test("[v-enlace.2] un enlace corto inventado no es un error técnico", async ({ 
   await expect(page.getByText(/no (existe|encontr)/i).first()).toBeVisible();
 });
 
-test("[v-ensena.1 v-ensena.2] «Enseña con Orión» lleva al registro con «Quiero enseñar»", async ({ page }) => {
+test("[v-ensena.1 v-ensena.2 v-ensena.4] «Enseña con Orión» dice la comisión y lleva al registro con «Quiero enseñar»", async ({ page }) => {
   await page.goto("/ensena-con-orion");
   await sinDesbordeLateral(page);
+  await expect(page.locator("p", { hasText: "Profes fundadores:" })).toContainText("15% durante sus primeros 3 meses de clases");
   await page.getByRole("link", { name: /postúlate/i }).first().click();
   await expect(page).toHaveURL(/\/registro/);
   await expect(page.getByRole("button", { name: /Quiero enseñar/ })).toHaveAttribute("aria-pressed", "true");

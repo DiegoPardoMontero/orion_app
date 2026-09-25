@@ -81,6 +81,9 @@ export type PublicFigures = {
   applicationReviewBusinessDays: number;
   assessmentMinutes: number;
   assessmentLeadRetentionDays: number;
+  /** El beneficio de profe fundador: su comisión y cuántos meses dura (V70). */
+  founderCommissionPercent: number;
+  founderPeriodMonths: number;
 };
 
 export type TeacherApplicationView = Schemas["TeacherApplicationView"];

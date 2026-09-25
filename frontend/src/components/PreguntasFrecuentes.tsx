@@ -74,7 +74,7 @@ const base = (c: PublicFigures): Record<"estudiante" | "profesor" | "general", P
     },
     {
       p: "¿Cuánto retiene Orión?",
-      r: `El ${c.commissionPercent} % del precio de la clase. Lo ves desglosado al fijar tu tarifa y clase por clase en «Ganancias». La comisión se calcula siempre sobre el precio, aunque el estudiante pague con saldo.`,
+      r: `El ${c.commissionPercent} % del precio de la clase. Los profes fundadores pagan el ${c.founderCommissionPercent} % durante sus primeros ${c.founderPeriodMonths} meses de clases, contados desde la primera clase pagada. Lo ves desglosado al fijar tu tarifa y clase por clase en «Ganancias». La comisión se calcula siempre sobre el precio, aunque el estudiante pague con saldo.`,
     },
     {
       p: "¿Cuándo me pagan?",

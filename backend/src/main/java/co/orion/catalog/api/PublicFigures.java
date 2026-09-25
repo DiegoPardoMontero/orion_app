@@ -38,5 +38,9 @@ public record PublicFigures(
         /** Minutos que dura la conversación del diagnóstico de confianza. */
         int assessmentMinutes,
         /** Días que se guarda un diagnóstico hecho sin cuenta, si nadie lo reclama. */
-        int assessmentLeadRetentionDays) {
+        int assessmentLeadRetentionDays,
+        /** La comisión de profe fundador, en porcentaje entero (`founder_commission_rate_bps`). */
+        int founderCommissionPercent,
+        /** Cuántos meses dura el beneficio de fundador, desde la primera clase pagada. */
+        int founderPeriodMonths) {
 }

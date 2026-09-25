@@ -17,7 +17,7 @@ export const cifrasQueryKey = ["catalog", "figures"] as const;
 
 /** Lo que se muestra mientras llega la respuesta. Coincide con los valores sembrados. */
 const MIENTRAS_CARGA: PublicFigures = {
-  commissionPercent: 15,
+  commissionPercent: 20,
   classMinutes: 55,
   paymentHoldMinutes: 20,
   studentCancelHours: 12,
@@ -29,6 +29,8 @@ const MIENTRAS_CARGA: PublicFigures = {
   applicationReviewBusinessDays: 3,
   assessmentMinutes: 2,
   assessmentLeadRetentionDays: 30,
+  founderCommissionPercent: 15,
+  founderPeriodMonths: 3,
 };
 
 export function useCifras(): PublicFigures {

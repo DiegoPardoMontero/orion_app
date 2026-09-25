@@ -31,11 +31,20 @@ import type { PublicFigures } from "@/lib/api/types";
  */
 
 /** Lo que se dice si el backend no contesta. La página tiene que salir igual: es la puerta de entrada. */
-const COMISION_POR_DEFECTO = 15;
+const COMISION_POR_DEFECTO = 20;
+const FUNDADOR_POR_DEFECTO = { pct: 15, meses: 3 };
 
 async function comision(): Promise<number> {
   const cifras = await serverFetch<PublicFigures>("/api/v1/catalog/figures", 3600);
   return cifras?.commissionPercent ?? COMISION_POR_DEFECTO;
+}
+
+/** El beneficio de profe fundador (V70), con los números de Ajustes. */
+async function fundador(): Promise<{ pct: number; meses: number }> {
+  const cifras = await serverFetch<PublicFigures>("/api/v1/catalog/figures", 3600);
+  return cifras?.founderCommissionPercent != null
+    ? { pct: cifras.founderCommissionPercent, meses: cifras.founderPeriodMonths }
+    : FUNDADOR_POR_DEFECTO;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -105,6 +114,7 @@ const PASOS = [
 
 export default async function EnsenaConOrionPage() {
   const pct = await comision();
+  const fund = await fundador();
   return (
     <div className="flex-1">
       <script
@@ -197,6 +207,10 @@ export default async function EnsenaConOrionPage() {
               Orión retiene una comisión del <strong className="font-bold text-accent-peach">{pct}%</strong>{" "}
               sobre tu tarifa por cada clase reservada. Lo demás es tuyo. Sin cuotas por adelantado ni
               costos ocultos: verás el desglose completo antes de publicar tu perfil.
+            </p>
+            <p className="mt-2 text-[15px] leading-relaxed text-on-primary/85">
+              <strong className="font-bold text-accent-peach">Profes fundadores:</strong> {fund.pct}% durante sus
+              primeros {fund.meses} meses de clases, contados desde la primera clase pagada.
             </p>
           </div>
         </div>
