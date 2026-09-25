@@ -29,6 +29,19 @@ function csrfToken(): string | null {
 }
 
 /**
+ * El token de quien todavía no tiene la cookie. El backend solo la escribe cuando una petición
+ * pasa por él, y un visitante que llega directo a un formulario anónimo («Te escribimos
+ * nosotros») no había pedido nada: su POST salía sin token y recibía «Access denied». Se pide una
+ * vez y se reutiliza.
+ */
+async function csrfTokenAsegurado(): Promise<string | null> {
+  const actual = csrfToken();
+  if (actual) return actual;
+  await fetch("/api/v1/auth/csrf", { credentials: "same-origin" }).catch(() => undefined);
+  return csrfToken();
+}
+
+/**
  * Mientras se cierra la sesión, un 401 no redirige. Al salir se vacía la caché y las consultas de
  * la pantalla en curso se vuelven a pedir —ya sin sesión— antes de que la navegación a /login
  * termine: cada 401 disparaba una segunda navegación, a página completa, encima de la primera.
@@ -60,7 +73,7 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
   }
 
   if (MUTATING.has(method)) {
-    const token = csrfToken();
+    const token = await csrfTokenAsegurado();
     if (token) {
       headers["X-XSRF-TOKEN"] = token;
     }
@@ -107,7 +120,7 @@ export async function uploadFoto(file: File): Promise<{ photoUrl: string }> {
   form.append("file", file);
 
   const headers: Record<string, string> = {};
-  const token = csrfToken();
+  const token = await csrfTokenAsegurado();
   if (token) {
     headers["X-XSRF-TOKEN"] = token;
   }
@@ -142,7 +155,7 @@ export async function uploadFile<T>(
   }
 
   const headers: Record<string, string> = {};
-  const token = csrfToken();
+  const token = await csrfTokenAsegurado();
   if (token) {
     headers["X-XSRF-TOKEN"] = token;
   }

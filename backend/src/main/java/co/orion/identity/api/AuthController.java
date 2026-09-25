@@ -1,6 +1,7 @@
 package co.orion.identity.api;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -171,6 +172,17 @@ public class AuthController {
         contextRepository.saveContext(context, request, response);
 
         return UserResponse.from((OrionUserDetails) auth.getPrincipal());
+    }
+
+    /**
+     * Deja la cookie XSRF-TOKEN a quien todavía no la tiene. El token solo se escribe cuando una
+     * petición pasa por el backend, y un visitante que llega directo a un formulario anónimo
+     * —«Te escribimos nosotros»— no había pedido nada antes: su POST salía sin token y recibía
+     * «Access denied». El frontend lo llama antes del primer POST si le falta la cookie.
+     */
+    @GetMapping("/csrf")
+    public ResponseEntity<Void> csrf() {
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/me")

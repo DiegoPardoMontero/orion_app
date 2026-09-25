@@ -95,6 +95,33 @@ class CallbackRequestIT extends ApiIntegrationSupport {
         assertThat(aviso.ultimo.getWhatsapp()).isEqualTo("+573001234567");
     }
 
+    /**
+     * El visitante que llega directo al formulario no ha pedido nada al backend, así que no tiene la
+     * cookie del token: su POST recibía 403 «Access denied» (24/09/2026). /auth/csrf se la deja.
+     */
+    @SuppressWarnings("rawtypes")
+    @Test
+    @DisplayName("Un visitante recién llegado recibe el token de /auth/csrf y con él la solicitud entra")
+    void visitanteSinCookie() {
+        HttpHeaders sinNada = new HttpHeaders();
+        sinNada.setContentType(MediaType.APPLICATION_JSON);
+        Map<String, Object> cuerpo = Map.of("firstName", "Lucía", "whatsapp", "3001234567", "acceptsContact", true);
+        assertThat(rest.exchange("/api/v1/callback-requests", HttpMethod.POST, new HttpEntity<>(cuerpo, sinNada),
+                Map.class).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+        ResponseEntity<Void> token = rest.getForEntity("/api/v1/auth/csrf", Void.class);
+        assertThat(token.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        String xsrf = cookieValue(token, "XSRF-TOKEN");
+        assertThat(xsrf).isNotBlank();
+
+        HttpHeaders conToken = new HttpHeaders();
+        conToken.setContentType(MediaType.APPLICATION_JSON);
+        conToken.add(HttpHeaders.COOKIE, "XSRF-TOKEN=" + xsrf);
+        conToken.add("X-XSRF-TOKEN", xsrf);
+        assertThat(rest.exchange("/api/v1/callback-requests", HttpMethod.POST, new HttpEntity<>(cuerpo, conToken),
+                Map.class).getStatusCode()).isEqualTo(HttpStatus.CREATED);
+    }
+
     @SuppressWarnings("rawtypes")
     @Test
     @DisplayName("Sin la autorización, o con un número imposible, no se guarda nada")
