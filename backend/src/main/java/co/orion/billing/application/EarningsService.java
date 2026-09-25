@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import co.orion.billing.domain.Payment;
 import co.orion.billing.domain.PaymentStatus;
+import co.orion.billing.domain.PayoutStatus;
 import co.orion.billing.persistence.PaymentRepository;
 import co.orion.identity.domain.User;
 import co.orion.identity.persistence.UserRepository;
@@ -79,6 +81,14 @@ public class EarningsService {
                 .stream()
                 .collect(Collectors.toMap(User::getId, Function.identity()));
 
+        // Un pago sigue RELEASED después de liquidado —lo que cambia es la liquidación—, así que la
+        // línea mira si va en una: si no, la clase de un pago ya transferido decía «Por cobrar».
+        List<UUID> ids = found.stream().map(Payment::getId).toList();
+        Set<UUID> transferidos = ids.isEmpty() ? Set.of()
+                : Set.copyOf(payments.findInPayoutsWithStatus(ids, PayoutStatus.PAID));
+        Set<UUID> enCamino = ids.isEmpty() ? Set.of()
+                : Set.copyOf(payments.findInPayoutsWithStatus(ids, PayoutStatus.PENDING));
+
         return found.stream()
                 .map(payment -> {
                     Booking booking = classes.get(payment.getBookingId());
@@ -90,8 +100,21 @@ public class EarningsService {
                             payment.getAmountCop(),
                             payment.getCommissionCop(),
                             payment.getProfessorEarningsCop(),
-                            payment.getStatus().name());
+                            estadoDeLaLinea(payment, transferidos, enCamino));
                 })
                 .toList();
+    }
+
+    /** El estado del pago, salvo que ya vaya en una liquidación: «TRANSFERRED» o «IN_TRANSIT». */
+    private static String estadoDeLaLinea(Payment payment, Set<UUID> transferidos, Set<UUID> enCamino) {
+        if (payment.getStatus() == PaymentStatus.RELEASED) {
+            if (transferidos.contains(payment.getId())) {
+                return "TRANSFERRED";
+            }
+            if (enCamino.contains(payment.getId())) {
+                return "IN_TRANSIT";
+            }
+        }
+        return payment.getStatus().name();
     }
 }

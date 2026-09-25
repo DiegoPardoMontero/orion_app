@@ -132,6 +132,14 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID>,
             """)
     long sumPayableAllProfessors();
 
+    /** De estos pagos, los que van en una liquidación con ese estado. */
+    @Query("""
+            select i.id.paymentId from PayoutItem i, Payout o
+             where o.id = i.id.payoutId and o.status = :status and i.id.paymentId in :paymentIds
+            """)
+    List<UUID> findInPayoutsWithStatus(@Param("paymentIds") java.util.Collection<UUID> paymentIds,
+                                      @Param("status") co.orion.billing.domain.PayoutStatus status);
+
     /** Lo que ya salió hacia las cuentas de los profesores. */
     @Query("""
             select coalesce(sum(p.professorEarningsCop), 0) from Payment p

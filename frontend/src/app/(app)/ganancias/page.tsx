@@ -14,10 +14,13 @@ import { fechaCorta, horaBogota, precioCop } from "@/lib/format";
  * Qué significa cada estado del dinero para quien da la clase. No se usan los nombres del enum:
  * "RELEASED" no le dice nada a nadie, "por cobrar" sí.
  */
-const ESTADO_LINEA: Record<string, { texto: string; tono: "menta" | "melocoton" | "neutral" | "error" }> = {
+const ESTADO_LINEA: Record<string, { texto: string; tono: "menta" | "melocoton" | "lavanda" | "neutral" | "error" }> = {
   PENDING: { texto: "Sin pagar aún", tono: "neutral" },
   PAID: { texto: "Retenido", tono: "melocoton" },
   RELEASED: { texto: "Por cobrar", tono: "menta" },
+  // Liberado y ya en una liquidación: el backend lo dice aparte, como las cifras de arriba.
+  IN_TRANSIT: { texto: "En camino", tono: "lavanda" },
+  TRANSFERRED: { texto: "Transferido", tono: "lavanda" },
   REFUNDED: { texto: "Devuelto al estudiante", tono: "neutral" },
   DISPUTED: { texto: "En revisión", tono: "melocoton" },
   CANCELLED: { texto: "Cancelado", tono: "error" },

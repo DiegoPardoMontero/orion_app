@@ -199,6 +199,9 @@ class EarningsAndPayoutsIT extends ApiIntegrationSupport {
         assertThat(payout.professorId()).isEqualTo(maria.getId());
         assertThat(payout.amountCop()).isEqualTo(EARNINGS_COP);
         assertThat(payout.status()).isEqualTo("PENDING");
+        // La clase ya va en una liquidación: su línea no dice «por cobrar».
+        assertThat(earnings(mariaSession).lines()).singleElement()
+                .extracting(EarningsResponse.Line::status).isEqualTo("IN_TRANSIT");
 
         // Volver a generar el mismo período no paga la clase dos veces.
         ResponseEntity<PayoutResponse[]> again = post("/api/v1/admin/payouts/generate",
@@ -228,6 +231,7 @@ class EarningsAndPayoutsIT extends ApiIntegrationSupport {
         EarningsResponse after = earnings(mariaSession);
         assertThat(after.payableCop()).isZero();
         assertThat(after.transferredCop()).isEqualTo(EARNINGS_COP);
+        assertThat(after.lines()).singleElement().extracting(EarningsResponse.Line::status).isEqualTo("TRANSFERRED");
 
         // Y se entera sin entrar a mirar (24/09/2026): «Te pagamos $ …» en su campana.
         await().atMost(Duration.ofSeconds(5)).until(() -> jdbc.queryForObject(
