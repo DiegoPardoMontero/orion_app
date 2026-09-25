@@ -68,7 +68,9 @@ public class ProfessorSearchService {
         ProfessorSearchCriteria effective = criteria.hiding(sanctions.hiddenProfessorIds());
         // Y lo mismo con la disponibilidad: la resuelve scheduling a través del puerto, para que
         // el buscador no tenga que saber qué es una regla de disponibilidad.
-        if (criteria.filtraPorDisponibilidad()) {
+        if (criteria.pideHorasExactas()) {
+            effective = effective.availableOnly(availability.professorsAvailableAt(criteria.days(), criteria.hours()));
+        } else if (criteria.filtraPorDisponibilidad()) {
             effective = effective.availableOnly(availability.professorsAvailable(
                     criteria.days(), criteria.from(), criteria.to()));
         }

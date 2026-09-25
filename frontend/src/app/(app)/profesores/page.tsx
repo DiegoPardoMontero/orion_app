@@ -37,28 +37,39 @@ type Filtros = {
   certified: boolean;
   /** Días de la semana, como los nombra java.time: MONDAY, TUESDAY… */
   days: string[];
-  /** Franja del día. Es la que el hero ya mandaba como `schedule=` y nadie recogía. */
-  schedule: Franja;
+  /**
+   * Horas de inicio de la clase, en hora de Bogotá (7 = 7:00 AM). Varias a la vez (24/09/2026:
+   * «filtrar exactamente por horas y seleccionar varias»); antes era una sola franja.
+   */
+  hours: number[];
   sort: Orden;
 };
 
-type Franja = "" | "MORNING" | "AFTERNOON" | "EVENING";
+type Franja = "MORNING" | "AFTERNOON" | "EVENING";
 
 /**
- * Las tres franjas, en hora de Bogotá. El backend filtra por horas y no por etiquetas: una etiqueta
- * es una decisión de producto y cambiarla no debería ser un despliegue del backend.
+ * Las horas de inicio que se pueden pedir, agrupadas en franjas. Las franjas ya no filtran: son un
+ * atajo que marca (o desmarca) todas sus horas de una vez. La portada y las páginas por idioma
+ * siguen mandando `schedule=MORNING`, y eso se traduce a estas mismas horas.
  */
-const HORAS_DE_FRANJA: Record<Exclude<Franja, "">, { from: string; to: string }> = {
-  MORNING: { from: "06:00", to: "12:00" },
-  AFTERNOON: { from: "12:00", to: "18:00" },
-  EVENING: { from: "18:00", to: "22:00" },
-};
+const FRANJAS: { clave: Franja; etiqueta: string; horas: number[] }[] = [
+  { clave: "MORNING", etiqueta: "Mañana", horas: [5, 6, 7, 8, 9, 10, 11] },
+  { clave: "AFTERNOON", etiqueta: "Tarde", horas: [12, 13, 14, 15, 16, 17] },
+  { clave: "EVENING", etiqueta: "Noche", horas: [18, 19, 20, 21, 22, 23] },
+];
 
-const ETIQUETA_FRANJA: Record<Exclude<Franja, "">, string> = {
-  MORNING: "Mañana",
-  AFTERNOON: "Tarde",
-  EVENING: "Noche",
-};
+/** «7 AM», «12 PM», «9 PM»: como el resto de la app. */
+function etiquetaHora(h: number): string {
+  return `${((h + 11) % 12) + 1} ${h < 12 ? "AM" : "PM"}`;
+}
+
+/** Las horas de una franja que viene en la URL (`schedule=`); las de siempre, sin las de madrugada. */
+function horasDeLaFranja(clave: string | null): number[] {
+  if (clave === "MORNING") return [6, 7, 8, 9, 10, 11];
+  if (clave === "AFTERNOON") return [12, 13, 14, 15, 16, 17];
+  if (clave === "EVENING") return [18, 19, 20, 21];
+  return [];
+}
 
 const DIAS: { valor: string; corta: string }[] = [
   { valor: "MONDAY", corta: "L" },
@@ -79,7 +90,7 @@ const FILTROS_INICIALES: Filtros = {
   native: false,
   certified: false,
   days: [],
-  schedule: "",
+  hours: [],
   sort: "RELEVANCE",
 };
 
@@ -96,7 +107,7 @@ function contarActivos(f: Filtros): number {
     (f.native ? 1 : 0) +
     (f.certified ? 1 : 0) +
     f.days.length +
-    (f.schedule ? 1 : 0)
+    (f.hours.length > 0 ? 1 : 0)
   );
 }
 
@@ -111,10 +122,7 @@ function construirQs(f: Filtros, page: number): string {
   if (f.native) p.set("native", "true");
   if (f.certified) p.set("certified", "true");
   for (const day of f.days) p.append("day", day);
-  if (f.schedule) {
-    p.set("from", HORAS_DE_FRANJA[f.schedule].from);
-    p.set("to", HORAS_DE_FRANJA[f.schedule].to);
-  }
+  for (const h of [...f.hours].sort((a, b) => a - b)) p.append("hour", `${String(h).padStart(2, "0")}:00`);
   if (f.sort !== "RELEVANCE") p.set("sort", f.sort);
   p.set("page", String(page));
   p.set("size", String(TAM_PAGINA));
@@ -137,11 +145,14 @@ export default function ProfesoresPage() {
     const language = params.get("language");
     const goals = params.getAll("goal").filter(Boolean);
     const levels = params.getAll("level").filter(Boolean);
-    const schedule = params.get("schedule");
     const days = params.getAll("day").filter((d) => DIAS.some((dia) => dia.valor === d));
-    const franja: Franja =
-      schedule === "MORNING" || schedule === "AFTERNOON" || schedule === "EVENING" ? schedule : "";
-    if (!language && goals.length === 0 && levels.length === 0 && !franja && days.length === 0) return;
+    // `hour=7` (o `07:00`) repetible, y la franja de la portada traducida a sus horas.
+    const pedidas = params
+      .getAll("hour")
+      .map((h) => Number.parseInt(h, 10))
+      .filter((h) => Number.isInteger(h) && h >= 0 && h <= 23);
+    const hours = [...new Set([...pedidas, ...horasDeLaFranja(params.get("schedule"))])];
+    if (!language && goals.length === 0 && levels.length === 0 && hours.length === 0 && days.length === 0) return;
     // Siembra única desde la URL al montar; a partir de aquí manda el usuario. El setState en el
     // efecto es deliberado (sincronizar con un sistema externo: la query string) y solo corre una vez.
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -150,7 +161,7 @@ export default function ProfesoresPage() {
       language: language ?? prev.language,
       goals: goals.length > 0 ? goals : prev.goals,
       levels: levels.length > 0 ? levels : prev.levels,
-      schedule: franja || prev.schedule,
+      hours: hours.length > 0 ? hours : prev.hours,
       days: days.length > 0 ? days : prev.days,
     }));
   }, []);
@@ -430,7 +441,7 @@ function PanelFiltros({
   goals: GoalResponse[];
   horizontal?: boolean;
 }) {
-  const toggleEn = (lista: string[], code: string) =>
+  const toggleEn = <T,>(lista: T[], code: T) =>
     lista.includes(code) ? lista.filter((c) => c !== code) : [...lista, code];
 
   const avanzadosActivos =
@@ -438,11 +449,16 @@ function PanelFiltros({
     filtros.levels.length +
     filtros.goals.length +
     (filtros.native ? 1 : 0) +
-    (filtros.certified ? 1 : 0);
+    (filtros.certified ? 1 : 0) +
+    filtros.days.length +
+    (filtros.hours.length > 0 ? 1 : 0);
 
   // Si se llega con filtros avanzados puestos (una URL compartida, o el cajón del móvil), la
   // sección abre sola: si no, los resultados vendrían recortados por controles que no se ven.
-  const [avanzadosAbiertos, setAvanzadosAbiertos] = useState(avanzadosActivos > 0);
+  // Nulo mientras nadie lo toque: así también abre cuando los filtros llegan de la URL después del
+  // primer render (la portada manda `schedule=`), y no solo si ya estaban al montar.
+  const [abiertosAMano, setAbiertosAMano] = useState<boolean | null>(null);
+  const avanzadosAbiertos = abiertosAMano ?? avanzadosActivos > 0;
 
   const orden = (
     <div>
@@ -604,21 +620,45 @@ function PanelFiltros({
           </ChipFiltro>
         ))}
       </div>
-      <div className="mt-2 flex flex-wrap gap-2">
-        {(Object.keys(ETIQUETA_FRANJA) as Exclude<Franja, "">[]).map((franja) => (
-          <ChipFiltro
-            key={franja}
-            activo={filtros.schedule === franja}
-            onClick={() =>
-              onCambio({ ...filtros, schedule: filtros.schedule === franja ? "" : franja })
-            }
-          >
-            {ETIQUETA_FRANJA[franja]}
-          </ChipFiltro>
-        ))}
+      {/* Horas exactas, varias a la vez. El nombre de cada franja marca o desmarca todas las suyas. */}
+      <div className="mt-3 space-y-2.5">
+        {FRANJAS.map((franja) => {
+          const todas = franja.horas.every((h) => filtros.hours.includes(h));
+          return (
+            <div key={franja.clave}>
+              <button
+                type="button"
+                aria-pressed={todas}
+                onClick={() =>
+                  onCambio({
+                    ...filtros,
+                    hours: todas
+                      ? filtros.hours.filter((h) => !franja.horas.includes(h))
+                      : [...new Set([...filtros.hours, ...franja.horas])],
+                  })
+                }
+                className="mb-1.5 inline-flex min-h-7 items-center rounded-pill px-1 text-[12px] font-bold text-text-secondary underline-offset-2 hover:text-text hover:underline focus-visible:shadow-focus"
+              >
+                {franja.etiqueta} {todas ? "· quitar todas" : "· todas"}
+              </button>
+              <div className="flex flex-wrap gap-1.5">
+                {franja.horas.map((h) => (
+                  <ChipFiltro
+                    key={h}
+                    activo={filtros.hours.includes(h)}
+                    onClick={() => onCambio({ ...filtros, hours: toggleEn(filtros.hours, h) })}
+                  >
+                    <span className="tabular-nums">{etiquetaHora(h)}</span>
+                  </ChipFiltro>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
       <p className="mt-2 text-[12px] leading-relaxed text-text-muted">
-        Son los horarios que cada profesor publicó. La disponibilidad exacta se ve en su perfil.
+        Es la hora en que empieza la clase, en hora de Colombia, según los horarios que cada profesor publicó. La
+        disponibilidad exacta se ve en su perfil.
       </p>
     </div>
   );
@@ -655,7 +695,7 @@ function PanelFiltros({
         <BotonAvanzado
           abierto={avanzadosAbiertos}
           activos={avanzadosActivos}
-          onClick={() => setAvanzadosAbiertos((abierto) => !abierto)}
+          onClick={() => setAbiertosAMano(!avanzadosAbiertos)}
         />
       </div>
 

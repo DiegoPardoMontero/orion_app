@@ -30,4 +30,19 @@ public final class AvailabilityMatcher {
         }
         return Duration.between(desde, hasta).compareTo(duracionClase) >= 0;
     }
+
+    /**
+     * Si en la franja cabe una clase que empieza exactamente a {@code hora}: los cupos van alineados
+     * a la hora (ver {@link SlotCalculator}), así que pedir «las 7» es pedir el cupo de las 7:00, no
+     * cualquier rato entre las 7 y las 8.
+     */
+    public static boolean empiezaALas(LocalTime inicioFranja, LocalTime finFranja, LocalTime hora,
+                                      Duration duracionClase) {
+        LocalTime fin = hora.plus(duracionClase);
+        // Una clase que cruzaría la medianoche no cabe en una franja del día.
+        if (fin.isBefore(hora)) {
+            return false;
+        }
+        return !hora.isBefore(inicioFranja) && !fin.isAfter(finFranja);
+    }
 }

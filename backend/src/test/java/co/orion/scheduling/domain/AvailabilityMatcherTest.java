@@ -83,4 +83,26 @@ class AvailabilityMatcherTest {
         assertThat(cabe("08:00", "12:00", null, "09:00")).isTrue();
         assertThat(cabe("08:00", "12:00", null, "08:30")).isFalse();
     }
+
+    private static boolean empieza(String inicioFranja, String finFranja, String hora) {
+        return AvailabilityMatcher.empiezaALas(LocalTime.parse(inicioFranja), LocalTime.parse(finFranja),
+                LocalTime.parse(hora), Duration.ofMinutes(55));
+    }
+
+    @Test
+    @DisplayName("Una hora exacta cabe si la clase entera queda dentro de la franja")
+    void horaExacta() {
+        assertThat(empieza("18:00", "21:00", "18:00")).isTrue();
+        assertThat(empieza("18:00", "21:00", "20:00")).isTrue();
+        // Empieza antes de que abra, o terminaría después de que cierre.
+        assertThat(empieza("18:00", "21:00", "17:00")).isFalse();
+        assertThat(empieza("18:00", "21:00", "21:00")).isFalse();
+        assertThat(empieza("20:45", "21:15", "20:00")).isFalse();
+    }
+
+    @Test
+    @DisplayName("Una clase que cruzaría la medianoche no cabe")
+    void medianoche() {
+        assertThat(empieza("22:00", "23:59", "23:30")).isFalse();
+    }
 }

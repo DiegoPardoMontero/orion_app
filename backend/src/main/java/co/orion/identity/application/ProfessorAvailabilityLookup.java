@@ -26,4 +26,13 @@ public interface ProfessorAvailabilityLookup {
      * @param to    hora de fin, exclusiva; nulo es «hasta que cierre»
      */
     List<UUID> professorsAvailable(Set<DayOfWeek> days, LocalTime from, LocalTime to);
+
+    /**
+     * Ids de los profesores con al menos una franja publicada donde quepa una clase que empiece a
+     * alguna de esas horas exactas, en alguno de esos días.
+     *
+     * @param days  días de la semana pedidos; vacío significa «cualquiera»
+     * @param hours horas de inicio pedidas, en hora de Bogotá (7:00, 18:00…); basta con una
+     */
+    List<UUID> professorsAvailableAt(Set<DayOfWeek> days, Set<LocalTime> hours);
 }

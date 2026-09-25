@@ -23,6 +23,11 @@ public record ProfessorSearchCriteria(
         LocalTime from,
         LocalTime to,
         /**
+         * Horas exactas de inicio, varias a la vez (24/09/2026). Si vienen, mandan sobre
+         * {@code from}/{@code to}. Vacío o nulo: no se filtra por hora exacta.
+         */
+        Set<LocalTime> hours,
+        /**
          * Profesores que una sanción activa saca del buscador. Llegan resueltos desde el servicio:
          * meter esa consulta dentro de la Specification ataría el buscador al esquema de reputation.
          */
@@ -42,26 +47,31 @@ public record ProfessorSearchCriteria(
     public static ProfessorSearchCriteria of(String language, List<String> levels, List<String> goals,
                                              Long minPrice, Long maxPrice, Boolean certified,
                                              Boolean nativeOnly, Set<DayOfWeek> days,
-                                             LocalTime from, LocalTime to) {
+                                             LocalTime from, LocalTime to, Set<LocalTime> hours) {
         return new ProfessorSearchCriteria(language, levels, goals, minPrice, maxPrice, certified,
-                nativeOnly, days, from, to, List.of(), null);
+                nativeOnly, days, from, to, hours, List.of(), null);
     }
 
     /** Si alguien pidió filtrar por día u hora. */
     public boolean filtraPorDisponibilidad() {
-        return (days != null && !days.isEmpty()) || from != null || to != null;
+        return (days != null && !days.isEmpty()) || from != null || to != null || pideHorasExactas();
+    }
+
+    /** Si pidió horas exactas de inicio. */
+    public boolean pideHorasExactas() {
+        return hours != null && !hours.isEmpty();
     }
 
     /** Con los ids de sancionados ya resueltos. */
     public ProfessorSearchCriteria hiding(List<UUID> hidden) {
         return new ProfessorSearchCriteria(language, levels, goals, minPrice, maxPrice, certified,
-                nativeOnly, days, from, to, hidden == null ? List.of() : hidden,
+                nativeOnly, days, from, to, hours, hidden == null ? List.of() : hidden,
                 availableProfessorIds);
     }
 
     /** Con los ids que cumplen la disponibilidad ya resueltos. */
     public ProfessorSearchCriteria availableOnly(List<UUID> available) {
         return new ProfessorSearchCriteria(language, levels, goals, minPrice, maxPrice, certified,
-                nativeOnly, days, from, to, hiddenProfessorIds, available);
+                nativeOnly, days, from, to, hours, hiddenProfessorIds, available);
     }
 }

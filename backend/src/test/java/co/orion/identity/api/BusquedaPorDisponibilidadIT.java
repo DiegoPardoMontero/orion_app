@@ -141,6 +141,43 @@ class BusquedaPorDisponibilidadIT extends ApiIntegrationSupport {
         assertThat(nombresDe(respuesta)).containsExactlyInAnyOrder("Juan Torres", "Carlos Peña");
     }
 
+    /**
+     * Horas exactas, varias a la vez (24/09/2026). «Las 7 o las 19» junta a quien puede a las 7 de la
+     * mañana con quien puede a las 7 de la noche; y una hora es el cupo en punto, así que la media
+     * hora suelta de Sofía no cuenta ni pidiendo las 20 ni las 21.
+     */
+    @SuppressWarnings("rawtypes")
+    @Test
+    @DisplayName("Varias horas exactas a la vez: basta con que pueda a una")
+    void variasHorasExactas() {
+        assertThat(nombresDe(rest.getForEntity("/api/v1/professors?hour=08:00&hour=19:00", Map.class)))
+                .containsExactlyInAnyOrder("María Gómez", "Carlos Peña", "Juan Torres");
+        assertThat(nombresDe(rest.getForEntity("/api/v1/professors?hour=19:00&hour=20:00&hour=21:00", Map.class)))
+                .containsExactly("María Gómez");
+        // Con el día: el martes a las 8 es Carlos, no Juan (que da sábados).
+        assertThat(nombresDe(rest.getForEntity("/api/v1/professors?day=TUESDAY&hour=8", Map.class)))
+                .containsExactly("Carlos Peña");
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Test
+    @DisplayName("La última hora de una franja no cuenta si la clase no alcanza a caber")
+    void laUltimaHoraNoCabe() {
+        // La franja de María cierra a las 21:00: una clase a las 21 terminaría a las 21:55.
+        assertThat(nombresDe(rest.getForEntity("/api/v1/professors?hour=21:00", Map.class))).isEmpty();
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Test
+    @DisplayName("Una hora que no es en punto responde 422: los cupos empiezan en punto")
+    void unaHoraSinPuntoEs422() {
+        ResponseEntity<Map> respuesta = rest.getForEntity("/api/v1/professors?hour=18:30", Map.class);
+
+        assertThat(respuesta.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+        assertThat(rest.getForEntity("/api/v1/professors?hour=tarde", Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+    }
+
     @SuppressWarnings("rawtypes")
     @Test
     @DisplayName("Un día que no existe responde 422 con los válidos, no un 500")

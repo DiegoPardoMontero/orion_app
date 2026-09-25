@@ -7112,6 +7112,7 @@ export interface operations {
                 day?: string[];
                 from?: string;
                 to?: string;
+                hour?: string[];
                 sort?: "RELEVANCE" | "PRICE_ASC" | "PRICE_DESC" | "RATING";
                 page?: number;
                 size?: number;

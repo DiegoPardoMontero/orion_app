@@ -52,4 +52,19 @@ class AvailabilityRuleLookup implements ProfessorAvailabilityLookup {
                 .distinct()
                 .toList();
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UUID> professorsAvailableAt(Set<DayOfWeek> days, Set<LocalTime> hours) {
+        var candidatas = days == null || days.isEmpty()
+                ? rules.findByActiveTrue()
+                : rules.findByWeekdayInAndActiveTrue(days);
+
+        return candidatas.stream()
+                .filter(r -> hours.stream().anyMatch(h ->
+                        AvailabilityMatcher.empiezaALas(r.getStartTime(), r.getEndTime(), h, CLASS_LENGTH)))
+                .map(r -> r.getProfessorId())
+                .distinct()
+                .toList();
+    }
 }

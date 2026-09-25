@@ -14,6 +14,7 @@ import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.TreeSet;
 
 import co.orion.shared.error.UnprocessableException;
 import org.springframework.web.bind.annotation.RestController;
@@ -52,12 +53,13 @@ public class ProfessorsController {
             @RequestParam(required = false) List<String> day,
             @RequestParam(required = false) String from,
             @RequestParam(required = false) String to,
+            @RequestParam(required = false) List<String> hour,
             @RequestParam(defaultValue = "RELEVANCE") ProfessorSortOption sort,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "12") int size) {
         ProfessorSearchCriteria criteria = ProfessorSearchCriteria.of(
                 language, level, goal, minPrice, maxPrice, certified, nativeOnly,
-                parseDays(day), parseTime(from, "from"), parseTime(to, "to"));
+                parseDays(day), parseTime(from, "from"), parseTime(to, "to"), parseHours(hour));
         return search.search(criteria, sort, page, size);
     }
 
@@ -91,6 +93,31 @@ public class ProfessorsController {
                 throw new UnprocessableException("Ese día no existe: " + day
                         + ". Válidos: " + Arrays.toString(DayOfWeek.values()));
             }
+        }
+        return parsed;
+    }
+
+    /**
+     * Horas exactas de inicio: «07:00» o «7», repetibles. Los cupos van en punto, así que «7:30» no
+     * es una hora que se pueda pedir y responde 422 en vez de no encontrar nada.
+     */
+    private Set<LocalTime> parseHours(List<String> hours) {
+        if (hours == null || hours.isEmpty()) {
+            return Set.of();
+        }
+        Set<LocalTime> parsed = new TreeSet<>();
+        for (String hour : hours) {
+            String limpia = hour == null ? "" : hour.trim();
+            LocalTime hora;
+            try {
+                hora = limpia.matches("\\d{1,2}") ? LocalTime.of(Integer.parseInt(limpia), 0) : LocalTime.parse(limpia);
+            } catch (java.time.DateTimeException ex) {
+                throw new UnprocessableException("La hora «" + hour + "» debe ir como HH:00, por ejemplo 18:00.");
+            }
+            if (hora.getMinute() != 0 || hora.getSecond() != 0) {
+                throw new UnprocessableException("Las clases empiezan en punto: pide «" + hora.getHour() + ":00».");
+            }
+            parsed.add(hora);
         }
         return parsed;
     }
