@@ -51,7 +51,8 @@ public class MyProfileController {
 
     /** Desglose SIN guardar, para pintarlo mientras el profesor escribe la tarifa. */
     @GetMapping("/rate/preview")
-    public RateBreakdownResponse ratePreview(@RequestParam long rate) {
-        return profileService.ratePreview(rate);
+    public RateBreakdownResponse ratePreview(@AuthenticationPrincipal OrionUserDetails principal,
+                                             @RequestParam long rate) {
+        return profileService.ratePreview(principal.user().getId(), rate);
     }
 }

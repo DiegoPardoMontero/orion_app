@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import co.orion.billing.domain.Payment;
 import co.orion.billing.persistence.PaymentRepository;
 import co.orion.catalog.application.PlatformSettingsService;
+import co.orion.catalog.domain.CommissionPolicy;
 import co.orion.catalog.domain.RateBreakdown;
 import co.orion.identity.domain.ProfessorProfile;
 import co.orion.identity.persistence.ProfessorProfileRepository;
@@ -39,6 +40,7 @@ public class CheckoutService implements PaymentInitiator {
     private final PaymentProvider provider;
     private final ProfessorProfileRepository profiles;
     private final PlatformSettingsService settings;
+    private final FounderClock founderClock;
     private final String appBaseUrl;
     private final Clock clock;
 
@@ -47,6 +49,7 @@ public class CheckoutService implements PaymentInitiator {
                            PaymentProvider provider,
                            ProfessorProfileRepository profiles,
                            PlatformSettingsService settings,
+                           FounderClock founderClock,
                            @Value("${orion.app.base-url}") String appBaseUrl,
                            Clock clock) {
         this.payments = payments;
@@ -54,6 +57,7 @@ public class CheckoutService implements PaymentInitiator {
         this.provider = provider;
         this.profiles = profiles;
         this.settings = settings;
+        this.founderClock = founderClock;
         this.appBaseUrl = appBaseUrl;
         this.clock = clock;
     }
@@ -67,7 +71,13 @@ public class CheckoutService implements PaymentInitiator {
     @Transactional
     public PaymentTicket initiate(Booking booking) {
         long priceCop = priceOf(booking);
-        int commissionRateBps = settings.getInt(COMMISSION_SETTING);
+        // La comisión se congela aquí, al crear la reserva: la base, o la del profe fundador si la
+        // reserva se crea dentro de su beneficio (CommissionPolicy). La clase de prueba sigue la misma
+        // regla, aunque sobre $0 no retenga nada.
+        Instant now = clock.instant();
+        int commissionRateBps = CommissionPolicy.effectiveRate(settings.getInt(COMMISSION_SETTING),
+                profiles.findById(booking.getProfessorId()).map(ProfessorProfile::founderTerms).orElse(null),
+                now);
 
         CreditService.Applied applied = credits.applyTo(
                 booking.getStudentId(), priceCop, provider.minimumChargeCop(), clock.instant());
@@ -88,9 +98,10 @@ public class CheckoutService implements PaymentInitiator {
         credits.recordApplications(payment.getId(), applied);
 
         if (payment.nothingToCharge()) {
-            // Sin pasarela de por medio: el crédito ya pagó la clase entera.
-            payment.markPaid(null, null, clock.instant());
+            // Sin pasarela de por medio: el crédito ya pagó la clase entera (o es la prueba gratis).
+            payment.markPaid(null, null, now);
             payments.save(payment);
+            founderClock.onPaid(payment.getProfessorId(), now);
             return ticket(payment, null);
         }
 

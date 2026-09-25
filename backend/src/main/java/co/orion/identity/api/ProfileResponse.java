@@ -30,5 +30,9 @@ public record ProfileResponse(
         List<String> goals,
         RateBreakdownResponse rate,
         @JsonProperty("isPublished") boolean isPublished,
-        boolean canPublish) {
+        boolean canPublish,
+        /** La comisión de Orión (ajuste), para la ayuda de la tarifa: «Después recibirás…». */
+        int baseRateBps,
+        /** El beneficio de profe fundador, o {@code null} si no lo es. */
+        FounderView founder) {
 }

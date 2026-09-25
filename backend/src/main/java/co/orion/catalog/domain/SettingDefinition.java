@@ -26,9 +26,20 @@ public enum SettingDefinition {
     // ---------------------------------------------------------------------------- dinero
     COMMISSION_RATE_BPS("commission_rate_bps", Grupo.DINERO, Tipo.ENTERO,
             "Comisión de Orión",
-            "En puntos básicos: 1500 son 15 %. Se congela en cada reserva, así que las clases ya "
-                    + "reservadas conservan la comisión que tenían.",
+            "En puntos básicos: 2000 son 20 %. Se congela en cada reserva, así que las clases ya "
+                    + "reservadas conservan la comisión que tenían. Los profes fundadores pagan la suya "
+                    + "mientras dure su beneficio.",
             0, 5000, true),
+    FOUNDER_COMMISSION_RATE_BPS("founder_commission_rate_bps", Grupo.DINERO, Tipo.ENTERO,
+            "Comisión de profe fundador",
+            "En puntos básicos: 1500 son 15 %. Se copia al perfil del profe cuando se le otorga el "
+                    + "beneficio, así que cambiarla solo afecta a los fundadores nuevos.",
+            0, 5000, true),
+    FOUNDER_PERIOD_MONTHS("founder_period_months", Grupo.DINERO, Tipo.ENTERO,
+            "Meses de beneficio del profe fundador",
+            "Cuenta desde su primera clase pagada. Como la comisión, se copia al otorgarlo: cambiarlo "
+                    + "no toca a quien ya es fundador.",
+            1, 24, true),
     PAYMENT_HOLD_MINUTES("payment_hold_minutes", Grupo.DINERO, Tipo.ENTERO,
             "Minutos para pagar",
             "Cuánto tiempo se aparta el cupo mientras el estudiante paga.", 5, 120, false),

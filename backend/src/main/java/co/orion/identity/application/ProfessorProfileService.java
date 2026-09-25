@@ -1,5 +1,6 @@
 package co.orion.identity.application;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import co.orion.catalog.application.PlatformSettingsService;
 import co.orion.catalog.domain.Language;
+import co.orion.catalog.domain.CommissionPolicy;
 import co.orion.catalog.domain.RateBreakdown;
 import co.orion.catalog.domain.TeachingGoal;
 import co.orion.catalog.persistence.LanguageRepository;
@@ -21,6 +23,7 @@ import co.orion.catalog.persistence.TeachingGoalRepository;
 import co.orion.identity.api.ProfessorDetail;
 import co.orion.identity.api.ProfileLanguage;
 import co.orion.identity.api.ProfileResponse;
+import co.orion.identity.api.FounderView;
 import co.orion.identity.api.RateBreakdownResponse;
 import co.orion.identity.api.UpdateProfileRequest;
 import co.orion.identity.domain.ProfessorGoal;
@@ -54,6 +57,7 @@ public class ProfessorProfileService {
     private final PlatformSettingsService settings;
     private final ProfessorAccessService access;
     private final ProfessorRatingService ratings;
+    private final Clock clock;
 
     public ProfessorProfileService(ProfessorProfileRepository profiles,
                                    UserRepository users,
@@ -64,7 +68,8 @@ public class ProfessorProfileService {
                                    TeachingGoalRepository goalCatalog,
                                    PlatformSettingsService settings,
                                    ProfessorAccessService access,
-                                   ProfessorRatingService ratings) {
+                                   ProfessorRatingService ratings,
+                                   Clock clock) {
         this.profiles = profiles;
         this.users = users;
         this.languagesOf = languagesOf;
@@ -75,6 +80,7 @@ public class ProfessorProfileService {
         this.settings = settings;
         this.access = access;
         this.ratings = ratings;
+        this.clock = clock;
     }
 
     @Transactional(readOnly = true)
@@ -155,7 +161,7 @@ public class ProfessorProfileService {
                 .orElseGet(() -> createEmptyProfileFor(professorId));
         profile.changeRate(hourlyRateCop);
         profiles.save(profile);
-        return breakdown(hourlyRateCop);
+        return breakdown(profile, hourlyRateCop);
     }
 
     /**
@@ -187,8 +193,8 @@ public class ProfessorProfileService {
     }
 
     @Transactional(readOnly = true)
-    public RateBreakdownResponse ratePreview(long hourlyRateCop) {
-        return breakdown(hourlyRateCop);
+    public RateBreakdownResponse ratePreview(UUID professorId, long hourlyRateCop) {
+        return breakdown(profiles.findById(professorId).orElse(null), hourlyRateCop);
     }
 
     @Transactional(readOnly = true)
@@ -333,7 +339,7 @@ public class ProfessorProfileService {
     private ProfileResponse toOwnResponse(ProfessorProfile profile) {
         UUID id = profile.getUserId();
         RateBreakdownResponse rate = profile.getHourlyRateCop() == null
-                ? null : breakdown(profile.getHourlyRateCop());
+                ? null : breakdown(profile, profile.getHourlyRateCop());
         return new ProfileResponse(
                 id,
                 profile.getUser().getFullName(),
@@ -353,7 +359,9 @@ public class ProfessorProfileService {
                 id == null ? List.of() : loadGoals(id),
                 rate,
                 profile.isPublished(),
-                profile.canPublish());
+                profile.canPublish(),
+                settings.getInt(COMMISSION_KEY),
+                FounderView.of(profile.founderTerms(), clock.instant()));
     }
 
     private List<ProfileLanguage> loadLanguages(UUID professorId) {
@@ -401,8 +409,13 @@ public class ProfessorProfileService {
         }
     }
 
-    private RateBreakdownResponse breakdown(long hourlyRateCop) {
-        int bps = settings.getInt(COMMISSION_KEY);
+    /**
+     * Lo que recibiría por una reserva creada ahora: con la comisión de fundador si la tiene vigente
+     * (la misma política que congela la comisión al reservar), o con la base.
+     */
+    private RateBreakdownResponse breakdown(ProfessorProfile profile, long hourlyRateCop) {
+        int bps = CommissionPolicy.effectiveRate(settings.getInt(COMMISSION_KEY),
+                profile == null ? null : profile.founderTerms(), clock.instant());
         return RateBreakdownResponse.from(RateBreakdown.of(hourlyRateCop, bps));
     }
 

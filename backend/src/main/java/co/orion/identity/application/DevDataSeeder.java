@@ -207,6 +207,8 @@ public class DevDataSeeder implements ApplicationRunner {
                             "Lic. en Lenguas Modernas, Universidad Nacional", true, true);
                     profile.changeRate(45000L);
                     profile.publish();
+                    // Como en producción desde la V70: los profes que ya estaban son fundadores.
+                    profile.grantFounder(1500, 3, java.time.Instant.now());
                     profiles.save(profile);
                     approveTeacher(professor.getId());
                     seedTaxonomy(professor.getId(), "EN", false,
@@ -229,6 +231,8 @@ public class DevDataSeeder implements ApplicationRunner {
                             "Certificación DELF C1", false, true);
                     profile.changeRate(55000L);
                     profile.publish();
+                    // Como en producción desde la V70: los profes que ya estaban son fundadores.
+                    profile.grantFounder(1500, 3, java.time.Instant.now());
                     profiles.save(profile);
                     approveTeacher(professor.getId());
                     seedTaxonomy(professor.getId(), "FR", false,

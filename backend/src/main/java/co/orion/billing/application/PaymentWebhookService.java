@@ -45,6 +45,7 @@ public class PaymentWebhookService {
     private final BookingService bookings;
     private final BookingRepository bookingRows;
     private final CreditService credits;
+    private final FounderClock founderClock;
     private final Clock clock;
 
     public PaymentWebhookService(PaymentProvider provider,
@@ -53,7 +54,9 @@ public class PaymentWebhookService {
                                  BookingService bookings,
                                  BookingRepository bookingRows,
                                  CreditService credits,
+                                 FounderClock founderClock,
                                  Clock clock) {
+        this.founderClock = founderClock;
         this.provider = provider;
         this.payments = payments;
         this.recorder = recorder;
@@ -199,6 +202,7 @@ public class PaymentWebhookService {
         payment.markPaid(event.provider(), payment.getProviderReference(), clock.instant());
         payments.save(payment);
         bookings.confirmPaid(payment.getBookingId());
+        founderClock.onPaid(payment.getProfessorId(), payment.getPaidAt());
     }
 
     private boolean bookingAcceptsPayment(UUID bookingId) {

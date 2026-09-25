@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import co.orion.catalog.domain.FounderTerms;
 import co.orion.shared.error.UnprocessableException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -90,6 +91,26 @@ public class ProfessorProfile {
     /** El nombre corto de su enlace para invitar (V63): «maria-gomez». Nulo hasta que lo pide. */
     @Column(name = "public_slug", length = 60)
     private String publicSlug;
+
+    /*
+     * El beneficio de profe fundador (V70). La promesa —porcentaje y meses— se copia al otorgarla;
+     * el inicio y el fin se fijan con la primera clase pagada, por un UPDATE condicional en
+     * ProfessorProfileRepository y nunca desde la entidad.
+     */
+    @Column(name = "founder_rate_bps")
+    private Integer founderRateBps;
+
+    @Column(name = "founder_period_months")
+    private Short founderPeriodMonths;
+
+    @Column(name = "founder_granted_at")
+    private Instant founderGrantedAt;
+
+    @Column(name = "founder_started_at", insertable = false, updatable = false)
+    private Instant founderStartedAt;
+
+    @Column(name = "founder_until", insertable = false, updatable = false)
+    private Instant founderUntil;
 
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
@@ -269,5 +290,30 @@ public class ProfessorProfile {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    /**
+     * Otorga el beneficio de fundador con la promesa vigente. Si ya lo tenía, no hace nada: la
+     * promesa se congela la primera vez y no se reescribe con ajustes nuevos.
+     */
+    public void grantFounder(int rateBps, int periodMonths, Instant now) {
+        if (founderRateBps != null) {
+            return;
+        }
+        this.founderRateBps = rateBps;
+        this.founderPeriodMonths = (short) periodMonths;
+        this.founderGrantedAt = now;
+    }
+
+    /** La promesa del fundador, o {@code null} si no lo es. */
+    public FounderTerms founderTerms() {
+        if (founderRateBps == null) {
+            return null;
+        }
+        return new FounderTerms(founderRateBps, founderPeriodMonths, founderStartedAt, founderUntil);
+    }
+
+    public Instant getFounderGrantedAt() {
+        return founderGrantedAt;
     }
 }
