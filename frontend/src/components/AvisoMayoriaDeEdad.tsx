@@ -5,7 +5,7 @@ import { AvisoError } from "@/components/estados";
 import { Modal } from "@/components/Modal";
 import { ApiError } from "@/lib/api/fetch";
 import { BotonPrincipal, Spinner } from "@/components/ui";
-import { useConfirmarMayoriaDeEdad } from "@/lib/auth/session";
+import { useConfirmarMayoriaDeEdad, useMe } from "@/lib/auth/session";
 
 /**
  * La declaración que le falta a las cuentas anteriores a la regla de mayoría de edad.
@@ -22,6 +22,10 @@ import { useConfirmarMayoriaDeEdad } from "@/lib/auth/session";
 export function AvisoMayoriaDeEdad() {
   const [marcado, setMarcado] = useState(false);
   const confirmar = useConfirmarMayoriaDeEdad();
+  // También lo ve el profesor que entra por una invitación del admin (ese enlace no pide la
+  // declaración): a él no se le habla de reservar ni de saldo.
+  const { data: me } = useMe();
+  const esProfesor = me?.role === "PROFESSOR";
 
   // Este diálogo no tiene salida: si el guardado falla en silencio, la persona se queda encerrada
   // mirando un botón que no hace nada. El error se enseña aunque sea del servidor.
@@ -42,7 +46,7 @@ export function AvisoMayoriaDeEdad() {
     >
       <p className="text-[14px] leading-relaxed text-text-secondary">
         Orión está disponible solo para mayores de 18 años. Necesitamos que nos lo confirmes para
-        que puedas seguir reservando clases.
+        que puedas seguir {esProfesor ? "dando" : "reservando"} clases.
       </p>
 
       <label
@@ -84,7 +88,7 @@ export function AvisoMayoriaDeEdad() {
       </BotonPrincipal>
 
       <p className="mt-3 text-center text-[12px] text-text-muted">
-        Tus clases y tu saldo siguen intactos.
+        {esProfesor ? "Tu perfil y tus clases siguen intactos." : "Tus clases y tu saldo siguen intactos."}
       </p>
     </Modal>
   );
