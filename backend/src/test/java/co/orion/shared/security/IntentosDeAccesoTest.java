@@ -75,6 +75,21 @@ class IntentosDeAccesoTest {
     }
 
     @Test
+    @DisplayName("Llámame: cinco solicitudes al día por conexión, con su propia cuenta aparte del diagnóstico")
+    void llamameTieneTopePorConexion() {
+        for (int i = 0; i < 5; i++) {
+            intentos.antesDeSolicitarLlamada(desde("10.0.3.1"));
+        }
+
+        assertThatThrownBy(() -> intentos.antesDeSolicitarLlamada(desde("10.0.3.1")))
+                .isInstanceOf(TooManyRequestsException.class)
+                .hasMessageContaining("Te escribimos pronto");
+        assertThatCode(() -> intentos.antesDeSolicitarLlamada(desde("10.0.3.2"))).doesNotThrowAnyException();
+        // Pedir que nos escriban no gasta los diagnósticos de esa conexión.
+        assertThatCode(() -> intentos.antesDeDiagnosticoAnonimo(desde("10.0.3.1"))).doesNotThrowAnyException();
+    }
+
+    @Test
     @DisplayName("Dictar: cuarenta al día por profesor")
     void dictarTieneTopePorProfesor() {
         java.util.UUID maria = java.util.UUID.randomUUID();

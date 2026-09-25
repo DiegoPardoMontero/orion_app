@@ -158,6 +158,31 @@ class PaymentFlowIT extends ApiIntegrationSupport {
                 .isEqualTo(payment.getAmountCop());
     }
 
+    /**
+     * La comisión se fija al reservar, no al cobrar: cambiarla en Ajustes afecta a lo que se
+     * reserve después, y lo ya reservado conserva la que se le dijo al profesor.
+     */
+    @Test
+    void changingTheCommissionOnlyAffectsBookingsMadeAfterwards() {
+        String before = jdbc.queryForObject(
+                "select value from platform_settings where key = 'commission_rate_bps'", String.class);
+        try {
+            UUID earlier = book(anaSession, 9);
+            jdbc.update("update platform_settings set value = '2500' where key = 'commission_rate_bps'");
+            UUID later = book(carlosSession, 10);
+
+            // Aunque se cobre después del cambio, la reserva anterior conserva su 15 %.
+            approvePayment(earlier);
+            approvePayment(later);
+
+            assertThat(payments.findByBookingId(earlier).orElseThrow().getCommissionCop()).isEqualTo(9_000);
+            assertThat(payments.findByBookingId(later).orElseThrow().getCommissionCop()).isEqualTo(15_000);
+            assertThat(payments.findByBookingId(later).orElseThrow().getProfessorEarningsCop()).isEqualTo(45_000);
+        } finally {
+            jdbc.update("update platform_settings set value = ? where key = 'commission_rate_bps'", before);
+        }
+    }
+
     /** Un webhook sin verificar es un endpoint público que confirma reservas gratis. */
     @Test
     void aWebhookWithAnInvalidSignatureIsRejectedAndChangesNothing() {

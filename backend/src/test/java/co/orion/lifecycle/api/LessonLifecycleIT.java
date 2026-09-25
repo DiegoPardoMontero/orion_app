@@ -12,6 +12,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -300,6 +301,49 @@ class LessonLifecycleIT extends ApiIntegrationSupport {
         assertThat(todas.get(0).getState().name()).isEqualTo("PROPOSED");
         // Propuesta no es activa: el profesor sigue recibiendo reservas.
         assertThat(sanctions.findActive(maria.getId(), FROZEN_NOW)).isEmpty();
+    }
+
+    /** La bandeja del admin: confirmar la propuesta la pone a regir, y no se confirma dos veces. */
+    @SuppressWarnings("rawtypes")
+    @Test
+    void elAdminConfirmaLaPropuestaYEntraEnVigor() {
+        UUID propuesta = proponerUnAviso();
+
+        ResponseEntity<Map> confirmada = post("/api/v1/admin/sanctions/" + propuesta + "/confirm", adminSession,
+                Map.of(), Map.class);
+
+        assertThat(confirmada.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(confirmada.getBody().get("state")).isEqualTo("ACTIVE");
+        assertThat(sanctions.findActive(maria.getId(), FROZEN_NOW)).hasSize(1);
+        assertThat(get("/api/v1/admin/sanctions/proposed", adminSession, List.class).getBody()).isEmpty();
+        assertThat(post("/api/v1/admin/sanctions/" + propuesta + "/confirm", adminSession, Map.of(), Map.class)
+                .getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    /** Descartarla la deja en el historial como revocada, sin haber regido nunca. */
+    @SuppressWarnings("rawtypes")
+    @Test
+    void elAdminDescartaLaPropuestaYNuncaRige() {
+        UUID propuesta = proponerUnAviso();
+
+        ResponseEntity<Map> descartada = delete("/api/v1/admin/sanctions/" + propuesta, adminSession, Map.class);
+
+        assertThat(descartada.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(descartada.getBody().get("state")).isEqualTo("REVOKED");
+        assertThat(sanctions.findActive(maria.getId(), FROZEN_NOW)).isEmpty();
+        assertThat(get("/api/v1/admin/sanctions/proposed", adminSession, List.class).getBody()).isEmpty();
+        // Ni el profesor ni el estudiante deciden sobre sanciones.
+        assertThat(post("/api/v1/admin/sanctions/" + propuesta + "/confirm", mariaSession, Map.of(), Map.class)
+                .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    private UUID proponerUnAviso() {
+        UUID id = bookAndPay(9);
+        moveClassTo(id, FROZEN_NOW.minusSeconds(1800), FROZEN_NOW.plusSeconds(1800));
+        UUID disputeId = openDispute(id);
+        post("/api/v1/admin/disputes/" + disputeId + "/resolve", adminSession,
+                Map.of("outcome", "RESOLVED_FOR_STUDENT", "note", "No se presentó"), Map.class);
+        return sanctions.findByProfessorIdOrderByCreatedAtDesc(maria.getId()).get(0).getId();
     }
 
     /* ------------------------------------------------------------- autocompletado */
