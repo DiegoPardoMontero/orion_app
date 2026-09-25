@@ -42,6 +42,7 @@ del Bloque 11 y las sesiones en la base):
   resultado se ve en la página debajo de cada caso.
 - **Celular**: 47 pantallas de los cuatro roles recorridas a 390 px buscando desbordes laterales y
   textos cortados: ninguna.
+- **Reporte de la noche**: https://claude.ai/artifact/LvkmUM9K9kvGMQyq4bMNxD
 
 Al 24/09/2026 por la noche, con la tercera tanda del Bloque 11 (pasos 19–25: editar sin modo
 edición, la clase minimizable, las estrellas de «Mi ficha», filtrar por horas exactas, los mensajes
@@ -723,8 +724,8 @@ como la videollamada.
 
 ## La noche del 24 al 25/09/2026: el wireflow probado, seguridad y sesiones
 
-Trabajo autónomo con la lista que aprobó Pardo. El reporte completo está publicado como página
-(enlace en la sección de verificación).
+Trabajo autónomo con la lista que aprobó Pardo. El reporte completo está publicado como página:
+https://claude.ai/artifact/LvkmUM9K9kvGMQyq4bMNxD
 
 - **El wireflow, caso por caso**: cuatro suites e2e (`e2e/wireflow-*.spec.ts`) cuyos títulos
   llevan los ids de los casos que cubren. De los 253 casos, **Claude probó 232 por su cuenta** (204
