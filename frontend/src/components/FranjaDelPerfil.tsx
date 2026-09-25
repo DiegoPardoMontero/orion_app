@@ -54,11 +54,13 @@ export function FranjaDelPerfil() {
   };
 
   return (
+    // Como la de la ficha: en el celular el botón baja bajo el texto, que en una fila se quedaba
+    // con unos 90 px.
     <aside
       aria-label="Completa tu perfil"
-      className="mx-5 mt-3 flex items-center gap-3 rounded-card bg-rigel-soft py-2.5 pl-3 pr-2 lg:mx-12 lg:mt-5"
+      className="mx-5 mt-3 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 rounded-card bg-rigel-soft py-2.5 pl-3 pr-2 sm:flex lg:mx-12 lg:mt-5"
     >
-      <Rigel pose="guia" decorativo className="h-auto w-11 shrink-0" />
+      <Rigel pose="guia" decorativo className="row-span-2 h-auto w-11 shrink-0" />
       <p className="min-w-0 flex-1 text-[13px] leading-snug text-rigel-ink">
         <strong>{publicado ? "Termina tu perfil." : "Tu perfil todavía no recibe estudiantes."}</strong>{" "}
         <span className="hidden sm:inline">
@@ -71,7 +73,7 @@ export function FranjaDelPerfil() {
       </p>
       <Link
         href={destino}
-        className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-pill bg-primary px-4 text-[13px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus"
+        className="col-start-2 row-start-2 inline-flex min-h-11 shrink-0 items-center gap-1.5 justify-self-start rounded-pill bg-primary px-4 text-[13px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus"
       >
         <span className="hidden sm:inline">Terminar mi perfil</span>
         <span className="sm:hidden">Terminar</span>
@@ -82,7 +84,7 @@ export function FranjaDelPerfil() {
         onClick={cerrar}
         aria-label="Recuérdamelo mañana"
         title="Recuérdamelo mañana"
-        className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full text-rigel-ink hover:bg-rigel/30 focus-visible:shadow-focus"
+        className="col-start-3 row-start-1 flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center self-start rounded-full text-rigel-ink hover:bg-rigel/30 focus-visible:shadow-focus sm:self-center"
       >
         <X size={18} strokeWidth={2} />
       </button>
