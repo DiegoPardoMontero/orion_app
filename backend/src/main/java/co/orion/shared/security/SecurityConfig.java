@@ -18,6 +18,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.savedrequest.NullRequestCache;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -212,7 +213,12 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/bookings/*/payment")
                         .hasAnyRole("STUDENT", "ADMIN")
                 .anyRequest().authenticated())
-            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
+            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+            // Sin «petición guardada»: Spring la guarda en la sesión en cada 401 para volver a ella
+            // tras un formulario de login, que aquí no existe (los errores son JSON y el frontend
+            // decide adónde ir). Guardarla creaba una sesión por cada visitante anónimo, y desde la
+            // V68 cada sesión es una fila en Postgres.
+            .requestCache(r -> r.requestCache(new NullRequestCache()));
 
         // Solo si hay algún proveedor configurado: sin ninguno, Spring no admite un login OAuth2
         // vacío, y tampoco hay nada que enchufar.

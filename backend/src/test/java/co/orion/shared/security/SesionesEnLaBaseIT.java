@@ -91,6 +91,18 @@ class SesionesEnLaBaseIT extends ApiIntegrationSupport {
     }
 
     @Test
+    @DisplayName("Un visitante sin cuenta no crea sesión: un 401 no deja cookie ni fila")
+    void elVisitanteNoCreaSesion() {
+        int antes = jdbc.queryForObject("select count(*) from spring_session", Integer.class);
+
+        var respuesta = rest.getForEntity("/api/v1/auth/me", String.class);
+
+        assertThat(respuesta.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(respuesta.getHeaders().getOrEmpty("Set-Cookie")).noneMatch(c -> c.startsWith("ORION_SESSION="));
+        assertThat(jdbc.queryForObject("select count(*) from spring_session", Integer.class)).isEqualTo(antes);
+    }
+
+    @Test
     @DisplayName("La base es la que manda: sin la fila no hay sesión, aunque el proceso siga vivo")
     void laBaseEsLaFuente() {
         Session sesion = login(ana);
