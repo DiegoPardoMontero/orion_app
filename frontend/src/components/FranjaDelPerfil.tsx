@@ -64,12 +64,12 @@ export function FranjaDelPerfil() {
       <p className="min-w-0 flex-1 text-[13px] leading-snug text-rigel-ink">
         <strong>{publicado ? "Termina tu perfil." : "Tu perfil todavía no recibe estudiantes."}</strong>{" "}
         <span className="hidden sm:inline">
-          Te falta {lista.join(", ")}.{" "}
+          {lista.length === 1 ? "Te falta" : "Te faltan"} {lista.join(", ")}.{" "}
           {publicado
             ? "Un perfil completo da confianza y recibe más reservas."
             : "Con tus horarios abiertos y tu perfil completo y publicado, apareces en el buscador."}
         </span>
-        <span className="sm:hidden">Te falta {lista.length === 1 ? lista[0] : `${lista.length} cosas`}.</span>
+        <span className="sm:hidden">{lista.length === 1 ? `Te falta ${lista[0]}` : `Te faltan ${lista.length} cosas`}.</span>
       </p>
       <Link
         href={destino}
