@@ -310,7 +310,7 @@ test("[e-perfil.1 e-perfil.2 e-ficha.5] Mi perfil: racha y puntos junto al nombr
   await entrar(page, SEMILLA.ana);
   await page.goto("/cuenta");
   await expect(page.getByText(/semanas? en racha|racha/i).first()).toBeVisible();
-  await expect(page.getByTitle("Tus puntos en Orión").first()).toBeVisible();
+  await expect(page.locator("main").getByTitle("Tus puntos en Orión").first()).toBeVisible();
   // Pardo, 25/09/2026: los puntos no se explican.
   await expect(page.getByText("Tus puntos", { exact: true })).toHaveCount(0);
   await expect(page.getByText("Cómo se hacen")).toHaveCount(0);
