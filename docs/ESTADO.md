@@ -996,7 +996,8 @@ su test; lo que cambia el comportamiento o pide una decisión está abajo, en Pe
 - **La clase de prueba nace apagada** (V65): los profesores que no la habían puesto en 0 tienen que
   encender «Ofrezco la primera clase gratis» en su perfil si quieren ofrecerla.
 - **El wireflow usa la base compartida del artifact**: solo lo abre quien esté en la organización de
-  Pardo o sea invitado por correo; para marcar, Colaborador o Editor.
+  Pardo o sea invitado por correo, y alguien de fuera solo marca si lo invitan como **Editor** y el
+  artifact no se comparte también por enlace (eso lo baja a solo ver).
 - **Config de producción**: `ORION_APP_BASE_URL`, `WOMPI_*`, `RESEND_API_KEY`,
   `NEXT_PUBLIC_SUPPORT_WHATSAPP`, `NEXT_PUBLIC_SITE_URL`, `ORION_LEGAL_*` y `ORION_ALERTS_TO`
   en Railway.
