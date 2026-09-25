@@ -72,7 +72,7 @@ class PostulacionConservaDatosIT extends ApiIntegrationSupport {
 
         // Por la puerta de enseñar: la cuenta nace como aspirante, no como profesor.
         ResponseEntity<Map> alta = rest.postForEntity("/api/v1/auth/register",
-                new RegisterRequest("Aspi Rante", ASPIRANTE, PASSWORD, null, true, true, true, true),
+                new RegisterRequest("Aspi Rante", ASPIRANTE, PASSWORD, "+573001112244", true, true, true, true),
                 Map.class);
         assertThat(alta.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         aspirante = login(ASPIRANTE);

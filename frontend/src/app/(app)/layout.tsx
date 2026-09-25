@@ -36,6 +36,7 @@ import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import { Vacio } from "@/components/estados";
 import { AvisoCorreoSinVerificar } from "@/components/AvisoCorreoSinVerificar";
 import { AvisoMayoriaDeEdad } from "@/components/AvisoMayoriaDeEdad";
+import { AvisoWhatsapp } from "@/components/AvisoWhatsapp";
 import { Bienvenida } from "@/components/bienvenida/Bienvenida";
 import { Encendido } from "@/components/gamificacion/Encendido";
 import { ClaseEnCurso } from "@/components/aula/ClaseEnCurso";
@@ -188,6 +189,7 @@ function Armazon({ children }: { children: ReactNode }) {
    * guardó. En escritorio el lateral se queda: ahí no estorba y orienta.
    */
   const practicando = /^\/practica\/[^/]+$/.test(pathname);
+  const faltaWhatsapp = me.role !== "ADMIN" && !me.hasWhatsapp;
 
   if (enClase) {
     return (
@@ -234,8 +236,11 @@ function Armazon({ children }: { children: ReactNode }) {
           una pantalla porque hay que pedirla entren por donde entren. */}
       {!me.adultConfirmed && <AvisoMayoriaDeEdad />}
 
-      {/* La bienvenida espera a la declaración de edad: dos diálogos a la vez no se leen. */}
-      {me.adultConfirmed && <Bienvenida me={me} />}
+      {/* Y las que nacieron cuando el WhatsApp era opcional, o que creó el admin sin él. Después de
+          la edad y antes de la bienvenida: dos diálogos a la vez no se leen. El admin no lo necesita. */}
+      {me.adultConfirmed && faltaWhatsapp && <AvisoWhatsapp me={me} />}
+
+      {me.adultConfirmed && !faltaWhatsapp && <Bienvenida me={me} />}
     </div>
   );
 }

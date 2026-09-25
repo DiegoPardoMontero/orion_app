@@ -16,6 +16,7 @@ import co.orion.identity.application.SocialProviders;
 import co.orion.identity.domain.User;
 import co.orion.legal.application.LegalDocumentService;
 import co.orion.legal.domain.LegalDocumentCode;
+import co.orion.shared.WhatsappValido;
 import co.orion.shared.error.ResourceNotFoundException;
 import co.orion.shared.security.IntentosDeAcceso;
 import co.orion.shared.security.OrionUserDetails;
@@ -80,7 +81,7 @@ public class SocialAuthController {
         intentos.antesDeRegistro(http);
         PerfilSocial perfil = pendiente(http);
 
-        User creado = servicio.completar(perfil, body.fullName().trim(),
+        User creado = servicio.completar(perfil, body.fullName().trim(), body.whatsappPhone(),
                 Boolean.TRUE.equals(body.wantsToTeach()), registro);
         legal.record(creado.getId(), LegalDocumentCode.TERMS,
                 http.getRemoteAddr(), http.getHeader("User-Agent"));
@@ -112,6 +113,8 @@ public class SocialAuthController {
 
     public record CompletarRequest(
             @NotBlank(message = "Dinos cómo te llamas.") @Size(max = 150) String fullName,
+            // Obligatorio como en el registro con contraseña (Pardo, 25/09): Google no lo trae.
+            @NotBlank(message = "Tu WhatsApp es obligatorio.") @Size(max = 20) @WhatsappValido String whatsappPhone,
             @AssertTrue(message = "Orión está disponible solo para mayores de 18 años.") boolean adult,
             @AssertTrue(message = "Debes aceptar los Términos y condiciones para crear tu cuenta.")
             boolean acceptsTerms,

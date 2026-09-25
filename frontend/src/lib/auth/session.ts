@@ -35,6 +35,11 @@ export type Me = {
    * falta para reservar; el backend las vuelve a comprobar en BookingService, que es donde mandan.
    */
   emailVerified: boolean;
+  /**
+   * Falso en las cuentas que nacieron cuando el WhatsApp era opcional, o que creó el admin sin él.
+   * Es obligatorio desde el 25/09/2026, y la app se lo pide al entrar (`AvisoWhatsapp`).
+   */
+  hasWhatsapp: boolean;
 };
 
 export const meQueryKey = ["auth", "me"] as const;
@@ -123,6 +128,23 @@ export function useConfirmarMayoriaDeEdad() {
       apiFetch<void>("/api/v1/me/account/adulthood", { method: "POST" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: meQueryKey });
+    },
+  });
+}
+
+/**
+ * Guarda el WhatsApp que le faltaba a la cuenta. Va por el mismo PUT de «Mis datos», que pide también
+ * el nombre: se manda el de siempre.
+ */
+export function useGuardarWhatsapp() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ fullName, whatsappPhone }: { fullName: string; whatsappPhone: string }) =>
+      apiFetch<void>("/api/v1/me/account", { method: "PUT", body: { fullName, whatsappPhone } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: meQueryKey });
+      queryClient.invalidateQueries({ queryKey: ["me", "account"] });
     },
   });
 }

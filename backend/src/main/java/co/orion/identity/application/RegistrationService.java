@@ -59,7 +59,8 @@ public class RegistrationService {
      * garantizó: pedir que lo confirme otra vez sería un paso de más por algo que ya se sabe.
      */
     @Transactional
-    public User registerFromProvider(String fullName, String email, boolean emailVerified, boolean wantsToTeach) {
+    public User registerFromProvider(String fullName, String email, String whatsappPhone, boolean emailVerified,
+                                     boolean wantsToTeach) {
         if (users.existsByEmailIgnoreCase(email)) {
             throw new ConflictException("Ya existe una cuenta con ese correo");
         }
@@ -68,6 +69,7 @@ public class RegistrationService {
         User user = new User(email, passwordEncoder.encode(HexFormat.of().formatHex(secreto)),
                 fullName, UserRole.STUDENT);
         user.replacePasswordWithUnknown(user.getPasswordHash());
+        user.changeWhatsappPhone(PhoneNumbers.toE164(whatsappPhone));
         user.confirmAdulthood(clock.instant());
         if (emailVerified) {
             user.markEmailVerified(clock.instant());

@@ -10,8 +10,10 @@ import type { Me } from "@/lib/auth/session";
 import { Consentimiento } from "@/components/Consentimiento";
 import { AvisoError, Cargando } from "@/components/estados";
 import { Wordmark } from "@/components/marca";
+import { AyudaWhatsapp, PhoneInput } from "@/components/PhoneInput";
 import { Rigel } from "@/components/Rigel";
 import { Boton } from "@/components/ui";
+import { whatsappValido } from "@/lib/phone";
 
 type Pendiente = { name: string | null; email: string; provider: string };
 
@@ -21,7 +23,8 @@ const PROVEEDOR: Record<string, string> = { google: "Google", apple: "Apple", fa
  * El último paso de quien llega nuevo desde Google, Apple o Facebook: la cuenta no nace sin las
  * tres casillas del alta —mayoría de edad, términos y autorización de datos—, cada una en la suya,
  * igual que en el registro con correo. El nombre llega del proveedor y se puede corregir; el
- * correo no, porque es el que el proveedor garantizó. Rigel recibe aquí, como en el registro.
+ * correo no, porque es el que el proveedor garantizó. El WhatsApp, que el proveedor no trae, es
+ * obligatorio como en el registro con correo. Rigel recibe aquí, como en el registro.
  */
 export default function CompletarRegistroPage() {
   const router = useRouter();
@@ -34,6 +37,7 @@ export default function CompletarRegistroPage() {
 
   // El nombre del proveedor hasta que la persona lo toque: estado derivado, sin efecto que lo copie.
   const [nombreEditado, setNombre] = useState<string | null>(null);
+  const [whatsapp, setWhatsapp] = useState("");
   const [mayor, setMayor] = useState(false);
   const [terminos, setTerminos] = useState(false);
   const [datos, setDatos] = useState(false);
@@ -46,6 +50,7 @@ export default function CompletarRegistroPage() {
         method: "POST",
         body: {
           fullName: nombre.trim(),
+          whatsappPhone: whatsapp,
           adult: mayor,
           acceptsTerms: terminos,
           acceptsDataPolicy: datos,
@@ -65,7 +70,7 @@ export default function CompletarRegistroPage() {
     },
   });
 
-  const listo = nombre.trim().length > 0 && mayor && terminos && datos;
+  const listo = nombre.trim().length > 0 && whatsappValido(whatsapp) && mayor && terminos && datos;
 
   return (
     <main className="mx-auto w-full max-w-md px-6 py-6">
@@ -119,6 +124,12 @@ export default function CompletarRegistroPage() {
           <p className="mt-3 text-[13px] text-text-secondary">
             Correo: <strong className="text-text">{pendiente.data.email}</strong>
           </p>
+
+          <label htmlFor="whatsapp" className="mt-5 block text-[14px] font-bold text-text">
+            Tu WhatsApp
+          </label>
+          <PhoneInput id="whatsapp" value={whatsapp} onChange={setWhatsapp} className="mt-1.5" />
+          <AyudaWhatsapp numero={whatsapp} ayuda="Lo usamos para avisarte de tus clases." />
 
           <div className="mt-5 grid gap-3">
             <Consentimiento id="mayor" marcado={mayor} onCambio={setMayor}>

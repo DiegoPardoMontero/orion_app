@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { componerE164, parseTelefono } from "@/lib/phone";
+import { componerE164, parseTelefono, whatsappValido } from "@/lib/phone";
 
 describe("parseTelefono", () => {
   it("separa un E.164 colombiano en país + local", () => {
@@ -31,5 +31,20 @@ describe("componerE164", () => {
 
   it("limpia separadores del número local", () => {
     expect(componerE164("34", "600 123 456")).toBe("+34600123456");
+  });
+});
+
+describe("whatsappValido", () => {
+  it("acepta un celular colombiano y números extranjeros completos", () => {
+    expect(whatsappValido("+573001112233")).toBe(true);
+    expect(whatsappValido("+34600123456")).toBe(true);
+    expect(whatsappValido("+15551234567")).toBe(true);
+  });
+
+  it("rechaza un fijo de Colombia, un celular incompleto y el vacío", () => {
+    expect(whatsappValido("+576012345678")).toBe(false);
+    expect(whatsappValido("+57300111223")).toBe(false);
+    expect(whatsappValido("+5712")).toBe(false);
+    expect(whatsappValido("")).toBe(false);
   });
 });

@@ -2,13 +2,15 @@ import { expect, type Browser, type Locator, type Page } from "@playwright/test"
 import { execFileSync } from "node:child_process";
 
 /**
- * Las tres casillas obligatorias del registro (Bloque 9).
+ * Lo obligatorio del registro además del nombre, el correo y la clave: el WhatsApp (desde el
+ * 25/09/2026) y las tres casillas (Bloque 9).
  *
- * <p>Van por separado y las tres son obligatorias: empaquetar la autorización de tratamiento de
- * datos con la aceptación de los términos la viciaría, porque el Decreto 1377 de 2013 la exige
- * previa, expresa e informada — y por tanto específica.
+ * <p>Las casillas van por separado y las tres son obligatorias: empaquetar la autorización de
+ * tratamiento de datos con la aceptación de los términos la viciaría, porque el Decreto 1377 de 2013
+ * la exige previa, expresa e informada — y por tanto específica.
  */
 export async function aceptarCondiciones(page: Page) {
+  await page.locator("#whatsapp").fill("3001234567");
   await page.locator("#mayor-de-edad").check();
   await page.locator("#acepta-terminos").check();
   await page.locator("#acepta-datos").check();

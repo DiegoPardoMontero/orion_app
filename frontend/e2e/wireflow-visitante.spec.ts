@@ -201,6 +201,11 @@ test("[v-registro.1 v-registro.2 v-registro.3 v-registro.4] el registro valida y
   await page.locator("#password").fill("orion123*");
   await expect(crear).toBeDisabled();
   await aceptarCondiciones(page);
+  // El WhatsApp es obligatorio (25/09): a medias, dice qué le falta y no deja crear la cuenta.
+  await page.locator("#whatsapp").fill("300123");
+  await expect(page.getByText("Escribe tu celular completo: 10 dígitos que empiezan por 3.")).toBeVisible();
+  await expect(crear).toBeDisabled();
+  await page.locator("#whatsapp").fill("3001234567");
   await crear.click();
   await expect(page.getByText("Ya existe una cuenta con ese correo")).toBeVisible();
 

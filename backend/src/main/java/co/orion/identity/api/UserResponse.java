@@ -17,9 +17,13 @@ import co.orion.shared.security.OrionUserDetails;
  * <p>{@code adultConfirmed} y {@code emailVerified} son las dos condiciones que hacen falta para
  * reservar. El frontend las usa para avisar antes de que la persona llegue al botón; el backend no
  * se fía de eso y las vuelve a comprobar en {@code BookingService}, que es donde importan.
+ *
+ * <p>{@code hasWhatsapp} es falso en las cuentas que nacieron cuando el número era opcional, o que
+ * creó el admin sin él: la app se lo pide al entrar.
  */
 public record UserResponse(UUID id, String email, String fullName, String role, String photoUrl,
-                           boolean adultConfirmed, boolean emailVerified, boolean hasPassword) {
+                           boolean adultConfirmed, boolean emailVerified, boolean hasPassword,
+                           boolean hasWhatsapp) {
 
     public static UserResponse from(OrionUserDetails principal) {
         User user = principal.user();
@@ -32,6 +36,7 @@ public record UserResponse(UUID id, String email, String fullName, String role, 
                 user.hasConfirmedAdulthood(),
                 user.isEmailVerified(),
                 // Sin contraseña propia (entró con Google): «Cambiar contraseña» se vuelve «Crear una».
-                user.hasPasswordSet());
+                user.hasPasswordSet(),
+                user.getWhatsappPhone() != null && !user.getWhatsappPhone().isBlank());
     }
 }

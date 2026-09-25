@@ -81,7 +81,7 @@ class VerificacionDeCorreoIT extends ApiIntegrationSupport {
 
     private ResponseEntity<Map> registrar(String email, boolean quiereEnsenar) {
         return rest.postForEntity("/api/v1/auth/register",
-                new RegisterRequest("Camila Ortiz", email, CLAVE, null, quiereEnsenar,
+                new RegisterRequest("Camila Ortiz", email, CLAVE, "+573001112244", quiereEnsenar,
                         true, true, true),
                 Map.class);
     }

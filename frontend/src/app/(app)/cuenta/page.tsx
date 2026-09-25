@@ -13,11 +13,12 @@ import { InvitacionAPracticar } from "@/components/InvitacionAPracticar";
 import { PanelProgreso } from "@/components/PanelProgreso";
 import { MisPuntosChip } from "@/components/Puntos";
 import { Cargando, ErrorCarga } from "@/components/estados";
-import { PhoneInput } from "@/components/PhoneInput";
+import { AyudaWhatsapp, PhoneInput } from "@/components/PhoneInput";
 import { EdicionEnPagina, useFormularioEditable } from "@/components/edicion/EdicionEnPagina";
 import { Campo } from "@/components/ui";
 import { apiFetch } from "@/lib/api/fetch";
 import { meQueryKey } from "@/lib/auth/session";
+import { whatsappValido } from "@/lib/phone";
 
 type Cuenta = {
   fullName: string;
@@ -174,9 +175,11 @@ function MisDatos({ inicial, onCambiarClave }: { inicial: Cuenta; onCambiarClave
     sucio,
     async () => {
       if (!nombre.trim()) throw new Error("Tu nombre no puede quedar vacío.");
+      // Obligatorio desde el 25/09/2026: se cambia, pero no se borra.
+      if (!whatsappValido(telefono)) throw new Error("Tu WhatsApp es obligatorio: escríbelo completo.");
       const actualizada = await apiFetch<Cuenta>("/api/v1/me/account", {
         method: "PUT",
-        body: { fullName: nombre.trim(), whatsappPhone: telefono.trim() || undefined },
+        body: { fullName: nombre.trim(), whatsappPhone: telefono },
       });
       queryClient.setQueryData(["me", "account"], actualizada);
       setNombre(actualizada.fullName);
@@ -207,12 +210,10 @@ function MisDatos({ inicial, onCambiarClave }: { inicial: Cuenta; onCambiarClave
       <p className="mt-1.5 text-[12px] text-text-muted">Tu nombre sí lo ven tus profesores.</p>
 
       <label className="mt-4 block text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary" htmlFor="telefono">
-        WhatsApp <span className="font-semibold normal-case text-text-muted">(opcional)</span>
+        WhatsApp
       </label>
       <PhoneInput id="telefono" value={telefono} onChange={setTelefono} className="mt-1.5" />
-      <p className="mt-1.5 text-[12px] text-text-muted">
-        Solo lo usa el equipo de Orión si necesita avisarte algo de una clase.
-      </p>
+      <AyudaWhatsapp numero={telefono} ayuda="Solo lo usa el equipo de Orión si necesita avisarte algo de una clase." />
 
       {/* Correo y rol se muestran, no se editan. */}
       <div className="mt-5 flex items-center gap-2.5 rounded-base bg-surface-sunken px-4 py-3">

@@ -132,7 +132,7 @@ class InvitacionDeProfesoresIT extends ApiIntegrationSupport {
     @SuppressWarnings("rawtypes")
     private ResponseEntity<Map> registrarse(String email, String token) {
         return rest.postForEntity(REGISTRO,
-                new RegisterRequest("Mariana Ruiz", email, CLAVE, null, false, true, true, true, token), Map.class);
+                new RegisterRequest("Mariana Ruiz", email, CLAVE, "+573001112244", false, true, true, true, token), Map.class);
     }
 
     private void completarPostulacion(Session sesion, String email) {

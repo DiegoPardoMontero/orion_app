@@ -31,4 +31,16 @@ public final class PhoneNumbers {
         // Sin '+' y sin poder inferir el indicativo: se deja tal cual, no se inventa.
         return cleaned;
     }
+
+    /**
+     * Si el número, ya normalizado, es un WhatsApp al que se puede escribir: E.164 completo (de 8 a
+     * 15 dígitos con el indicativo) y, en Colombia, un celular (+57 y diez dígitos que empiezan por
+     * 3). Es la misma regla que aplica el formulario (`whatsappValido` en `lib/phone.ts`).
+     */
+    public static boolean esWhatsappValido(String e164) {
+        if (e164 == null || !e164.matches("^\\+\\d{8,15}$")) {
+            return false;
+        }
+        return !e164.startsWith("+57") || e164.matches("^\\+573\\d{9}$");
+    }
 }

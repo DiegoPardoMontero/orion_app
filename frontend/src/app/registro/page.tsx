@@ -23,7 +23,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Suspense, useEffect, useState, type FormEvent } from "react";
 import { AvisoError } from "@/components/estados";
 import { Constelacion, Wordmark } from "@/components/marca";
-import { PhoneInput } from "@/components/PhoneInput";
+import { AyudaWhatsapp, PhoneInput } from "@/components/PhoneInput";
 import { Rigel, type RigelPose } from "@/components/Rigel";
 import { BotonPrincipal, Campo, Segmento, Spinner } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
@@ -32,6 +32,7 @@ import { destinoSeguro, entrarYVolver } from "@/lib/auth/volver";
 import { useRegister } from "@/lib/auth/session";
 import { minutos, useCifras } from "@/lib/cifras";
 import { fuerzaClave } from "@/lib/password";
+import { whatsappValido } from "@/lib/phone";
 import { Consentimiento } from "@/components/Consentimiento";
 import { BotonesSociales } from "@/components/BotonesSociales";
 
@@ -151,6 +152,7 @@ function Registro() {
     nombre.trim().length > 0 &&
     /.+@.+\..+/.test(email) &&
     password.length >= 8 &&
+    whatsappValido(whatsapp) &&
     mayorDeEdad &&
     aceptaTerminos &&
     aceptaDatos;
@@ -163,7 +165,7 @@ function Registro() {
         fullName: nombre.trim(),
         email: email.trim(),
         password,
-        whatsappPhone: whatsapp.trim() || undefined,
+        whatsappPhone: whatsapp,
         // La intención viaja al backend y no se queda en esta pantalla: es lo que decide que la
         // cuenta nazca como aspirante y no como estudiante que además postuló.
         wantsToTeach: intencion === "ensenar",
@@ -366,10 +368,12 @@ function Registro() {
             className="mt-4 block text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary"
             htmlFor="whatsapp"
           >
-            WhatsApp <span className="font-semibold normal-case text-text-muted">(opcional)</span>
+            WhatsApp
           </label>
+          {/* Obligatorio (Pardo, 25/09/2026). Mientras el número esté a medias, se dice qué falta:
+              si no, el botón sigue apagado sin que nadie sepa por qué. */}
           <PhoneInput id="whatsapp" value={whatsapp} onChange={setWhatsapp} className="mt-1.5" />
-          <p className="mt-1.5 text-[12px] text-text-muted">{copy.whatsapp}</p>
+          <AyudaWhatsapp numero={whatsapp} ayuda={copy.whatsapp} />
 
           <div className="mt-6 grid gap-3 rounded-base border border-border bg-surface-sunken p-4">
             <Consentimiento

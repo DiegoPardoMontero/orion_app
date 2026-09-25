@@ -58,13 +58,33 @@ class MeAccountIT extends ApiIntegrationSupport {
         assertThat(reread.getBody().whatsappPhone()).isEqualTo("+573001112233");
     }
 
+    /**
+     * El WhatsApp es obligatorio (Pardo, 25/09/2026): se cambia, pero no se borra ni se cambia por
+     * uno al que no se puede escribir. Antes, dejarlo vacío lo borraba.
+     */
+    @SuppressWarnings("rawtypes")
     @Test
-    void anEmptyWhatsappClearsIt() {
+    void theWhatsappCanBeChangedButNotClearedOrBroken() {
         put(URL, anaSession, new UpdateAccountRequest("Ana Ramírez", "+573001112233"), MeAccountResponse.class);
-        ResponseEntity<MeAccountResponse> cleared = put(
-                URL, anaSession, new UpdateAccountRequest("Ana Ramírez", ""), MeAccountResponse.class);
 
-        assertThat(cleared.getBody().whatsappPhone()).isNull();
+        for (String numero : new String[] {"", "+57601234567", "12345"}) {
+            ResponseEntity<Map> rechazado = put(
+                    URL, anaSession, new UpdateAccountRequest("Ana Ramírez", numero), Map.class);
+            assertThat(rechazado.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        }
+        assertThat(get(URL, anaSession, MeAccountResponse.class).getBody().whatsappPhone())
+                .isEqualTo("+573001112233");
+    }
+
+    /** Sin número, /auth/me lo dice, y la app se lo pide al entrar; con él, deja de pedirlo. */
+    @Test
+    void meSaysWhetherTheWhatsappIsMissing() {
+        assertThat(get("/api/v1/auth/me", anaSession, UserResponse.class).getBody().hasWhatsapp()).isFalse();
+
+        put(URL, anaSession, new UpdateAccountRequest("Ana Ramírez", "3001112233"), MeAccountResponse.class);
+
+        assertThat(get("/api/v1/auth/me", anaSession, UserResponse.class).getBody().hasWhatsapp()).isTrue();
+        assertThat(get(URL, anaSession, MeAccountResponse.class).getBody().whatsappPhone()).isEqualTo("+573001112233");
     }
 
     @Test

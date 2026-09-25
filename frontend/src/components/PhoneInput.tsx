@@ -2,7 +2,7 @@
 
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
-import { componerE164, PAISES, parseTelefono } from "@/lib/phone";
+import { componerE164, PAISES, parseTelefono, whatsappValido } from "@/lib/phone";
 
 /**
  * Teléfono con selector de país. Produce y consume E.164 (`+573001112233`). Sin librerías: lista
@@ -70,5 +70,24 @@ export function PhoneInput({
         className="h-[52px] w-full rounded-base border-[1.5px] border-border bg-surface-raised px-[18px] text-[15px] text-text placeholder:text-text-muted transition-[border-color,box-shadow] focus:border-primary focus:shadow-focus focus:outline-none"
       />
     </div>
+  );
+}
+
+/**
+ * Debajo de un WhatsApp obligatorio: la ayuda de siempre o, si el número está a medias, qué le falta.
+ * Sin esto, el botón de guardar sigue apagado y nadie sabe por qué.
+ */
+export function AyudaWhatsapp({ numero, ayuda }: { numero: string; ayuda?: string }) {
+  const incompleto = numero !== "" && !whatsappValido(numero);
+  if (!incompleto && !ayuda) return null;
+  const colombiano = parseTelefono(numero).dial === "57";
+  return (
+    <p aria-live="polite" className={`mt-1.5 text-[12px] ${incompleto ? "text-error" : "text-text-muted"}`}>
+      {!incompleto
+        ? ayuda
+        : colombiano
+          ? "Escribe tu celular completo: 10 dígitos que empiezan por 3."
+          : "Escribe el número completo, sin el indicativo del país."}
+    </p>
   );
 }

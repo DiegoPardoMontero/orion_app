@@ -243,7 +243,7 @@ class SocialLoginIT extends ApiIntegrationSupport {
     void completarConMicrosoft() {
         PerfilSocial deMicrosoft = new PerfilSocial(SocialProvider.MICROSOFT, "ms-1", "ana@outlook.com", false, "Ana Ruiz");
 
-        User creada = social.completar(deMicrosoft, "Ana Ruiz", false, registro);
+        User creada = social.completar(deMicrosoft, "Ana Ruiz", "+573001112244", false, registro);
 
         assertThat(creada.isEmailVerified()).isFalse();
         assertThat(jdbc.queryForObject("select provider from social_identities", String.class)).isEqualTo("MICROSOFT");
@@ -253,7 +253,7 @@ class SocialLoginIT extends ApiIntegrationSupport {
     @Test
     @DisplayName("Completar crea la cuenta de estudiante, verificada si el proveedor lo garantizó")
     void completarCreaLaCuenta() {
-        User creada = social.completar(perfil("g-5", "nueva@orion.test", true), "Ana Ruiz", false, registro);
+        User creada = social.completar(perfil("g-5", "nueva@orion.test", true), "Ana Ruiz", "+573001112244", false, registro);
 
         assertThat(creada.getRole()).isEqualTo(UserRole.STUDENT);
         assertThat(creada.isEmailVerified()).isTrue();
@@ -275,7 +275,7 @@ class SocialLoginIT extends ApiIntegrationSupport {
     @Test
     @DisplayName("Completar desde «Quiero enseñar» crea un aspirante a profesor, como el alta con contraseña")
     void completarParaEnsenar() {
-        User creada = social.completar(perfil("g-6", "profe@orion.test", true), "María Gómez", true, registro);
+        User creada = social.completar(perfil("g-6", "profe@orion.test", true), "María Gómez", "+573001112244", true, registro);
 
         assertThat(creada.getRole()).isEqualTo(UserRole.STUDENT);
         assertThat(UserResponse.from(new OrionUserDetails(creada)).role()).isEqualTo("TEACHER_APPLICANT");
@@ -289,10 +289,29 @@ class SocialLoginIT extends ApiIntegrationSupport {
         h.add(HttpHeaders.COOKIE, "XSRF-TOKEN=token-de-prueba");
         h.add("X-XSRF-TOKEN", "token-de-prueba");
         ResponseEntity<Map> r = rest.postForEntity("/api/v1/auth/social/complete", new HttpEntity<>(
-                Map.of("fullName", "Ana", "adult", true, "acceptsTerms", true, "acceptsDataPolicy", true), h),
+                Map.of("fullName", "Ana", "whatsappPhone", "+573001112244",
+                        "adult", true, "acceptsTerms", true, "acceptsDataPolicy", true), h),
                 Map.class);
 
         assertThat(r.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    /** Google no trae el número, y el WhatsApp es obligatorio (Pardo, 25/09): sin él no se crea nada. */
+    @SuppressWarnings("rawtypes")
+    @Test
+    @DisplayName("Completar sin WhatsApp, o con uno que no sirve, responde 400")
+    void completarSinWhatsapp() {
+        HttpHeaders h = new HttpHeaders();
+        h.add(HttpHeaders.COOKIE, "XSRF-TOKEN=token-de-prueba");
+        h.add("X-XSRF-TOKEN", "token-de-prueba");
+        for (String numero : new String[] {"", "+57601234"}) {
+            ResponseEntity<Map> r = rest.postForEntity("/api/v1/auth/social/complete", new HttpEntity<>(
+                    Map.of("fullName", "Ana", "whatsappPhone", numero,
+                            "adult", true, "acceptsTerms", true, "acceptsDataPolicy", true), h),
+                    Map.class);
+
+            assertThat(r.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        }
     }
 
     @SuppressWarnings("rawtypes")

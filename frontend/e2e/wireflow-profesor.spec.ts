@@ -354,6 +354,17 @@ test("[p-bienvenida.1 p-bienvenida.2 p-bienvenida.3] con video: la bienvenida un
     await antesDeSeguir.getByLabel(/mayor de 18 años/).check();
     await antesDeSeguir.getByRole("button", { name: "Confirmar" }).click();
 
+    // Tampoco trae WhatsApp, que es obligatorio desde el 25/09: se pide antes de la bienvenida, y un
+    // número a medias dice qué le falta en vez de dejar el botón apagado sin explicación.
+    const falta = profe.getByRole("dialog", { name: "Falta tu WhatsApp" });
+    await expect(falta).toBeVisible({ timeout: 20_000 });
+    await falta.locator("#whatsapp-obligatorio").fill("300123");
+    await expect(falta.getByText("Escribe tu celular completo: 10 dígitos que empiezan por 3.")).toBeVisible();
+    await expect(falta.getByRole("button", { name: "Guardar" })).toBeDisabled();
+    await falta.locator("#whatsapp-obligatorio").fill("3001234567");
+    await falta.getByRole("button", { name: "Guardar" }).click();
+    await expect(falta).toBeHidden();
+
     const bienvenida = profe.getByRole("dialog", { name: "Bienvenida a Orión" });
     await expect(bienvenida).toBeVisible({ timeout: 20_000 });
     await expect(bienvenida.getByRole("button", { name: "Empezar el recorrido" }).first()).toBeVisible();

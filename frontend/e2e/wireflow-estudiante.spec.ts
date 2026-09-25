@@ -396,6 +396,13 @@ test("[e-cambios.1 e-cambios.2 e-cambios.3 e-cambios.4 e-cambios.5] editar la fi
   await expect(page.getByRole("button", { name: "Avanzado" })).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator("#telefono")).toHaveValue("3007654321");
 
+  // El WhatsApp se cambia pero no se borra: es obligatorio desde el 25/09.
+  await page.locator("#telefono").fill("");
+  await barra.getByRole("button", { name: "Guardar cambios" }).click();
+  await expect(page.getByText("Tu WhatsApp es obligatorio: escríbelo completo.")).toBeVisible();
+  await barra.getByRole("button", { name: "Descartar" }).click();
+  await expect(page.locator("#telefono")).toHaveValue("3007654321");
+
   // Salir con cambios pregunta.
   await page.getByRole("button", { name: "Principiante" }).click();
   await page.locator('a[href="/mis-clases"]:visible').first().click();

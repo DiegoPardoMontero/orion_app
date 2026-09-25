@@ -183,12 +183,30 @@ class AuthFlowIT {
 
     @Test
     void registeringWithAnExistingEmailIsRejected() {
-        RegisterRequest body = new RegisterRequest("Ana Otra", STUDENT_EMAIL, "orion123*", null, false, true, true, true);
+        RegisterRequest body = new RegisterRequest("Ana Otra", STUDENT_EMAIL, "orion123*", "+573001112244", false, true, true, true);
 
         ResponseEntity<Map> response = rest.postForEntity("/api/v1/auth/register", body, Map.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(response.getBody()).containsEntry("error", "Ya existe una cuenta con ese correo");
+    }
+
+    /**
+     * El WhatsApp es obligatorio desde el 25/09/2026 (Pardo): por ahí se le avisa de sus clases.
+     * Tampoco vale uno al que no se puede escribir: un fijo de Bogotá o un celular sin un dígito.
+     */
+    @SuppressWarnings("rawtypes")
+    @Test
+    void registeringWithoutAUsableWhatsappIsRejected() {
+        for (String numero : new String[] {null, "", "+576012345678", "+57300111223"}) {
+            RegisterRequest body = new RegisterRequest(
+                    "Sin Numero", "sinnumero@orion.test", "orion123*", numero, false, true, true, true);
+
+            ResponseEntity<Map> response = rest.postForEntity("/api/v1/auth/register", body, Map.class);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        }
+        assertThat(users.existsByEmailIgnoreCase("sinnumero@orion.test")).isFalse();
     }
 
     /* ---- Mayoría de edad y consentimientos (Bloque 9) ---- */
@@ -201,7 +219,7 @@ class AuthFlowIT {
     @Test
     void registeringWithoutDeclaringAdulthoodIsRejected() {
         RegisterRequest body = new RegisterRequest(
-                "Menor Deedad", "menor@orion.test", "orion123*", null, false, false, true, true);
+                "Menor Deedad", "menor@orion.test", "orion123*", "+573001112244", false, false, true, true);
 
         ResponseEntity<Map> response = rest.postForEntity("/api/v1/auth/register", body, Map.class);
 
@@ -218,7 +236,7 @@ class AuthFlowIT {
     @Test
     void registeringWithoutTheDataAuthorizationIsRejected() {
         RegisterRequest body = new RegisterRequest(
-                "Sin Autorizar", "sinauth@orion.test", "orion123*", null, false, true, true, false);
+                "Sin Autorizar", "sinauth@orion.test", "orion123*", "+573001112244", false, true, true, false);
 
         ResponseEntity<Map> response = rest.postForEntity("/api/v1/auth/register", body, Map.class);
 
@@ -230,7 +248,7 @@ class AuthFlowIT {
     @Test
     void registeringStampsTheAdulthoodDeclaration() {
         RegisterRequest body = new RegisterRequest(
-                "Mayor Deedad", "mayor@orion.test", "orion123*", null, false, true, true, true);
+                "Mayor Deedad", "mayor@orion.test", "orion123*", "+573001112244", false, true, true, true);
 
         ResponseEntity<UserResponse> response =
                 rest.postForEntity("/api/v1/auth/register", body, UserResponse.class);
@@ -243,7 +261,7 @@ class AuthFlowIT {
 
     @Test
     void registeringWithAShortPasswordIsRejected() {
-        RegisterRequest body = new RegisterRequest("Clave Corta", "corta@orion.test", "1234567", null, false, true, true, true);
+        RegisterRequest body = new RegisterRequest("Clave Corta", "corta@orion.test", "1234567", "+573001112244", false, true, true, true);
 
         ResponseEntity<Map> response = rest.postForEntity("/api/v1/auth/register", body, Map.class);
 

@@ -110,8 +110,8 @@ public class DevDataSeeder implements ApplicationRunner {
         seedAdmin();
         seedMaria();
         seedJuan();
-        seedStudent("ana@orion.local", "Ana Ramírez");
-        seedStudent("carlos@orion.local", "Carlos Peña");
+        seedStudent("ana@orion.local", "Ana Ramírez", "+573001110003");
+        seedStudent("carlos@orion.local", "Carlos Peña", "+573001110004");
 
         seedAvailability("maria@orion.local",
                 new RuleSpec(DayOfWeek.MONDAY, LocalTime.of(18, 0), LocalTime.of(21, 0)),
@@ -190,11 +190,11 @@ public class DevDataSeeder implements ApplicationRunner {
     }
 
     private void seedAdmin() {
-        createIfMissing(adminEmail, "Orion Admin", UserRole.ADMIN, adminPassword);
+        createIfMissing(adminEmail, "Orion Admin", UserRole.ADMIN, adminPassword, null);
     }
 
     private void seedMaria() {
-        createIfMissing("maria@orion.local", "María Gómez", UserRole.PROFESSOR, DEV_PASSWORD)
+        createIfMissing("maria@orion.local", "María Gómez", UserRole.PROFESSOR, DEV_PASSWORD, "+573001110001")
                 .ifPresent(professor -> {
                     ProfessorProfile profile = new ProfessorProfile(professor);
                     profile.describe("Profesora de inglés conversacional para profesionales",
@@ -218,7 +218,7 @@ public class DevDataSeeder implements ApplicationRunner {
     }
 
     private void seedJuan() {
-        createIfMissing("juan@orion.local", "Juan Torres", UserRole.PROFESSOR, DEV_PASSWORD)
+        createIfMissing("juan@orion.local", "Juan Torres", UserRole.PROFESSOR, DEV_PASSWORD, "+573001110002")
                 .ifPresent(professor -> {
                     ProfessorProfile profile = new ProfessorProfile(professor);
                     profile.describe("Profesor de francés práctico para viajeros",
@@ -263,15 +263,19 @@ public class DevDataSeeder implements ApplicationRunner {
         }
     }
 
-    private void seedStudent(String email, String fullName) {
-        createIfMissing(email, fullName, UserRole.STUDENT, DEV_PASSWORD);
+    private void seedStudent(String email, String fullName, String whatsapp) {
+        createIfMissing(email, fullName, UserRole.STUDENT, DEV_PASSWORD, whatsapp);
     }
 
-    private Optional<User> createIfMissing(String email, String fullName, UserRole role, String rawPassword) {
+    private Optional<User> createIfMissing(String email, String fullName, UserRole role, String rawPassword,
+                                           String whatsapp) {
         if (users.existsByEmailIgnoreCase(email)) {
             return Optional.empty();
         }
         User user = new User(email, passwordEncoder.encode(rawPassword), fullName, role);
+        // El WhatsApp es obligatorio (25/09/2026): sin él, la app le pediría el número a la semilla
+        // al entrar y taparía las pruebas. El admin no lo necesita.
+        user.changeWhatsappPhone(whatsapp);
         // Sin esto la semilla nace sin declarar mayoría de edad y sin correo verificado, y Ana no
         // puede reservar en local: los dos gates del Bloque 9 la tratarían como cuenta a medias.
         // Un correo @orion.local no existe, así que verificarlo de verdad es imposible.

@@ -3142,7 +3142,7 @@ export interface components {
         };
         UpdateAccountRequest: {
             fullName: string;
-            whatsappPhone?: string;
+            whatsappPhone: string;
         };
         MeAccountResponse: {
             fullName?: string;
@@ -3578,6 +3578,7 @@ export interface components {
         };
         CompletarRequest: {
             fullName: string;
+            whatsappPhone: string;
             adult?: boolean;
             acceptsTerms?: boolean;
             acceptsDataPolicy?: boolean;
@@ -3593,6 +3594,7 @@ export interface components {
             adultConfirmed?: boolean;
             emailVerified?: boolean;
             hasPassword?: boolean;
+            hasWhatsapp?: boolean;
         };
         ResetPasswordRequest: {
             token: string;
@@ -3603,7 +3605,7 @@ export interface components {
             /** Format: email */
             email: string;
             password: string;
-            whatsappPhone?: string;
+            whatsappPhone: string;
             wantsToTeach?: boolean;
             adult?: boolean;
             acceptsTerms?: boolean;
@@ -4386,6 +4388,10 @@ export interface components {
             assessmentMinutes?: number;
             /** Format: int32 */
             assessmentLeadRetentionDays?: number;
+            /** Format: int32 */
+            founderCommissionPercent?: number;
+            /** Format: int32 */
+            founderPeriodMonths?: number;
         };
         PaymentStatusResponse: {
             /** Format: uuid */

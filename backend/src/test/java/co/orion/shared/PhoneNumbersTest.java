@@ -34,6 +34,20 @@ class PhoneNumbersTest {
     }
 
     @Test
+    void aWhatsappIsAFullE164AndInColombiaAMobile() {
+        assertThat(PhoneNumbers.esWhatsappValido("+573001112233")).isTrue();
+        assertThat(PhoneNumbers.esWhatsappValido("+34600123456")).isTrue();
+        assertThat(PhoneNumbers.esWhatsappValido("+15551234567")).isTrue();
+        // Un fijo de Bogotá o un celular al que le falta un dígito no reciben WhatsApp.
+        assertThat(PhoneNumbers.esWhatsappValido("+576012345678")).isFalse();
+        assertThat(PhoneNumbers.esWhatsappValido("+57300111223")).isFalse();
+        // Sin indicativo, demasiado corto o vacío.
+        assertThat(PhoneNumbers.esWhatsappValido("3001112233")).isFalse();
+        assertThat(PhoneNumbers.esWhatsappValido("+5712")).isFalse();
+        assertThat(PhoneNumbers.esWhatsappValido(null)).isFalse();
+    }
+
+    @Test
     void returnsNullForBlankOrNull() {
         assertThat(PhoneNumbers.toE164(null)).isNull();
         assertThat(PhoneNumbers.toE164("   ")).isNull();

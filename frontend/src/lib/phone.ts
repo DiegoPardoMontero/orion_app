@@ -30,3 +30,13 @@ export function componerE164(dial: string, local: string): string {
   const digits = local.replace(/\D/g, "");
   return digits ? `+${dial}${digits}` : "";
 }
+
+/**
+ * Si el número es un WhatsApp al que se puede escribir: E.164 completo (de 8 a 15 dígitos con el
+ * indicativo) y, en Colombia, un celular (+57 y diez dígitos que empiezan por 3). La misma regla
+ * que aplica el backend (`PhoneNumbers.esWhatsappValido`), que es quien manda.
+ */
+export function whatsappValido(e164: string): boolean {
+  if (!/^\+\d{8,15}$/.test(e164)) return false;
+  return !e164.startsWith("+57") || /^\+573\d{9}$/.test(e164);
+}

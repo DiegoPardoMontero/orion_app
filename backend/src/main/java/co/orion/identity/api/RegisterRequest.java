@@ -5,12 +5,14 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+import co.orion.shared.WhatsappValido;
 import co.orion.shared.security.CabeEnBcrypt;
 
 /**
  * Alta que hace la propia persona desde la pantalla de registro. No lleva rol: el auto-registro
  * siempre nace STUDENT (crear profesores o admins es decisión de negocio, no de un formulario
- * público). El WhatsApp es opcional; es el canal por el que luego coordinará con su profesor.
+ * público). El WhatsApp es obligatorio (Pardo, 25/09/2026): por ahí le avisamos de sus clases, y
+ * al aspirante lo ubica el equipo mientras revisa su postulación.
  *
  * <p>{@code wantsToTeach} es la intención, no el rol: dice por cuál de las dos puertas entró. Quien
  * entra por «Postúlate para dar clases» no es un estudiante que además postula — es un aspirante, y
@@ -25,7 +27,7 @@ public record RegisterRequest(
         @NotBlank @Email String email,
         @NotBlank @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
         @CabeEnBcrypt String password,
-        @Size(max = 20) String whatsappPhone,
+        @NotBlank(message = "Tu WhatsApp es obligatorio.") @Size(max = 20) @WhatsappValido String whatsappPhone,
         boolean wantsToTeach,
         @AssertTrue(message = "Orión está disponible solo para mayores de 18 años.")
         boolean adult,
