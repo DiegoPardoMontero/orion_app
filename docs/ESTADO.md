@@ -41,6 +41,9 @@ del Bloque 11 y las sesiones en la base):
   recreada redirige al id de la base anterior.
 - **Sesiones**: con la cookie de un login, se apagó el backend y se arrancó otro proceso; la misma
   cookie siguió dentro (`/auth/me` 200).
+- **Lo que corre Railway**: `next build` de producción, verde; el jar con el perfil `prod` arranca
+  contra la base (Flyway en V68), `/actuator/health` responde UP y la cookie de sesión sale
+  `Secure; HttpOnly; SameSite=Lax`.
 - **Wireflow**: 241 de 253 casos probados por Claude (211 en el navegador, 30 en el backend); el
   resultado se ve en la página debajo de cada caso.
 - **Celular y escritorio**: 47 pantallas de los cuatro roles recorridas a 360, 390 y 1280 px buscando
