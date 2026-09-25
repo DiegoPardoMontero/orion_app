@@ -36,7 +36,7 @@ public record MyBookingResponse(UUID id,
                                 Counterpart counterpart,
                                 /** Ensayo del admin (aula o acta): no se califica ni cuenta. */
                                 boolean rehearsal,
-                                /** La clase de prueba del estudiante (Q7): una clase de verdad, a precio de prueba. */
+                                /** La clase de prueba del estudiante (Q7): una clase de verdad, gratis desde la V65. */
                                 boolean trial) {
 
     /**

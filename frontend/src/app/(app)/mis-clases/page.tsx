@@ -841,7 +841,7 @@ function ModalCancelar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
     bookingId,
     bookingId !== "" && !esProfesor && clase.status === "CONFIRMED",
   );
-  const puedeElegirDestino = !esProfesor && !sinPagar && retracto.data?.eligible === true;
+  const puedeElegirDestino = !esProfesor && !sinPagar && !clase.trial && retracto.data?.eligible === true;
   const [destino, setDestino] = useState<"saldo" | "medio-de-pago">("saldo");
 
   const retractarse = useRetractarse(bookingId);
@@ -916,7 +916,17 @@ function ModalCancelar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
       {/* Lo que de verdad hay que saber antes de pulsar es qué pasa con el dinero, y depende de
           quién cancela y de cuándo. Decirlo aquí es lo que convierte una regla del contrato en
           algo que la persona conoce en el momento de decidir. */}
-      {!sinPagar && !puedeElegirDestino && (
+      {/* La prueba es gratis (V65): no hay dinero que devolver, y cancelada deja de contar, así que
+          se puede volver a pedir con el mismo profesor. */}
+      {!sinPagar && clase.trial && (
+        <p className="mt-3 rounded-base bg-surface-sunken px-4 py-3 text-[13px] leading-relaxed text-text-secondary">
+          {esProfesor
+            ? "Es su clase de prueba gratis: no hay dinero de por medio, y podrá pedirla otra vez."
+            : "Es tu clase de prueba gratis: no hay dinero de por medio, y podrás pedirla otra vez con este profesor."}
+        </p>
+      )}
+
+      {!sinPagar && !clase.trial && !puedeElegirDestino && (
         <p
           className={`mt-3 rounded-base px-4 py-3 text-[13px] leading-relaxed ${
             esProfesor
