@@ -28,7 +28,7 @@ const base = (c: PublicFigures): Record<"estudiante" | "profesor" | "general", P
     },
     {
       p: "Reservé y no me confirmó la clase. ¿Por qué?",
-      r: "Reservar aparta el horario, pero la clase se confirma cuando entra el pago. Tienes 20 minutos para pagarlo; si no, la reserva se cancela sola y no se te cobra nada.",
+      r: `Reservar aparta el horario, pero la clase se confirma cuando entra el pago. Tienes ${minutos(c.paymentHoldMinutes)} para pagarlo; si no, la reserva se cancela sola y no se te cobra nada.`,
     },
     {
       p: "¿Cómo pago?",
@@ -137,7 +137,7 @@ const base = (c: PublicFigures): Record<"estudiante" | "profesor" | "general", P
  * Las de la portada, con las preguntas que propuso Sofía (23/09/2026). Donde la regla ya tenía
  * respuesta, se reutiliza tal cual: una regla, un texto.
  */
-const preguntas = (c: PublicFigures): Record<Lista, Pregunta[]> => {
+export const preguntas = (c: PublicFigures): Record<Lista, Pregunta[]> => {
   const b = base(c);
   return {
     ...b,
