@@ -173,6 +173,22 @@ Pedidos de Pardo del 25/09, en sus palabras donde importan:
     o lo que sea, ya no puedo verla»): pasa a «Pasadas» cuando le quedan 5 minutos, y hasta entonces
     conserva «Unirse a la clase».
 
+## Quinta tanda (25/09, noche)
+
+Pedidos de Pardo del 25/09 por la noche:
+
+37. **El nombre y la descripción corta del profe se leen enteros** en `/profesores/<id>`: «no puedo
+    verlo completo y es sumamente importante que así sea». Nada de «…».
+38. **El WhatsApp es obligatorio, no opcional.** En el registro (con contraseña y con Google o
+    Facebook) y en «Mi cuenta», donde ya no se puede borrar. Quien ya tiene cuenta sin número lo
+    deja al entrar. El admin puede crear un usuario sin él: se lo pedirá la app a esa persona.
+39. **El panel del admin sin scroll horizontal**: «odio ese scroll… aprovecha mejor el espacio o
+    reduce los botones o colócales iconos, como sea». En escritorio y en celular.
+40. **Que se vea que la clase dura 55 minutos**, «de x hora a y hora», en todo lo que acompaña a
+    reservar una clase: «puede parecer que la clase dura 30 min si uno ve el horario». Los horarios
+    del perfil del profe, el resumen antes de pagar, la vuelta de Wompi, el correo, el saludo en el
+    chat, los avisos y recordatorios, y «Tu próxima clase».
+
 ## Auditoría del recorrido contra el handoff (paso 9)
 
 Diferencias encontradas y corregidas:
