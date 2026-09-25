@@ -5,9 +5,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,17 +22,21 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import co.orion.TestcontainersConfiguration;
 import co.orion.assessment.application.LeadRetentionJob;
+import co.orion.assessment.domain.AssessmentCompletedEvent;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.shared.security.IntentosDeAcceso;
@@ -40,8 +51,19 @@ import co.orion.support.ApiIntegrationSupport;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
-@Import(TestcontainersConfiguration.class)
+@Import({TestcontainersConfiguration.class, DiagnosticoSinCuentaIT.Mudanzas.class})
 class DiagnosticoSinCuentaIT extends ApiIntegrationSupport {
+
+    /** Cuenta las mudanzas que terminan con un diagnóstico cerrado: cada una publica este evento. */
+    @TestConfiguration
+    static class Mudanzas {
+        static final List<UUID> CUENTAS = new CopyOnWriteArrayList<>();
+
+        @EventListener
+        public void on(AssessmentCompletedEvent evento) {
+            CUENTAS.add(evento.userId());
+        }
+    }
 
     /** Doble envío: el token CSRF es el que diga la cookie, y la cabecera tiene que coincidir. */
     private static final String CSRF = "csrf-de-prueba";
@@ -275,6 +297,48 @@ class DiagnosticoSinCuentaIT extends ApiIntegrationSupport {
         assertThat(historial).hasSize(1);
         assertThat(comoLead(HttpMethod.GET, "/api/v1/assessments/" + id, llave, null)
                 .getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    /**
+     * Al crear la cuenta, el navegador lanza varias peticiones a la vez con la misma llave. Solo una
+     * muda: antes cada una mudaba lo mismo y dejaba su propia autorización de voz.
+     */
+    @Test
+    @DisplayName("Varias peticiones a la vez con la llave: la mudanza ocurre una sola vez")
+    void laMudanzaEsUnaSola() throws Exception {
+        String llave = nuevoLead("Eduardo");
+        String id = conversacionCompleta(llave);
+        comoLead(HttpMethod.POST, "/api/v1/assessments/" + id + "/complete", llave, Map.of());
+        User eduardo = createUser("eduardo@orion.test", "Eduardo Ruiz", UserRole.STUDENT);
+        Session sesion = login("eduardo@orion.test");
+        HttpHeaders h = new HttpHeaders();
+        h.add(HttpHeaders.COOKIE, "ORION_SESSION=" + sesion.cookie() + "; ORION_LEAD=" + llave);
+
+        int n = 6;
+        ExecutorService hilos = Executors.newFixedThreadPool(n);
+        CountDownLatch salida = new CountDownLatch(1);
+        List<Future<HttpStatusCode>> respuestas = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            respuestas.add(hilos.submit(() -> {
+                salida.await();
+                return rest.exchange("/api/v1/auth/me", HttpMethod.GET, new HttpEntity<>(h), String.class)
+                        .getStatusCode();
+            }));
+        }
+        salida.countDown();
+        for (Future<HttpStatusCode> r : respuestas) {
+            assertThat(r.get(20, TimeUnit.SECONDS)).isEqualTo(HttpStatus.OK);
+        }
+        hilos.shutdown();
+
+        assertThat(Mudanzas.CUENTAS.stream().filter(eduardo.getId()::equals)).hasSize(1);
+        assertThat(jdbc.queryForObject("select count(*) from voice_consents where user_id = ?", Integer.class,
+                eduardo.getId())).isEqualTo(1);
+        assertThat(jdbc.queryForObject(
+                "select user_id from confidence_assessments where id = ?::uuid", UUID.class, id))
+                .isEqualTo(eduardo.getId());
+        assertThat(jdbc.queryForObject("select claimed_by from assessment_leads", UUID.class))
+                .isEqualTo(eduardo.getId());
     }
 
     @Test

@@ -101,6 +101,11 @@ public class AssessmentLeadService {
         }
         AssessmentLead lead = encontrado.get();
         Instant ahora = clock.instant();
+        // Primero se reclama, y solo sigue quien lo gane: sin esto, las peticiones simultáneas de
+        // la misma persona mudaban cada una lo mismo (y dejaban una autorización de voz por cabeza).
+        if (leads.claimIfUnclaimed(lead.getId(), cuenta.getId(), ahora) == 0) {
+            return;
+        }
 
         List<ConfidenceAssessment> suyos = assessments.findByLeadIdAndUserIdIsNull(lead.getId())
                 .stream().sorted(Comparator.comparing(ConfidenceAssessment::getStartedAt)).toList();
@@ -122,8 +127,6 @@ public class AssessmentLeadService {
                     lead.getConsentAcceptedAt(), lead.getConsentIp(), lead.getConsentUserAgent()));
         }
 
-        lead.claim(cuenta.getId(), ahora);
-        leads.save(lead);
         if (suyos.stream().anyMatch(e -> e.getStatus() == AssessmentStatus.COMPLETED)) {
             events.publishEvent(new AssessmentCompletedEvent(cuenta.getId()));
         }

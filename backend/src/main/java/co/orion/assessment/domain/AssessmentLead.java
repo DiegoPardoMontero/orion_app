@@ -79,11 +79,6 @@ public class AssessmentLead {
         this.createdAt = now;
     }
 
-    public void claim(UUID userId, Instant now) {
-        this.claimedBy = userId;
-        this.claimedAt = now;
-    }
-
     public boolean isClaimed() {
         return claimedAt != null;
     }
