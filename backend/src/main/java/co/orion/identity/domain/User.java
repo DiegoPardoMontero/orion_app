@@ -1,5 +1,7 @@
 package co.orion.identity.domain;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -19,10 +21,20 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+/**
+ * Serializable porque viaja dentro de la sesión, que desde la V68 se guarda en Postgres: el
+ * principal lo envuelve. Solo tiene campos simples (sin relaciones), así que la copia es completa.
+ * El {@code serialVersionUID} fijo deja que una sesión guardada sobreviva a añadir o quitar campos;
+ * si un cambio la hiciera ilegible, la sesión se descarta y la persona vuelve a entrar
+ * (ver {@code SesionesEnLaBase}), nunca un error.
+ */
 @Entity
 @Table(name = "users")
 @EntityListeners(AuditingEntityListener.class)
-public class User {
+public class User implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     /** Lo genera Postgres con gen_random_uuid(); Hibernate lo lee de vuelta tras el INSERT. */
     @Id

@@ -19,6 +19,12 @@ spring:
     enabled: true
     locations: classpath:db/migration
 
+  # Las sesiones en Postgres (V68): sobreviven a un despliegue. Las tablas las crea Flyway, nunca
+  # Spring Session. La cookie sigue siendo ORION_SESSION (server.servlet.session.cookie, abajo).
+  session:
+    jdbc:
+      initialize-schema: never
+
   # Fotos de perfil hasta 5 MB; documentos de postulación hasta 10 MB. El límite fino por tipo de
   # archivo lo pone cada servicio (PhotoService 5 MB, TeacherDocumentService 10 MB).
   servlet:

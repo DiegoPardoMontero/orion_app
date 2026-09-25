@@ -1,5 +1,6 @@
 package co.orion.shared.security;
 
+import java.io.Serial;
 import java.util.Collection;
 import java.util.List;
 
@@ -13,6 +14,10 @@ import co.orion.identity.domain.UserRole;
 
 /** Envuelve al User del dominio para que Spring Security lo entienda, sin contaminar la entidad. */
 public class OrionUserDetails implements UserDetails {
+
+    /** Fijo: la sesión guardada en la base (V68) lo lleva dentro y tiene que poder leerse tras un despliegue. */
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     private final User user;
 
