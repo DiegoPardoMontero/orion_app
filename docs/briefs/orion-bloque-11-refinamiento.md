@@ -135,6 +135,23 @@ Pardo, textual en lo esencial:
     cómo se llega de una a otra, los caminos más críticos marcados y los casos para probar, para
     que Pardo y Sofía la recorran entera.
 
+## La noche del 24 al 25/09 — trabajo autónomo hasta las 08:00
+
+Pardo aprobó esta lista para la noche, con estas reglas: un commit por arreglo y push de cada paso
+verde; lo que sea un bug o un hueco claro se arregla con su prueba, y lo dudoso o lo que cambie el
+comportamiento para los usuarios se anota, no se toca; nada fuera de los briefs.
+
+26. **Recorrer el Wireflow** probando con Playwright cada caso automatizable, y mostrar en la página
+    «Claude ya lo probó» en una colección aparte, sin tocar las marcas de Pardo y Sofía.
+27. **Arreglar los bugs claros** que salgan.
+28. **Convertir esas pruebas en e2e.**
+29. **Revisión de seguridad** de lo nuevo del Bloque 11.
+30. **Pulir lo visual roto en celular** según las capturas, y listar el resto.
+31. **Sesiones que sobrevivan a los despliegues** (Spring Session JDBC), con su prueba.
+32. Al final: reporte publicado como página, ESTADO, manual y Wireflow actualizados.
+
+Lo que salió está en `docs/ESTADO.md` («La noche del 24 al 25/09/2026»).
+
 ## Auditoría del recorrido contra el handoff (paso 9)
 
 Diferencias encontradas y corregidas:

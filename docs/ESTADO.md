@@ -6,7 +6,7 @@ Resumen vivo de qué hay construido y desplegado. Se actualiza al cerrar cada pa
 
 **Backend** (Spring Boot 4.1, `co.orion`): identidad + sesión, disponibilidad + `SlotCalculator`,
 reservas, asistencia, notificaciones por correo (con `.ics` + link a Google Calendar), panel admin
-(usuarios, reservas, métricas). **Migraciones Flyway V1–V62.**
+(usuarios, reservas, métricas). **Migraciones Flyway V1–V68.**
 
 Módulos: `identity`, `scheduling`, `catalog`, `billing`, `messaging`, `notifications`, `reputation`,
 `lifecycle`, `admin`, `engagement`, `legal`, `support`, `assessment`, `teaching`, `practice`,
@@ -30,6 +30,19 @@ dentro de `/cuenta`).
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots), con Rigel de protagonista.
 
 ## Verificación
+Al 25/09/2026 de madrugada, tras la noche autónoma (el wireflow probado, la revisión de seguridad
+del Bloque 11 y las sesiones en la base):
+- Backend: `./mvnw verify` — **390 unitarios + 594 de integración**, verde.
+- Frontend: `tsc` + `lint` verdes; **121 tests de Vitest**.
+- **E2E Playwright: 90 de 93** sobre base recreada y con el caché de fetch de Next limpio (la de
+  Wompi, fuera; 3 se saltan porque la base recién sembrada no tiene el dato que piden, p. ej. una
+  clase dentro del plazo de reclamo, y las cubre el backend). Incluye las cuatro suites del
+  wireflow.
+- **Wireflow**: 232 de 253 casos probados por Claude (204 en el navegador, 28 en el backend); el
+  resultado se ve en la página debajo de cada caso.
+- **Celular**: 47 pantallas de los cuatro roles recorridas a 390 px buscando desbordes laterales y
+  textos cortados: ninguna.
+
 Al 24/09/2026 por la noche, con la tercera tanda del Bloque 11 (pasos 19–25: editar sin modo
 edición, la clase minimizable, las estrellas de «Mi ficha», filtrar por horas exactas, los mensajes
 de Rigel, la clase de prueba gratis y el wireflow):
@@ -708,6 +721,40 @@ como la videollamada.
   ni la traducción repetida al revés (esta última también se limpia en código). En 12 corridas:
   todo en español, la inyección ignorada y el vocabulario limpio.
 
+## La noche del 24 al 25/09/2026: el wireflow probado, seguridad y sesiones
+
+Trabajo autónomo con la lista que aprobó Pardo. El reporte completo está publicado como página
+(enlace en la sección de verificación).
+
+- **El wireflow, caso por caso**: cuatro suites e2e (`e2e/wireflow-*.spec.ts`) cuyos títulos
+  llevan los ids de los casos que cubren. De los 253 casos, **Claude probó 232 por su cuenta** (204
+  en el navegador, 28 con pruebas del backend); 20 necesitan a una persona (Google, Wompi, micrófono,
+  Cloudinary, VAPID, una clase real) y 1 es una nota para decidir. El resultado vive en la colección
+  `claude` del artifact y la página lo muestra debajo de cada caso sin tocar las marcas de Pardo y
+  Sofía; el filtro «Necesita a una persona» junta lo que falta.
+- **Bugs arreglados** que salieron al recorrerlo: pedir «Llámame» sin cuenta daba 403 (el primer
+  formulario de un visitante no tenía token CSRF: `GET /auth/csrf`); los modales altos se salían de
+  la pantalla del celular (no se llegaba a «Menor precio»); los segmentados no decían cuál estaba
+  elegido (`aria-pressed`); un evento tardío de la llamada podía convertir una conexión caída en una
+  clase terminada; cancelar la **prueba gratis** prometía devolver el valor como saldo; el panel del
+  admin contaba dos veces lo ya transferido en «Por transferir»; las franjas de Rigel (ficha y perfil) se
+  partían en seis líneas a 390 px; «Te falta 5 cosas».
+- **Revisión de seguridad** de todo el Bloque 11 (Rigel, push, enlace corto, prueba gratis, filtro
+  por horas, clase flotante, edición en la página, CSRF, Google). Cerrados con su prueba: la **prueba
+  gratis se podía reusar sin fin** tomándola entera y cancelándola antes de que se cerrara (V67: la
+  que el estudiante cancela ya empezada cuenta como usada); al cancelarla, su pago de $0 quedaba
+  cobrado sobre una clase que no fue; **cerrar sesión no soltaba los avisos push** del navegador (en
+  un computador compartido seguían llegando los de quien salió); y una cuenta podía registrar miles
+  de suscripciones push (ahora diez por persona, y «Probar» cinco por hora). Rigel, el enlace corto,
+  el filtro por horas, el aula y el CSRF salieron limpios.
+- **Las sesiones sobreviven a los despliegues** (Spring Session JDBC, V68): viven en Postgres y no en
+  la memoria del proceso. `User` es serializable con `serialVersionUID` fijo, y una sesión guardada
+  que un despliegue deje ilegible se lee como vacía —la persona vuelve a entrar— en vez de dar un 500
+  (`SesionesEnLaBase`). La cookie sigue siendo `ORION_SESSION` y el tiempo de inactividad, 30 min.
+- **Pruebas nuevas del backend** para los casos que solo él puede probar: la comisión nueva no toca
+  lo ya reservado, confirmar o descartar una sanción propuesta, el tope de «Llámame» y el panel
+  cuadrando con las liquidaciones.
+
 ## Refinamiento · Bloque 11 (24/09/2026)
 
 Un pedido largo de Pardo, con sus respuestas a tres preguntas; el brief y la auditoría del recorrido
@@ -990,9 +1037,19 @@ su test; lo que cambia el comportamiento o pide una decisión está abajo, en Pe
   `npx web-push generate-vapid-keys` → `ORION_VAPID_PUBLIC_KEY`, `ORION_VAPID_PRIVATE_KEY` y
   `ORION_VAPID_SUBJECT` (mailto:). Cambiarlas invalida las suscripciones. En iPhone solo funcionan
   con Orión instalada en la pantalla de inicio.
-- **Las sesiones se pierden en cada despliegue** (viven en memoria de Tomcat): el login con Google ya
-  no depende de ellas, pero cualquier despliegue saca a todo el mundo. Guardarlas en la base (Spring
-  Session JDBC) exige que el usuario de la sesión sea serializable; hoy guarda la entidad `User`.
+- ~~Las sesiones se pierden en cada despliegue.~~ **Resuelto el 25/09** con Spring Session JDBC (V68).
+  El despliegue que lo estrena saca a todo el mundo **una última vez** (las sesiones de memoria no
+  pasan a la base). Si se quiere una sesión más larga que 30 min de inactividad, es
+  `server.servlet.session.timeout` —decisión de producto—.
+- **Para decidir (revisión de seguridad del 25/09)**: la prueba gratis cuenta como clase de verdad
+  —se califica y suma al ranking—, así que un profesor con cuentas falsas consigue reseñas de 5★ sin
+  pagar comisión (antes le costaba el 20 % por clase); opciones: que la reseña de una prueba no
+  cuente en el promedio, o exigir una clase pagada. Una cuenta nacida de Google puede **crear**
+  contraseña sin pedir otra vez la entrada con Google (quien robe esa sesión deja una contraseña
+  suya). Cancelar la prueba dentro de las 12 h (antes de empezar) no tiene consecuencia: alguien
+  podría apartar horas de un profesor y soltarlas tarde, gratis.
+- **Cerrar sesión apaga los avisos push de ese navegador** (25/09): al volver a entrar hay que
+  activarlos otra vez desde la campana.
 - **La clase de prueba nace apagada** (V65): los profesores que no la habían puesto en 0 tienen que
   encender «Ofrezco la primera clase gratis» en su perfil si quieren ofrecerla.
 - **El wireflow usa la base compartida del artifact**: solo lo abre quien esté en la organización de
