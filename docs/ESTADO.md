@@ -770,6 +770,11 @@ https://claude.ai/artifact/LvkmUM9K9kvGMQyq4bMNxD
   tampoco le hace aceptar los Términos ni la política de datos.
 - **Pruebas que faltaban**: «Mi desempeño» del profesor y el recálculo nocturno de métricas no tenían
   ninguna prueba de integración (`MiDesempenoIT`).
+- **Barridos automáticos de las 47 pantallas** (cuatro roles): desbordes a 360/390/1280 px,
+  errores de consola, peticiones fallidas, enlaces internos rotos (87, ninguno), nombres accesibles
+  (solo faltaba el del buscador de Usuarios del admin) y rutas del API que el frontend usa sin que
+  existan (ninguna). Los avisos de la decisión sobre una postulación apuntaban a `/postulacion`, que
+  ya no existe: la campana lo traducía, pero ahora el backend escribe `/aplicacion/estado`.
 - **Carrera al crear la cuenta**: el navegador lanza varias peticiones a la vez con la cookie del
   diagnóstico sin cuenta, y cada una mudaba lo mismo; ahora el reclamo es un `UPDATE` condicional
   y solo muda quien lo gana.
