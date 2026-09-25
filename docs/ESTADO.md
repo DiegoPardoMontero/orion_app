@@ -30,6 +30,23 @@ dentro de `/cuenta`).
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots), con Rigel de protagonista.
 
 ## Verificación
+Al 25/09/2026 por la noche, con la quinta tanda del Bloque 11 (nombre del profe entero, WhatsApp
+obligatorio, admin sin scroll horizontal, la clase de 55 minutos con su franja y los textos de Sofía):
+- **Backend: `./mvnw verify`, 402 unitarias y 623 de integración.**
+  - La corrida completa dio dos fallos en `BookingNotificationIT`: fijaban el texto viejo de la hora
+    («a las 9:00 AM», «09:00»). Se actualizaron y la IT se volvió a correr sola: 7/7.
+  - Después se agregó `endsAt` a `MyProgressResponse`, y `StudentProgressIT` corrió sola: 10/10.
+- **Frontend:** `tsc` y `lint` en verde; **134 pruebas de Vitest**, con la regla del WhatsApp en
+  `lib/phone.test.ts`.
+- **E2E Playwright, sobre la base recreada y sin la prueba de Wompi.**
+  - Corrida completa: 94 pasaron, 1 se saltó (la de reclamar, como siempre) y 6 fallaron.
+  - Cuatro de los fallos eran registros hechos a mano sin WhatsApp. Uno destapó un bug real:
+    `PhoneInput` no se volvía a leer al descartar un cambio. El último era «Tu próxima clase», que
+    rompía con `Invalid time value`: `MyProgressResponse` no traía `endsAt`.
+  - Arreglados los seis, se volvieron a correr: 6/6.
+- **El panel del admin**, medido con Playwright: 13 pantallas × 6 anchos, con datos largos inyectados.
+  Cero desbordes horizontales.
+
 Al 25/09/2026 por la tarde, con el profe fundador y la invitación nueva (V70–V71):
 - Backend: `./mvnw verify` — **619 de integración**, verde (entre ellas `FounderCommissionIT`,
   `InvitacionDeProfesoresIT` y `AvisoDeFinDeFundadorIT`, más la política pura en `CommissionPolicyTest`).
@@ -751,6 +768,53 @@ como la videollamada.
   objetivo es un dato, y el vocabulario no admite el error como palabra nueva («since two years»)
   ni la traducción repetida al revés (esta última también se limpia en código). En 12 corridas:
   todo en español, la inyección ignorada y el vocabulario limpio.
+
+## Quinta tanda del Bloque 11 (25/09/2026, noche)
+
+Pasos 37–40 del brief, pedidos por Pardo, más los textos de la portada que pasó Sofía:
+
+- **El nombre y la descripción corta del profe se leen enteros** en `/profesores/[id]` (paso 37).
+  Antes tenían `truncate`: en producción se leía «Valentina Ríos…». Ahora pasan a otra línea
+  (`text-balance`, `text-pretty`, `wrap-break-word`).
+- **El WhatsApp es obligatorio** (paso 38).
+  - Se pide en el registro con contraseña, en `/registro/completar` (Google o Facebook: el proveedor
+    no lo trae) y en «Mi cuenta», donde se cambia pero ya no se borra.
+  - La regla vive en `PhoneNumbers.esWhatsappValido` y en `whatsappValido` (`lib/phone.ts`):
+    E.164 de 8 a 15 dígitos y, en Colombia, un celular (+57 y diez dígitos que empiezan por 3). El
+    backend la aplica con `@NotBlank` + `@WhatsappValido`.
+  - Mientras el número está a medias, la pantalla dice qué le falta (`AyudaWhatsapp`).
+  - Las cuentas que ya existían sin número lo dan al entrar, en un diálogo sin salida
+    (`AvisoWhatsapp`, con `hasWhatsapp` en `/auth/me`). Va después del de mayoría de edad y antes de
+    la bienvenida. El admin no lo ve.
+  - El admin puede seguir creando un usuario sin número: a esa persona la app se lo pide al entrar.
+  - La semilla local le da un número a cada cuenta que no es admin.
+- **El panel del admin sin scroll horizontal** (paso 39).
+  - Usuarios, Reservas y Postulaciones ya no llevan `overflow-x-auto`. En escritorio son tablas más
+    compactas; en el celular, cada fila es una tarjeta (`components/tablaAdmin.ts`).
+  - Las acciones de Usuarios y Reservas son botones de ícono de 44 px (`BotonIcono`), con su nombre
+    en `aria-label` y en el tooltip.
+  - Quitar el beneficio de fundador se confirma en un diálogo; dentro de la fila la estiraba.
+  - Reservas perdió la columna «Modalidad»: desde la V30 todas las clases son virtuales.
+  - Medido en las 13 pantallas del admin, a 360, 390, 768, 1024, 1280 y 1440 px y con nombres y
+    correos de 40 a 60 caracteres: ningún desborde.
+- **Una clase se dice con su franja y su duración** (paso 40): «5:00 – 5:55 PM», «de 5:00 a 5:55 PM»,
+  «55 minutos». Con la hora de inicio sola, parecía que podía durar media hora.
+  - En el perfil del profe: los cupos del celular (a dos columnas, con «Cada clase dura 55
+    minutos»), las casillas de la agenda semanal (con esa frase encima) y el resumen antes de
+    confirmar.
+  - En la pantalla de vuelta de Wompi (`PaymentStatusResponse` trae `startsAt`/`endsAt`), en «¡Clase
+    reservada!» y en «Tu próxima clase» (`ProximaClase.endsAt`).
+  - En el backend, `FechasEnPalabras.franja`, `cuandoConFranja` y `duracion`. Los usan el correo de
+    confirmación y el de cancelación (con una línea «Duración»), el saludo del profe en el chat, los
+    avisos de reserva y cancelación, los recordatorios del día antes y de la hora antes (campana,
+    push y correo) y los de reprogramación, que decían «a las 17:00».
+  - No cambian las pantallas de clases ya pasadas (Ganancias, Saldo, Reclamos del admin) ni el
+    calendario mensual, que solo tiene espacio para la hora de inicio.
+- **Textos de la portada de Sofía**: la invitación al diagnóstico del hero, «Por qué ahora», «¿No
+  sabes por dónde empezar?», «Nosotros» («Aquí nadie improvisa.», con la misión y el cierre «Cada
+  profesor decide su tarifa, su horario y su forma de enseñar.») y el cierre («Sin planes, sin
+  permanencia, sin cobros automáticos.»). Los minutos del diagnóstico siguen saliendo de Ajustes,
+  ahora en letras (`minutosEnLetras`: «Dos minutos»).
 
 ## Profe fundador e invitación nueva (25/09/2026, tarde)
 
