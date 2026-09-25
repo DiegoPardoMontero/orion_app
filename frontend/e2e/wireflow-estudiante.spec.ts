@@ -475,6 +475,7 @@ test("[e-recorrido.2 e-recorrido-paso.3 v-verificar.1] el recorrido: teclado, ap
   await page.locator("#nombre").fill("Teclado Prueba");
   await page.locator("#email").fill(email);
   await page.locator("#password").fill("orion123*");
+  await page.locator("#whatsapp").fill("3001234567");
   for (const id of ["#mayor-de-edad", "#acepta-terminos", "#acepta-datos"]) await page.locator(id).check();
   await page.getByRole("button", { name: "Crear cuenta" }).click();
   await page.waitForURL(/\/profesores/);

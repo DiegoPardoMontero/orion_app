@@ -270,6 +270,7 @@ test("[a-postulacion.2 a-postulacion.4 a-estado.1] la postulación: país con ba
   await page.locator("#nombre").fill("Aspirante Prueba");
   await page.locator("#email").fill(`wf.aspirante.${Date.now()}@orion.local`);
   await page.locator("#password").fill("orion123*");
+  await page.locator("#whatsapp").fill("3001234567");
   for (const id of ["#mayor-de-edad", "#acepta-terminos", "#acepta-datos"]) await page.locator(id).check();
   await page.getByRole("button", { name: "Crear cuenta" }).click();
   await page.waitForURL(/\/aplicacion/);
@@ -317,6 +318,7 @@ test("[v-invitacion.1 v-invitacion.3 v-invitacion.4 ad-usuarios.2] la invitació
   await expect(invitada.getByRole("button", { name: /Quiero aprender/ })).toBeHidden();
   await invitada.locator("#nombre").fill("Mariana Ruiz");
   await invitada.locator("#password").fill("orion123*");
+  await invitada.locator("#whatsapp").fill("3001234567");
   for (const id of ["#mayor-de-edad", "#acepta-terminos", "#acepta-datos"]) await invitada.locator(id).check();
   await invitada.getByRole("button", { name: "Crear cuenta y postularme" }).click();
   await invitada.waitForURL(/\/aplicacion/);

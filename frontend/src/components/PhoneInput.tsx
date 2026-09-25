@@ -27,6 +27,19 @@ export function PhoneInput({
   const [dial, setDial] = useState(inicial.dial);
   const [local, setLocal] = useState(inicial.local);
 
+  // Si el valor cambia desde fuera —«Descartar» en una página editable, un guardado que lo
+  // normaliza—, se vuelve a leer. Sin esto el campo se quedaba con lo último que se escribió (o
+  // vacío) aunque el dato guardado fuera otro. Se ajusta durante el render, sin efecto.
+  const [ultimoValor, setUltimoValor] = useState(value);
+  if (value !== ultimoValor) {
+    setUltimoValor(value);
+    if ((value ?? "") !== componerE164(dial, local)) {
+      const leido = parseTelefono(value);
+      setDial(leido.dial);
+      setLocal(leido.local);
+    }
+  }
+
   function emitir(nuevoDial: string, nuevoLocal: string) {
     onChange(componerE164(nuevoDial, nuevoLocal));
   }
