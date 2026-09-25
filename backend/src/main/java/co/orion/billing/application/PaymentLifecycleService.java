@@ -111,7 +111,11 @@ public class PaymentLifecycleService {
         }
         payment.refund(clock.instant());
         payments.save(payment);
-        credits.grant(payment.getStudentId(), payment.getAmountCop(), reason, bookingId, null, actorId);
+        // La prueba gratis (V65) no deja nada que abonar: un saldo de $0 no existe (StudentCredit
+        // lo rechaza) y, al fallar, dejaba el pago en PAID sobre una clase cancelada.
+        if (payment.getAmountCop() > 0) {
+            credits.grant(payment.getStudentId(), payment.getAmountCop(), reason, bookingId, null, actorId);
+        }
     }
 
     /**

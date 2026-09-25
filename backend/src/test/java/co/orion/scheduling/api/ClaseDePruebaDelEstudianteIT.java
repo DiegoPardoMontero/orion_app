@@ -1,10 +1,12 @@
 package co.orion.scheduling.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.Clock;
 import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -29,8 +31,10 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import co.orion.TestcontainersConfiguration;
+import co.orion.billing.domain.PaymentStatus;
 import co.orion.billing.persistence.PaymentRepository;
 import co.orion.identity.domain.ProfessorProfile;
 import co.orion.identity.domain.User;
@@ -79,6 +83,9 @@ class ClaseDePruebaDelEstudianteIT extends ApiIntegrationSupport {
 
     @Autowired
     private PaymentRepository payments;
+
+    @Autowired
+    private JdbcTemplate jdbc;
 
     private User maria;
     private Session anaSession;
@@ -195,6 +202,19 @@ class ClaseDePruebaDelEstudianteIT extends ApiIntegrationSupport {
 
         assertThat(post("/api/v1/bookings", anaSession, reserva(10, true), Map.class).getStatusCode())
                 .isEqualTo(HttpStatus.CREATED);
+    }
+
+    @Test
+    @DisplayName("Cancelada, su pago de $0 se cierra y no deja un saldo vacío (ni queda cobrado sobre una clase que no fue)")
+    void laCanceladaCierraSuPago() {
+        ofrecer(true);
+        UUID id = post("/api/v1/bookings", anaSession, reserva(9, true), BookingResponse.class).getBody().id();
+        post("/api/v1/bookings/" + id + "/cancel", mariaSession, Map.of(), Map.class);
+
+        await().atMost(Duration.ofSeconds(5)).until(
+                () -> payments.findByBookingId(id).orElseThrow().getStatus() == PaymentStatus.REFUNDED);
+        assertThat(jdbc.queryForObject("select count(*) from student_credits where booking_id = ?", Integer.class, id))
+                .isZero();
     }
 
     @Test
