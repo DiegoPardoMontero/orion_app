@@ -9,6 +9,7 @@ import { Badge, Boton, Campo, Segmento, Spinner, Tarjeta } from "@/components/ui
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type { AdminPaymentResponse, PayoutResponse } from "@/lib/api/types";
 import { etiquetaEstado } from "@/lib/estados-clase";
+import { estadoDePago, PARA_EL_ADMIN } from "@/lib/estadosDePago";
 import { fechaCorta, precioCop } from "@/lib/format";
 
 type Pestana = "pagos" | "liquidaciones";
@@ -134,8 +135,8 @@ function Conciliacion() {
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-1.5">
-                    <Badge tono={tonoPago(pago.status)} punto>
-                      {pago.status}
+                    <Badge tono={estadoDePago(PARA_EL_ADMIN, pago.status).tono} punto>
+                      {estadoDePago(PARA_EL_ADMIN, pago.status).texto}
                     </Badge>
                     {pago.needsReview && <Badge tono="melocoton">Requiere decisión</Badge>}
                   </div>
@@ -406,23 +407,6 @@ function FilaLiquidacion({ payout }: { payout: PayoutResponse }) {
       )}
     </Tarjeta>
   );
-}
-
-function tonoPago(status: string): "menta" | "melocoton" | "lavanda" | "neutral" | "error" {
-  switch (status) {
-    case "PAID":
-      return "melocoton";
-    case "RELEASED":
-      return "menta";
-    case "REFUNDED":
-      return "lavanda";
-    case "DISPUTED":
-      return "melocoton";
-    case "CANCELLED":
-      return "error";
-    default:
-      return "neutral";
-  }
 }
 
 /** Un extremo del período, con su rótulo a la vista y ligado al campo. */

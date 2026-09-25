@@ -7,6 +7,7 @@ import { Cifra, LineaImporte } from "@/components/dinero";
 import { Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Badge, Tarjeta } from "@/components/ui";
 import { apiFetch } from "@/lib/api/fetch";
+import { estadoDePago, PARA_EL_ESTUDIANTE } from "@/lib/estadosDePago";
 import type { CreditBalanceResponse, MyPaymentResponse } from "@/lib/api/types";
 import { fechaCorta, horaBogota, precioCop } from "@/lib/format";
 
@@ -16,18 +17,6 @@ const MOTIVO_CREDITO: Record<string, string> = {
   CANCELLED_BY_PROFESSOR: "Tu profesor canceló la clase",
   DISPUTE_RESOLVED: "Resolución de un reclamo",
   ADMIN_ADJUSTMENT: "Ajuste de Orión",
-};
-
-/** Cómo se le cuenta al estudiante el estado de su pago. Nunca aparece la comisión. */
-const ESTADO_PAGO: Record<string, { texto: string; tono: "menta" | "melocoton" | "neutral" | "error" }> = {
-  PENDING: { texto: "Pendiente de pago", tono: "melocoton" },
-  PAID: { texto: "Pagada", tono: "menta" },
-  RELEASED: { texto: "Clase dictada", tono: "menta" },
-  // Faltaba, y sin ella la pantalla le enseñaba al estudiante el nombre crudo del estado.
-  REFUND_PENDING: { texto: "Devolución en camino", tono: "melocoton" },
-  REFUNDED: { texto: "Devuelta a tu saldo", tono: "neutral" },
-  DISPUTED: { texto: "En revisión", tono: "melocoton" },
-  CANCELLED: { texto: "No se completó", tono: "error" },
 };
 
 export default function SaldoPage() {
@@ -121,7 +110,7 @@ export default function SaldoPage() {
         ) : (
           <ul className="mt-3 grid gap-2.5">
             {pagos.data.map((pago) => {
-              const estado = ESTADO_PAGO[pago.status] ?? { texto: pago.status, tono: "neutral" as const };
+              const estado = estadoDePago(PARA_EL_ESTUDIANTE, pago.status);
               return (
                 <li key={pago.paymentId}>
                   <Link

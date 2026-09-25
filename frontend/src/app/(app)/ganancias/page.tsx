@@ -7,24 +7,9 @@ import { Cifra, LineaImporte } from "@/components/dinero";
 import { Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Badge, Campo, Tarjeta } from "@/components/ui";
 import { apiFetch } from "@/lib/api/fetch";
+import { estadoDePago, PARA_EL_PROFESOR } from "@/lib/estadosDePago";
 import type { EarningsResponse } from "@/lib/api/types";
 import { fechaCorta, horaBogota, precioCop } from "@/lib/format";
-
-/**
- * Qué significa cada estado del dinero para quien da la clase. No se usan los nombres del enum:
- * "RELEASED" no le dice nada a nadie, "por cobrar" sí.
- */
-const ESTADO_LINEA: Record<string, { texto: string; tono: "menta" | "melocoton" | "lavanda" | "neutral" | "error" }> = {
-  PENDING: { texto: "Sin pagar aún", tono: "neutral" },
-  PAID: { texto: "Retenido", tono: "melocoton" },
-  RELEASED: { texto: "Por cobrar", tono: "menta" },
-  // Liberado y ya en una liquidación: el backend lo dice aparte, como las cifras de arriba.
-  IN_TRANSIT: { texto: "En camino", tono: "lavanda" },
-  TRANSFERRED: { texto: "Transferido", tono: "lavanda" },
-  REFUNDED: { texto: "Devuelto al estudiante", tono: "neutral" },
-  DISPUTED: { texto: "En revisión", tono: "melocoton" },
-  CANCELLED: { texto: "Cancelado", tono: "error" },
-};
 
 export default function GananciasPage() {
   const [desde, setDesde] = useState("");
@@ -121,10 +106,7 @@ export default function GananciasPage() {
             ) : (
               <ul className="mt-3 grid gap-2.5">
                 {ganancias.data.lines.map((linea) => {
-                  const estado = ESTADO_LINEA[linea.status] ?? {
-                    texto: linea.status,
-                    tono: "neutral" as const,
-                  };
+                  const estado = estadoDePago(PARA_EL_PROFESOR, linea.status);
                   return (
                     <li key={linea.bookingId}>
                       <Tarjeta>
