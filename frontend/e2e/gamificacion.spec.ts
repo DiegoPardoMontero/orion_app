@@ -69,18 +69,14 @@ test("declarar un objetivo enciende una estrella y llega la notificación", asyn
   await page.goto("/cuenta?seccion=ficha");
   await expect(page.getByRole("heading", { name: "Mi ficha" })).toBeVisible();
 
-  // Y se lee antes de editarse: los campos ya no nacen abiertos.
-  await page.getByRole("button", { name: "Editar mi ficha" }).click();
+  // Los campos se editan directo; la barra de abajo aparece con el primer cambio.
   await page.getByRole("button", { name: "Intermedio" }).click();
   // El primer objetivo del catálogo, sea cual sea: lo que importa es que haya uno declarado.
-  //
-  // Por rol y nombre accesible, no por etiqueta `fieldset`: la ficha entera va ahora dentro de un
-  // fieldset —el que desactiva los campos fuera del modo edición— y un selector por etiqueta
-  // agarraba ese, cuyo primer botón no es un objetivo. El grupo con su leyenda es único.
+  // Por rol y nombre accesible: el grupo con su leyenda es único.
   const objetivos = page.getByRole("group", { name: "¿Para qué lo aprendes?" });
   await objetivos.getByRole("button").first().click();
-  await page.getByRole("button", { name: "Guardar cambios" }).click();
-  await expect(page.getByText("Tu profesor ya lo puede ver")).toBeVisible();
+  await page.getByRole("region", { name: "Cambios sin guardar" }).getByRole("button", { name: "Guardar cambios" }).click();
+  await expect(page.getByText("Cambios guardados")).toBeVisible();
 
   // El logro nuevo: salta solo, sin haber entrado al tablero de logros, con su sello y sus puntos.
   const logro = page.getByRole("dialog", { name: "Objetivo declarado" });

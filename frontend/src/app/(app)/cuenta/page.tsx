@@ -1,7 +1,7 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, Check, GraduationCap, KeyRound, Lock, Mail, User } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowRight, GraduationCap, KeyRound, Lock, Mail, User } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -12,10 +12,11 @@ import { MiFicha, QuienLoVe } from "@/components/gamificacion/MiFicha";
 import { InvitacionAPracticar } from "@/components/InvitacionAPracticar";
 import { PanelProgreso } from "@/components/PanelProgreso";
 import { MisPuntosChip, TarjetaPuntos } from "@/components/Puntos";
-import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
+import { Cargando, ErrorCarga } from "@/components/estados";
 import { PhoneInput } from "@/components/PhoneInput";
-import { BotonPrincipal, Campo } from "@/components/ui";
-import { ApiError, apiFetch } from "@/lib/api/fetch";
+import { EdicionEnPagina, useFormularioEditable } from "@/components/edicion/EdicionEnPagina";
+import { Campo } from "@/components/ui";
+import { apiFetch } from "@/lib/api/fetch";
 import { useMiAplicacion } from "@/lib/aplicacion";
 import { meQueryKey } from "@/lib/auth/session";
 
@@ -100,30 +101,7 @@ function SubNav({ actual }: { actual: Seccion }) {
 }
 
 function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
-  const queryClient = useQueryClient();
-
-  const [nombre, setNombre] = useState(inicial.fullName);
-  const [telefono, setTelefono] = useState(inicial.whatsappPhone ?? "");
-  const [guardado, setGuardado] = useState(false);
   const [cambiandoClave, setCambiandoClave] = useState(false);
-  const etiquetaDeClave = useEtiquetaDeClave();
-
-  const guardar = useMutation({
-    mutationFn: () =>
-      apiFetch<Cuenta>("/api/v1/me/account", {
-        method: "PUT",
-        body: { fullName: nombre.trim(), whatsappPhone: telefono.trim() || undefined },
-      }),
-    onSuccess: (actualizada) => {
-      queryClient.setQueryData(["me", "account"], actualizada);
-      // El nombre se ve en el header/avatar: refrescamos la sesión para que se actualice.
-      void queryClient.invalidateQueries({ queryKey: meQueryKey });
-      setGuardado(true);
-      setTimeout(() => setGuardado(false), 3000);
-    },
-  });
-
-  const error = guardar.error instanceof ApiError ? guardar.error.message : null;
 
   const params = useSearchParams();
   const pedida = params.get("seccion") ?? "resumen";
@@ -168,15 +146,57 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
 
       {seccion === "cielo" && <MiCielo />}
 
-      {seccion === "ficha" && <MiFicha />}
+      {/* La ficha y los datos se editan directo, y una sola barra guarda los dos (24/09/2026). */}
+      <EdicionEnPagina>
+        {seccion === "ficha" && <MiFicha />}
 
-      <div className={seccion === "ficha" ? "" : "hidden"}>
-      <QuienLoVe
-        icono={<Lock size={15} strokeWidth={2} />}
-        titulo="Solo para ti"
-        texto="Tu correo, tu WhatsApp y tu contraseña. No los ve ningún profesor ni otro estudiante."
-      />
-      <div className="mt-3 rounded-card border border-border bg-surface-raised p-5">
+        <div className={seccion === "ficha" ? "" : "hidden"}>
+          <QuienLoVe
+            icono={<Lock size={15} strokeWidth={2} />}
+            titulo="Solo para ti"
+            texto="Tu correo, tu WhatsApp y tu contraseña. No los ve ningún profesor ni otro estudiante."
+          />
+          <MisDatos inicial={inicial} onCambiarClave={() => setCambiandoClave(true)} />
+          <EnseñarCta />
+        </div>
+      </EdicionEnPagina>
+
+      {cambiandoClave && <CambiarClave onCerrar={() => setCambiandoClave(false)} />}
+    </main>
+  );
+}
+
+/** Nombre y WhatsApp: se editan directo y se guardan con la barra de la página. */
+function MisDatos({ inicial, onCambiarClave }: { inicial: Cuenta; onCambiarClave: () => void }) {
+  const queryClient = useQueryClient();
+  const [nombre, setNombre] = useState(inicial.fullName);
+  const [telefono, setTelefono] = useState(inicial.whatsappPhone ?? "");
+  const etiquetaDeClave = useEtiquetaDeClave();
+
+  const sucio = nombre.trim() !== inicial.fullName.trim() || telefono.trim() !== (inicial.whatsappPhone ?? "").trim();
+
+  useFormularioEditable(
+    sucio,
+    async () => {
+      if (!nombre.trim()) throw new Error("Tu nombre no puede quedar vacío.");
+      const actualizada = await apiFetch<Cuenta>("/api/v1/me/account", {
+        method: "PUT",
+        body: { fullName: nombre.trim(), whatsappPhone: telefono.trim() || undefined },
+      });
+      queryClient.setQueryData(["me", "account"], actualizada);
+      setNombre(actualizada.fullName);
+      setTelefono(actualizada.whatsappPhone ?? "");
+      // El nombre se ve en el header/avatar: refrescamos la sesión para que se actualice.
+      void queryClient.invalidateQueries({ queryKey: meQueryKey });
+    },
+    () => {
+      setNombre(inicial.fullName);
+      setTelefono(inicial.whatsappPhone ?? "");
+    },
+  );
+
+  return (
+    <div className="mt-3 rounded-card border border-border bg-surface-raised p-5">
       <label className="block text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary" htmlFor="nombre">
         Nombre completo
       </label>
@@ -207,40 +227,13 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
 
       <button
         type="button"
-        onClick={() => setCambiandoClave(true)}
+        onClick={onCambiarClave}
         className="mt-3 flex w-full items-center gap-2.5 rounded-base border-[1.5px] border-border px-4 py-3 text-left text-[13.5px] font-semibold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
       >
         <KeyRound size={16} strokeWidth={1.75} className="text-text-secondary" />
         {etiquetaDeClave}
       </button>
-
-      {error && (
-        <div className="mt-4">
-          <AvisoError mensaje={error} />
-        </div>
-      )}
-
-      {guardado && (
-        <p className="mt-4 flex items-center gap-2 rounded-card bg-success-bg px-4 py-3 text-[13px] font-semibold text-success">
-          <Check size={16} strokeWidth={2.4} />
-          Listo, tus datos quedaron actualizados.
-        </p>
-      )}
-
-      <BotonPrincipal
-        disabled={!nombre.trim() || guardar.isPending}
-        onClick={() => guardar.mutate()}
-        className="mt-5"
-      >
-        {guardar.isPending ? "Guardando…" : "Guardar mis datos"}
-      </BotonPrincipal>
-      </div>
-
-      <EnseñarCta />
-      </div>
-
-      {cambiandoClave && <CambiarClave onCerrar={() => setCambiandoClave(false)} />}
-    </main>
+    </div>
   );
 }
 

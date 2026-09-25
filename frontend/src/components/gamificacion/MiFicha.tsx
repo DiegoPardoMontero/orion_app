@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Eye, EyeOff, Lock, Sparkles } from "lucide-react";
+import { Eye, EyeOff, Lock, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { CambiarFoto } from "@/components/CambiarFoto";
@@ -23,7 +23,7 @@ import {
 import { AvisoError } from "@/components/estados";
 import { Rigel } from "@/components/Rigel";
 import { Boton } from "@/components/ui";
-import { BarraDeEdicion } from "@/components/BarraDeEdicion";
+import { useFormularioEditable } from "@/components/edicion/EdicionEnPagina";
 
 const NIVELES = ["BEGINNER", "INTERMEDIATE", "ADVANCED"] as const;
 
@@ -129,12 +129,15 @@ export function MiFicha() {
         ficha={ficha.data}
         idiomas={idiomas.data ?? []}
         objetivos={objetivos.data ?? []}
-        onGuardado={() => {
-          void queryClient.invalidateQueries({ queryKey: ["me", "student-profile"] });
-          void queryClient.invalidateQueries({ queryKey: ["me", "achievements"] });
-          void queryClient.invalidateQueries({ queryKey: ["me", "engagement"] });
-          void queryClient.invalidateQueries({ queryKey: misPuntosKey });
-        }}
+        onGuardado={() =>
+          // Se espera la ficha nueva: con ella la barra deja de ver cambios pendientes.
+          Promise.all([
+            queryClient.invalidateQueries({ queryKey: ["me", "student-profile"] }),
+            queryClient.invalidateQueries({ queryKey: ["me", "achievements"] }),
+            queryClient.invalidateQueries({ queryKey: ["me", "engagement"] }),
+            queryClient.invalidateQueries({ queryKey: misPuntosKey }),
+          ])
+        }
       />
 
       <QuienLoVe
@@ -219,28 +222,31 @@ function Formulario({
   ficha: FichaEstudiante;
   idiomas: LanguageResponse[];
   objetivos: GoalResponse[];
-  onGuardado: () => void;
+  onGuardado: () => Promise<unknown>;
 }) {
   const [nivel, setNivel] = useState(ficha.selfDeclaredLevel ?? "");
   const [idioma, setIdioma] = useState(ficha.primaryLanguage ?? "");
   const [motivacion, setMotivacion] = useState(ficha.motivation ?? "");
   const [metas, setMetas] = useState<string[]>(ficha.goalCodes);
-  const [guardado, setGuardado] = useState(false);
-
-  // Se mira, y solo después se edita. Mismo gesto que en el perfil del profesor.
-  const [editando, setEditando] = useState(false);
 
   function descartar() {
     setNivel(ficha.selfDeclaredLevel ?? "");
     setIdioma(ficha.primaryLanguage ?? "");
     setMotivacion(ficha.motivation ?? "");
     setMetas(ficha.goalCodes);
-    setEditando(false);
   }
 
-  const guardar = useMutation({
-    mutationFn: () =>
-      apiFetch<FichaEstudiante>("/api/v1/me/student-profile", {
+  // Se edita directo; la barra de la página guarda (24/09/2026: fuera «Editar mi ficha» abajo).
+  const sucio =
+    nivel !== (ficha.selfDeclaredLevel ?? "") ||
+    idioma !== (ficha.primaryLanguage ?? "") ||
+    motivacion.trim() !== (ficha.motivation ?? "").trim() ||
+    [...metas].sort().join() !== [...ficha.goalCodes].sort().join();
+
+  useFormularioEditable(
+    sucio,
+    async () => {
+      await apiFetch<FichaEstudiante>("/api/v1/me/student-profile", {
         method: "PUT",
         body: {
           selfDeclaredLevel: nivel || null,
@@ -248,25 +254,19 @@ function Formulario({
           motivation: motivacion.trim() || null,
           goalCodes: metas,
         },
-      }),
-    onSuccess: () => {
-      setGuardado(true);
-      setEditando(false);
-      onGuardado();
+      });
+      await onGuardado();
     },
-  });
+    descartar,
+  );
 
   const alternar = (code: string) =>
     setMetas((previas) =>
       previas.includes(code) ? previas.filter((c) => c !== code) : [...previas, code],
     );
 
-  const error = guardar.error instanceof ApiError ? guardar.error.message : null;
-
   return (
     <div className="mt-3 rounded-card border border-border bg-surface-raised p-5">
-      {/* Un fieldset alcanza a todo lo de dentro y no se olvida del control que se añada mañana. */}
-      <fieldset disabled={!editando} className="contents">
       <fieldset>
         <legend className="text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary">
           ¿En qué nivel te sientes?
@@ -350,34 +350,6 @@ function Formulario({
       <p className="mt-1 text-right text-[11.5px] tabular-nums text-text-muted">
         {motivacion.length}/280
       </p>
-
-      {error && (
-        <div className="mt-3">
-          <AvisoError mensaje={error} />
-        </div>
-      )}
-
-      </fieldset>
-
-      {guardado && !guardar.isPending && (
-        <p className="mt-3 flex items-center gap-2 rounded-card bg-success-bg px-4 py-3 text-[13px] font-semibold text-success">
-          <Check size={16} strokeWidth={2.4} />
-          Guardado. Tu profesor ya lo puede ver.
-        </p>
-      )}
-
-      <BarraDeEdicion
-        className="mt-4"
-        editando={editando}
-        guardando={guardar.isPending}
-        etiquetaEditar="Editar mi ficha"
-        onEditar={() => setEditando(true)}
-        onCancelar={descartar}
-        onGuardar={() => {
-          setGuardado(false);
-          guardar.mutate();
-        }}
-      />
     </div>
   );
 }

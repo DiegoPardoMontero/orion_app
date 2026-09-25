@@ -192,12 +192,15 @@ test("María ofrece una clase de prueba gratis y una estudiante nueva la reserva
   await login(page, USERS.maria);
   await page.waitForURL((u) => !u.pathname.startsWith("/login"));
   await page.goto("/perfil");
-  await page.getByRole("button", { name: "Editar mi perfil" }).click();
   // Nace apagada: regalar una hora lo decide el profesor. Si una corrida anterior ya la encendió, se deja.
+  // Los campos se editan directo; al cambiar algo aparece la barra para guardar.
   const gratis = page.getByRole("switch", { name: "Primera clase gratis" });
-  if ((await gratis.getAttribute("aria-checked")) !== "true") await gratis.click();
-  await page.getByRole("button", { name: "Guardar cambios" }).click();
-  await expect(page.getByText("Listo, tu perfil quedó actualizado.")).toBeVisible();
+  await expect(gratis).toBeVisible();
+  if ((await gratis.getAttribute("aria-checked")) !== "true") {
+    await gratis.click();
+    await page.getByRole("region", { name: "Cambios sin guardar" }).getByRole("button", { name: "Guardar cambios" }).click();
+    await expect(page.getByText("Cambios guardados")).toBeVisible();
+  }
   await logout(page);
 
   await page.goto("/login");
@@ -283,13 +286,18 @@ test("un estudiante edita su perfil y persiste", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Mi perfil" })).toBeVisible();
 
   // #telefono es el número local del PhoneInput (el país va aparte, Colombia por defecto).
-  await page.locator("#telefono").fill("3009998877");
-  await page.getByRole("button", { name: "Guardar mis datos" }).click();
-  await expect(page.getByText("tus datos quedaron actualizados")).toBeVisible();
+  // Se edita directo: al cambiar algo aparece la barra fija para guardar (sin «Editar» abajo). Sin
+  // cambio no hay barra, así que se pone un número distinto al que dejó una corrida anterior.
+  const telefono = page.locator("#telefono");
+  await expect(telefono).toBeVisible();
+  const nuevo = (await telefono.inputValue()) === "3009998877" ? "3009998866" : "3009998877";
+  await telefono.fill(nuevo);
+  await page.getByRole("region", { name: "Cambios sin guardar" }).getByRole("button", { name: "Guardar cambios" }).click();
+  await expect(page.getByText("Cambios guardados")).toBeVisible();
 
   // Recargar y comprobar que el dato se guardó de verdad (se re-parsea del E.164 +57...).
   await page.reload();
-  await expect(page.locator("#telefono")).toHaveValue("3009998877");
+  await expect(page.locator("#telefono")).toHaveValue(nuevo);
 });
 
 /**
