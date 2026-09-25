@@ -104,6 +104,37 @@ Pardo, textual en lo esencial:
 18. **«Invitar estudiantes»** en vez del enlace propio del profe: que genere un link para compartir
     en redes o mandarlo directamente a sus estudiantes.
 
+## Tercera tanda (24/09, noche) — y después el Wireflow
+
+Pardo, textual en lo esencial:
+
+19. **«Editar perfil» no puede estar abajo del todo** (estudiante y profe): «me ha pasado incluso
+    que intento corregir campos sin haberle dado ahí antes. Haz algo más usable y coherente».
+    Decisión: sin modo de edición. Los campos se editan directo y, en cuanto algo cambia, aparece
+    una barra fija «Tienes cambios sin guardar · Descartar · Guardar cambios» que no se va hasta
+    decidir; salir de la página con cambios pregunta. En el profe, la tarifa entra en ese mismo
+    guardado (fuera el «Guardar tarifa» suelto).
+20. **Videollamada que se puede minimizar**: «que yo pueda minimizar y seguir viendo lo de Orión».
+    Si no se puede, algo parecido: que al ir a otra parte de Orión o darle atrás, la llamada no se
+    cierre. Con «algo de animación o algo interesante». Decisión: la llamada vive en el armazón de
+    la app; al salir del aula se encoge a una ventana flotante (arrastrable, con micrófono,
+    cámara, volver y colgar) y al volver se agranda, sin cortar la conexión.
+21. **Las tres estrellas de «Mi ficha»** (debajo del nombre y el nivel) no se entienden: qué son,
+    por qué tienen colores distintos. Que se expliquen solas.
+22. **Filtrar por horas exactas**, varias a la vez (hoy solo «Mañana / Tarde / Noche» y de a una).
+23. **Mensajes de Rigel**: mensajes oficiales de Orión en «Mensajes», a estudiantes y profesores:
+    bienvenida, cómo funciona, con botones que llevan a la racha, las clases, actualizar algo,
+    completar tareas. «No quiero que sea excesivamente invasivo». Decisión: un hilo fijo de Rigel
+    arriba de la bandeja, solo lectura, con pocos mensajes y cada uno una sola vez (bienvenida,
+    primera reserva, primera clase, y uno al mes como mucho si el estudiante lleva tiempo sin
+    clases); sin campana, sin correo y sin push.
+24. **La clase de prueba es GRATIS** si el profesor la ofrece; no es una clase con descuento.
+    Reemplaza la Q7 del paso 10 (precio propio). El interruptor queda como «Ofrezco la primera
+    clase gratis»; se quita el precio y el ajuste `trial_min_price_cop`.
+25. **Wireflow de toda la app**: todas las pantallas con su captura, por rol, con las flechas de
+    cómo se llega de una a otra, los caminos más críticos marcados y los casos para probar, para
+    que Pardo y Sofía la recorran entera.
+
 ## Auditoría del recorrido contra el handoff (paso 9)
 
 Diferencias encontradas y corregidas:
