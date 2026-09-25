@@ -25,7 +25,7 @@ import { EstrellaRating } from "@/components/Rating";
 import { Rigel } from "@/components/Rigel";
 import { serverFetch } from "@/lib/api/server";
 import type { PagedProfessors, ProfessorCard, PublicFigures } from "@/lib/api/types";
-import { minutos } from "@/lib/cifras";
+import { minutos, minutosEnLetras } from "@/lib/cifras";
 import { REDES_SOCIALES, SITE_URL, whatsappSoporte } from "@/lib/config";
 import { esGratis, tarifaClase } from "@/lib/format";
 
@@ -169,20 +169,20 @@ const QUE_ES = [
  */
 const NOSOTROS = [
   {
-    titulo: "Revisamos a cada profesor",
-    texto: "Nadie aparece en el directorio sin pasar por una postulación que revisa nuestro equipo: hoja de vida, formación y experiencia.",
+    titulo: "Revisamos a cada profesor.",
+    texto: "Hoja de vida, formación y experiencia, verificadas antes de publicar su perfil.",
   },
   {
-    titulo: "Clases en vivo, nunca grabadas",
-    texto: "Cada clase es con una persona al otro lado que la prepara para ti. Sin videos enlatados.",
+    titulo: "Clases en vivo, nunca grabadas.",
+    texto: "Siempre hay una persona al otro lado que preparó esa clase para ti.",
   },
   {
-    titulo: "Reseñas de quien sí tomó la clase",
-    texto: "Solo puede calificar quien asistió. La nota que ves viene de estudiantes reales, no de un formulario abierto a cualquiera.",
+    titulo: "Reseñas reales.",
+    texto: "Solo puede calificar quien tomó la clase.",
   },
   {
-    titulo: "Todo ocurre en un solo sitio",
-    texto: "Reservas, pagos, mensajes y calendario viven dentro de Orión. No hay que perseguir a nadie por otro canal.",
+    titulo: "Todo en un solo lugar.",
+    texto: "Reservas, pagos, mensajes y calendario dentro de Orión.",
   },
 ];
 
@@ -197,6 +197,10 @@ export default async function PortadaPage() {
   const mostrarProfesores = profesores.length >= 4;
   // Lo que dura el diagnóstico sale de Ajustes, como en la pantalla del diagnóstico.
   const duracion = minutos(cifras?.assessmentMinutes ?? 2);
+  // Para abrir una frase de los textos de Sofía (25/09/2026): «Dos minutos de conversación…». La cifra
+  // sigue saliendo de Ajustes, como en la pantalla del diagnóstico.
+  const duracionEnLetras = minutosEnLetras(cifras?.assessmentMinutes ?? 2);
+  const Duracion = duracionEnLetras.charAt(0).toUpperCase() + duracionEnLetras.slice(1);
   const whatsapp = whatsappSoporte("Hola, quiero saber más sobre las clases de Orión.");
 
   return (
@@ -263,21 +267,22 @@ export default async function PortadaPage() {
                   Buscar profesor
                 </Link>
               </div>
+              {/* Textos de Sofía (25/09/2026). */}
               <p className="mt-3 max-w-[56ch] text-[13.5px] leading-relaxed text-on-primary/85">
-                {duracion} de conversación, gratis, sin cuenta y en español si quieres: al terminar sabes cómo
-                arrancas y tienes tres profesores elegidos para ti.
+                {Duracion} de conversación, gratis y sin crear cuenta. Al terminar sabes en qué nivel estás y te
+                mostramos tres profesores que encajan contigo. Puedes hacerlo en español si prefieres.
               </p>
               {/* Voluntario (Pardo, 25/09/2026): el diagnóstico sigue siendo el primer paso que Orión
                   propone, pero quien no quiere hacerlo tiene la puerta directa a su cuenta. */}
               <p className="mt-2 max-w-[56ch] text-[13.5px] leading-relaxed text-on-primary/85">
-                Es opcional. ¿Prefieres ir directo?{" "}
+                ¿Quieres ir directo?{" "}
                 <Link
                   href="/registro"
                   className="rounded-base font-bold text-on-primary underline underline-offset-2 focus-visible:shadow-focus"
                 >
                   Crea tu cuenta
                 </Link>{" "}
-                y hazlo cuando quieras desde tu perfil.
+                y haz el diagnóstico cuando quieras desde tu perfil.
               </p>
               <p className="mt-6 text-[13px] font-semibold tracking-[0.02em] text-on-primary">
                 ✦ Sin permanencia · Sin renovación automática · Profesores verificados
@@ -374,18 +379,19 @@ export default async function PortadaPage() {
       <section className="mx-auto max-w-6xl px-5 py-12 lg:px-8 lg:py-16">
         <div className="grid gap-8 rounded-card bg-night px-7 py-10 text-text-on-night lg:grid-cols-[1.4fr_1fr] lg:items-center lg:px-14 lg:py-14">
           <div>
-            <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-accent-peach">Por qué ahora</p>
-            <h2 className="mt-3 text-balance font-display text-[26px] font-bold leading-[1.15] lg:text-[34px]">
-              Hablar inglés aumenta hasta en 24 % tu probabilidad de conseguir un trabajo mejor pagado.
-            </h2>
+            {/* Textos de Sofía (25/09/2026). */}
+            <h2 className="text-balance font-display text-[26px] font-bold leading-[1.15] lg:text-[34px]">Por qué ahora</h2>
             <p className="mt-4 max-w-[56ch] text-[15.5px] leading-relaxed text-text-on-night/85">
-              Y solo el 2,2 % de quienes buscan empleo en Colombia dice tener un nivel alto. Ahí está tu ventaja:
-              aprender inglés no es un gasto, es de las decisiones que más rápido cambian tus oportunidades de
-              trabajo y tu salario.
+              Solo el 2,2 % de quienes buscan empleo en Colombia dice tener un nivel alto de inglés. Hablarlo
+              aumenta hasta en 24 % tu probabilidad de conseguir un trabajo mejor pagado.
             </p>
-            <p className="mt-5 text-[11.5px] leading-relaxed text-text-on-night/55">
-              Fuente: Anif, British Council y Universidad de los Andes (2025), con datos del Servicio Público de
-              Empleo, 2019–2024.
+            <p className="mt-3 max-w-[56ch] text-[15.5px] leading-relaxed text-text-on-night/85">
+              Ahí está tu ventaja. Aprender inglés no es un gasto: es de las decisiones que más rápido mueven tu
+              carrera y tu salario.
+            </p>
+            <p className="mt-5 text-[11.5px] italic leading-relaxed text-text-on-night/55">
+              Anif, British Council y Universidad de los Andes (2025), con datos del Servicio Público de Empleo,
+              2019–2024.
             </p>
           </div>
           <dl className="grid grid-cols-2 gap-4">
@@ -531,9 +537,8 @@ export default async function PortadaPage() {
           <div>
             <h2 className="text-balance font-display text-h2 font-bold text-on-primary">¿No sabes por dónde empezar?</h2>
             <p className="mt-3 max-w-[54ch] text-[15.5px] leading-relaxed text-on-primary/90">
-              Haz tu diagnóstico gratis, si quieres: es voluntario y puedes hablarle en español. En {duracion} de
-              conversación sabes cómo arrancas y te recomendamos tres profesores elegidos por lo que contaste. Te lo
-              entregamos aunque todavía no reserves ninguna clase.
+              {Duracion} de conversación y sabes en qué nivel estás, con tres profesores recomendados para ti.
+              Gratis, en español si prefieres, y sin necesidad de reservar nada después.
             </p>
             <Link
               href="/diagnostico"
@@ -555,17 +560,23 @@ export default async function PortadaPage() {
           <div className="grid gap-8 lg:grid-cols-[1fr_1.25fr] lg:items-end">
             <div>
               <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-accent-peach">Nosotros</p>
-              <p className="mt-3 font-display text-[64px] font-bold leading-[0.95] lg:text-[104px]">
-                Nadie
+              <h2 className="mt-3 font-display text-[52px] font-bold leading-[0.95] lg:text-[80px]">
+                <span className="block whitespace-nowrap">Aquí nadie</span>
                 <span className="block text-accent-peach">improvisa.</span>
+              </h2>
+            </div>
+            {/* Textos de Sofía (25/09/2026). */}
+            <div className="max-w-[52ch] text-[16px] leading-relaxed text-text-on-night/85 lg:text-[18px]">
+              <p>
+                Cada persona aprende inglés por una razón distinta: una entrevista, un ascenso, una mudanza. Por eso
+                en Orión no hay un programa único: hay profesores profesionales que adaptan su clase a lo que tú
+                necesitas.
+              </p>
+              <p className="mt-4 font-bold text-text-on-night">
+                Nuestra misión es que aprender inglés te lleve a tu meta, y que enseñarlo sea un trabajo bien pagado
+                y con condiciones propias.
               </p>
             </div>
-            <p className="max-w-[52ch] text-[16px] leading-relaxed text-text-on-night/85 lg:text-[18px]">
-              Aprender inglés no puede depender de la suerte con la que elegiste profesor. En Orión revisamos los
-              documentos, la formación y la experiencia de cada profesor antes de publicarlo, y lo que ocurre
-              después —reservar, pagar, hablar, dar la clase— vive en un solo sitio. Lo demás es tu tiempo, y no
-              lo gastamos.
-            </p>
           </div>
 
           <ul className="mt-12 grid gap-x-8 gap-y-8 border-t border-text-on-night/15 pt-8 sm:grid-cols-2 lg:grid-cols-4">
@@ -576,6 +587,9 @@ export default async function PortadaPage() {
               </li>
             ))}
           </ul>
+          <p className="mt-10 font-display text-[18px] font-bold text-accent-peach lg:text-[20px]">
+            Cada profesor decide su tarifa, su horario y su forma de enseñar.
+          </p>
         </div>
       </section>
 
@@ -591,7 +605,7 @@ export default async function PortadaPage() {
             Tu primera clase está a un par de clics.
           </h2>
           <p className="mx-auto mt-3 max-w-[46ch] text-[15px] text-on-primary/90">
-            Sin permanencia y sin renovación automática: pagas solo la clase que reservas.
+            Pagas solo la clase que reservas. Sin planes, sin permanencia, sin cobros automáticos.
           </p>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <Link

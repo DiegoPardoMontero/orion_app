@@ -47,5 +47,10 @@ export function useCifras(): PublicFigures {
 /** «12 horas», «1 hora». El plural resuelto, que concatenar no vale en español. */
 export const horas = (n: number) => `${n} ${n === 1 ? "hora" : "horas"}`;
 export const minutos = (n: number) => `${n} ${n === 1 ? "minuto" : "minutos"}`;
+
+const EN_LETRAS = ["", "un", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez"];
+/** «dos minutos», «un minuto»: en letras hasta diez, como se escribe en un texto corrido; después, en cifra. */
+export const minutosEnLetras = (n: number) =>
+  n >= 1 && n <= 10 ? `${EN_LETRAS[n]} ${n === 1 ? "minuto" : "minutos"}` : minutos(n);
 export const diasHabiles = (n: number) => `${n} ${n === 1 ? "día hábil" : "días hábiles"}`;
 export const dias = (n: number) => `${n} ${n === 1 ? "día" : "días"}`;
