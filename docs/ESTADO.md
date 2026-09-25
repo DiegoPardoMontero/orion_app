@@ -33,7 +33,7 @@ dentro de `/cuenta`).
 Al 25/09/2026 de madrugada, tras la noche autónoma (el wireflow probado, la revisión de seguridad
 del Bloque 11 y las sesiones en la base):
 - Backend: `./mvnw verify` — **390 unitarios + 596 de integración**, verde.
-- Frontend: `tsc` + `lint` verdes; **121 tests de Vitest**.
+- Frontend: `tsc` + `lint` verdes; **127 tests de Vitest**.
 - **E2E Playwright: 92 de 93** sobre base recreada y con el caché de fetch de Next limpio (la de
   Wompi, fuera; la que se salta pide una clase dentro del plazo de reclamo, que la base recién
   sembrada no trae, y la cubre el backend). Incluye las cuatro suites del wireflow.
@@ -755,6 +755,12 @@ https://claude.ai/artifact/LvkmUM9K9kvGMQyq4bMNxD
   (`SesionesEnLaBase`). La cookie sigue siendo `ORION_SESSION` y el tiempo de inactividad, 30 min.
   Un 401 anónimo ya no abre sesión (sin «petición guardada»): antes cada visitante sin cuenta
   habría dejado una fila.
+- **El dinero, dicho igual en todas partes**: en «Ganancias», la clase de un pago ya liquidado dice
+  «En camino» o «Transferido» (decía «Por cobrar»), y una devolución en curso ya no sale como
+  `REFUND_PENDING`; en «Pagos» del admin cada fila dice su estado en español. Las tres tablas
+  (estudiante, profesor, admin) viven en `lib/estadosDePago.ts` y una prueba exige que cubran todos
+  los estados del backend. Las preguntas frecuentes leen de Ajustes el plazo para pagar (decían «20
+  minutos» fijo).
 - **Carrera al crear la cuenta**: el navegador lanza varias peticiones a la vez con la cookie del
   diagnóstico sin cuenta, y cada una mudaba lo mismo; ahora el reclamo es un `UPDATE` condicional
   y solo muda quien lo gana.
