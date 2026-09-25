@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, marcarCierreDeSesion } from "@/lib/api/fetch";
+import { soltarAlCerrarSesion } from "@/lib/avisosDispositivo";
 
 /**
  * El rol EFECTIVO que devuelve el backend, no la columna de la base.
@@ -136,7 +137,11 @@ export function useLogout() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => apiFetch<void>("/api/v1/auth/logout", { method: "POST" }),
+    mutationFn: async () => {
+      // Antes de salir, mientras la sesión todavía sirve para decirle al servidor qué navegador soltar.
+      await soltarAlCerrarSesion();
+      return apiFetch<void>("/api/v1/auth/logout", { method: "POST" });
+    },
     onMutate: () => marcarCierreDeSesion(true),
     onSuccess: () => {
       queryClient.clear();

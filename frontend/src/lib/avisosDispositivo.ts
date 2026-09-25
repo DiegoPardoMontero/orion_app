@@ -69,6 +69,29 @@ export async function desactivar(): Promise<EstadoAvisos> {
   return "inactivos";
 }
 
+/**
+ * Al cerrar sesión, este navegador deja de avisar a esa cuenta. Si no, en un computador compartido
+ * seguían llegando los avisos de quien salió —con el comienzo de sus mensajes— y a quien entrara
+ * después le decía «activos» con una suscripción que el servidor seguía asociando a la otra cuenta.
+ *
+ * <p>No registra el service worker para mirar (si no hay, no hay nada que soltar) y nunca lanza:
+ * cerrar sesión no espera a esto.
+ */
+export async function soltarAlCerrarSesion(): Promise<void> {
+  if (!soportado()) return;
+  try {
+    const reg = await navigator.serviceWorker.getRegistration("/");
+    const sub = await reg?.pushManager.getSubscription();
+    if (!sub) return;
+    await apiFetch("/api/v1/me/push-subscriptions/remove", { method: "POST", body: { endpoint: sub.endpoint } }).catch(
+      () => undefined,
+    );
+    await sub.unsubscribe();
+  } catch {
+    // Sin permiso o sin service worker: no hay nada que soltar.
+  }
+}
+
 /** Un aviso de prueba a todos tus navegadores. Devuelve a cuántos llegó. */
 export async function probar(): Promise<number> {
   const r = await apiFetch<{ devices: number }>("/api/v1/me/push-subscriptions/test", { method: "POST" });
