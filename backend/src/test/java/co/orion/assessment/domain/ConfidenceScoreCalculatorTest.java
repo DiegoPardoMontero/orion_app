@@ -169,6 +169,45 @@ class ConfidenceScoreCalculatorTest {
                 .contains(Observacion.LONG_ANSWERS_WHEN_COMFORTABLE);
     }
 
+    /* ------------------------------------------------------------ la rama en español (25/09) */
+
+    /**
+     * Quien habla español con soltura no puede salir con un número alto de confianza en inglés: sus
+     * turnos en español cuentan como turnos sin inglés, y el número queda en el tramo de quien empieza.
+     */
+    @Test
+    void enLaRamaEnEspanolSoloCuentaLoQueSeDijoEnIngles() {
+        var espanolFluido = repetir(6, turno(1_000, 30, 0, 0, 0, true));
+
+        var comoSiFueraIngles = calculador.calcular(
+                repetir(6, turno(1_000, 30, 0, 0, 0, false)), pesos).orElseThrow();
+        var soloElIngles = calculador.calcularSoloElIngles(espanolFluido, pesos).orElseThrow();
+
+        assertThat(comoSiFueraIngles.valor()).isEqualTo(100);
+        assertThat(soloElIngles.valor()).isZero();
+        assertThat(soloElIngles.dimensiones()).containsEntry("extension", 0).containsEntry("autonomia", 0);
+    }
+
+    @Test
+    void losTurnosEnInglesDeLaRamaEnEspanolCuentanComoSiempre() {
+        var mezcla = List.of(
+                turno(1_200, 30, 0, 0, 0, false), turno(1_200, 30, 0, 0, 0, false),
+                turno(1_200, 30, 0, 0, 0, false), turno(1_000, 40, 0, 0, 0, true),
+                turno(1_000, 40, 0, 0, 0, true));
+
+        var puntaje = calculador.calcularSoloElIngles(mezcla, pesos).orElseThrow();
+
+        // Tres de cinco en buen inglés sostienen la mediana; los dos en español pesan en lo suyo.
+        assertThat(puntaje.dimensiones().get("extension")).isEqualTo(100);
+        assertThat(puntaje.valor()).isBetween(1, 99);
+    }
+
+    @Test
+    void laRamaEnEspanolTampocoInventaNumeroConPocosTurnos() {
+        assertThat(calculador.calcularSoloElIngles(repetir(3, turno(1_000, 30, 0, 0, 0, true)), pesos))
+                .isEmpty();
+    }
+
     /* ------------------------------------------------------------------------- la versión */
 
     @Test

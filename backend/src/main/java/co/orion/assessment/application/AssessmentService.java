@@ -250,9 +250,10 @@ public class AssessmentService {
     /**
      * Cierra, calcula y recomienda.
      *
-     * <p>Si no hay turnos suficientes, o la conversación se fue a español, se cierra sin número. Lo
-     * segundo es una decisión de producto y no una limitación: mostrarle un número bajo a alguien
-     * que está empezando desde cero es exactamente lo que Orión no hace.
+     * <p>Si no hay turnos suficientes, se cierra sin número. Si la conversación se fue a español, el
+     * número sale igual, contado solo por lo que dijo en inglés: hasta el 25/09/2026 se cerraba sin
+     * número para no mostrarle uno bajo a quien empieza, y Pardo lo cambió —prefiere que lo vea, con
+     * tres profesores para empezar—.
      *
      * <p><strong>Pero nadie se va con las manos vacías</strong> (Pardo, 22/09/2026). Las tres salidas
      * —con número, en español o demasiado corta— llevan un resumen de lo que contó y tres
@@ -274,27 +275,30 @@ public class AssessmentService {
         String resumen = resumen(quien, metas, todos);
         String nivel;
 
-        // Dos turnos seguidos en el idioma propio: la rama en español. Misma regla que el guion.
-        if (seFueAlEspanol(delUsuario)) {
+        // Dos turnos seguidos en el idioma propio: la rama en español. Misma regla que el guion. Desde
+        // el 25/09/2026 también lleva número, contado solo por lo que dijo en inglés, y los tres
+        // profesores son para empezar (Pardo: «tiene todo el sentido del mundo»).
+        boolean enEspanol = seFueAlEspanol(delUsuario);
+        List<TurnoDelUsuario> senales = delUsuario.stream().map(AssessmentTurn::asSignal).toList();
+        ConfidenceScoreCalculator calculadora = new ConfidenceScoreCalculator();
+        Optional<Puntaje> puntaje;
+        if (enEspanol) {
             evaluacion.switchToFromZero();
+            puntaje = calculadora.calcularSoloElIngles(senales, pesos());
+        } else {
+            puntaje = calculadora.calcular(senales, pesos());
+        }
+        if (puntaje.isEmpty()) {
             evaluacion.abandon(segundos, delUsuario.size());
             evaluacion.summarize(resumen);
-            nivel = "BEGINNER";
+            nivel = enEspanol ? "BEGINNER" : null;
         } else {
-            List<TurnoDelUsuario> senales = delUsuario.stream().map(AssessmentTurn::asSignal).toList();
-            Optional<Puntaje> puntaje = new ConfidenceScoreCalculator().calcular(senales, pesos());
-            if (puntaje.isEmpty()) {
-                evaluacion.abandon(segundos, delUsuario.size());
-                evaluacion.summarize(resumen);
-                nivel = null;
-            } else {
-                evaluacion.complete(puntaje.get(),
-                        aJson(puntaje.get().dimensiones()),
-                        aJson(puntaje.get().observadas().stream().map(Enum::name).toList()),
-                        resumen,
-                        segundos, delUsuario.size(), clock.instant());
-                nivel = nivelInferido(puntaje.get().valor());
-            }
+            evaluacion.complete(puntaje.get(),
+                    aJson(puntaje.get().dimensiones()),
+                    aJson(puntaje.get().observadas().stream().map(Enum::name).toList()),
+                    resumen,
+                    segundos, delUsuario.size(), clock.instant());
+            nivel = enEspanol ? "BEGINNER" : nivelInferido(puntaje.get().valor());
         }
 
         ConfidenceAssessment guardada = assessments.save(evaluacion);

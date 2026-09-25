@@ -113,7 +113,10 @@ public class ConfidenceAssessment {
         this.startedAt = startedAt;
     }
 
-    /** La conversación se fue a español: se cierra sin número, a propósito. */
+    /**
+     * La conversación se fue a español. Desde el 25/09/2026 lleva número igual, contado solo por lo
+     * que se dijo en inglés (ver {@code ConfidenceScoreCalculator#calcularSoloElIngles}).
+     */
     public void switchToFromZero() {
         this.mode = AssessmentMode.FROM_ZERO;
     }

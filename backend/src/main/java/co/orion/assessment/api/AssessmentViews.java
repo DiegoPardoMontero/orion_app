@@ -29,7 +29,7 @@ public final class AssessmentViews {
                 a.getStatus().name(),
                 a.getMode().name(),
                 a.getScore() == null ? null : (int) a.getScore(),
-                EtiquetaDelPuntaje.de(a.getScore() == null ? null : (int) a.getScore(), a.getMode()),
+                EtiquetaDelPuntaje.de(a.getScore() == null ? null : (int) a.getScore()),
                 a.getScoreVersion(),
                 leerMapa(a.getSignals()),
                 a.getSummary(),

@@ -85,6 +85,26 @@ public final class ConfidenceScoreCalculator {
     }
 
     /**
+     * El puntaje de la rama en español, que también lleva número (Pardo, 25/09/2026: «no pasa nada
+     * que le muestre el Confidence Score»). Mide lo mismo —confianza al hablar inglés—, así que
+     * cuenta solo lo que se dijo en inglés.
+     *
+     * <p>Un turno en español no es un turno en inglés más corto: es uno en el que no se arrancó ni
+     * se terminó una frase en inglés y se volvió al idioma propio. Contarlo con sus palabras en
+     * español premiaría la soltura en el idioma que ya se sabe —una conversación fluida en español
+     * daría un número alto— justo cuando lo que se ve es que la persona está empezando. Los turnos en
+     * inglés, si los hubo, cuentan igual que en la conversación normal.
+     */
+    public Optional<Puntaje> calcularSoloElIngles(List<TurnoDelUsuario> turnos, PesosDelPuntaje pesos) {
+        if (turnos == null) {
+            return Optional.empty();
+        }
+        return calcular(turnos.stream()
+                .map(t -> t.nativeSwitch() ? new TurnoDelUsuario((int) ARRANQUE_0_MS, 0, 0, 1, 0, true) : t)
+                .toList(), pesos);
+    }
+
+    /**
      * La versión de la fórmula, con la huella de los pesos.
      *
      * <p>Los pesos se editan desde la pantalla de Ajustes, así que la constante «v1» sola sería una

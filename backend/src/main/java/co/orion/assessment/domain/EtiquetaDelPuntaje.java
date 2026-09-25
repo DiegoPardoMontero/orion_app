@@ -19,11 +19,13 @@ public final class EtiquetaDelPuntaje {
     }
 
     /**
+     * La rama en español ya no tiene etiqueta propia: desde el 25/09/2026 lleva número, y el número
+     * decide el tramo como en cualquier conversación.
+     *
      * @param puntaje el Confidence Score, o {@code null} si la conversación no dio número
-     * @param modo    en la rama en español no hay número, pero sí etiqueta
      */
-    public static String de(Integer puntaje, AssessmentMode modo) {
-        if (modo == AssessmentMode.FROM_ZERO || puntaje == null) {
+    public static String de(Integer puntaje) {
+        if (puntaje == null) {
             return PRIMEROS_PASOS;
         }
         if (puntaje >= 85) {

@@ -14,8 +14,9 @@ import { Meissa } from "@/components/Meissa";
  * <p><strong>Voluntario, y en español si quieres</strong> (Pardo, 25/09/2026): hay quien le teme a
  * que lo «diagnostiquen» y le digan que está mal. Por eso la página lo dice así, y ofrece crear la
  * cuenta sin hacerlo, recordando que lo tiene en su perfil cuando quiera. Hablarle en español es
- * cierto, no un consuelo: dos respuestas seguidas en español y Meissa sigue en español, sin número
- * (la rama FROM_ZERO del guion), con el resumen y los tres profesores de siempre.
+ * cierto, no un consuelo: dos respuestas seguidas en español y Meissa sigue en español (la rama
+ * FROM_ZERO del guion), con su número —contado solo por lo que dijo en inglés—, el resumen y tres
+ * profesores para empezar.
  *
  * <p>Pública y sin cuenta: el nombre y las dos casillas se piden en la pantalla siguiente, justo
  * antes de hablar. Meissa aparece hablando, con su burbuja; Rigel no sale aquí, porque es quien

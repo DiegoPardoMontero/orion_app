@@ -15,9 +15,9 @@ import { precioCop } from "@/lib/format";
 /**
  * El resultado: lo que contaste, dónde estás y con quién seguir. En una pantalla corta.
  *
- * <p><strong>Nadie se va con las manos vacías</strong> (Pardo, 22/09/2026). Con número, en español
- * o demasiado corta, la conversación termina igual: con un resumen de lo que contó, una etiqueta de
- * punto de partida y tres profesores. Antes, la rama en español decía «esta vez no te ponemos
+ * <p><strong>Nadie se va con las manos vacías</strong> (Pardo, 22/09/2026). Con número (también en
+ * español desde el 25/09) o demasiado corta, la conversación termina igual: con un resumen de lo que
+ * contó, una etiqueta de punto de partida y tres profesores. Antes, la rama en español decía «esta vez no te ponemos
  * número» y a veces «todavía no tenemos tres para ti», que es cerrarle la puerta a quien acaba de
  * atreverse a hablar.
  *
@@ -37,7 +37,9 @@ export function Resultado({
   /** Hecho sin cuenta: se ofrece guardarlo, sin obligar a nada. */
   sinCuenta?: boolean;
 }) {
-  const sinNumero = diagnostico.mode === "FROM_ZERO" || diagnostico.score == null;
+  // La rama en español también lleva número desde el 25/09/2026 (Pardo): sin número queda solo la
+  // conversación demasiado corta para sostener uno.
+  const sinNumero = diagnostico.score == null;
 
   return (
     <main className="mx-auto w-full max-w-lg px-5 py-5 lg:max-w-5xl lg:py-10">

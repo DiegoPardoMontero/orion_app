@@ -236,8 +236,8 @@ class DiagnosticoIT extends ApiIntegrationSupport {
 
     @SuppressWarnings("rawtypes")
     @Test
-    @DisplayName("Dos turnos seguidos en español activan la rama FROM_ZERO: sin número, con resumen")
-    void desdeCeroNoRecibeUnNumeroBajo() {
+    @DisplayName("Dos turnos seguidos en español activan la rama FROM_ZERO: con su número, contado por su inglés")
+    void enEspanolTambienRecibeSuNumero() {
         correoVerificado(true);
         post(CONSENTIR, anaSession, Map.of(), Map.class);
         String id = (String) empezar().getBody().get("assessmentId");
@@ -256,11 +256,11 @@ class DiagnosticoIT extends ApiIntegrationSupport {
         ResponseEntity<Map> r = post("/api/v1/assessments/" + id + "/complete", anaSession,
                 Map.of(), Map.class);
 
-        // Mostrarle un número bajo a quien está empezando desde cero es lo que Orión no hace.
+        // Pardo, 25/09/2026: el número se muestra también aquí. Lo dicho en español no cuenta como
+        // inglés, así que queda en el tramo de quien empieza.
         assertThat(r.getBody()).containsEntry("mode", "FROM_ZERO");
-        assertThat(r.getBody().get("score")).isNull();
-        // Y aun así se va con algo: la etiqueta de quien empieza y un resumen, no un «vuelve luego».
-        assertThat(r.getBody()).containsEntry("label", "Primeros pasos");
+        assertThat(r.getBody()).containsEntry("status", "COMPLETED");
+        assertThat((Integer) r.getBody().get("score")).isNotNull().isLessThan(45);
         assertThat((String) r.getBody().get("summary")).contains("Ana");
     }
 
