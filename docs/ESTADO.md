@@ -6,7 +6,7 @@ Resumen vivo de qué hay construido y desplegado. Se actualiza al cerrar cada pa
 
 **Backend** (Spring Boot 4.1, `co.orion`): identidad + sesión, disponibilidad + `SlotCalculator`,
 reservas, asistencia, notificaciones por correo (con `.ics` + link a Google Calendar), panel admin
-(usuarios, reservas, métricas). **Migraciones Flyway V1–V69.**
+(usuarios, reservas, métricas). **Migraciones Flyway V1–V71.**
 
 Módulos: `identity`, `scheduling`, `catalog`, `billing`, `messaging`, `notifications`, `reputation`,
 `lifecycle`, `admin`, `engagement`, `legal`, `support`, `assessment`, `teaching`, `practice`,
@@ -30,6 +30,18 @@ dentro de `/cuenta`).
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots), con Rigel de protagonista.
 
 ## Verificación
+Al 25/09/2026 por la tarde, con el profe fundador y la invitación nueva (V70–V71):
+- Backend: `./mvnw verify` — **619 de integración**, verde (entre ellas `FounderCommissionIT`,
+  `InvitacionDeProfesoresIT` y `AvisoDeFinDeFundadorIT`, más la política pura en `CommissionPolicyTest`).
+- Frontend: `tsc` + `lint` verdes; **132 tests de Vitest** (los montos y textos del fundador en
+  `lib/fundador.test.ts`, con redondeo que no da exacto).
+- **E2E Playwright: 86 de 87** en las cinco suites afectadas, sobre base recreada y sin la de Wompi (se
+  salta la de reclamar). La bienvenida del profe ya no sale de una invitación —el invitado pasa por la
+  revisión, que en local no se completa sin Cloudinary—: la prueba crea al profe desde el admin y
+  escribe su aprobación en la base (`sqlLocal` en `e2e/apoyo.ts`).
+- Las migraciones corrieron sobre la base local con datos: la fecha de fin de María salió igual en SQL
+  que en `CommissionPolicy.founderUntil`, y las cuentas «Profesor invitado» pendientes se borraron.
+
 Al 25/09/2026 al mediodía, con la cuarta tanda del Bloque 11 (pasos 33–36: sin «Tus puntos», el
 estudiante no postula y la V69 borra las postulaciones que ya había así, el diagnóstico voluntario
 con su número también en español, y la clase en curso en «Próximas»):
@@ -739,6 +751,45 @@ como la videollamada.
   objetivo es un dato, y el vocabulario no admite el error como palabra nueva («since two years»)
   ni la traducción repetida al revés (esta última también se limpia en código). En 12 corridas:
   todo en español, la inyección ignorada y el vocabulario limpio.
+
+## Profe fundador e invitación nueva (25/09/2026, tarde)
+
+Brief `orion-brief-profe-fundador.md`, con las decisiones de Pardo del 25/09 al final. **La decisión
+Q1 del brief maestro queda modificada**: la comisión de Orión es 20 % y los profes fundadores pagan
+15 % durante sus primeros 3 meses de clases.
+
+- **La comisión (V70).** La base vuelve a 20 % (la V40 la había bajado a 15 % para todos) y hay dos
+  ajustes nuevos, `founder_commission_rate_bps` (1500) y `founder_period_months` (3), que solo se leen
+  al otorgar el beneficio: la promesa se copia al perfil (`founder_rate_bps`, `founder_period_months`,
+  `founder_granted_at`) y cambiar los ajustes después no toca a quien ya es fundador. **Todos los
+  profes que ya estaban quedaron fundadores** (decisión de Pardo), así que nadie pasó de 15 % a 20 %.
+- **El conteo** empieza con la primera clase pagada —pago de la pasarela, clase cubierta con saldo o
+  la prueba de $0— por un UPDATE condicional (`FounderClock` en billing, que ya dependía de identity),
+  y termina en `founder_until`: la fecha de inicio en Bogotá más 3 meses, a las 00:00 de Bogotá. No se
+  reinicia si esa clase se cancela. `CommissionPolicy` (clase pura) decide la comisión que se congela
+  al reservar: la de fundador mientras la reserva se cree antes de `founder_until`, o si el conteo no
+  ha empezado; la base en cualquier otro caso.
+- **El admin** ve en Usuarios el estado de cada profe («Fundador · 15 % · sin empezar», «… hasta el 12
+  de enero de 2027», «… terminó el …», «Sin beneficio de fundador») y lo otorga o lo quita, con
+  auditoría; quitarlo solo cambia las reservas nuevas.
+- **El profe** ve, debajo de su tarifa, cuánto recibe como fundador y cuánto recibirá después
+  (`lib/fundador.ts`, con el mismo redondeo hacia abajo que el backend). 14 días antes de que termine
+  le llega un aviso en la campana y un correo, una sola vez (`AvisoDeFinDeFundador`, vigilado por
+  `JobWatchdog`).
+- **La invitación ya no crea la cuenta (V71).** Guarda el correo, el nombre con el que se saluda al
+  profe, quién invita y si trae el beneficio de fundador; el admin tiene un cargo nuevo
+  (`users.job_title`, «directora académica») que escribe una vez. La pantalla del handoff
+  `design_handoff_orion_invitacion` vive en `/invitacion/[token]` (vigente, vencida o usada; un token
+  que no existe se ve vencido) y «Aceptar la invitación» lleva al registro de profesor con el correo
+  puesto y bloqueado, donde acepta los Términos y la política —el hueco que dejaba el enlace viejo—.
+  El token se consume al crear la cuenta; el invitado es un aspirante, lleva su postulación y **Sofía
+  la aprueba**; al aprobarse recibe el beneficio de fundador. Los enlaces viejos (`?token=`) siguen
+  sirviendo, y la V71 borró las cuentas «Profesor invitado» que el modelo viejo creaba por adelantado
+  y nadie activó (solo esas: sin contraseña, inactivas y sin clases).
+- **Las cifras públicas** llevan el beneficio: «Enseña con Orión» y las preguntas frecuentes dicen 20 %
+  y «Profes fundadores: 15 % durante sus primeros 3 meses de clases». Los Términos toman la comisión
+  del ajuste y dicen 20 %; **la línea del beneficio de fundador en los Términos del profesor falta, y
+  es para el abogado** (el brief deja fuera el texto legal).
 
 ## Cuarta tanda del Bloque 11 (25/09/2026, mañana)
 
