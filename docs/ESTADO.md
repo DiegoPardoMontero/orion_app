@@ -6,7 +6,7 @@ Resumen vivo de qué hay construido y desplegado. Se actualiza al cerrar cada pa
 
 **Backend** (Spring Boot 4.1, `co.orion`): identidad + sesión, disponibilidad + `SlotCalculator`,
 reservas, asistencia, notificaciones por correo (con `.ics` + link a Google Calendar), panel admin
-(usuarios, reservas, métricas). **Migraciones Flyway V1–V71.**
+(usuarios, reservas, métricas). **Migraciones Flyway V1–V76.**
 
 Módulos: `identity`, `scheduling`, `catalog`, `billing`, `messaging`, `notifications`, `reputation`,
 `lifecycle`, `admin`, `engagement`, `legal`, `support`, `assessment`, `teaching`, `practice`,
@@ -30,6 +30,22 @@ dentro de `/cuenta`).
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots), con Rigel de protagonista.
 
 ## Verificación
+Al 25/09/2026 muy tarde, con las liquidaciones quincenales bajo mandato (V72–V76):
+- **Backend: `./mvnw verify`, 422 unitarias y 638 de integración, en verde.**
+  - Las nuevas: `PayoutCalculatorTest` (cortes de fin de mes, febrero y bisiesto, plazo de reclamo,
+    reclamo abierto, saldo a favor, prueba de $0, fundador, arrastre, festivos) y
+    `FestivosColombiaTest` (los 18 festivos de 2026).
+  - `PayoutDestinationTest`, `AcuerdoDelProfesorIT`, `DatosDePagoIT`, y `LiquidacionesIT`: el corte
+    con el reloj movido y sin duplicar, regenerar, el ajuste por devolución con arrastre, lo que ve
+    el profe con su comprobante y sus permisos, los CSV que cuadran y el certificado.
+  - `EarningsAndPayoutsIT` sigue en verde, reescrita al flujo nuevo (corte, aprobar, pagar, CSV).
+- **Frontend:** `tsc` y `lint` en verde; **138 pruebas de Vitest**, con los textos de estado en
+  `lib/liquidaciones.test.ts`.
+- **E2E Playwright, sobre la base recreada y sin la prueba de Wompi: 101 pasaron y 1 se saltó.**
+  - Incluye `liquidaciones.spec.ts`: María registra su llave Bre-B, el admin aprueba y registra el
+    pago, y ella ve el comprobante.
+  - Incluye la ventana del acuerdo del profesor en la bienvenida.
+
 Al 25/09/2026 por la noche, con la quinta tanda del Bloque 11 (nombre del profe entero, WhatsApp
 obligatorio, admin sin scroll horizontal, la clase de 55 minutos con su franja y los textos de Sofía):
 - **Backend: `./mvnw verify`, 402 unitarias y 623 de integración.**
@@ -768,6 +784,82 @@ como la videollamada.
   objetivo es un dato, y el vocabulario no admite el error como palabra nueva («since two years»)
   ni la traducción repetida al revés (esta última también se limpia en código). En 12 corridas:
   todo en español, la inyección ignorada y el vocabulario limpio.
+
+## Liquidaciones quincenales bajo mandato (25/09/2026, noche)
+
+Brief `orion-brief-liquidaciones-mandato.md`, con el inventario del paso 0 y las cuatro decisiones de
+Pardo al final. **Orión funciona como mandatario**: el dinero de cada clase es del profe, Orión lo
+recibe por su cuenta y se lo entrega; su único ingreso es la comisión. La transferencia sigue siendo
+manual (Bre-B desde la cuenta de Pardo), y no hay integración bancaria ni de Wompi Pagos a Terceros.
+
+- **El mandato (paso 1, V72).**
+  - El «Acuerdo del profesor» deja de ser texto fijo en `/aplicacion` y pasa a `legal_documents`
+    (`TEACHER_AGREEMENT`): la 1.0 con el texto de siempre y la 2.0 con la cláusula de mandato (Anexo A).
+  - La constancia es la de los Términos: `agreement_acceptances` guarda versión, fecha, IP y
+    user-agent.
+  - Los profes lo aceptan en una ventana al entrar (`AvisoAcuerdoDelProfesor`, que se puede aplazar
+    por la sesión), y los nuevos al postular. Hay página pública en `/acuerdo-del-profesor`.
+  - Sin la versión vigente aceptada, sus liquidaciones quedan retenidas (`PayoutHolds`).
+- **Los datos de pago (paso 2, V73).**
+  - Se guardan en `professor_payout_details`: la llave Bre-B (celular, cédula, correo o
+    alfanumérica), el documento y el titular. `PayoutDestination` es pura: valida, normaliza y
+    enmascara.
+  - El profe los escribe en la pestaña privada «Datos de pago» de su perfil y los ve enmascarados.
+    El servidor nunca los devuelve completos, ni a él.
+  - Cada cambio le llega por correo («Cambiaron tus datos de pago en Orión»).
+  - Si le faltan, `/ganancias` lo dice, y su liquidación queda retenida.
+- **El motor (paso 3, V74).**
+  - Quincenas con corte a las 00:00 del 16 y del 1, en Bogotá. El corte (`PayoutCutJob`, cada hora,
+    vigilado por `JobWatchdog`) corta una vez por quincena: `payout_cuts` lo registra, y el único
+    `(professor_id, period_start)` impide duplicar.
+  - `PayoutCalculator` es puro y decide qué es liquidable: pago liberado, clase cerrada (o
+    cancelación tardía del estudiante, decisión 4), plazo de reclamo vencido y ningún reclamo
+    abierto. La prueba de $0 no genera línea.
+  - La comisión es la congelada en cada pago, incluida la de fundador.
+  - La fecha de pago comprometida es el tercer día hábil desde el corte. Usa `FestivosColombia`
+    (Ley 51 de 1983 y Semana Santa), solo aquí (decisión 3): `PlazoLegal` sigue sin festivos.
+  - Estados: `DRAFT` (borrador), `APPROVED`, `PAID` (inmutable), `ON_HOLD` (con motivo) y
+    `CARRIED_OVER` (si queda en cero o en negativo, no se paga y el saldo se arrastra).
+  - `payout_items` se reemplazó por `payout_lines`, y las liquidaciones que había, que eran de
+    prueba, se borraron (decisión 1).
+  - Un ajuste por devolución se engancha a la devolución de un reclamo resuelto a favor del
+    estudiante (`PaymentLifecycleService.refundDisputed`). Con las reglas de hoy nunca se dispara
+    sobre algo ya pagado; está probado llamándolo directo.
+- **El flujo del admin (paso 4).**
+  - En `/admin/pagos` → «Liquidaciones», una vista por quincena: próximo corte, total a transferir,
+    ya pagado, fecha comprometida, y cada profe con su estado; las retenidas, con su motivo.
+  - El detalle muestra las líneas y permite aprobar, regenerar (solo borradores), descargar el CSV y
+    abrir el comprobante.
+  - Registrar el pago muestra la llave completa (solo ahí, para una aprobada) con botón de copiar, y
+    pide la fecha, la referencia y la casilla «Confirmo que el nombre que mostró mi banco coincide
+    con el titular».
+  - Aprobar, ver la llave, pagar y regenerar quedan en `admin_audit_log`.
+- **Lo que ve el profe (paso 5, V75).**
+  - `/ganancias` suma «Tus liquidaciones»: la explicación fija, el próximo corte y el pago
+    estimado, las clases por liquidar con su motivo («En plazo de reclamo hasta el…», «Tiene un
+    reclamo abierto», «Entra en el corte del…») y el historial.
+  - El comprobante vive en `/comprobante/[id]`: imprimible, sin menú, para guardarlo como PDF.
+    Lleva el mandatario (ajustes `mandatary_name` y `mandatary_document`; vacíos, los datos legales),
+    el profe, las líneas, los totales, la fecha, la referencia y la llave enmascarada.
+  - El mismo contenido va en el correo de pago. `PAYOUT_PAID` sigue sonando en la campana y en push.
+- **Reportes y certificado (paso 6, V76).**
+  - En `/admin/pagos` → «Reportes», tres CSV en UTF-8 con BOM: el libro de mandato por fechas, el
+    resumen anual por profe (recibido, comisión, entregado, pendiente al 31/12, retenciones $0) y
+    las comisiones por mes.
+  - El panel del admin muestra el año bajo mandato: comisiones, recaudo por la pasarela y ese
+    recaudo en UVT (ajuste `uvt_cop` = 52.374) contra la referencia de 3.500 UVT, con el texto «El
+    recaudo pasa por tu cuenta bancaria…».
+  - El certificado anual tiene su borrador imprimible en `/certificado/[profe]/[año]` (solo admin),
+    con espacio para la firma y la tarjeta profesional del contador. El PDF firmado se sube a
+    `payout_certificates` (privado, URL firmada de 5 min), y el profe lo descarga desde
+    `/ganancias` solo cuando existe.
+
+Pendiente para Pardo:
+- Escribir su nombre y documento según el RUT en Ajustes → «Nombre / Documento del mandatario». Si
+  quedan vacíos, el comprobante usa `ORION_LEGAL_NOMBRE` y `ORION_LEGAL_DOCUMENTO`.
+- Que el abogado lea la versión 2.0 del acuerdo del profesor. Su texto dice «liquidamos las clases
+  que dictaste», y desde la decisión 4 también entran las cancelaciones tardías.
+- El manual técnico necesita esta sección.
 
 ## Quinta tanda del Bloque 11 (25/09/2026, noche)
 
