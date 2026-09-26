@@ -18,6 +18,22 @@ el alcance cerrado de cada tarea, y construir features que no están en el brief
 violación explícita de las instrucciones. La comunicación con Pardo es en español; el código
 y los identificadores, en inglés.
 
+## Registro de pedidos (regla de Pardo, 26/09/2026)
+
+**Cada mensaje en que Pardo pide algo por chat se guarda en `docs/pedidos/`**, un `.md` por
+mensaje, antes de ponerse a trabajar en él. Nombre: `AAAA-MM-DD-HHMM-<qué-pidió-en-pocas-palabras>.md`
+(hora de Bogotá). Cada archivo lleva:
+
+- **Metadatos**: fecha y hora (con zona), canal (chat de Claude Code), sesión si se conoce, y los
+  briefs, commits y artifacts relacionados, que se completan a medida que avanza el trabajo.
+- **El pedido exacto**: el texto de Pardo copiado tal cual, sin corregir la ortografía.
+- **Resumen ejecutivo**: sobre todo **historias de usuario** («Como <rol> quiero <algo> para
+  <beneficio>») y **features**, una por cada cosa que pidió, con lo que quedó decidido.
+- **Estado**: hecho / en curso / pendiente de una respuesta suya, con lo que falta.
+
+Una respuesta corta a una pregunta (un «sí», elegir una opción) va en el archivo del pedido que la
+originó, no en uno nuevo. `docs/pedidos/README.md` tiene el índice, del más reciente al más viejo.
+
 ## Commands
 
 Infraestructura (Postgres + Mailpit):
