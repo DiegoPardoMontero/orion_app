@@ -7,6 +7,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -21,7 +23,9 @@ import co.orion.shared.observability.JobRunRegistry;
 /**
  * El aviso de que el beneficio de profe fundador termina (brief del profe fundador, paso 4): 14 días
  * antes de {@code founder_until}, en la campana y por correo, una sola vez. El «una sola vez» lo
- * decide la base: el UPDATE que marca {@code founder_expiry_notified_at} solo gana si nadie lo marcó.
+ * decide la base: el UPDATE que marca {@code founder_expiry_notified_at} solo gana si nadie lo marcó,
+ * y el aviso de la campana se guarda en esa misma transacción (antes del commit), así que si uno falla
+ * no queda ninguno y se reintenta en la corrida siguiente.
  *
  * <p>No avisa a quien no es fundador ni a quien no ha empezado el conteo: sin fecha de fin no hay
  * nada que anunciar. Lo vigila {@code JobWatchdog}.
@@ -30,6 +34,7 @@ import co.orion.shared.observability.JobRunRegistry;
 public class AvisoDeFinDeFundador {
 
     public static final String JOB = "founder-expiry";
+    private static final Logger log = LoggerFactory.getLogger(AvisoDeFinDeFundador.class);
     private static final Duration ANTES = Duration.ofDays(14);
 
     private final JdbcTemplate jdbc;
@@ -84,17 +89,25 @@ public class AvisoDeFinDeFundador {
         int base = settings.getInt("commission_rate_bps");
         int enviados = 0;
         for (Candidato c : candidatos) {
-            Boolean salio = enTransaccion.execute(estado -> {
-                int filas = jdbc.update("""
-                        update professor_profiles set founder_expiry_notified_at = ?
-                         where user_id = ? and founder_expiry_notified_at is null
-                        """, Timestamp.from(ahora), c.id());
-                if (filas == 0) {
-                    return false;
-                }
-                eventos.publishEvent(new FounderEndingEvent(c.id(), c.rateBps(), base, c.until()));
-                return true;
-            });
+            Boolean salio;
+            try {
+                salio = enTransaccion.execute(estado -> {
+                    int filas = jdbc.update("""
+                            update professor_profiles set founder_expiry_notified_at = ?
+                             where user_id = ? and founder_expiry_notified_at is null
+                            """, Timestamp.from(ahora), c.id());
+                    if (filas == 0) {
+                        return false;
+                    }
+                    eventos.publishEvent(new FounderEndingEvent(c.id(), c.rateBps(), base, c.until()));
+                    return true;
+                });
+            } catch (RuntimeException ex) {
+                // La marca y el aviso de la campana van en la misma transacción: si algo falla, no
+                // queda ninguno y la siguiente corrida lo reintenta. Los demás profes siguen.
+                log.warn("No se pudo avisar el fin del beneficio de fundador a {}: {}", c.id(), ex.getMessage());
+                continue;
+            }
             if (Boolean.TRUE.equals(salio)) {
                 enviados++;
                 correo.avisarFin(c.email(), c.nombre(), c.rateBps(), base, c.until());

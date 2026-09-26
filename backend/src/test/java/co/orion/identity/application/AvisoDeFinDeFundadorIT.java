@@ -13,6 +13,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,12 +22,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import co.orion.TestcontainersConfiguration;
 import co.orion.identity.domain.ProfessorProfile;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.identity.persistence.ProfessorProfileRepository;
+import co.orion.messaging.application.NotificationService;
 import co.orion.support.ApiIntegrationSupport;
 
 /**
@@ -58,6 +61,9 @@ class AvisoDeFinDeFundadorIT extends ApiIntegrationSupport {
     @Autowired
     private JdbcTemplate jdbc;
 
+    @MockitoSpyBean
+    private NotificationService notifications;
+
     private final List<UUID> creados = new java.util.ArrayList<>();
 
     @BeforeEach
@@ -67,6 +73,7 @@ class AvisoDeFinDeFundadorIT extends ApiIntegrationSupport {
 
     @AfterEach
     void limpiar() {
+        Mockito.reset(notifications);
         for (UUID id : creados) {
             jdbc.update("delete from notifications where user_id = ?", id);
             jdbc.update("delete from professor_profiles where user_id = ?", id);
@@ -109,6 +116,26 @@ class AvisoDeFinDeFundadorIT extends ApiIntegrationSupport {
         assertThat(avisosDe(maria)).singleElement().isEqualTo(
                 "Tu comisión de profe fundador (15 %) termina el 12 de enero de 2027. Desde ese día, las reservas "
                         + "nuevas llevan la comisión estándar de Orión, 20 %. Las reservas que ya tengas conservan el 15 %.");
+    }
+
+    /**
+     * Si guardar el aviso de la campana falla, tampoco queda la marca de «avisado»: van en la misma
+     * transacción. La corrida siguiente lo reintenta, y el profe recibe su aviso una vez.
+     */
+    @Test
+    void siElAvisoFallaNoQuedaMarcadoYSeReintenta() {
+        User maria = profe(true, Duration.ofDays(10));
+        Mockito.doThrow(new IllegalStateException("la base no respondió"))
+                .when(notifications).create(Mockito.eq(maria.getId()), Mockito.eq("FOUNDER_ENDING"),
+                        Mockito.any(), Mockito.any(), Mockito.any());
+
+        assertThat(aviso.avisar()).isZero();
+        assertThat(jdbc.queryForObject("select founder_expiry_notified_at from professor_profiles where user_id = ?",
+                Timestamp.class, maria.getId())).isNull();
+
+        Mockito.reset(notifications);
+        assertThat(aviso.avisar()).isEqualTo(1);
+        assertThat(avisosDe(maria)).hasSize(1);
     }
 
     @Test
