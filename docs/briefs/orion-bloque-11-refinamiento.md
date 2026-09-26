@@ -189,6 +189,30 @@ Pedidos de Pardo del 25/09 por la noche:
     del perfil del profe, el resumen antes de pagar, la vuelta de Wompi, el correo, el saludo en el
     chat, los avisos y recordatorios, y «Tu próxima clase».
 
+## Sexta tanda (26/09)
+
+Pedidos de Pardo del 26/09, con los 18 commits anteriores ya subidos:
+
+41. **Quitar del landing** el párrafo bajo los botones del inicio: «Dos minutos de conversación,
+    gratis y sin crear cuenta. Al terminar sabes en qué nivel estás y te mostramos tres profesores
+    que encajan contigo. Puedes hacerlo en español si prefieres.» `/diagnostico` se queda como está.
+42. **Los 6 archivos de la sesión anterior**, comiteados y subidos (aviso de fin de fundador,
+    limpieza de `accept-invite`, registro con invitación vencida).
+43. **Sin el nombre de Pardo** en los acuerdos «y en general»: decir «Orión» y «los representantes
+    legales de Orión». Límite de ley: las tablas de identificación de los Términos (art. 50 de la
+    Ley 1480) y de la Política (art. 13 del Decreto 1377) y el certificado anual de ingresos para
+    terceros tienen que identificar a quien responde con nombre y documento; salen de
+    `ORION_LEGAL_*`, así que con una sociedad basta cambiar esas variables. Términos y Política pasan
+    a la 1.1 (redacción, sin aceptación nueva); el acuerdo del profesor 2.0 se corrige en su sitio
+    porque ningún profe lo ha aceptado en producción.
+44. **Un solo «Aceptar los nuevos acuerdos»** con un botón que los despliega todos, en vez del
+    acuerdo metido en una caja con scroll. «NO HAY PROFES EN PRODUCCIÓN, por ahora todos van a entrar
+    a aceptar los nuevos acuerdos»: sin «Ahora no». Se le pide al profe aprobado; el aspirante lo
+    acepta en su postulación.
+45. **Los datos de pago son obligatorios**: «son IMPORTANTÍSIMOS, los profes sí o sí deben
+    llenarlos». El profe aprobado que no los tiene no puede seguir hasta registrarlos, como con el
+    WhatsApp.
+
 ## Auditoría del recorrido contra el handoff (paso 9)
 
 Diferencias encontradas y corregidas:
