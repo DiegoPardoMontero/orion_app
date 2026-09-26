@@ -879,6 +879,25 @@ Pendiente para Pardo:
   que dictaste», y desde la decisión 4 también entran las cancelaciones tardías.
 - El manual técnico necesita esta sección.
 
+## Revisión de textos de toda la plataforma (26/09/2026, tarde)
+
+Pedido de Pardo (`docs/pedidos/2026-09-26-1649-…`): «Con fluidez» en lugar de «Con soltura», y que
+los textos tengan sentido en todas las pantallas. Siete revisiones en paralelo (cuatro por rol en el
+frontend, dos del servidor y una de las capturas del wireflow) y unos 150 arreglos. Lo que cambió el
+comportamiento, no solo el texto:
+- El enlace a la sala del correo de reserva y del .ics es absoluto.
+- Soltar una reserva sin pagar no le avisa al profe (`BookingCancelledEvent.previousStatus`).
+- Una cancelación del admin se firma «Orión».
+- Un único error de validación con mensaje propio llega a la pantalla.
+- Los 500, 401 y 403 se dicen en español.
+- La V77 retira el logro «Dos idiomas» y pasa las descripciones a «tú».
+- La invitación a profes ya no muestra nombre ni cargo de quien invita.
+- La clase devuelta al estudiante sale en $0 para el profe.
+- El domicilio legal por defecto va entre comillas en `application.yml` (el « #» lo cortaba).
+
+Verificación: `./mvnw verify` con 436 unitarias y 644 de integración; Vitest 140; e2e 97 en verde en
+la corrida completa, y las dos que citaban textos viejos, corregidas y en verde por separado.
+
 ## Sexta tanda del Bloque 11 (26/09/2026)
 
 Pasos 41–45 del brief, pedidos por Pardo:
