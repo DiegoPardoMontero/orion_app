@@ -468,3 +468,19 @@ auditada (`VIEW_DOCUMENT`).
    igual), pero la cláusula de mandato habla de «clases cuyo plazo de reclamo ya venció».
 
 Las respuestas de Pardo van abajo, en «Decisiones».
+
+### Decisiones (Pardo, 25/09/2026, noche)
+
+1. **Las liquidaciones de hoy se borran.** Solo hubo pruebas: la migración elimina las que existan
+   (`payouts` y `payout_items`) y el modelo nuevo empieza de cero con el primer corte.
+2. **El mandato va en el «Acuerdo del profesor» v2.** El acuerdo deja de ser texto fijo en
+   `/aplicacion` y pasa a `legal_documents` como documento con versión (`TEACHER_AGREEMENT`): la
+   1.0 con el texto de hoy y la 2.0 con la cláusula del Anexo A. Los profes actuales la aceptan en
+   una ventana al entrar y los nuevos al postular. Sin la 2.0 aceptada, sus liquidaciones quedan
+   `ON_HOLD` con el motivo «Falta aceptar los términos».
+3. **Festivos solo para las liquidaciones.** Calendario de festivos de Colombia (Ley 51 de 1983 y
+   Semana Santa), como clase pura con sus pruebas, para la fecha de pago comprometida. `PlazoLegal`
+   (retracto, habeas data, soporte) sigue sin festivos.
+4. **La cancelación tardía del estudiante entra en la liquidación**, como línea propia con el texto
+   «Cancelación tardía del estudiante», con su comisión como cualquier clase: la política de
+   cancelación ya le da ese dinero al profe.
