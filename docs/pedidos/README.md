@@ -6,4 +6,4 @@ estado. La regla está en `CLAUDE.md` → «Registro de pedidos». Del más reci
 | Fecha | Pedido | Estado |
 |---|---|---|
 | 26/09/2026 11:14 | [Registrar cada pedido del chat en un .md](2026-09-26-1114-registrar-cada-pedido-en-un-md.md) | Hecho |
-| 26/09/2026 mañana | [Sexta tanda: landing, sin mi nombre, un solo «aceptar acuerdos», datos de pago obligatorios](2026-09-26-sexta-tanda-landing-nombre-acuerdos-datos-de-pago.md) | En curso |
+| 26/09/2026 mañana | [Sexta tanda: landing, sin mi nombre, un solo «aceptar acuerdos», datos de pago obligatorios](2026-09-26-sexta-tanda-landing-nombre-acuerdos-datos-de-pago.md) | Hecho |

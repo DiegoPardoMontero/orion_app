@@ -6,8 +6,9 @@
 | **Canal** | Chat de Claude Code |
 | **Quién** | Pardo |
 | **Brief** | `docs/briefs/orion-bloque-11-refinamiento.md` → «Sexta tanda (26/09)», pasos 41–45 |
-| **Commits** | `9f0a440`, `2a2faf8`, `1098c9b` (los 6 archivos) · `e4d3072` (brief) · `52afdac` (41) · `fa520ae` (43) · `3062ac2` (44) · paso 45 al cerrar |
-| **Estado** | En curso: código de los cinco pasos hecho y el backend verificado; faltan el e2e, el wireflow, subirlo y el correo |
+| **Commits** | `9f0a440`, `2a2faf8`, `1098c9b` (los 6 archivos) · `e4d3072` (brief) · `52afdac` (41) · `fa520ae` (43) · `3062ac2` (44) · `91e5d0a` (45) · `279aa90` (e2e y ESTADO), todos en `master` |
+| **Artifacts** | Wireflow v10: https://claude.ai/artifact/DneCWSQzDYH16wr7kYBqmj (pantallas `e-acuerdos`, `p-acuerdo`, `p-falta-pago`) |
+| **Estado** | Hecho y subido. Verificación: `./mvnw verify` 428 + 640, e2e 102 en verde y 1 saltada. Pendiente de Pardo: si crea una sociedad (así su nombre sale también de las tablas) y que el abogado mire «representantes legales» |
 
 ## El pedido, tal cual
 
