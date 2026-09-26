@@ -464,7 +464,7 @@ function Profesores({ lista }: { lista: ProfesorPracticado[] }) {
             >
               <Avatar nombre={profesor.fullName ?? ""} fotoUrl={profesor.photoUrl} />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[14px] font-bold">{profesor.fullName}</p>
+                <p className="text-[14px] leading-tight font-bold wrap-break-word">{profesor.fullName}</p>
                 <p className="text-[12.5px] text-text-secondary">
                   {profesor.lessons} {profesor.lessons === 1 ? "clase" : "clases"} juntos
                 </p>
