@@ -8,7 +8,7 @@ Al postularte como profesor en Orión, aceptas que:
 
 ## Mandato de recaudo
 
-**Mandato de recaudo.** Al aceptar estos términos, le encargas a Orión (Diego Pardo) recibir en tu nombre el valor que pagan tus estudiantes por tus clases. Ese dinero es tuyo: Orión lo recibe por tu cuenta y te lo entrega descontando la comisión de Orión, más el IVA sobre esa comisión cuando la ley lo exija. Orión no es tu empleador: tú fijas tu precio, tus horarios y dónde más enseñas.
+**Mandato de recaudo.** Al aceptar estos términos, le encargas a Orión recibir en tu nombre el valor que pagan tus estudiantes por tus clases. Ese dinero es tuyo: Orión lo recibe por tu cuenta y te lo entrega descontando la comisión de Orión, más el IVA sobre esa comisión cuando la ley lo exija. Orión no es tu empleador: tú fijas tu precio, tus horarios y dónde más enseñas.
 
 **Liquidación.** Cada quincena, con cortes el día 15 y el último día de cada mes, liquidamos las clases que dictaste cuyo plazo de reclamo ya venció sin reclamos abiertos. Te pagamos a más tardar el tercer día hábil después del corte, por transferencia Bre-B a la llave registrada a tu nombre. Si después de pagada una clase se resuelve un reclamo o una devolución a favor del estudiante, ese valor se descuenta de tu siguiente liquidación.
 

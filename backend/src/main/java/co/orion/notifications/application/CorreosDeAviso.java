@@ -150,8 +150,9 @@ public class CorreosDeAviso {
             String pago = "Transferencia Bre-B del " + FechasEnPalabras.fecha(r.paidOn()) + ", referencia "
                     + r.reference() + ", a la llave " + r.payeeKeyTypeLabel().toLowerCase() + " " + r.payeeMaskedKey()
                     + " a nombre de " + r.payeeHolder() + ".";
-            String mandato = "Orión (" + r.mandataryName() + (r.mandataryDocument() != null && !r.mandataryDocument().isBlank()
-                    ? ", " + r.mandataryDocument() : "") + ") recibe en tu nombre lo que pagan tus estudiantes y te lo entrega cada quincena, menos la comisión.";
+            // Sin el nombre de quien responde (Pardo, 26/09/2026): el profe trata con Orión. La
+            // identificación completa va en el certificado anual, que es el documento tributario.
+            String mandato = "Orión recibe en tu nombre lo que pagan tus estudiantes y te lo entrega cada quincena, menos la comisión.";
             String enlace = baseUrl + "/comprobante/" + r.id();
             texto.append("\n").append(totales).append("\n\n").append(pago).append("\n\n").append(mandato)
                     .append("\n\nComprobante para imprimir o guardar: ").append(enlace).append("\n\nOrión");

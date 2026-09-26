@@ -30,8 +30,6 @@ type Comprobante = {
   periodStart: string;
   periodEnd: string;
   committedPayDate: string;
-  mandataryName: string;
-  mandataryDocument: string | null;
   professorName: string | null;
   professorDocument: string | null;
   lines: Linea[];
@@ -122,8 +120,9 @@ export default function ComprobantePage() {
         <section className="mt-5 grid gap-4 text-[13.5px] sm:grid-cols-2">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted">Mandatario (recibe y entrega)</p>
-            <p className="mt-1 font-semibold">{c.mandataryName}</p>
-            {c.mandataryDocument && <p className="text-text-secondary">{c.mandataryDocument}</p>}
+            {/* «Orión» y no el nombre de quien responde (Pardo, 26/09/2026). La identificación completa
+                va en el certificado anual, que es el documento tributario. */}
+            <p className="mt-1 font-semibold">Orión</p>
           </div>
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted">Profe (mandante)</p>
@@ -181,8 +180,8 @@ export default function ComprobantePage() {
         </section>
 
         <p className="mt-6 text-[12px] leading-relaxed text-text-muted">
-          {c.mandataryName} recibe en nombre del profe lo que pagan sus estudiantes y se lo entrega cada quincena, menos la
-          comisión de Orión. Cada profe declara sus propios ingresos.
+          Orión recibe en nombre del profe lo que pagan sus estudiantes y se lo entrega cada quincena, menos la comisión.
+          Cada profe declara sus propios ingresos.
         </p>
       </article>
     </main>

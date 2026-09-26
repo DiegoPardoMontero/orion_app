@@ -279,7 +279,7 @@ test("[v-terminos.1 v-privacidad.1] los documentos legales tienen versión y res
   for (const ruta of ["/terminos", "/privacidad"]) {
     await page.goto(ruta);
     await expect(page.getByText(/Versión \d/).first()).toBeVisible();
-    await expect(page.getByText(/Diego Alejandro Pardo Montero|Responsable/).first()).toBeVisible();
+    await expect(page.getByText(/^(Responsable|Titular de la plataforma)$/).first()).toBeVisible();
     await sinDesbordeLateral(page);
   }
 });

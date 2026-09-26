@@ -39,7 +39,7 @@ class MarcadoresDeLosDocumentosTest {
             "cierre_automatico", "revision_postulacion");
 
     @ParameterizedTest(name = "{0}")
-    @ValueSource(strings = {"legal/terms-1.0.md", "legal/privacy-1.0.md"})
+    @ValueSource(strings = {"legal/terms-1.0.md", "legal/privacy-1.0.md", "legal/terms-1.1.md", "legal/privacy-1.1.md"})
     @DisplayName("Todo marcador del documento tiene quien lo rellene")
     void todoMarcadorTieneQuienLoRellene(String recurso) throws IOException {
         Set<String> usados = new LinkedHashSet<>();
@@ -54,7 +54,7 @@ class MarcadoresDeLosDocumentosTest {
     }
 
     @ParameterizedTest(name = "{0}")
-    @ValueSource(strings = {"legal/terms-1.0.md", "legal/privacy-1.0.md"})
+    @ValueSource(strings = {"legal/terms-1.0.md", "legal/privacy-1.0.md", "legal/terms-1.1.md", "legal/privacy-1.1.md"})
     @DisplayName("Las cifras de negocio no se escriben a mano en las cláusulas")
     void lasCifrasNoSeEscribenAMano(String recurso) throws IOException {
         // Regla de Pardo: lo que se cambia desde Ajustes cambia en todas partes. Una cláusula que

@@ -226,13 +226,13 @@ public enum SettingDefinition {
     // ------------------------------------------------------------------------- mandato
     MANDATARY_NAME("mandatary_name", Grupo.DINERO, Tipo.TEXTO,
             "Nombre del mandatario",
-            "Quien recibe el dinero de las clases por cuenta de cada profe y se lo entrega. Sale en el "
-                    + "comprobante de cada liquidación y en el certificado anual. Vacío: el responsable "
-                    + "de los datos legales.",
+            "Quien recibe el dinero de las clases por cuenta de cada profe y se lo entrega. Sale solo en "
+                    + "el certificado anual: el comprobante y los correos dicen «Orión». Vacío: el "
+                    + "responsable de los datos legales.",
             false),
     MANDATARY_DOCUMENT("mandatary_document", Grupo.DINERO, Tipo.TEXTO,
             "Documento del mandatario",
-            "Cédula o NIT, como aparece en el RUT. Sale en el comprobante y en el certificado anual. "
+            "Cédula o NIT, como aparece en el RUT. Sale solo en el certificado anual. "
                     + "Vacío: el documento de los datos legales.",
             false),
 

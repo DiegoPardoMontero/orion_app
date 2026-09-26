@@ -42,6 +42,13 @@ public class LegalDocumentSeeder implements ApplicationRunner {
             new Documento(LegalDocumentCode.PRIVACY, "1.0",
                     "Política de tratamiento de la información",
                     "legal/privacy-1.0.md", LocalDate.of(2026, 9, 8)),
+            // Sin el nombre del responsable en la redacción (Pardo, 26/09/2026): solo en la tabla de
+            // identificación, que la ley exige. Mismo fondo; se pide aceptar porque el texto lo promete.
+            new Documento(LegalDocumentCode.TERMS, "1.1", "Términos y condiciones",
+                    "legal/terms-1.1.md", LocalDate.of(2026, 9, 26)),
+            new Documento(LegalDocumentCode.PRIVACY, "1.1",
+                    "Política de tratamiento de la información",
+                    "legal/privacy-1.1.md", LocalDate.of(2026, 9, 26)),
             // El texto que se aceptaba en la postulación desde el Bloque 2, tal cual.
             new Documento(LegalDocumentCode.TEACHER_AGREEMENT, "1.0", "Acuerdo del profesor",
                     "legal/teacher-agreement-1.0.md", LocalDate.of(2026, 9, 2)),

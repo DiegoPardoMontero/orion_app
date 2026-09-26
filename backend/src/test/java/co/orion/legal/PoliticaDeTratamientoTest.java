@@ -7,6 +7,8 @@ import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.core.io.ClassPathResource;
 
 /**
@@ -34,7 +36,7 @@ class PoliticaDeTratamientoTest {
     @Test
     @DisplayName("La Política lleva las seis secciones del art. 13 del Decreto 1377 de 2013")
     void laPoliticaLlevaLasSeisSecciones() {
-        String politica = leer("legal/privacy-1.0.md");
+        String politica = leer("legal/privacy-1.1.md");
 
         // 1. Identidad y datos de contacto del responsable.
         assertThat(politica).contains("Responsable del tratamiento", "{{domicilio}}", "{{correo}}");
@@ -53,7 +55,7 @@ class PoliticaDeTratamientoTest {
     @Test
     @DisplayName("La Política dice que Orión no acepta menores y por qué")
     void laPoliticaCierraLaPuertaALosMenores() {
-        String politica = leer("legal/privacy-1.0.md");
+        String politica = leer("legal/privacy-1.1.md");
 
         assertThat(politica).contains("solo para mayores de 18 años");
         assertThat(politica).contains("artículo 7 de la Ley 1581");
@@ -62,7 +64,7 @@ class PoliticaDeTratamientoTest {
     @Test
     @DisplayName("Los Términos publican la identidad que exige el art. 50 de la Ley 1480")
     void losTerminosPublicanLaIdentidadDelProveedor() {
-        String terminos = leer("legal/terms-1.0.md");
+        String terminos = leer("legal/terms-1.1.md");
 
         assertThat(terminos).contains("{{responsable}}", "{{documento}}", "{{domicilio}}",
                 "{{correo}}");
@@ -78,7 +80,7 @@ class PoliticaDeTratamientoTest {
     @Test
     @DisplayName("Los Términos explican el retracto con su plazo, su excepción y su devolución")
     void losTerminosExplicanElRetracto() {
-        String terminos = leer("legal/terms-1.0.md");
+        String terminos = leer("legal/terms-1.1.md");
 
         assertThat(terminos).contains("artículo 47 de la Ley 1480 de 2011");
         assertThat(terminos).contains("cinco (5) días hábiles");
@@ -97,7 +99,7 @@ class PoliticaDeTratamientoTest {
     @Test
     @DisplayName("Los Términos describen la política de cancelación tal como la ejecuta el código")
     void losTerminosDescribenLaPoliticaDeCancelacion() {
-        String terminos = leer("legal/terms-1.0.md");
+        String terminos = leer("legal/terms-1.1.md");
 
         assertThat(terminos).contains("**Cancelar se puede siempre**");
         // La cifra no se escribe en la cláusula: se cita el ajuste, y `LegalDocumentService` la
@@ -112,7 +114,7 @@ class PoliticaDeTratamientoTest {
     @Test
     @DisplayName("Los Términos dicen que Orión es un portal de contacto y qué implica")
     void losTerminosDicenQueEsUnPortalDeContacto() {
-        String terminos = leer("legal/terms-1.0.md");
+        String terminos = leer("legal/terms-1.1.md");
 
         assertThat(terminos).contains("portal de contacto");
         assertThat(terminos).contains("artículo 53 de la Ley 1480 de 2011");
@@ -127,11 +129,26 @@ class PoliticaDeTratamientoTest {
     @Test
     @DisplayName("Los Términos no renuncian a los derechos del consumidor")
     void losTerminosNoRenuncianADerechos() {
-        String terminos = leer("legal/terms-1.0.md");
+        String terminos = leer("legal/terms-1.1.md");
 
         assertThat(terminos).contains(
                 "Nada en estos Términos limita, renuncia ni condiciona los derechos que la ley te "
                         + "reconoce como consumidor");
         assertThat(terminos).contains("Superintendencia de Industria y Comercio");
+    }
+
+    /**
+     * Pardo (26/09/2026): los textos dicen «Orión», no su nombre. El nombre solo sale en la tabla de
+     * identificación, porque el art. 50 de la Ley 1480 y el art. 13 del Decreto 1377 exigen decir
+     * quién responde; lo rellena {@code ORION_LEGAL_NOMBRE}.
+     */
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"legal/terms-1.1.md", "legal/privacy-1.1.md"})
+    @DisplayName("El nombre del responsable solo sale en la tabla de identificación")
+    void elNombreSoloSaleEnLaTabla(String recurso) {
+        String texto = leer(recurso);
+
+        assertThat(texto.lines().filter(linea -> linea.contains("{{responsable}}")))
+                .singleElement().asString().startsWith("| **");
     }
 }
