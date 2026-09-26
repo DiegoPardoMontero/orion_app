@@ -367,6 +367,16 @@ test("[p-bienvenida.1 p-bienvenida.2 p-bienvenida.3] con video: la bienvenida un
     await falta.getByRole("button", { name: "Guardar" }).click();
     await expect(falta).toBeHidden();
 
+    // Y el acuerdo del profesor vigente, con el mandato de recaudo (brief de liquidaciones, paso 1):
+    // sin aceptarlo puede dar clases, pero sus liquidaciones quedan retenidas, y se le dice.
+    const acuerdo = profe.getByRole("dialog", { name: "Actualizamos el acuerdo del profesor" });
+    await expect(acuerdo.getByText(/no podemos pagarte tus liquidaciones/)).toBeVisible({ timeout: 20_000 });
+    await expect(acuerdo.getByText("Mandato de recaudo.", { exact: false }).first()).toBeVisible();
+    await expect(acuerdo.getByRole("button", { name: "Aceptar" })).toBeDisabled();
+    await acuerdo.getByLabel(/Leí y acepto el acuerdo del profesor \(versión 2\.0\)/).check();
+    await acuerdo.getByRole("button", { name: "Aceptar" }).click();
+    await expect(acuerdo).toBeHidden();
+
     const bienvenida = profe.getByRole("dialog", { name: "Bienvenida a Orión" });
     await expect(bienvenida).toBeVisible({ timeout: 20_000 });
     await expect(bienvenida.getByRole("button", { name: "Empezar el recorrido" }).first()).toBeVisible();

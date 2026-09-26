@@ -23,6 +23,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Avatar } from "@/components/Avatar";
 import { CambiarFoto } from "@/components/CambiarFoto";
 import { bordeSegun, ContadorPalabras } from "@/components/ContadorPalabras";
+import { CuerpoLegal } from "@/components/DocumentoLegal";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
 import { Rigel } from "@/components/Rigel";
 import { Badge, Boton, Campo, Spinner, Toggle } from "@/components/ui";
@@ -35,6 +36,7 @@ import type {
   ProfileResponse,
   TeacherApplicationView,
 } from "@/lib/api/types";
+import { useAcuerdoDelProfesor } from "@/lib/acuerdo";
 import { DOC_TIPOS, etiquetaDocumento, etiquetaFaltante, MI_APLICACION_KEY } from "@/lib/aplicacion";
 import { useMe } from "@/lib/auth/session";
 import { etiquetaNivel, etiquetaObjetivo, NIVELES } from "@/lib/i18n";
@@ -648,6 +650,7 @@ function SubidorDocumento({
 
 function PasoAcuerdo({ aceptado }: { aceptado: boolean }) {
   const queryClient = useQueryClient();
+  const acuerdo = useAcuerdoDelProfesor();
   const aceptar = useMutation({
     mutationFn: () =>
       apiFetch<void>("/api/v1/me/agreements/TEACHER_AGREEMENT/accept", { method: "POST" }),
@@ -661,16 +664,17 @@ function PasoAcuerdo({ aceptado }: { aceptado: boolean }) {
       <div className="flex items-center gap-2 text-[13.5px] font-bold text-text">
         <ShieldCheck size={18} strokeWidth={2} className="text-primary-strong" />
         Acuerdo del profesor
+        {acuerdo.data && <span className="font-semibold text-text-muted">· versión {acuerdo.data.version}</span>}
       </div>
-      <div className="max-h-64 overflow-y-auto rounded-card bg-surface-raised p-4 text-[13px] leading-relaxed text-text-secondary shadow-sm">
-        <p>Al postularte como profesor en Orión, aceptas que:</p>
-        <ul className="mt-2 list-disc space-y-1.5 pl-5">
-          <li>La información y los documentos que envías son veraces y tuyos.</li>
-          <li>Impartirás tus clases con puntualidad, respeto y profesionalismo.</li>
-          <li>Orión retiene una comisión sobre tu tarifa, que verás con claridad antes de publicar.</li>
-          <li>El contacto con estudiantes se coordina por los canales oficiales de la plataforma.</li>
-          <li>Orión puede revisar tu perfil y suspenderlo si incumples estas condiciones.</li>
-        </ul>
+      {/* El texto viene de la base, con su versión: es lo que queda como constancia de lo aceptado. */}
+      <div className="max-h-72 overflow-y-auto rounded-card bg-surface-raised p-4 shadow-sm">
+        {acuerdo.data ? (
+          <CuerpoLegal body={acuerdo.data.body} />
+        ) : acuerdo.isError ? (
+          <ErrorCarga mensaje="No pudimos cargar el acuerdo." onReintentar={() => void acuerdo.refetch()} />
+        ) : (
+          <Cargando filas={3} />
+        )}
       </div>
 
       {aceptado ? (
@@ -683,7 +687,7 @@ function PasoAcuerdo({ aceptado }: { aceptado: boolean }) {
           <input
             type="checkbox"
             checked={false}
-            disabled={aceptar.isPending}
+            disabled={aceptar.isPending || !acuerdo.data}
             onChange={() => aceptar.mutate()}
             className="mt-0.5 h-5 w-5 accent-primary"
           />

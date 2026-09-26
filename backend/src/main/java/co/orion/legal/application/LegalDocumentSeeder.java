@@ -42,6 +42,12 @@ public class LegalDocumentSeeder implements ApplicationRunner {
             new Documento(LegalDocumentCode.PRIVACY, "1.0",
                     "Política de tratamiento de la información",
                     "legal/privacy-1.0.md", LocalDate.of(2026, 9, 8)),
+            // El texto que se aceptaba en la postulación desde el Bloque 2, tal cual.
+            new Documento(LegalDocumentCode.TEACHER_AGREEMENT, "1.0", "Acuerdo del profesor",
+                    "legal/teacher-agreement-1.0.md", LocalDate.of(2026, 9, 2)),
+            // Con el mandato de recaudo (Anexo A del brief de liquidaciones, aprobado por Pardo).
+            new Documento(LegalDocumentCode.TEACHER_AGREEMENT, "2.0", "Acuerdo del profesor",
+                    "legal/teacher-agreement-2.0.md", LocalDate.of(2026, 9, 25)),
     };
 
     private final LegalDocumentRepository documents;

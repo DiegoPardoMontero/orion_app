@@ -102,6 +102,29 @@ public class LegalDocumentService {
                 userId, code.name(), document.getVersion(), ip, truncate(userAgent)));
     }
 
+    /** Si alguien aceptó la versión que rige hoy de un documento. Sin versión vigente, no se le exige. */
+    @Transactional(readOnly = true)
+    public boolean aceptoLaVigente(UUID userId, LegalDocumentCode code) {
+        return documents.findVigente(code.name(), hoy())
+                .map(doc -> acceptances.existsByUserIdAndDocumentCodeAndVersion(
+                        userId, code.name(), doc.getVersion()))
+                .orElse(true);
+    }
+
+    /**
+     * Lo que la app le tiene que pedir aceptar a alguien al entrar, según su rol. Hoy solo el
+     * acuerdo del profesor: su versión 2.0 trae el mandato de recaudo, y sin él sus liquidaciones
+     * quedan retenidas. Los Términos y la política no entran aquí todavía: pedirlos a quien nunca
+     * los aceptó (cuentas anteriores al Bloque 9, o creadas por el admin) es otra decisión.
+     */
+    @Transactional(readOnly = true)
+    public List<LegalDocumentCode> pendientesAlEntrar(UUID userId, String rolEfectivo) {
+        if (!"PROFESSOR".equals(rolEfectivo) || aceptoLaVigente(userId, LegalDocumentCode.TEACHER_AGREEMENT)) {
+            return List.of();
+        }
+        return List.of(LegalDocumentCode.TEACHER_AGREEMENT);
+    }
+
     /** Qué documentos vigentes le faltan por aceptar a alguien. Vacío = está al día. */
     @Transactional(readOnly = true)
     public List<LegalDocumentCode> pendientes(UUID userId) {

@@ -43,6 +43,20 @@ export function DocumentoLegal({ doc }: { doc: DocumentoLegalData }) {
   );
 }
 
+/**
+ * Solo el cuerpo, sin título ni vigencia: para mostrar un documento dentro de otra pantalla (el paso
+ * del acuerdo en la postulación, la ventana que se lo pide al profe).
+ */
+export function CuerpoLegal({ body }: { body: string }) {
+  return (
+    <>
+      {parseMarkdown(body).map((bloque, i) => (
+        <BloqueLegal key={i} bloque={bloque} />
+      ))}
+    </>
+  );
+}
+
 function BloqueLegal({ bloque }: { bloque: Bloque }) {
   switch (bloque.tipo) {
     case "titulo":

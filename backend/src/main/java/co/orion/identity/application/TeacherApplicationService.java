@@ -32,8 +32,8 @@ import co.orion.identity.domain.TeacherApplication;
 import co.orion.identity.domain.TeacherApplicationEvent;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
-import co.orion.legal.domain.AgreementAcceptance;
-import co.orion.legal.persistence.AgreementAcceptanceRepository;
+import co.orion.legal.application.LegalDocumentService;
+import co.orion.legal.domain.LegalDocumentCode;
 import co.orion.identity.persistence.ProfessorGoalRepository;
 import co.orion.identity.persistence.ProfessorInviteRepository;
 import co.orion.identity.persistence.ProfessorLanguageLevelRepository;
@@ -57,8 +57,7 @@ public class TeacherApplicationService {
     /** Días hábiles prometidos para revisar. Ajuste, no constante: es una promesa al aspirante. */
     private static final String REVIEW_DAYS_KEY = "application_review_business_days";
 
-    public static final String TEACHER_AGREEMENT = "TEACHER_AGREEMENT";
-    private static final String AGREEMENT_VERSION = "1.0";
+    public static final String TEACHER_AGREEMENT = LegalDocumentCode.TEACHER_AGREEMENT.name();
     private static final int MIN_NOTE_LENGTH = 10;
     private static final List<ApplicationStatus> OPEN = List.of(
             ApplicationStatus.DRAFT, ApplicationStatus.PENDING_REVIEW,
@@ -67,7 +66,7 @@ public class TeacherApplicationService {
     private final TeacherApplicationRepository applications;
     private final TeacherApplicationEventRepository events;
     private final TeacherDocumentRepository documents;
-    private final AgreementAcceptanceRepository agreements;
+    private final LegalDocumentService legal;
     private final UserRepository users;
     private final ProfessorProfileRepository profiles;
     private final ProfessorLanguageRepository languages;
@@ -84,7 +83,7 @@ public class TeacherApplicationService {
     public TeacherApplicationService(TeacherApplicationRepository applications,
                                      TeacherApplicationEventRepository events,
                                      TeacherDocumentRepository documents,
-                                     AgreementAcceptanceRepository agreements,
+                                     LegalDocumentService legal,
                                      UserRepository users,
                                      ProfessorProfileRepository profiles,
                                      ProfessorLanguageRepository languages,
@@ -100,7 +99,7 @@ public class TeacherApplicationService {
         this.applications = applications;
         this.events = events;
         this.documents = documents;
-        this.agreements = agreements;
+        this.legal = legal;
         this.users = users;
         this.profiles = profiles;
         this.languages = languages;
@@ -142,11 +141,9 @@ public class TeacherApplicationService {
         if (!TEACHER_AGREEMENT.equals(documentCode)) {
             throw new ResourceNotFoundException("Documento no encontrado");
         }
-        if (agreements.existsByUserIdAndDocumentCode(userId, documentCode)) {
-            return; // ya aceptado: idempotente (el índice único lo respalda)
-        }
-        agreements.save(new AgreementAcceptance(
-                userId, documentCode, AGREEMENT_VERSION, ip, userAgent));
+        // La versión vigente, con su constancia (IP, user-agent, fecha), como los Términos. Desde la
+        // 2.0 lleva el mandato de recaudo. Idempotente: aceptar dos veces la misma no crea dos filas.
+        legal.record(userId, LegalDocumentCode.TEACHER_AGREEMENT, ip, userAgent);
     }
 
     @Transactional
@@ -361,7 +358,7 @@ public class TeacherApplicationService {
             missing.add("cv");
         }
 
-        if (!agreements.existsByUserIdAndDocumentCode(userId, TEACHER_AGREEMENT)) {
+        if (!legal.aceptoLaVigente(userId, LegalDocumentCode.TEACHER_AGREEMENT)) {
             missing.add("agreement");
         }
 
@@ -375,7 +372,7 @@ public class TeacherApplicationService {
         // La lista de faltantes solo tiene sentido mientras la postulación siga viva.
         List<String> missing = application.getStatus().isTerminal()
                 ? List.of() : missingRequirements(userId);
-        boolean agreementAccepted = agreements.existsByUserIdAndDocumentCode(userId, TEACHER_AGREEMENT);
+        boolean agreementAccepted = legal.aceptoLaVigente(userId, LegalDocumentCode.TEACHER_AGREEMENT);
         return new TeacherApplicationView(
                 application.getId(),
                 application.getStatus().name(),

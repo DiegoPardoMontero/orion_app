@@ -38,6 +38,8 @@ import co.orion.identity.persistence.ProfessorProfileRepository;
 import co.orion.identity.persistence.TeacherApplicationEventRepository;
 import co.orion.identity.persistence.TeacherApplicationRepository;
 import co.orion.identity.persistence.UserRepository;
+import co.orion.legal.application.LegalDocumentService;
+import co.orion.legal.domain.LegalDocumentCode;
 import co.orion.scheduling.domain.AvailabilityRule;
 import co.orion.scheduling.domain.Booking;
 import co.orion.scheduling.domain.BookingModality;
@@ -73,6 +75,7 @@ public class DevDataSeeder implements ApplicationRunner {
     private final TeacherApplicationRepository applications;
     private final TeacherApplicationEventRepository applicationEvents;
     private final PasswordEncoder passwordEncoder;
+    private final LegalDocumentService legal;
     private final String adminEmail;
     private final String adminPassword;
 
@@ -87,6 +90,7 @@ public class DevDataSeeder implements ApplicationRunner {
                          TeacherApplicationRepository applications,
                          TeacherApplicationEventRepository applicationEvents,
                          PasswordEncoder passwordEncoder,
+                         LegalDocumentService legal,
                          @Value("${orion.admin.email}") String adminEmail,
                          @Value("${orion.admin.password}") String adminPassword) {
         this.users = users;
@@ -100,6 +104,7 @@ public class DevDataSeeder implements ApplicationRunner {
         this.applications = applications;
         this.applicationEvents = applicationEvents;
         this.passwordEncoder = passwordEncoder;
+        this.legal = legal;
         this.adminEmail = adminEmail;
         this.adminPassword = adminPassword;
     }
@@ -241,8 +246,13 @@ public class DevDataSeeder implements ApplicationRunner {
                 });
     }
 
-    /** Sin postulación APPROVED el gate ocultaría a los profesores sembrados del marketplace. */
+    /**
+     * Sin postulación APPROVED el gate ocultaría a los profesores sembrados del marketplace. Y sin el
+     * acuerdo del profesor vigente aceptado, la app les pediría aceptarlo al entrar y taparía las
+     * pruebas (la 2.0 trae el mandato de recaudo).
+     */
     private void approveTeacher(UUID professorId) {
+        legal.record(professorId, LegalDocumentCode.TEACHER_AGREEMENT, "127.0.0.1", "Semilla de desarrollo");
         if (applications.existsByUserIdAndStatus(professorId, ApplicationStatus.APPROVED)) {
             return;
         }
