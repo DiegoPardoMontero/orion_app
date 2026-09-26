@@ -50,14 +50,14 @@ async function fundador(): Promise<{ pct: number; meses: number }> {
 export async function generateMetadata(): Promise<Metadata> {
   const pct = await comision();
   return {
-    title: "Enseña en Orión · Construye tu agenda de clases de idiomas",
+    title: "Enseña en Orión · Construye tu agenda de clases de inglés",
     description:
-      `Publica tu perfil de profesor de idiomas, define tus horarios y recibe estudiantes reales. Tú pones la tarifa; Orión retiene una comisión del ${pct}%. Sin cuotas por adelantado.`,
+      `Publica tu perfil de profesor de inglés, define tus horarios y recibe estudiantes reales. Tú pones la tarifa; Orión retiene una comisión del ${pct} %. Sin cuotas por adelantado.`,
     alternates: { canonical: "/ensena-con-orion" },
     openGraph: {
       title: "Enseña en Orión",
       description:
-        `Publica tu perfil, define tus horarios y recibe estudiantes reales. Comisión transparente del ${pct}%, sin cuotas por adelantado.`,
+        `Publica tu perfil, define tus horarios y recibe estudiantes reales. Comisión transparente del ${pct} %, sin cuotas por adelantado.`,
       type: "website",
       images: [{ url: "/og.png", width: 1200, height: 630, alt: "Enseña en Orión" }],
     },
@@ -68,12 +68,12 @@ const BENEFICIOS = [
   {
     icono: CalendarClock,
     titulo: "Tu horario, tus reglas",
-    texto: "Abres solo los cupos que quieras. Los estudiantes reservan; tú confirmas y das la clase.",
+    texto: "Abres solo los cupos que quieras. Los estudiantes reservan y pagan; tú das la clase.",
   },
   {
     icono: Users,
     titulo: "Estudiantes reales",
-    texto: "Tu perfil aparece en el marketplace y en las landings por idioma. Sin buscar clientes por tu cuenta.",
+    texto: "Tu perfil aparece en el buscador de Orión y en su página de inglés. Sin buscar clientes por tu cuenta.",
   },
   {
     icono: Wallet,
@@ -93,7 +93,7 @@ const PASOS = [
   {
     icono: UserPlus,
     titulo: "Crea tu cuenta",
-    texto: "Regístrate gratis y abre tu postulación de profesor desde tu panel.",
+    texto: "Regístrate gratis y sigue directo con tu postulación de profesor.",
   },
   {
     icono: FileCheck2,
@@ -108,7 +108,7 @@ const PASOS = [
   {
     icono: ClipboardCheck,
     titulo: "Publica y recibe reservas",
-    texto: "Al aprobarte, publicas tu perfil, abres tu disponibilidad y empiezas a recibir estudiantes.",
+    texto: "Al aprobarte, registras a dónde te pagamos, publicas tu perfil, abres tus horarios y empiezas a recibir estudiantes.",
   },
 ];
 
@@ -127,7 +127,7 @@ export default async function EnsenaConOrionPage() {
             url: `${SITE_URL}/ensena-con-orion`,
             inLanguage: "es-CO",
             description:
-              `Propuesta para profesores de idiomas: publica tu perfil, define tus horarios y recibe estudiantes. Comisión del ${pct}%.`,
+              `Propuesta para profesores de inglés: publica tu perfil, define tus horarios y recibe estudiantes. Comisión del ${pct} %.`,
             publisher: {
               "@type": "Organization",
               name: "Orión Idiomas",
@@ -146,10 +146,10 @@ export default async function EnsenaConOrionPage() {
           <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-center">
             <div>
               <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-on-primary/80">
-                Para profesores de idiomas
+                Para profesores de inglés
               </p>
               <h1 className="mt-3 max-w-[20ch] font-display text-[32px] font-bold leading-[1.1] text-on-primary lg:text-[48px]">
-                Enseña idiomas. Construye tu agenda en Orión.
+                Enseña inglés. Construye tu agenda en Orión.
               </h1>
               <p className="mt-4 max-w-[52ch] text-[15px] leading-relaxed text-on-primary/85 lg:text-[17px]">
                 Publica tu perfil, define tus horarios y recibe estudiantes reales que quieren
@@ -198,18 +198,18 @@ export default async function EnsenaConOrionPage() {
               <Percent size={30} strokeWidth={2.2} />
             </span>
             <p className="font-display text-[40px] font-extrabold leading-none text-on-primary lg:text-[52px]">
-              {pct}%
+              {pct} %
             </p>
           </div>
           <div>
             <h2 className="font-display text-h3 font-bold text-on-primary">Comisión clara, sin sorpresas.</h2>
             <p className="mt-2 text-[15px] leading-relaxed text-on-primary/85">
-              Orión retiene una comisión del <strong className="font-bold text-accent-peach">{pct}%</strong>{" "}
-              sobre tu tarifa por cada clase reservada. Lo demás es tuyo. Sin cuotas por adelantado ni
+              Orión retiene una comisión del <strong className="font-bold text-accent-peach">{pct} %</strong>{" "}
+              sobre tu tarifa por cada clase pagada. Lo demás es tuyo. Sin cuotas por adelantado ni
               costos ocultos: verás el desglose completo antes de publicar tu perfil.
             </p>
             <p className="mt-2 text-[15px] leading-relaxed text-on-primary/85">
-              <strong className="font-bold text-accent-peach">Profes fundadores:</strong> {fund.pct}% durante sus
+              <strong className="font-bold text-accent-peach">Profes fundadores:</strong> {fund.pct} % durante sus
               primeros {fund.meses} meses de clases, contados desde la primera clase pagada.
             </p>
           </div>

@@ -591,7 +591,7 @@ con las decisiones que tomó Pardo.
 - **Resumen personalizado** de lo que la persona contó, escrito por `gpt-5-mini` con razonamiento
   mínimo y revisado antes de mostrarse (palabras prohibidas → frase de plantilla). Va al presupuesto
   del diagnóstico. Todas las salidas lo llevan, también la rama en español y la conversación corta.
-- **Etiqueta del resultado** por tramos del handoff («Ya te defiendes», «Con soltura»…); nunca
+- **Etiqueta del resultado** por tramos del handoff («Ya te defiendes», «Con fluidez»…); nunca
   letras del MCER. La rama en español muestra «Primeros pasos» sin número.
 - **Meissa**, la segunda mascota, en todo el flujo: `/diagnostico` (sin pasos y sin scroll), la
   conversación a pantalla completa con sus estados habla/escucha/piensa y el subtítulo de lo que

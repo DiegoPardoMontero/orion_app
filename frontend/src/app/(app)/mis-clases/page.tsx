@@ -561,7 +561,7 @@ function TarjetaClase({
               tono={
                 clase.status === "COMPLETED"
                   ? "menta"
-                  : clase.status === "NO_SHOW"
+                  : clase.status?.startsWith("NO_SHOW")
                     ? "melocoton"
                     : "error"
               }
@@ -571,7 +571,7 @@ function TarjetaClase({
               ) : (
                 <X size={12} strokeWidth={2.4} />
               )}
-              {etiquetaEstado(clase.status)}
+              {etiquetaEstado(clase.status, esProfesor ? "profesor" : "estudiante")}
             </Badge>
           </div>
         )}

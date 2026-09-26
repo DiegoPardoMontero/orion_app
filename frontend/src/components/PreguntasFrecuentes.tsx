@@ -24,11 +24,11 @@ const base = (c: PublicFigures): Record<"estudiante" | "profesor" | "general", P
   estudiante: [
     {
       p: "¿Cómo reservo una clase?",
-      r: `Busca un profesor, abre su perfil y elige día y hora entre los cupos libres. Las clases duran ${minutos(c.classMinutes)} y empiezan en punto, en hora de Bogotá.`,
+      r: `Busca un profesor, abre su perfil y elige día y hora entre los cupos libres. Las clases duran ${minutos(c.classMinutes)} y empiezan a la hora o a la media hora, en hora de Bogotá.`,
     },
     {
       p: "Reservé y no me confirmó la clase. ¿Por qué?",
-      r: `Reservar aparta el horario, pero la clase se confirma cuando entra el pago. Tienes ${minutos(c.paymentHoldMinutes)} para pagarlo; si no, la reserva se cancela sola y no se te cobra nada.`,
+      r: `Reservar aparta el horario, pero la clase se confirma cuando entra el pago. Tienes ${minutos(c.paymentHoldMinutes)} para pagar; si no, la reserva se cancela sola y no se te cobra nada.`,
     },
     {
       p: "¿Cómo pago?",
@@ -66,7 +66,7 @@ const base = (c: PublicFigures): Record<"estudiante" | "profesor" | "general", P
   profesor: [
     {
       p: "¿Cuánto tarda mi postulación?",
-      r: "La revisa una persona. Puede aprobarse, rechazarse o volver con cambios pedidos; en los tres casos te escribimos. Mientras espera, tu cuenta es de aspirante: puedes editar tu postulación pero todavía no recibir reservas.",
+      r: `La revisa una persona en ${diasHabiles(c.applicationReviewBusinessDays)}. Puede aprobarse, rechazarse o volver con cambios pedidos; en los tres casos te escribimos. Mientras esperas, tu cuenta es de aspirante: puedes editar tu postulación pero todavía no recibir reservas.`,
     },
     {
       p: "No aparezco en el buscador. ¿Por qué?",
@@ -78,7 +78,7 @@ const base = (c: PublicFigures): Record<"estudiante" | "profesor" | "general", P
     },
     {
       p: "¿Cuándo me pagan?",
-      r: "El dinero queda retenido hasta que la clase se dicta; ahí pasa a estar disponible para la siguiente liquidación. Las liquidaciones y la transferencia las hace una persona: no es automático.",
+      r: "Cada quincena. Orión recibe en tu nombre lo que pagan tus estudiantes; cuando la clase ya se dictó y venció el plazo de reclamo, entra en el siguiente corte (el 1 y el 16 de cada mes) y te lo transferimos por Bre-B, menos la comisión, a más tardar el tercer día hábil después del corte. Para recibirlo necesitas tus datos de pago registrados y el acuerdo del profesor aceptado.",
     },
     {
       p: "¿Qué pasa si tengo que cancelar?",
@@ -86,11 +86,11 @@ const base = (c: PublicFigures): Record<"estudiante" | "profesor" | "general", P
     },
     {
       p: "¿Y si el estudiante no llega?",
-      r: `Regístralo como inasistencia en «Mis clases». Cobras igual: apartaste tu hora y estuviste ahí. Si no registras nada, el sistema cierra la clase solo a las ${horas(c.autoCompleteHours)} y libera el pago de todos modos.`,
+      r: `Regístralo como inasistencia en tu «Agenda». Cobras igual: apartaste tu hora y estuviste ahí. Si no registras nada, el sistema cierra la clase solo a las ${horas(c.autoCompleteHours)} y libera el pago de todos modos.`,
     },
     {
-      p: "¿Cómo abro mi disponibilidad?",
-      r: "En «Disponibilidad» defines franjas semanales que se repiten, y excepciones para los días sueltos. Los cupos salen alineados a la hora y nunca se ofrecen horas ya empezadas.",
+      p: "¿Cómo abro mis horarios?",
+      r: "En «Perfil» → «Mis horarios» defines franjas semanales que se repiten, y bloqueas las fechas en que no puedes. Los cupos salen cada media hora y nunca se ofrecen horas ya empezadas.",
     },
     {
       p: "Me pusieron tarifa en cero. ¿Qué significa?",
@@ -100,7 +100,7 @@ const base = (c: PublicFigures): Record<"estudiante" | "profesor" | "general", P
   general: [
     {
       p: "¿Qué es Orión?",
-      r: "Una academia de inglés en línea: eliges profesor, reservas la hora que te sirve y das la clase por videollamada. Sin paquetes obligatorios ni matrícula.",
+      r: "Una academia de inglés en línea: eliges profesor, reservas la hora que te sirve y tomas la clase por videollamada. Sin paquetes ni matrícula.",
     },
     {
       p: "¿Las clases son presenciales o virtuales?",
@@ -112,7 +112,7 @@ const base = (c: PublicFigures): Record<"estudiante" | "profesor" | "general", P
     },
     {
       p: "¿Cómo elijo profesor?",
-      r: "En el buscador puedes filtrar por idioma, nivel, objetivo, precio, días y franja horaria. Cada perfil muestra su experiencia, sus idiomas y las reseñas de sus estudiantes.",
+      r: "En el buscador puedes filtrar por nivel, objetivo, precio, días y franja horaria. Cada perfil muestra su experiencia, sus idiomas y las reseñas de sus estudiantes.",
     },
     {
       p: "¿Es seguro pagar?",
@@ -174,8 +174,8 @@ export const preguntas = (c: PublicFigures): Record<Lista, Pregunta[]> => {
         r: "Por Wompi, con PSE, tarjeta o Nequi. El cobro lo procesa Wompi y los datos de tu tarjeta nunca pasan por los servidores de Orión.",
       },
       {
-        p: "¿Qué datos usan si entro con Google o Facebook?",
-        r: "Solo tu nombre, tu correo y el identificador de tu cuenta, para crear tu cuenta de Orión Idiomas e iniciar sesión. No publicamos nada en tu nombre ni accedemos a ningún otro dato de tu cuenta de Google o Facebook.",
+        p: "¿Qué datos usan si entro con Google, Microsoft, Apple o Facebook?",
+        r: "Solo tu nombre, tu correo y el identificador de tu cuenta, para crear tu cuenta de Orión Idiomas e iniciar sesión. No publicamos nada en tu nombre ni accedemos a ningún otro dato de esa cuenta.",
       },
       {
         p: "Soy menor de edad, ¿puedo tomar clases?",
@@ -190,7 +190,7 @@ export const preguntas = (c: PublicFigures): Record<Lista, Pregunta[]> => {
       { p: "¿Cuánto cobra Orión de comisión?", r: respuesta(b.profesor, "¿Cuánto retiene Orión?") },
       {
         p: "¿Yo pongo mi tarifa?",
-        r: "Sí. La fijas tú, entre $20.000 y $500.000 por clase, y la cambias cuando quieras. El estudiante la ve en tu perfil antes de reservar.",
+        r: "Sí. La fijas tú, entre $20.000 y $500.000 por hora, y la cambias cuando quieras. El estudiante la ve en tu perfil antes de reservar.",
       },
       { p: "¿Cuándo y cómo me pagan?", r: respuesta(b.profesor, "¿Cuándo me pagan?") },
       { p: "¿Qué pasa si un estudiante no se presenta?", r: respuesta(b.profesor, "¿Y si el estudiante no llega?") },
@@ -207,8 +207,8 @@ export const preguntas = (c: PublicFigures): Record<Lista, Pregunta[]> => {
         r: "No. Enseñas con tu estilo y tu material. El Método ORION™ es el marco del seguimiento después de la clase, no de la clase misma.",
       },
       {
-        p: "¿Qué datos usan si entro con Google o Facebook?",
-        r: "Solo tu nombre, tu correo y el identificador de tu cuenta, para crear tu cuenta de Orión Idiomas e iniciar sesión. No publicamos nada en tu nombre ni accedemos a ningún otro dato de tu cuenta de Google o Facebook.",
+        p: "¿Qué datos usan si entro con Google, Microsoft, Apple o Facebook?",
+        r: "Solo tu nombre, tu correo y el identificador de tu cuenta, para crear tu cuenta de Orión Idiomas e iniciar sesión. No publicamos nada en tu nombre ni accedemos a ningún otro dato de esa cuenta.",
       },
       {
         p: "¿Puedo traer a mis propios estudiantes?",
@@ -275,7 +275,7 @@ export function PreguntasFrecuentes({
           </span>
           <span className="min-w-0">
             <span className="block text-[14px] font-bold">
-              ¿No está tu pregunta? Comunícate con el administrador
+              ¿No está tu pregunta? Escríbenos
             </span>
             <span className="block text-[12.5px] text-text-muted">
               Por WhatsApp · {contacto.data.horario}

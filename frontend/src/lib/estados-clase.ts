@@ -8,11 +8,17 @@ const ETIQUETAS: Record<string, string> = {
   CANCELLED_BY_ADMIN: "Cancelada por Orión",
   COMPLETED: "Completada",
   UNDER_REVIEW: "En revisión",
-  NO_SHOW_STUDENT: "No asististe",
+  NO_SHOW_STUDENT: "El estudiante no llegó",
   NO_SHOW_PROFESSOR: "El profesor no llegó",
 };
 
-export function etiquetaEstado(estado?: string): string {
+/**
+ * La inasistencia se cuenta según quién lee: al que faltó se le habla de tú, y al admin, en tercera
+ * persona. Antes el profe cuyo estudiante no llegó leía «No asististe».
+ */
+export function etiquetaEstado(estado?: string, lector?: "estudiante" | "profesor"): string {
+  if (estado === "NO_SHOW_STUDENT" && lector === "estudiante") return "No asististe";
+  if (estado === "NO_SHOW_PROFESSOR" && lector === "profesor") return "No asististe";
   return (estado && ETIQUETAS[estado]) ?? estado ?? "";
 }
 
