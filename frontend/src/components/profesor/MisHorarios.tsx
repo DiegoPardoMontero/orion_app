@@ -71,7 +71,7 @@ export function MisHorarios() {
         </h2>
         <p className="mt-1 flex items-center gap-1.5 text-[12.5px] text-text-secondary">
           <Clock size={14} strokeWidth={1.75} />
-          Horario semanal recurrente · hora de Bogotá
+          Horario semanal recurrente · hora de Colombia
         </p>
       </div>
 
@@ -203,7 +203,7 @@ function ModalEliminarFranja({ regla, onCerrar }: { regla: RuleResponse; onCerra
     },
   });
 
-  const franja = `${corta(regla.startTime)}–${corta(regla.endTime)}`;
+  const franja = rangoCompacto(corta(regla.startTime), corta(regla.endTime));
 
   return (
     <Modal titulo="¿Eliminar esta franja?" onCerrar={onCerrar}>
@@ -240,7 +240,7 @@ function FilaExcepcion({ excepcion }: { excepcion: ExceptionResponse }) {
   });
 
   const cuando = excepcion.startTime
-    ? `${corta(excepcion.startTime)}–${corta(excepcion.endTime)}`
+    ? rangoCompacto(corta(excepcion.startTime), corta(excepcion.endTime))
     : "todo el día";
 
   return (

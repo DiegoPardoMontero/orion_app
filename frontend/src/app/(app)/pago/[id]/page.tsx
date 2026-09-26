@@ -11,7 +11,7 @@ import { Boton, BotonPrincipal, Tarjeta } from "@/components/ui";
 import { apiFetch } from "@/lib/api/fetch";
 import type { PaymentStatusResponse } from "@/lib/api/types";
 import { minutos } from "@/lib/cifras";
-import { fechaYRango, precioCop } from "@/lib/format";
+import { fechaYRango, horaBogota, precioCop } from "@/lib/format";
 
 /**
  * La vuelta de la pasarela. Wompi redirige aquí en cuanto el usuario termina, pero "terminar" no
@@ -71,6 +71,7 @@ function EstadoDelPago() {
   const pendiente = estado.paymentStatus === "PENDING";
   const cabecera = describir(estado);
   const confirmada = estado.paymentStatus === "PAID" || estado.paymentStatus === "RELEASED";
+  const cobrado = estado.paymentStatus !== "PENDING" && estado.paymentStatus !== "CANCELLED";
 
   return (
     <main className="mx-auto w-full max-w-md px-7 py-8">
@@ -96,7 +97,11 @@ function EstadoDelPago() {
               tono="credito"
             />
           )}
-          <LineaImporte tono="total" etiqueta="Pagado con la pasarela" valor={precioCop(estado.chargedCop)} />
+          <LineaImporte
+            tono="total"
+            etiqueta={!cobrado ? "Por la pasarela" : estado.chargedCop === 0 ? "Pagado con tu saldo" : "Pagado con la pasarela"}
+            valor={precioCop(estado.chargedCop)}
+          />
         </div>
 
         <div className="mt-5 grid gap-2.5">
@@ -125,7 +130,7 @@ function EstadoDelPago() {
         {pendiente && estado.expiresAt && (
           <p className="mt-4 flex items-center justify-center gap-1.5 text-[11.5px] text-text-muted">
             <Wallet size={13} strokeWidth={1.75} />
-            Te guardamos el cupo hasta las {hora(estado.expiresAt)}.
+            Te guardamos el cupo hasta las {horaBogota(estado.expiresAt)}.
           </p>
         )}
       </Tarjeta>
@@ -147,6 +152,8 @@ function describir(estado: PaymentStatusResponse): {
   titulo: string;
   texto: string;
 } {
+  // REFUND_PENDING es un retracto que va hacia el medio de pago: sin su caso caía en «no se te cobró
+  // nada», que es falso.
   switch (estado.paymentStatus) {
     case "PENDING":
       return {
@@ -162,7 +169,7 @@ function describir(estado: PaymentStatusResponse): {
         icono: <CalendarCheck size={26} strokeWidth={1.75} />,
         titulo: "¡Tu clase quedó confirmada!",
         texto:
-          "Te enviamos el correo con la invitación al calendario. Si la clase es virtual, incluye el enlace de la sala.",
+          "Te enviamos el correo con la invitación al calendario y el enlace de la sala.",
       };
     case "RELEASED":
       return {
@@ -171,13 +178,21 @@ function describir(estado: PaymentStatusResponse): {
         titulo: "Clase dictada",
         texto: "Este pago ya está cerrado. Gracias por estudiar con Orión.",
       };
+    case "REFUND_PENDING":
+      return {
+        tono: "melocoton",
+        icono: <Wallet size={26} strokeWidth={1.75} />,
+        titulo: "Tu devolución está en camino",
+        texto:
+          "Cancelaste la clase y te devolvemos su valor al mismo medio de pago que usaste. Puede tardar hasta 15 días calendario; te escribimos cuando salga.",
+      };
     case "REFUNDED":
       return {
         tono: "menta",
         icono: <Wallet size={26} strokeWidth={1.75} />,
         titulo: "Te devolvimos el valor de la clase",
         texto:
-          "Quedó como saldo a favor y se descuenta solo la próxima vez que reserves. Lo ves en Pagos y saldo.",
+          "Si fue a tu saldo a favor, se descuenta solo la próxima vez que reserves; si pediste la devolución a tu medio de pago, ya salió hacia allá. Lo ves en Pagos y saldo.",
       };
     case "DISPUTED":
       return {
@@ -228,11 +243,3 @@ function Encabezado({
     </>
   );
 }
-
-const hora = (iso: string) =>
-  new Intl.DateTimeFormat("es-CO", {
-    timeZone: "America/Bogota",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(new Date(iso));

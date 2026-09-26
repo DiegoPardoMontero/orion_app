@@ -327,7 +327,7 @@ function Formulario({
         )}
         {metas.length === 0 && objetivos.length > 0 && (
           <p className="mt-2 text-[12.5px] text-text-muted">
-            Elige al menos uno y verás profesores que enseñan justo eso.
+            Elige al menos uno: así tus profesores saben qué buscas.
           </p>
         )}
       </fieldset>
@@ -397,9 +397,8 @@ function Privacidad({ ficha, onCambio }: { ficha: FichaEstudiante; onCambio: () 
         <div className="mt-4 flex items-start gap-3 rounded-base bg-rigel-soft px-3.5 py-3">
           <Rigel pose="guia" decorativo className="h-auto w-12 shrink-0" />
           <p className="text-[13px] leading-relaxed text-rigel-ink">
-            <strong>Te recomiendo hacerla visible.</strong> Con tu ficha completa y a la vista, los
-            profes llegan a tu primera clase sabiendo qué buscas, y te es más fácil encontrar con
-            quién practicar.
+            <strong>Te recomiendo hacerla visible.</strong> Con tu ficha a la vista, otros estudiantes
+            de Orión pueden conocerte y te es más fácil encontrar con quién practicar.
           </p>
         </div>
       )}

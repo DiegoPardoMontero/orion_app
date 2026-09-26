@@ -58,7 +58,7 @@ export function MiCielo() {
       <h2 className="font-display text-[19px] font-bold">Tu cielo</h2>
       <p className="mt-1 text-[14px] text-text-secondary">
         {encendidos === 0
-          ? "Todavía no has encendido ninguna. Aquí se quedan las que consigas."
+          ? "Todavía no has encendido ninguna estrella. Aquí se quedan las que consigas."
           : `${encendidos} de ${todos.length} estrellas encendidas.`}
       </p>
 
@@ -177,12 +177,6 @@ export function MiCielo() {
         >
           <Sparkles size={16} strokeWidth={1.9} />
           Personalizar mi avatar
-        </Link>
-        <Link
-          href="/cuenta"
-          className="inline-flex min-h-11 items-center rounded-pill border-[1.5px] border-border px-5 text-[14px] font-bold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
-        >
-          Volver a mi perfil
         </Link>
       </div>
     </section>

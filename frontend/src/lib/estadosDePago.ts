@@ -28,7 +28,7 @@ export const PARA_EL_ESTUDIANTE: Record<string, Estado> = {
   PAID: { texto: "Pagada", tono: "menta" },
   RELEASED: { texto: "Clase dictada", tono: "menta" },
   REFUND_PENDING: { texto: "Devolución en camino", tono: "melocoton" },
-  REFUNDED: { texto: "Devuelta a tu saldo", tono: "neutral" },
+  REFUNDED: { texto: "Devuelta", tono: "neutral" },
   DISPUTED: { texto: "En revisión", tono: "melocoton" },
   CANCELLED: { texto: "No se completó", tono: "error" },
 };
@@ -39,7 +39,7 @@ export const PARA_EL_ESTUDIANTE: Record<string, Estado> = {
  */
 export const PARA_EL_PROFESOR: Record<string, Estado> = {
   PENDING: { texto: "Sin pagar aún", tono: "neutral" },
-  PAID: { texto: "Retenido", tono: "melocoton" },
+  PAID: { texto: "Por dictar", tono: "melocoton" },
   RELEASED: { texto: "Por cobrar", tono: "menta" },
   IN_TRANSIT: { texto: "En camino", tono: "lavanda" },
   TRANSFERRED: { texto: "Transferido", tono: "lavanda" },
@@ -56,7 +56,7 @@ export const PARA_EL_ADMIN: Record<string, Estado> = {
   RELEASED: { texto: "Liberado", tono: "menta" },
   REFUND_PENDING: { texto: "Devolución pendiente", tono: "melocoton" },
   REFUNDED: { texto: "Devuelto", tono: "lavanda" },
-  DISPUTED: { texto: "En revisión", tono: "melocoton" },
+  DISPUTED: { texto: "En reclamo", tono: "melocoton" },
   CANCELLED: { texto: "Cancelado", tono: "error" },
 };
 

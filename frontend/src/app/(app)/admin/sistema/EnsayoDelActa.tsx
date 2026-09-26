@@ -7,6 +7,7 @@ import { AlertTriangle, ExternalLink, RefreshCw } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api/fetch";
 import { AvisoError } from "@/components/estados";
 import { Badge, Boton, Campo, Tarjeta } from "@/components/ui";
+import { fechaCorta, horaBogota } from "@/lib/format";
 
 type Ensayo = {
   bookingId: string;
@@ -205,12 +206,7 @@ function FilaDeEnsayo({ ensayo: e }: { ensayo: Ensayo }) {
               {e.profesor} <span className="font-normal text-text-muted">con</span> {e.estudiante}
             </p>
             <p className="mt-0.5 text-[12.5px] text-text-muted">
-              Cerrada{" "}
-              {new Date(e.cerrada).toLocaleString("es-CO", {
-                timeZone: "America/Bogota",
-                dateStyle: "medium",
-                timeStyle: "short",
-              })}
+              Cerrada el {fechaCorta(e.cerrada)}, {horaBogota(e.cerrada)}
             </p>
           </div>
           <div className="flex flex-wrap gap-1.5">

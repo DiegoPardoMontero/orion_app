@@ -108,7 +108,11 @@ export default function ComprobantePage() {
           <div>
             <Wordmark className="text-[18px] text-primary" />
             <h1 className="mt-3 font-display text-[24px] font-bold leading-tight">
-              {pagada ? "Comprobante de liquidación" : "Liquidación (todavía sin pagar)"}
+              {pagada
+                ? "Comprobante de liquidación"
+                : c.status === "CARRIED_OVER"
+                  ? "Liquidación sin pago"
+                  : "Liquidación (todavía sin pagar)"}
             </h1>
             <p className="mt-1 text-[13.5px] text-text-secondary">
               Quincena del {diaCorto(c.periodStart)} al {diaCorto(c.periodEnd)}
@@ -161,7 +165,7 @@ export default function ComprobantePage() {
           <Fila etiqueta="Recibido en tu nombre" valor={precioCop(c.grossCop)} />
           <Fila etiqueta="Comisión de Orión" valor={`− ${precioCop(c.commissionCop)}`} />
           {c.adjustmentsCop !== 0 && <Fila etiqueta="Ajustes" valor={precioCop(c.adjustmentsCop)} />}
-          <Fila etiqueta="Entregado" valor={precioCop(c.netCop)} fuerte />
+          <Fila etiqueta={pagada ? "Entregado" : "A entregar"} valor={precioCop(c.netCop)} fuerte />
         </dl>
 
         <section className="mt-6 rounded-base bg-surface-sunken p-4 text-[13.5px] print:border print:border-border print:bg-white">
@@ -171,9 +175,17 @@ export default function ComprobantePage() {
               <strong>{c.reference}</strong>, a la llave {c.payeeKeyTypeLabel?.toLowerCase()}{" "}
               <strong>{c.payeeMaskedKey}</strong> a nombre de {c.payeeHolder}.
             </p>
+          ) : c.status === "ON_HOLD" ? (
+            <p>
+              <strong>Retenida:</strong> falta un dato tuyo para poder pagarte.
+            </p>
+          ) : c.status === "CARRIED_OVER" ? (
+            <p>
+              <strong>Sin pago:</strong> el saldo pasa a tu siguiente liquidación.
+            </p>
           ) : (
             <p>
-              Estado: <strong>{c.statusLabel}</strong>. Se paga a más tardar el {dia(c.committedPayDate)}
+              Se paga a más tardar el <strong>{dia(c.committedPayDate)}</strong>
               {c.payeeMaskedKey ? `, a la llave ${c.payeeKeyTypeLabel?.toLowerCase()} ${c.payeeMaskedKey}` : ""}.
             </p>
           )}

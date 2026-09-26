@@ -27,7 +27,7 @@ describe("las preguntas frecuentes dicen las reglas de Ajustes, no una copia", (
   });
 
   it("el plazo para pagar sale de payment_hold_minutes", () => {
-    const r = preguntas(cifras).estudiante.find((q) => q.p.startsWith("Reservé y no me confirmó"))!.r;
+    const r = preguntas(cifras).estudiante.find((q) => q.p.startsWith("Reservé y mi clase no sale confirmada"))!.r;
     expect(r).toContain("Tienes 35 minutos para pagar;");
     expect(r).not.toContain("20 minutos");
   });

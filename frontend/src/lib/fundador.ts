@@ -54,7 +54,7 @@ export function ayudaDeTarifa(tarifaCop: number, baseBps: number, fundador: Fund
       : `durante ${meses(fundador.periodMonths ?? 3)} de clases`;
   return (
     `Recibes ${precioCop(conLaDeFundador)} por clase: ${porcentaje(fundador.rateBps!)} de comisión como profe ` +
-    `fundador ${hasta}. Después recibirás ${precioCop(conLaBase)} (${porcentaje(baseBps)}).`
+    `fundador ${hasta}. Después recibirás ${precioCop(conLaBase)} (comisión de Orión: ${porcentaje(baseBps)}).`
   );
 }
 

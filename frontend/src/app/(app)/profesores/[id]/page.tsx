@@ -244,7 +244,7 @@ export default function AgendaProfesorPage() {
             ))}
           </div>
           <p className="mt-2 text-[12.5px] text-text-secondary">
-            La de prueba es una sola con este profe, para conoceros: tu nivel, lo que buscas y cómo trabajaría contigo.
+            La de prueba es una sola con este profe, para conocerse: tu nivel, lo que buscas y cómo trabajaría contigo.
           </p>
         </Bloque>
       )}
@@ -307,7 +307,7 @@ export default function AgendaProfesorPage() {
           {!esGratis(precio) && (
             <LineaImporte
               tono="total"
-              etiqueta={aPagar === 0 ? "Cubierto con tu saldo" : "Total a pagar"}
+              etiqueta="Total a pagar"
               valor={precioCop(aPagar)}
             />
           )}

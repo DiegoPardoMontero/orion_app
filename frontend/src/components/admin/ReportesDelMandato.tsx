@@ -48,9 +48,39 @@ export function ReportesDelMandato() {
             Una fila por clase con pago aprobado: la referencia de Wompi, el profe, bruto, comisión, neto y en qué
             liquidación quedó.
           </p>
+          {/* Con rótulo a la vista, como la conciliación de Pagos: dos cajas de fecha idénticas no
+              dicen cuál es el inicio y cuál el final. */}
           <div className="mt-3 grid grid-cols-2 gap-2">
-            <Campo type="date" aria-label="Desde" value={desde} onChange={(e) => setDesde(e.target.value)} />
-            <Campo type="date" aria-label="Hasta" value={hasta} onChange={(e) => setHasta(e.target.value)} />
+            <div>
+              <label
+                htmlFor="mandato-desde"
+                className="block text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary"
+              >
+                Desde
+              </label>
+              <Campo
+                id="mandato-desde"
+                type="date"
+                value={desde}
+                onChange={(e) => setDesde(e.target.value)}
+                className="mt-1.5"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="mandato-hasta"
+                className="block text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary"
+              >
+                Hasta
+              </label>
+              <Campo
+                id="mandato-hasta"
+                type="date"
+                value={hasta}
+                onChange={(e) => setHasta(e.target.value)}
+                className="mt-1.5"
+              />
+            </div>
           </div>
           <Descarga href={`/api/v1/admin/payouts/reports/ledger.csv?from=${desde}&to=${hasta}`} />
         </Tarjeta>
@@ -181,7 +211,7 @@ function FilaDeCertificado({ fila, anio }: { fila: FilaCertificado; anio: number
     <tr className={t.fila}>
       <td className={`${t.celda} font-semibold text-text`}>{fila.professorName}</td>
       <td className={`${t.celda} tabular-nums lg:text-right`}>
-        {precioCop(fila.receivedCop)} · {precioCop(fila.deliveredCop)}
+        Recibido {precioCop(fila.receivedCop)} · Entregado {precioCop(fila.deliveredCop)}
         {fila.pendingCop > 0 && (
           <span className="block text-[12px] text-text-muted">Pendiente al 31 dic: {precioCop(fila.pendingCop)}</span>
         )}

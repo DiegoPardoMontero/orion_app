@@ -33,7 +33,7 @@ export default function GananciasPage() {
     <main className="mx-auto max-w-4xl px-6 py-6 lg:max-w-5xl lg:px-12 lg:py-8">
       <h1 className="font-display text-h1 font-bold">Mis ganancias</h1>
       <p className="mt-1 text-[13.5px] text-text-secondary">
-        Orión cobra al estudiante y te transfiere lo tuyo cuando la clase ya se dictó.
+        Orión cobra al estudiante en tu nombre y te paga cada quincena las clases que ya dictaste.
       </p>
 
       {/* El único aviso nuevo del brief de liquidaciones: sin llave Bre-B no hay a dónde pagarle. */}
@@ -56,7 +56,7 @@ export default function GananciasPage() {
           saber es cuándo le pagan. Las cifras y la lista de abajo siguen filtrando por fechas. */}
       <MisLiquidaciones />
 
-      <h2 className="mt-8 font-display text-h3 font-bold">Clase por clase</h2>
+      <h2 className="mt-8 font-display text-h3 font-bold">Tus ganancias por fechas</h2>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <Campo
           type="date"
@@ -90,7 +90,7 @@ export default function GananciasPage() {
               tono="melocoton"
               icono={<Hourglass size={18} strokeWidth={2.2} />}
               valorCop={ganancias.data.heldCop}
-              etiqueta="Retenido"
+              etiqueta="Por dictar"
               ayuda="Clases pagadas que todavía no se han dictado."
             />
             <Cifra
@@ -98,14 +98,14 @@ export default function GananciasPage() {
               icono={<Banknote size={18} strokeWidth={2.2} />}
               valorCop={ganancias.data.payableCop}
               etiqueta="Por cobrar"
-              ayuda="Clase dictada. Este pago se incluirá en tu próxima liquidación."
+              ayuda="Clase dictada que todavía no entra en una liquidación."
             />
             <Cifra
               tono="lavanda"
               icono={<Send size={18} strokeWidth={2.2} />}
               valorCop={ganancias.data.inTransitCop}
               etiqueta="En camino"
-              ayuda="Transferencia en proceso: esperando aprobación del banco."
+              ayuda="Ya está en una liquidación que todavía no te pagamos: la fecha estimada está en tu historial."
             />
             <Cifra
               tono="lavanda"
@@ -132,6 +132,7 @@ export default function GananciasPage() {
               <ul className="mt-3 grid gap-2.5">
                 {ganancias.data.lines.map((linea) => {
                   const estado = estadoDePago(PARA_EL_PROFESOR, linea.status);
+                  const devuelta = linea.status === "REFUNDED" || linea.status === "REFUND_PENDING";
                   return (
                     <li key={linea.bookingId}>
                       <Tarjeta>
@@ -160,10 +161,12 @@ export default function GananciasPage() {
                             etiqueta="Comisión de Orión"
                             valor={`− ${precioCop(linea.commissionCop)}`}
                           />
+                          {/* Una clase devuelta al estudiante no se liquida: mostrar lo que habría sido del
+                              profe como «para ti» sería prometerle un dinero que ya no existe. */}
                           <LineaImporte
                             tono="total"
-                            etiqueta="Para ti"
-                            valor={precioCop(linea.earningsCop)}
+                            etiqueta={devuelta ? "Para ti (se devolvió al estudiante)" : "Para ti"}
+                            valor={precioCop(devuelta ? 0 : linea.earningsCop)}
                           />
                         </div>
                       </Tarjeta>

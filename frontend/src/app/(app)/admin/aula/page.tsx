@@ -43,7 +43,7 @@ export default function AdminAulaPage() {
         <div className="mt-5">
           <Vacio
             titulo="Todavía no hay datos del aula"
-            texto="Aparecen cuando el webhook de JaaS esté configurado y se dicten clases (Sistema lo muestra)."
+            texto="Aparecen cuando el webhook de JaaS esté configurado y se dicten clases (en Sistema ves si lo está)."
           />
         </div>
       )}
@@ -71,7 +71,7 @@ export default function AdminAulaPage() {
                 </dd>
               </div>
               <div>
-                <dt className="text-text-muted">Llegó tarde (&gt;5 min)</dt>
+                <dt className="text-text-muted">Llegadas tarde (más de 5 min)</dt>
                 <dd className="mt-0.5 font-display text-[18px] font-bold tabular-nums">{p.llegadasTarde}</dd>
               </div>
             </dl>

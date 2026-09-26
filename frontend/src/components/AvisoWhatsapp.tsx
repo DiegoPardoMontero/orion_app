@@ -42,7 +42,7 @@ export function AvisoWhatsapp({ me }: { me: Me }) {
       <p className="text-[14px] leading-relaxed text-text-secondary">
         {ensena
           ? "Lo usa el equipo de Orión para ubicarte si pasa algo con una clase o con tu perfil."
-          : "Lo usamos para avisarte de tus clases. Con tu profesor sigues hablando dentro de Orión."}
+          : "Solo lo usa el equipo de Orión si necesita avisarte algo de una clase. Con tu profesor sigues hablando dentro de Orión."}
       </p>
 
       <label htmlFor="whatsapp-obligatorio" className="mt-4 block text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary">

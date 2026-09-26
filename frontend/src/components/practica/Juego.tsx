@@ -621,7 +621,7 @@ function PantallaDeTransicion({
         {conRacha ? (TEXTO_RACHA[Math.min(t.racha, 5)] ?? "¡Sigue la racha!") : "Estrella encendida"}
       </h2>
       <p className="m-0 max-w-[340px] text-[16px] leading-[1.5] text-[#E9DEF5]">
-        {conRacha ? "Todas al primer intento. Tu constelación va brillando." : `Llevas ${t.cerrados} de ${total}.`}
+        {conRacha ? "Seguidas al primer intento. Tu constelación va brillando." : `Llevas ${t.cerrados} de ${total}.`}
       </p>
       <Rigel pose={conRacha ? "racha" : "celebracion"} decorativo className="h-auto w-[130px] lg:w-[150px]" />
       <span className="flex items-center gap-2 text-[14px] font-bold text-durazno-soft">

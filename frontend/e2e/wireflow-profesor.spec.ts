@@ -101,7 +101,7 @@ test("[p-horarios.1 p-horarios.2 p-horarios.3 p-horarios.4] franjas, solapes y f
     const primera = await agregar();
     await expect(primera).toHaveCount(0);
     const dialogo = await agregar();
-    await expect(dialogo.getByText(/se solapa/)).toBeVisible();
+    await expect(dialogo.getByText(/se cruza con otra/)).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(dialogo).toHaveCount(0);
   } finally {
@@ -139,7 +139,7 @@ test("[p-invitar.1 p-invitar.2 p-invitar.3 p-invitar.4] invitar con el enlace co
 test("[p-ganancias.1 p-ganancias.2 p-ganancias.3 p-desempeno.1] ganancias y desempeño", async ({ page }) => {
   await entrar(page, SEMILLA.maria);
   await page.goto("/ganancias");
-  for (const estado of ["Retenido", "Por cobrar", "En camino", "Transferido"]) {
+  for (const estado of ["Por dictar", "Por cobrar", "En camino", "Transferido"]) {
     await expect(page.getByText(estado).first()).toBeVisible();
   }
   await expect(page.locator('input[type="date"]').first()).toBeVisible();
@@ -244,7 +244,7 @@ test("[p-perfil.6] la tarifa dice cuánto recibe el profe fundador y cuánto des
   const tarifa = page.locator("#tarifa");
   await tarifa.fill("60000");
   await expect(page.getByText(/Recibes \$51\.000 por clase: 15 % de comisión como profe fundador/)).toBeVisible();
-  await expect(page.getByText(/Después recibirás \$48\.000 \(20 %\)/)).toBeVisible();
+  await expect(page.getByText(/Después recibirás \$48\.000 \(comisión de Orión: 20 %\)/)).toBeVisible();
 });
 
 test("[ad-ajustes.2 ad-sistema.1 ad-sistema.2] el historial de ajustes y el correo de prueba", async ({ page }) => {
@@ -296,7 +296,6 @@ test("[v-invitacion.1 v-invitacion.3 v-invitacion.4 ad-usuarios.2] la invitació
   const dialogo = page.getByRole("dialog");
   await dialogo.locator("#invite-email").fill(correo);
   await dialogo.locator("#invite-nombre").fill("Mariana");
-  await dialogo.locator("#invite-cargo").fill("directora académica");
   await dialogo.getByRole("button", { name: /Enviar invitación/ }).click();
   await expect(page.getByText(/Le enviamos la invitación/)).toBeVisible();
   const texto = await ultimoCorreo(page, correo, /invitacion\//);
@@ -307,8 +306,8 @@ test("[v-invitacion.1 v-invitacion.3 v-invitacion.4 ad-usuarios.2] la invitació
   await invitada.goto(enlace);
   await expect(invitada.getByRole("heading", { name: "Mariana, queremos que seas de los primeros profes de Orión." })).toBeVisible();
   await expect(invitada.getByText("Invitación personal · Profes fundadores")).toBeVisible();
-  await expect(invitada.getByText(/Te invita/)).toContainText("directora académica");
-  await expect(invitada.getByText(/Como profe fundador, tienes 15 %/)).toBeVisible();
+  await expect(invitada.getByText(/Te invita/)).toContainText("el equipo de Orión");
+  await expect(invitada.getByText(/Por ser de los profes fundadores, tienes 15 %/)).toBeVisible();
   await invitada.getByRole("link", { name: "Aceptar la invitación" }).click();
 
   // El registro de profesor con el correo de la invitación, sin poder cambiarlo ni elegir «aprender».
@@ -460,7 +459,7 @@ test("[p-perfil.4] publicar sin tarifa pide fijarla primero", async ({ page }) =
     await r.fulfill({ response: real, json: { ...perfil, isPublished: false, hourlyRateCop: null, rate: null, canPublish: false } });
   });
   await page.goto("/perfil");
-  await expect(page.getByText(/Los estudiantes dejarán de verte/)).toBeVisible();
+  await expect(page.getByText(/Mientras esté oculto, los estudiantes no te ven/)).toBeVisible();
   await page.getByRole("switch", { name: "Perfil visible" }).click();
   await expect(page.getByText("Fija tu tarifa antes de publicar: escribe un precio por hora más arriba y guarda.")).toBeVisible();
 });

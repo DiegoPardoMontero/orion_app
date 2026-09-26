@@ -5,10 +5,11 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { apiFetch } from "@/lib/api/fetch";
 import type { Diagnostico } from "@/lib/api/diagnostico";
+import { minutos, useCifras } from "@/lib/cifras";
 import { fechaCorta } from "@/lib/format";
 
 /**
- * El Confidence Score en el perfil: el número, cuándo se midió y cómo volver a verlo.
+ * El Confidence Score en el perfil: el número, cuándo se midió y cómo volver a hacerlo.
  *
  * <p><strong>Con una sola medición no se dibuja curva.</strong> Dos puntos hacen una recta y una
  * recta parece una tendencia; con uno solo, cualquier gráfico sería una afirmación inventada sobre
@@ -23,6 +24,7 @@ export function TarjetaDiagnostico() {
     queryFn: () => apiFetch<Diagnostico[]>("/api/v1/me/assessments"),
     staleTime: 60_000,
   });
+  const cifras = useCifras();
 
   if (historial.isPending || historial.isError) return null;
 
@@ -38,10 +40,11 @@ export function TarjetaDiagnostico() {
         <Sparkles size={22} strokeWidth={1.9} className="shrink-0 text-accent-peach" />
         <span className="min-w-0 flex-1">
           <span className="block font-display text-[16px] font-bold">
-            Prueba tu inglés en 2 minutos
+            Prueba tu inglés en {minutos(cifras.assessmentMinutes)}
           </span>
           <span className="mt-0.5 block text-[13px] text-text-on-night/80">
-            Cuando quieras y sin examen; puedes hablarle en español. Te recomienda tres profesores.
+            Una conversación con Meissa, sin examen; puedes hablarle en español. Al final te recomienda
+            tres profesores.
           </span>
         </span>
         <ArrowRight size={17} strokeWidth={2.2} className="shrink-0" />
@@ -71,7 +74,7 @@ export function TarjetaDiagnostico() {
         href="/diagnostico/empezar"
         className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-bold text-accent-peach hover:underline"
       >
-        Ver mi diagnóstico
+        Hacerlo otra vez
         <ArrowRight size={14} strokeWidth={2.2} />
       </Link>
     </div>

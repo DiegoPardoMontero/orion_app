@@ -11,6 +11,9 @@ import { PENDIENTES_KEY } from "@/lib/acuerdo";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import { whatsappSoporte } from "@/lib/config";
 
+/** Para que la frase de aceptación se lea bien: «aceptas los Términos…, la Política… y el Acuerdo…». */
+const ARTICULO: Record<string, string> = { TERMS: "los ", PRIVACY: "la ", TEACHER_AGREEMENT: "el " };
+
 /** De qué trata cada documento, en una línea: lo completo se despliega con un botón. */
 const RESUMEN: Record<string, string> = {
   TERMS: "Cómo funciona Orión: reservas, pagos, cancelaciones y reclamos.",
@@ -48,7 +51,9 @@ export function AvisoNuevosAcuerdos({ documentos }: { documentos: string[] }) {
   const fallo = docs.find((d) => d.isError);
   const pideDatos = documentos.includes("PRIVACY");
   const listo = cargados && (!pideDatos || autorizaDatos);
-  const nombres = docs.map((d) => (d.data ? `${d.data.title} (versión ${d.data.version})` : "")).filter(Boolean);
+  const nombres = docs
+    .map((d) => (d.data ? `${ARTICULO[d.data.code] ?? ""}${d.data.title} (versión ${d.data.version})` : ""))
+    .filter(Boolean);
   const whatsapp = whatsappSoporte("Hola, tengo una duda sobre los acuerdos de Orión.");
 
   const error =
@@ -133,7 +138,7 @@ export function AvisoNuevosAcuerdos({ documentos }: { documentos: string[] }) {
             onChange={(event) => setAutorizaDatos(event.target.checked)}
             className="mt-[3px] h-[18px] w-[18px] shrink-0 cursor-pointer accent-primary focus-visible:shadow-focus"
           />
-          <span>Autorizo el tratamiento de mis datos personales conforme a la Política de tratamiento.</span>
+          <span>Autorizo el tratamiento de mis datos personales conforme a la Política de tratamiento de datos.</span>
         </label>
       )}
 

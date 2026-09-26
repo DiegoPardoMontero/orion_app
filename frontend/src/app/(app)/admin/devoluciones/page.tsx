@@ -80,10 +80,12 @@ function FilaDevolucion({ devolucion }: { devolucion: Devolucion }) {
           tono={devolucion.overdue ? "error" : devolucion.daysLeft <= 5 ? "melocoton" : "neutral"}
         >
           {devolucion.overdue
-            ? `Vencida hace ${Math.abs(devolucion.daysLeft)} d`
+            ? vencidaHace(Math.abs(devolucion.daysLeft))
             : devolucion.daysLeft === 0
               ? "Vence hoy"
-              : `${devolucion.daysLeft} días`}
+              : devolucion.daysLeft === 1
+                ? "Queda 1 día"
+                : `Quedan ${devolucion.daysLeft} días`}
         </Badge>
       </div>
 
@@ -150,4 +152,10 @@ function FilaDevolucion({ devolucion }: { devolucion: Devolucion }) {
       </div>
     </Tarjeta>
   );
+}
+
+/** El backend trunca los días: una vencida hace menos de 24 h llega con 0. */
+function vencidaHace(dias: number): string {
+  if (dias === 0) return "Vencida hace menos de un día";
+  return `Vencida hace ${dias} ${dias === 1 ? "día" : "días"}`;
 }

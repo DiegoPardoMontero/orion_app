@@ -121,7 +121,7 @@ export type PaymentStatusResponse = {
   startsAt: string;
   endsAt: string;
   bookingStatus: string;
-  paymentStatus: "PENDING" | "PAID" | "RELEASED" | "REFUNDED" | "DISPUTED" | "CANCELLED";
+  paymentStatus: "PENDING" | "PAID" | "RELEASED" | "REFUND_PENDING" | "REFUNDED" | "DISPUTED" | "CANCELLED";
   amountCop: number;
   creditAppliedCop: number;
   chargedCop: number;

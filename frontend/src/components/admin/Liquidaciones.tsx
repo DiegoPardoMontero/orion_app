@@ -167,8 +167,9 @@ export function Liquidaciones() {
           </div>
           {quincena.data.onHold > 0 && (
             <p className="mt-3 rounded-base bg-warning-bg px-4 py-3 text-[13px] text-text">
-              {quincena.data.onHold === 1 ? "Hay 1 liquidación retenida" : `Hay ${quincena.data.onHold} liquidaciones retenidas`}: su
-              motivo está en la fila. Se liberan solas cuando el profe lo resuelve.
+              {quincena.data.onHold === 1
+                ? "Hay 1 liquidación retenida: su motivo está en la fila. Cuando el profe lo resuelve, vuelve sola a borrador y ya la puedes aprobar."
+                : `Hay ${quincena.data.onHold} liquidaciones retenidas: su motivo está en la fila. Cuando el profe lo resuelve, vuelven solas a borrador y ya las puedes aprobar.`}
             </p>
           )}
 

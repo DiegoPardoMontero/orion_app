@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Loader2, WifiOff } from "lucide-react";
 import { Boton } from "@/components/ui";
 import type { ClassroomResponse } from "@/lib/api/aula";
+import { horaBogota } from "@/lib/format";
 
 /**
  * Se cayó la conexión. <strong>Esto no es el cierre.</strong>
@@ -15,6 +16,9 @@ import type { ClassroomResponse } from "@/lib/api/aula";
  * <p>Por eso el tono es aviso y nunca error —no hizo nada mal—, y por eso la primera acción, la
  * coral, es volver a entrar. Terminar está, pero abajo y en texto pequeño: es una salida, no la
  * sugerencia.
+ *
+ * <p>La dispara la conexión propia, no la del otro: por eso profesor y estudiante leen lo mismo. Solo
+ * cambia la salida de abajo, porque terminar no significa lo mismo para quien cobra la clase.
  */
 export function HojaDeConexionCaida({
   datos,
@@ -30,11 +34,7 @@ export function HojaDeConexionCaida({
   const nombre = datos.counterpart?.firstName ?? "la otra persona";
   const esAnfitrion = datos.moderator;
 
-  const hasta = new Date(datos.expiresAt).toLocaleTimeString("es-CO", {
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "America/Bogota",
-  });
+  const hasta = horaBogota(datos.expiresAt);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-night/45 sm:items-center">
@@ -50,28 +50,22 @@ export function HojaDeConexionCaida({
           Conexión
         </span>
 
-        <h2 className="mt-3 font-display text-h3 font-bold">
-          {esAnfitrion
-            ? `A ${nombre} se le cayó la conexión.`
-            : "Se perdió la conexión. La clase no terminó."}
-        </h2>
+        <h2 className="mt-3 font-display text-h3 font-bold">Se perdió la conexión. La clase no terminó.</h2>
 
         <p className="mt-1.5 text-[13px] text-text-secondary">
-          {esAnfitrion
-            ? `Llevaban ${minutos} min. La sala sigue abierta hasta las ${hasta}.`
-            : `Llevabas ${minutos} min. La sala sigue abierta hasta las ${hasta}.`}
+          Llevabas {minutos} min. La sala sigue abierta hasta las {hasta}.
         </p>
 
         <div className="mt-4 flex items-center gap-2.5 rounded-card bg-surface-raised p-3.5">
           <Loader2 size={16} strokeWidth={2.2} className="animate-spin text-text-muted" />
           <p className="text-[13px] text-text-secondary">
-            {esAnfitrion ? "Intentando reconectar…" : `${nombre} sigue en la sala.`}
+            {nombre} sigue en la sala.
           </p>
         </div>
 
         <div className="mt-5 flex flex-col gap-2.5">
           <Boton variante="primario" onClick={onVolver}>
-            {esAnfitrion ? "Volver a la sala y esperarla" : "Volver a la sala"}
+            Volver a la sala
           </Boton>
           <Link
             href="/mensajes"

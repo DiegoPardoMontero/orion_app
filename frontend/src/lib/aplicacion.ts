@@ -34,6 +34,16 @@ export function estadoAplicacion(status?: string): EstadoConfig {
   return (status && ESTADO_APLICACION[status]) || { label: status ?? "—", tono: "neutral", punto: false };
 }
 
+/**
+ * El mismo estado, leído desde el admin. Para el aspirante una postulación enviada ya está «En
+ * revisión»; para el admin, mientras nadie la abre, está «Por revisar»: así no se confunde con la
+ * que ya empezó a revisar (UNDER_REVIEW) ni dice «En revisión» junto al botón «Empezar revisión».
+ */
+export function estadoAplicacionAdmin(status?: string): EstadoConfig {
+  const cfg = estadoAplicacion(status);
+  return status === "PENDING_REVIEW" ? { ...cfg, label: "Por revisar" } : cfg;
+}
+
 /** Tipos de documento que acepta el backend. El CV es el único obligatorio para enviar a revisión. */
 export const DOC_TIPOS = [
   { code: "CV", label: "Hoja de vida (CV)", obligatorio: true },

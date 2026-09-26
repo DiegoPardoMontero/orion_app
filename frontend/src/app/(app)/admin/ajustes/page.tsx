@@ -32,6 +32,12 @@ type Cambio = {
   changedAt: string;
 };
 
+/** Un booleano se lee «encendido»/«apagado»; lo que se guarda sigue siendo `true`/`false`. */
+function valorLegible(valor: string, tipo?: Setting["type"]): string {
+  if (tipo !== "BOOLEANO") return valor;
+  return valor === "true" ? "encendido" : "apagado";
+}
+
 const ETIQUETA_GRUPO: Record<string, string> = {
   DINERO: "Dinero",
   PLAZOS: "Plazos",
@@ -132,18 +138,27 @@ export default function AdminAjustesPage() {
             <p className="text-[14px] text-text-secondary">Todavía no se ha cambiado nada.</p>
           )}
           <div className="grid gap-3">
-            {historial.data?.map((c, i) => (
-              <div key={i} className="border-b border-border pb-3 last:border-b-0 last:pb-0">
-                <p className="text-[14px] font-bold">{c.label}</p>
-                <p className="mt-0.5 text-[13px] text-text-secondary">
-                  <span className="mono">{c.oldValue ?? "—"}</span> →{" "}
-                  <span className="mono font-bold text-text">{c.newValue}</span>
-                </p>
-                <p className="mt-0.5 text-[12px] text-text-muted">
-                  {c.changedByName} · {fechaRelativa(c.changedAt)}
-                </p>
-              </div>
-            ))}
+            {historial.data?.map((c, i) => {
+              const tipo = ajustes.data.find((a) => a.key === c.key)?.type;
+              const mono = tipo === "BOOLEANO" ? "" : "mono";
+              return (
+                <div key={i} className="border-b border-border pb-3 last:border-b-0 last:pb-0">
+                  <p className="text-[14px] font-bold">{c.label}</p>
+                  <p className="mt-0.5 text-[13px] text-text-secondary">
+                    <span className={mono}>
+                      {c.oldValue == null ? "—" : valorLegible(c.oldValue, tipo)}
+                    </span>{" "}
+                    →{" "}
+                    <span className={`${mono} font-bold text-text`}>
+                      {valorLegible(c.newValue, tipo)}
+                    </span>
+                  </p>
+                  <p className="mt-0.5 text-[12px] text-text-muted">
+                    {c.changedByName} · {fechaRelativa(c.changedAt)}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </Modal>
       )}
@@ -165,6 +180,12 @@ function FilaAjuste({
   const [error, setError] = useState<string | null>(null);
 
   const cambiado = valor !== ajuste.value;
+  const booleano = ajuste.type === "BOOLEANO";
+  // Para un booleano no se pide escribir «false»: se pide la acción, como la purga pide BORRAR.
+  const palabra = booleano ? (valor === "true" ? "ENCENDER" : "APAGAR") : valor;
+  const confirmado = booleano
+    ? escrito.trim().toUpperCase() === palabra
+    : escrito.trim() === valor;
 
   async function guardar(value: string) {
     setGuardando(true);
@@ -289,22 +310,30 @@ function FilaAjuste({
             setEscrito("");
           }}
         >
-          <p className="text-[14px] leading-relaxed text-text-secondary">
-            Vas a cambiarlo de <strong className="mono">{ajuste.value}</strong> a{" "}
-            <strong className="mono">{valor}</strong>. Escribe el valor nuevo para confirmar.
-          </p>
+          {booleano ? (
+            <p className="text-[14px] leading-relaxed text-text-secondary">
+              Vas a cambiarlo de <strong>{valorLegible(ajuste.value, ajuste.type)}</strong> a{" "}
+              <strong>{valorLegible(valor, ajuste.type)}</strong>. Escribe <strong>{palabra}</strong> para
+              confirmar.
+            </p>
+          ) : (
+            <p className="text-[14px] leading-relaxed text-text-secondary">
+              Vas a cambiarlo de <strong className="mono">{ajuste.value}</strong> a{" "}
+              <strong className="mono">{valor}</strong>. Escribe el valor nuevo para confirmar.
+            </p>
+          )}
           <Campo
             type="text"
             value={escrito}
             onChange={(e) => setEscrito(e.target.value)}
-            placeholder={valor}
-            aria-label="Confirma escribiendo el valor nuevo"
+            placeholder={palabra}
+            aria-label={booleano ? `Confirma escribiendo ${palabra}` : "Confirma escribiendo el valor nuevo"}
             className="mt-4"
           />
           <div className="mt-4 flex gap-2">
             <Boton
               variante="primario"
-              disabled={escrito.trim() !== valor || guardando}
+              disabled={!confirmado || guardando}
               onClick={() => guardar(valor)}
             >
               {guardando ? <Spinner /> : "Confirmar cambio"}

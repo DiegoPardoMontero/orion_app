@@ -10,7 +10,7 @@ import { Avatar } from "@/components/Avatar";
 import { BotonesSociales } from "@/components/BotonesSociales";
 import { Cargando } from "@/components/estados";
 import { Meissa } from "@/components/Meissa";
-import { precioCop } from "@/lib/format";
+import { tarifaClase } from "@/lib/format";
 
 /**
  * El resultado: lo que contaste, dónde estás y con quién seguir. En una pantalla corta.
@@ -177,12 +177,13 @@ function Profesores({ diagnostico }: { diagnostico: Diagnostico }) {
                   <Avatar nombre={ficha.fullName ?? ""} fotoUrl={ficha.photoUrl} size="md" />
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline justify-between gap-2">
-                      <span className="truncate font-display text-[15.5px] font-bold">
+                      {/* El nombre se lee entero: pasa de línea, nunca se corta con «…». */}
+                      <span className="min-w-0 text-balance wrap-break-word font-display text-[15.5px] font-bold">
                         {ficha.fullName}
                       </span>
-                      {ficha.hourlyRateCop != null && (
+                      {tarifaClase(ficha.hourlyRateCop) && (
                         <span className="shrink-0 text-[12.5px] text-text-muted">
-                          {precioCop(ficha.hourlyRateCop)}
+                          {tarifaClase(ficha.hourlyRateCop)}
                         </span>
                       )}
                     </span>

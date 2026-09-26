@@ -17,13 +17,13 @@ describe("lo que recibe el profe", () => {
 describe("la ayuda de la tarifa", () => {
   it("fundador sin empezar", () => {
     expect(ayudaDeTarifa(60_000, 2000, { rateBps: 1500, periodMonths: 3, status: "NOT_STARTED" })).toBe(
-      "Recibes $51.000 por clase: 15 % de comisión como profe fundador durante tus primeros 3 meses de clases. Después recibirás $48.000 (20 %).",
+      "Recibes $51.000 por clase: 15 % de comisión como profe fundador durante tus primeros 3 meses de clases. Después recibirás $48.000 (comisión de Orión: 20 %).",
     );
   });
 
   it("fundador activo, con la fecha en Bogotá", () => {
     expect(ayudaDeTarifa(60_000, 2000, { rateBps: 1500, periodMonths: 3, status: "ACTIVE", until: HASTA })).toBe(
-      "Recibes $51.000 por clase: 15 % de comisión como profe fundador hasta el 12 de enero de 2027. Después recibirás $48.000 (20 %).",
+      "Recibes $51.000 por clase: 15 % de comisión como profe fundador hasta el 12 de enero de 2027. Después recibirás $48.000 (comisión de Orión: 20 %).",
     );
   });
 

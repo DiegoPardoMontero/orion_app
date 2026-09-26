@@ -74,8 +74,8 @@ export default function DesempenoPage() {
         <div className="mt-4 rounded-card bg-info-bg px-5 py-4 text-[13px] text-info">
           <p className="font-bold">Hay algo pendiente de revisión</p>
           <p className="mt-1">
-            Se registraron ausencias en tus clases y el equipo de Orión las está revisando. Todavía
-            no afectan tu visibilidad ni tus reservas.
+            Se registraron faltas en tus clases (no presentarte o cancelar con poca anticipación) y el
+            equipo de Orión las está revisando. Todavía no afectan tu visibilidad ni tus reservas.
           </p>
         </div>
       )}
@@ -84,8 +84,8 @@ export default function DesempenoPage() {
         <Tarjeta className="mt-5">
           <p className="text-[14px] font-semibold text-text">Aún no hay nada que medir</p>
           <p className="mt-1 text-[13px] text-text-secondary">
-            Tus indicadores aparecerán en cuanto empieces a dar clases. Mientras tanto, tu perfil
-            se muestra en una posición estándar dentro del buscador.
+            Tus indicadores aparecen al día siguiente de tu primera clase dictada: se recalculan cada
+            noche. Mientras tanto, tu perfil se muestra en una posición estándar dentro del buscador.
           </p>
         </Tarjeta>
       ) : (

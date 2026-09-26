@@ -91,7 +91,7 @@ export function InstalarApp() {
           {ios ? (
             <p className="mt-0.5 flex flex-wrap items-center gap-1 text-[12.5px] leading-relaxed text-text-secondary">
               Toca <Share size={14} strokeWidth={1.75} className="inline" /> Compartir y luego
-              «Añadir a inicio».
+              «Agregar a inicio».
             </p>
           ) : (
             <p className="mt-0.5 text-[12.5px] leading-relaxed text-text-secondary">

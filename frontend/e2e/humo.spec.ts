@@ -362,7 +362,7 @@ test("un profesor se postula desde el login y aterriza en su postulación", asyn
 
   await expect(page).toHaveURL(/\/registro\?rol=profesor/);
   // La intención llega preseleccionada y el copy cambia con ella.
-  await expect(page.getByText("Tu perfil aparece en el marketplace cuando la aprobamos")).toBeVisible();
+  await expect(page.getByText("Cuando la aprobamos, publicas tu perfil y aparece en el buscador de Orión")).toBeVisible();
 
   const email = `profe.${Date.now()}@orion.local`;
   await page.locator("#nombre").fill("Profe Nuevo");
@@ -611,7 +611,7 @@ test("Ana practica lo de su clase y María lo ve en su ficha", async ({ page }) 
     await logroNuevo.click();
   }
   await expect(page.getByRole("img", { name: /^Constelación (completa|perfecta):/ })).toBeVisible();
-  await expect(page.getByText("Completaste el set")).toBeVisible();
+  await expect(page.getByText("Completaste la práctica")).toBeVisible();
   await expect(page.getByText(/ya puede ver cómo te fue/)).toBeVisible();
   await page.goto("/mis-clases");
   await logout(page);

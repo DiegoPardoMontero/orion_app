@@ -57,7 +57,7 @@ export function FranjaDeFicha() {
       <p className="min-w-0 flex-1 text-[13px] leading-snug text-rigel-ink">
         <strong>Completa tu ficha y gana «Ficha completa» (+{PUNTOS_FICHA_COMPLETA} puntos).</strong>{" "}
         <span className="hidden sm:inline">
-          {faltan.length === 1 ? "Te falta" : "Te faltan"} {faltan.join(", ")}. Con tu ficha completa —y visible, te lo recomiendo— los profes preparan tu
+          {faltan.length === 1 ? "Te falta" : "Te faltan"} {Y.format(faltan)}. Con tu ficha completa los profes preparan tu
           clase sabiendo qué buscas.
         </span>
         <span className="sm:hidden">{faltan.length === 1 ? `Te falta ${faltan[0]}` : `Te faltan ${faltan.length} cosas`}.</span>
@@ -82,6 +82,8 @@ export function FranjaDeFicha() {
     </aside>
   );
 }
+
+const Y = new Intl.ListFormat("es", { type: "conjunction" });
 
 const CLAVE = "orion.franja-ficha.cerrada-hasta";
 const UN_DIA = 24 * 60 * 60 * 1000;

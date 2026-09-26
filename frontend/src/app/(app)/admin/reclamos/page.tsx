@@ -2,7 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Gavel, ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Badge, Boton, Segmento, Spinner, Tarjeta } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
@@ -10,6 +11,9 @@ import type { DisputeResponse, SanctionView } from "@/lib/api/types";
 import { fechaCorta, horaBogota, precioCop } from "@/lib/format";
 
 type Pestana = "reclamos" | "sanciones";
+
+/** Lo que esta pantalla lee de un ajuste; el resto de campos solo le importa a Ajustes. */
+type AjusteLeido = { key: string; value: string; label: string };
 
 /** El motivo del reclamo, en el idioma de quien lo va a leer. */
 const MOTIVO: Record<string, string> = {
@@ -28,8 +32,21 @@ const SANCION: Record<string, string> = {
   ACCOUNT_SUSPENDED: "Cuenta suspendida",
 };
 
+/**
+ * La pestaña va en la dirección —`?pestana=sanciones`— para que la tarjeta «Sanciones propuestas» del
+ * panel lleve directo a ellas y no a los reclamos.
+ */
 export default function AdminReclamosPage() {
-  const [pestana, setPestana] = useState<Pestana>("reclamos");
+  return (
+    <Suspense fallback={null}>
+      <PaginaDeReclamos />
+    </Suspense>
+  );
+}
+
+function PaginaDeReclamos() {
+  const pedida = useSearchParams().get("pestana");
+  const [pestana, setPestana] = useState<Pestana>(pedida === "sanciones" ? "sanciones" : "reclamos");
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-6">
@@ -185,7 +202,7 @@ function FichaReclamo({ reclamo }: { reclamo: DisputeResponse }) {
               className="h-10 text-[13px]"
             >
               {resolver.isPending ? <Spinner /> : <ShieldCheck size={15} strokeWidth={1.75} />}
-              A favor del estudiante · le devolvemos {precioCop(reclamo.amountCop)}
+              A favor del estudiante · le abonamos {precioCop(reclamo.amountCop)} de saldo
             </Boton>
             <Boton
               variante="contorno"
@@ -208,11 +225,18 @@ function FichaReclamo({ reclamo }: { reclamo: DisputeResponse }) {
 }
 
 /**
- * Las sanciones están en modo observación: el sistema calcula la que corresponde y la deja
- * propuesta. Esta pantalla es el paso que falta — una persona confirma o la deja pasar.
+ * En modo observación (`sanctions_mode = OBSERVE`) el sistema calcula la sanción que corresponde y
+ * la deja propuesta. Esta pantalla es el paso que falta — una persona confirma o la deja pasar.
  */
 function SancionesPropuestas() {
   const queryClient = useQueryClient();
+
+  // La misma consulta que la pantalla de Ajustes, para compartir su caché.
+  const ajustes = useQuery({
+    queryKey: ["admin", "settings"],
+    queryFn: () => apiFetch<AjusteLeido[]>("/api/v1/admin/settings"),
+  });
+  const modo = ajustes.data?.find((a) => a.key === "sanctions_mode");
 
   const propuestas = useQuery({
     queryKey: ["admin", "sanctions", "proposed"],
@@ -253,18 +277,20 @@ function SancionesPropuestas() {
 
   return (
     <>
-      <p className="mt-4 flex items-start gap-2 rounded-base bg-info-bg px-4 py-3 text-[13px] text-info">
-        <AlertTriangle size={16} strokeWidth={1.75} className="mt-0.5 shrink-0" />
-        <span>
-          Las sanciones están en <strong>modo observación</strong>: el sistema calcula la que
-          corresponde por las ausencias confirmadas, pero no la aplica. Aquí decides tú. Para que se
-          apliquen solas, cambia <code>sanctions_mode</code> a <code>ENFORCE</code> en los ajustes.
-        </span>
-      </p>
+      {modo?.value === "OBSERVE" && (
+        <p className="mt-4 flex items-start gap-2 rounded-base bg-info-bg px-4 py-3 text-[13px] text-info">
+          <AlertTriangle size={16} strokeWidth={1.75} className="mt-0.5 shrink-0" />
+          <span>
+            Las sanciones están en <strong>modo observación</strong>: el sistema calcula la que
+            corresponde por las ausencias confirmadas, pero no la aplica. Aquí decides tú. Para que se
+            apliquen solas, cambia «{modo.label}» a ENFORCE en Ajustes.
+          </span>
+        </p>
+      )}
 
       {propuestas.data.length === 0 ? (
         <div className="mt-4">
-          <Vacio titulo="Ninguna sanción propuesta" texto="Nadie ha acumulado ausencias confirmadas." />
+          <Vacio titulo="Ninguna sanción propuesta" texto="No hay sanciones esperando tu decisión." />
         </div>
       ) : (
         <ul className="mt-4 grid gap-3">

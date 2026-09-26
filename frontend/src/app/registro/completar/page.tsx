@@ -17,12 +17,17 @@ import { whatsappValido } from "@/lib/phone";
 
 type Pendiente = { name: string | null; email: string; provider: string };
 
-const PROVEEDOR: Record<string, string> = { google: "Google", apple: "Apple", facebook: "Facebook" };
+const PROVEEDOR: Record<string, string> = {
+  google: "Google",
+  apple: "Apple",
+  facebook: "Facebook",
+  microsoft: "Microsoft",
+};
 
 /**
- * El último paso de quien llega nuevo desde Google, Apple o Facebook: la cuenta no nace sin las
- * tres casillas del alta —mayoría de edad, términos y autorización de datos—, cada una en la suya,
- * igual que en el registro con correo. El nombre llega del proveedor y se puede corregir; el
+ * El último paso de quien llega nuevo desde Google, Microsoft, Apple o Facebook: la cuenta no nace
+ * sin las tres casillas del alta —mayoría de edad, términos y autorización de datos—, cada una en la
+ * suya, igual que en el registro con correo. El nombre llega del proveedor y se puede corregir; el
  * correo no, porque es el que el proveedor garantizó. El WhatsApp, que el proveedor no trae, es
  * obligatorio como en el registro con correo. Rigel recibe aquí, como en el registro.
  */
@@ -92,7 +97,7 @@ export default function CompletarRegistroPage() {
             href="/login"
             className="mt-5 inline-flex h-11 items-center rounded-pill bg-primary px-5 text-[14px] font-bold text-on-primary shadow-primary hover:bg-primary-strong focus-visible:shadow-focus"
           >
-            Ir a entrar
+            Volver a entrar
           </Link>
         </section>
       )}
@@ -129,7 +134,7 @@ export default function CompletarRegistroPage() {
             Tu WhatsApp
           </label>
           <PhoneInput id="whatsapp" value={whatsapp} onChange={setWhatsapp} className="mt-1.5" />
-          <AyudaWhatsapp numero={whatsapp} ayuda="Lo usamos para avisarte de tus clases." />
+          <AyudaWhatsapp numero={whatsapp} ayuda="Solo lo usa el equipo de Orión si necesita avisarte algo de una clase." />
 
           <div className="mt-5 grid gap-3">
             <Consentimiento id="mayor" marcado={mayor} onCambio={setMayor}>
@@ -145,7 +150,7 @@ export default function CompletarRegistroPage() {
             <Consentimiento id="datos" marcado={datos} onCambio={setDatos}>
               Autorizo el tratamiento de mis datos personales conforme a la{" "}
               <Link href="/privacidad" target="_blank" className="font-bold text-primary-strong hover:underline">
-                Política de tratamiento
+                Política de tratamiento de datos
               </Link>
               .
             </Consentimiento>

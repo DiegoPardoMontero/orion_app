@@ -9,7 +9,7 @@ import { Cargando, Vacio } from "@/components/estados";
 import { AvatarOrion } from "@/components/gamificacion/AvatarOrion";
 import { ChipPuntos } from "@/components/Puntos";
 import { apiFetch } from "@/lib/api/fetch";
-import type { GoalResponse } from "@/lib/api/types";
+import type { GoalResponse, LanguageResponse } from "@/lib/api/types";
 import { etiquetaObjetivo } from "@/lib/i18n";
 import { NIVEL_ESTUDIANTE, type FichaEstudiante } from "@/lib/gamificacion";
 import { useMe } from "@/lib/auth/session";
@@ -48,11 +48,16 @@ function Contenido() {
     retry: false,
   });
 
-  // Los objetivos llegan como código (`CONVERSATION`); el catálogo es quien sabe cómo se llaman en
-  // español. Sin él, el profesor leía el nombre de una columna de base de datos.
+  // Los objetivos y el idioma llegan como código (`CONVERSATION`, `EN`); el catálogo es quien sabe
+  // cómo se llaman en español. Sin él, el profesor leía el nombre de una columna de base de datos.
   const objetivos = useQuery({
     queryKey: ["catalog", "goals"],
     queryFn: () => apiFetch<GoalResponse[]>("/api/v1/catalog/goals"),
+    staleTime: Infinity,
+  });
+  const idiomas = useQuery({
+    queryKey: ["catalog", "languages"],
+    queryFn: () => apiFetch<LanguageResponse[]>("/api/v1/catalog/languages"),
     staleTime: Infinity,
   });
 
@@ -76,6 +81,11 @@ function Contenido() {
   }
 
   const ficha = perfil.data;
+  // Mientras llega el catálogo no se muestra: mejor un instante sin idioma que un «EN».
+  const idioma =
+    ficha.primaryLanguage && idiomas.data
+      ? (idiomas.data.find((l) => l.code === ficha.primaryLanguage)?.nameEs ?? ficha.primaryLanguage)
+      : null;
 
   return (
     <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-4xl lg:px-12 lg:py-8">
@@ -101,7 +111,7 @@ function Contenido() {
         {ficha.selfDeclaredLevel && (
           <p className="mt-1 text-[14px] text-text-secondary">
             {NIVEL_ESTUDIANTE[ficha.selfDeclaredLevel]}
-            {ficha.primaryLanguage ? ` · ${ficha.primaryLanguage}` : ""}
+            {idioma ? ` · ${idioma}` : ""}
           </p>
         )}
         {puntos.data && <ChipPuntos total={puntos.data.total} className="mt-2.5" />}
@@ -136,7 +146,7 @@ function Contenido() {
           no pasa nada. */}
       {!ficha.motivation && ficha.goalCodes.length === 0 && !ficha.selfDeclaredLevel && (
         <p className="mt-6 rounded-card border border-border bg-surface-sunken p-5 text-center text-[14px] leading-relaxed text-text-secondary">
-          Todavía no ha contado nada de sí. Puedes preguntarle en la primera clase qué quiere lograr.
+          Todavía no ha contado nada de sí. Puedes preguntarle en la próxima clase qué quiere lograr.
         </p>
       )}
 

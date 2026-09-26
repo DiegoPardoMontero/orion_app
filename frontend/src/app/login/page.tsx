@@ -183,10 +183,10 @@ export default function LoginPage() {
   );
 }
 
-/** Por qué no se pudo entrar con Google, Apple o Facebook, dicho de forma que se pueda hacer algo. */
+/** Por qué no se pudo entrar con un proveedor, dicho de forma que se pueda hacer algo. */
 const MOTIVO_SOCIAL: Record<string, string> = {
   error: "No pudimos entrar con ese proveedor. Inténtalo de nuevo.",
-  cancelado: "Cancelaste la entrada en Google. Cuando quieras, vuelve a intentarlo.",
+  cancelado: "Cancelaste la entrada. Cuando quieras, vuelve a intentarlo.",
   vencido:
     "La entrada tardó demasiado o se abrió en otra pestaña. Vuelve a tocar el botón y termina en la misma pestaña.",
   "sin-correo":

@@ -362,8 +362,8 @@ function MapaDeConstancia() {
         </p>
         <p className="text-[12px] text-text-secondary">
           {cumplidas === 0
-            ? "Aquí se marcan las semanas con clase"
-            : `${cumplidas} ${cumplidas === 1 ? "semana" : "semanas"} con clase`}
+            ? "Aquí se marcan las semanas con clase o práctica"
+            : `${cumplidas} ${cumplidas === 1 ? "semana" : "semanas"} con clase o práctica`}
         </p>
       </div>
 
@@ -376,10 +376,10 @@ function MapaDeConstancia() {
       </ul>
 
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-text-muted">
-        <Leyenda color="var(--color-streak-week)" texto="con clase" />
+        <Leyenda color="var(--color-streak-week)" texto="con clase o práctica" />
         {/* «Protegida» no le dice nada a quien lo lee por primera vez: es jerga nuestra. La leyenda
             tiene que decir qué pasó, no cómo lo llamamos por dentro. */}
-        <Leyenda color="var(--color-streak-protected)" texto="sin clase, racha a salvo" />
+        <Leyenda color="var(--color-streak-protected)" texto="sin actividad, racha a salvo" />
         <Leyenda color="var(--color-border-strong)" texto="en curso" borde />
       </div>
 
@@ -388,7 +388,7 @@ function MapaDeConstancia() {
           explica nada: hace falta decir qué es, cuándo pasa y qué no hace. */}
       {protegidas > 0 && (
         <p className="mt-3 border-t border-border pt-3 text-[12px] leading-relaxed text-text-secondary">
-          <strong className="text-text">Tuviste una semana sin clase y tu racha siguió.</strong> Se
+          <strong className="text-text">Tuviste una semana sin clase ni práctica y tu racha siguió.</strong> Se
           llama semana protegida: se aplica sola, sin que haya que pedirla, y solo una vez al mes. Tapa el
           hueco, pero no cuenta como clase, así que una racha de cuatro semanas con una protegida en
           medio sigue siendo de cuatro.
@@ -401,10 +401,10 @@ function MapaDeConstancia() {
 /** Una semana, como estrella de cuatro puntas (§2g). El estado se lee por relleno, no por color. */
 function SemanaEstrella({ semana }: { semana: SemanaRacha }) {
   const titulo = {
-    CUMPLIDA: "Semana con clase",
-    PROTEGIDA: "Semana sin clase, pero tu racha siguió",
+    CUMPLIDA: "Semana con clase o práctica",
+    PROTEGIDA: "Semana sin actividad, pero tu racha siguió",
     EN_CURSO: "Semana en curso",
-    VACIA: "Sin clase",
+    VACIA: "Sin actividad",
   }[semana.status];
 
   const relleno = {

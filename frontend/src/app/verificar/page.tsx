@@ -3,11 +3,14 @@
 import { CheckCircle2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { Constelacion, Wordmark } from "@/components/marca";
 import { Rigel } from "@/components/Rigel";
 import { BotonPrincipal, Spinner } from "@/components/ui";
 import { apiFetch, ApiError } from "@/lib/api/fetch";
+import { HOME_BY_ROLE } from "@/lib/auth/roles";
+import type { Me } from "@/lib/auth/session";
 
 export default function VerificarPage() {
   // useSearchParams exige una frontera de Suspense.
@@ -35,6 +38,15 @@ function Verificar() {
   // En desarrollo, React monta dos veces; sin esto el token se consumiría en el primer montaje y
   // el segundo mostraría "ya expiró" sobre una verificación que sí funcionó.
   const yaIntentado = useRef(false);
+  // La confirman estudiantes, profes y aspirantes: «Entrar a Orión» lleva a cada uno a su inicio, y a
+  // quien abrió el enlace en otro navegador, sin sesión, al login.
+  const { data: me } = useQuery({
+    queryKey: ["auth", "me", "landing"],
+    queryFn: () => apiFetch<Me>("/api/v1/auth/me", { redirectOn401: false }),
+    retry: false,
+    staleTime: 60_000,
+  });
+  const inicio = me ? HOME_BY_ROLE[me.role] : "/login";
 
   useEffect(() => {
     if (!token || yaIntentado.current) return;
@@ -71,11 +83,10 @@ function Verificar() {
             <CheckCircle2 size={36} strokeWidth={1.75} className="mx-auto mt-4 text-success" />
             <h1 className="mt-3 font-display text-[26px] font-bold">¡Listo, tu correo quedó confirmado!</h1>
             <p className="mt-2 text-[15px] leading-relaxed text-text-secondary">
-              Ya puedes reservar tus clases. Te enviaremos aquí las confirmaciones y las
-              invitaciones de calendario.
+              Te enviaremos a este correo los avisos de tus clases y sus invitaciones de calendario.
             </p>
-            <Link href="/profesores" className="mt-7 block">
-              <BotonPrincipal type="button">Buscar un profesor</BotonPrincipal>
+            <Link href={inicio} className="mt-7 block">
+              <BotonPrincipal type="button">Entrar a Orión</BotonPrincipal>
             </Link>
           </>
         )}
@@ -86,7 +97,7 @@ function Verificar() {
             <h1 className="mt-3 font-display text-[24px] font-bold">No pudimos confirmar tu correo</h1>
             <p className="mt-2 text-[15px] leading-relaxed text-text-secondary">{mensaje}</p>
             <p className="mt-5 text-[14px] text-text-muted">
-              Entra a Orión y pide un enlace nuevo desde el aviso de tu perfil.
+              Entra a Orión y pide un enlace nuevo con «Reenviar», en el aviso de arriba de la pantalla.
             </p>
             <Link href="/login" className="mt-6 block">
               <BotonPrincipal type="button">Ir a Orión</BotonPrincipal>

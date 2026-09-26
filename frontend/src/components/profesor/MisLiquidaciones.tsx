@@ -89,7 +89,7 @@ export function MisLiquidaciones() {
 
       <h3 className="mt-6 text-[13px] font-bold uppercase tracking-[0.04em] text-text-secondary">Historial de liquidaciones</h3>
       {d.payouts.length === 0 ? (
-        <p className="mt-2 text-[13.5px] text-text-muted">Todavía no tienes liquidaciones. La primera sale en el próximo corte.</p>
+        <p className="mt-2 text-[13.5px] text-text-muted">Todavía no tienes liquidaciones. La primera sale en el primer corte después de que dictes clases.</p>
       ) : (
         <ul className="mt-2 grid gap-2">
           {d.payouts.map((l) => {

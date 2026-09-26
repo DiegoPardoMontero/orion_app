@@ -104,8 +104,8 @@ desde la V30). Las dos se han pedido «abrir» alguna vez; las dos exigen una de
 **El cálculo de cupos vive en `SlotCalculator`, una clase pura** (sin Spring, sin repositorios,
 sin reloj del sistema: el "ahora" entra por parámetro). Sus 12 tests corren en ~150 ms porque no
 levantan nada. No mover esa lógica a SQL ni inyectarle dependencias — es lo que la hace
-exhaustivamente testeable. Reglas del dominio: clases de 60 min alineadas a la hora, intervalos
-semiabiertos `[inicio, fin)`, todo razonado en `BusinessZone.BOGOTA`, y nunca cupos ya iniciados.
+exhaustivamente testeable. Reglas del dominio: clases de 55 min (`ClassLength`) que empiezan a la hora o
+a la media hora, intervalos semiabiertos `[inicio, fin)`, todo razonado en `BusinessZone.BOGOTA`, y nunca cupos ya iniciados.
 
 **Flyway es el dueño del esquema.** `spring.jpa.hibernate.ddl-auto=validate`, siempre.
 Hibernate nunca crea ni altera tablas; solo valida que las entidades coincidan con lo que

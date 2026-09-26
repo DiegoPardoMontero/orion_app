@@ -280,7 +280,7 @@ function Armazon({ children }: { children: ReactNode }) {
 }
 
 /**
- * Construye la navegación del rol, añadiendo "Mi solicitud" cuando aplica: al profesor no aprobado
+ * Construye la navegación del rol, añadiendo "Mi postulación" cuando aplica: al profesor no aprobado
  * (o sin postular) y al estudiante que ya empezó una postulación. Un profesor aprobado ve su menú
  * normal, sin ruido.
  */
@@ -293,7 +293,7 @@ function construirNav(
 
   const grupo: NavGroup = {
     titulo: "Postulación",
-    items: [{ href: "/aplicacion/estado", label: "Mi solicitud" }],
+    items: [{ href: "/aplicacion/estado", label: "Mi postulación" }],
   };
 
   // El aspirante ya lleva su postulación en el menú base: añadirla otra vez la duplicaría.
@@ -334,7 +334,7 @@ function GateProfesor({
   const rechazada = status === "REJECTED";
 
   const titulo = enRevision
-    ? "Tu perfil está en revisión"
+    ? "Tu postulación está en revisión"
     : necesitaCambios
       ? "Tu postulación necesita ajustes"
       : rechazada
@@ -342,11 +342,11 @@ function GateProfesor({
         : "Completa tu postulación";
 
   const texto = enRevision
-    ? "Estamos revisando tu postulación. Cuando la aprobemos, podrás publicar tu perfil y abrir tu disponibilidad."
+    ? "Estamos revisando tu postulación. Cuando la aprobemos, podrás publicar tu perfil y abrir tus horarios."
     : necesitaCambios
       ? "La revisión pidió algunos ajustes. Edítalos y vuelve a enviar tu postulación."
       : rechazada
-        ? "Consulta el detalle en tu solicitud. Podrás postularte de nuevo más adelante."
+        ? "Consulta el detalle en tu postulación. Podrás postularte de nuevo más adelante."
         : "Antes de publicar tu perfil y tu disponibilidad, completa y envía tu postulación de profesor.";
 
   const irAEstado = enRevision || rechazada;
@@ -360,7 +360,7 @@ function GateProfesor({
         accion={
           <Link href={irAEstado ? "/aplicacion/estado" : "/aplicacion"}>
             <Boton variante="primario" className="h-12">
-              {irAEstado ? "Ver mi solicitud" : "Ir a mi postulación"}
+              {irAEstado ? "Ver mi postulación" : "Ir a mi postulación"}
             </Boton>
           </Link>
         }

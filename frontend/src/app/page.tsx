@@ -392,11 +392,11 @@ export default async function PortadaPage() {
           <dl className="grid grid-cols-2 gap-4">
             <div className="rounded-card bg-text-on-night/[0.07] p-5">
               <dt className="text-[12.5px] leading-snug text-text-on-night/75">Más probabilidad de un trabajo mejor pagado</dt>
-              <dd className="mt-2 font-display text-[40px] font-bold leading-none text-accent-peach lg:text-[48px]">24 %</dd>
+              <dd className="mt-2 font-display text-[40px] font-bold leading-none whitespace-nowrap text-accent-peach lg:text-[48px]">24 %</dd>
             </div>
             <div className="rounded-card bg-text-on-night/[0.07] p-5">
               <dt className="text-[12.5px] leading-snug text-text-on-night/75">Buscan empleo con inglés alto</dt>
-              <dd className="mt-2 font-display text-[40px] font-bold leading-none text-accent-peach lg:text-[48px]">2,2 %</dd>
+              <dd className="mt-2 font-display text-[40px] font-bold leading-none whitespace-nowrap text-accent-peach lg:text-[48px]">2,2 %</dd>
             </div>
           </dl>
         </div>
@@ -532,7 +532,7 @@ export default async function PortadaPage() {
           <div>
             <h2 className="text-balance font-display text-h2 font-bold text-on-primary">¿No sabes por dónde empezar?</h2>
             <p className="mt-3 max-w-[54ch] text-[15.5px] leading-relaxed text-on-primary/90">
-              {Duracion} de conversación y sabes en qué nivel estás, con tres profesores recomendados para ti.
+              {Duracion} de conversación y sabes cómo arrancas, con tres profesores recomendados para ti.
               Gratis, en español si prefieres, y sin necesidad de reservar nada después.
             </p>
             <Link
@@ -643,7 +643,7 @@ export default async function PortadaPage() {
               Términos y condiciones
             </Link>
             <Link href="/privacidad" className="hover:text-text">
-              Política de privacidad
+              Política de tratamiento de datos
             </Link>
             {whatsapp && (
               <a

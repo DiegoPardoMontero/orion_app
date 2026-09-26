@@ -9,6 +9,7 @@ import { apiFetch, ApiError } from "@/lib/api/fetch";
 import { AvisoError } from "@/components/estados";
 import { Boton } from "@/components/ui";
 import type { ClassroomResponse } from "@/lib/api/aula";
+import { rangoHoras } from "@/lib/format";
 
 const VALOR: Record<number, string> = {
   1: "Mejorable",
@@ -88,11 +89,9 @@ function CierreEstudiante({
     <>
       <div className="bg-[linear-gradient(135deg,#2e1e4e_0%,#7a4a8c_55%,#e8764f_100%)] px-6 py-7 text-text-on-night">
         <p className="font-display text-h2 font-bold">
-          Hablaste {minutos} {minutos === 1 ? "minuto" : "minutos"} en otro idioma.
+          Hablaste {minutos} {minutos === 1 ? "minuto" : "minutos"} en inglés.
         </p>
-        <p className="mt-1 text-[13px] opacity-85">
-          {hora(datos.startsAt)} – {hora(datos.endsAt)}
-        </p>
+        <p className="mt-1 text-[13px] opacity-85">{rangoHoras(datos.startsAt, datos.endsAt)}</p>
       </div>
 
       <div className="px-6 py-6">
@@ -126,7 +125,7 @@ function CierreEstudiante({
           value={comentario}
           onChange={(e) => setComentario(e.target.value)}
           maxLength={1000}
-          placeholder="Si quieres, cuéntale algo (opcional)"
+          placeholder="¿Qué destacarías de la clase? (opcional)"
           aria-label="Comentario opcional"
           className="mt-3 w-full rounded-base border-[1.5px] border-border bg-surface-raised p-3 text-[14px] text-text focus:border-primary focus:shadow-focus focus:outline-none"
         />
@@ -150,11 +149,12 @@ function CierreEstudiante({
           </Boton>
         </div>
 
+        {/* El aula no trae el id del profesor: el enlace va al catálogo y el texto no promete más. */}
         <Link
           href="/profesores"
           className="mt-4 block text-center text-[13px] font-semibold text-primary-strong hover:underline"
         >
-          Reservar la siguiente con {nombre}
+          Reservar otra clase
         </Link>
       </div>
     </>
@@ -210,9 +210,7 @@ function CierreProfesor({
           ? `La clase duró ${minutos} min`
           : `Estuviste ${minutos} min en la sala`}
       </h2>
-      <p className="mt-1 text-[13px] text-text-muted">
-        {hora(datos.startsAt)} – {hora(datos.endsAt)}
-      </p>
+      <p className="mt-1 text-[13px] text-text-muted">{rangoHoras(datos.startsAt, datos.endsAt)}</p>
 
       <p className="mt-5 text-[13.5px] font-bold text-text">¿{nombre} asistió?</p>
       <div role="radiogroup" aria-label="Asistencia" className="mt-2.5 grid gap-2.5">
@@ -304,10 +302,3 @@ function TarjetaAsistencia({
     </button>
   );
 }
-
-const hora = (iso: string) =>
-  new Date(iso).toLocaleTimeString("es-CO", {
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "America/Bogota",
-  });

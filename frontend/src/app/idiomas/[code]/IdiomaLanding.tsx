@@ -29,7 +29,8 @@ export function IdiomaLanding({ codigo }: { codigo: string }) {
   });
 
   const idioma = languages.data?.find((l) => (l.code ?? "").toUpperCase() === codigo);
-  const nombre = idioma?.nameEs ?? "idiomas";
+  // El catálogo trae «Inglés»; aquí siempre va a mitad de frase, donde en español va en minúscula.
+  const nombre = (idioma?.nameEs ?? "idiomas").toLocaleLowerCase("es");
   const lista = profesores.data?.content ?? [];
 
   return (
@@ -46,8 +47,8 @@ export function IdiomaLanding({ codigo }: { codigo: string }) {
             {nombre} con profesores reales
           </h1>
           <p className="mt-4 max-w-[48ch] text-[15px] leading-relaxed text-on-primary/85 lg:text-[17px]">
-            Clases en vivo, a tu ritmo y sin miedo a equivocarte. Elige a tu profesor, mira sus
-            horarios y reserva cuando quieras.
+            Clases en vivo, a tu ritmo y sin miedo a equivocarte. Elige a tu profesor y reserva cuando
+            quieras.
           </p>
           <div className="mt-8">
             <Link

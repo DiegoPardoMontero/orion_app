@@ -44,11 +44,11 @@ export function Cierre({ set }: { set: SetDePractica }) {
   });
 
   const items = [...set.items].sort((a, b) => a.index - b.index);
-  const titulo = tituloDelSet(set) ?? "Tu práctica";
+  const titulo = tituloDelSet(set);
   const profe = nombreDelProfe(set, true);
   const nuevos = logrosDelCierre(logros.data ?? [], set.completedAt);
   const lineas = [
-    { etiqueta: "Completaste el set", puntos: PUNTOS_POR_PRACTICA },
+    { etiqueta: "Completaste la práctica", puntos: PUNTOS_POR_PRACTICA },
     ...(set.perfect ? [{ etiqueta: "Constelación perfecta", puntos: PUNTOS_CONSTELACION_PERFECTA }] : []),
     ...nuevos.map((l) => ({ etiqueta: `Logro · ${l.name}`, puntos: l.points })),
   ];
@@ -75,7 +75,9 @@ export function Cierre({ set }: { set: SetDePractica }) {
       <h1 className="m-0 font-display text-[32px] leading-[1.05] font-extrabold lg:text-[48px] lg:leading-none">
         {set.perfect ? "Constelación perfecta" : "Constelación completa"}
       </h1>
-      <span className="text-[15px] lg:text-[17px]">{titulo} ya brilla en tu cielo.</span>
+      <span className="text-[15px] lg:text-[17px]">
+        {titulo ? `Tu práctica de «${titulo}»` : "Tu práctica"} ya brilla en tu cielo.
+      </span>
     </div>
   );
 

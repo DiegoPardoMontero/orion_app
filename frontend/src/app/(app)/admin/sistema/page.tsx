@@ -7,6 +7,7 @@ import { AlertTriangle, CheckCircle2, ExternalLink, XCircle } from "lucide-react
 import { apiFetch, ApiError } from "@/lib/api/fetch";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
 import { Boton, Campo, Tarjeta } from "@/components/ui";
+import { fechaCorta, horaBogota } from "@/lib/format";
 import { correosGuardados, EnsayoDelActa, guardarCorreos } from "./EnsayoDelActa";
 
 type Integracion = {
@@ -257,7 +258,7 @@ function EnsayoDelAula() {
           <div className="mt-4 rounded-card bg-success-bg p-4">
             <p className="text-[13.5px] font-bold text-success">Ensayo creado.</p>
             <p className="mt-1 text-[13px] text-text-secondary">
-              {new Date(crear.data.startsAt).toLocaleString("es-CO", { timeZone: "America/Bogota" })}
+              {fechaCorta(crear.data.startsAt)}, {horaBogota(crear.data.startsAt)}
               {" · "}
               La sala abre 10 minutos antes.
             </p>

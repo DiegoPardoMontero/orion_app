@@ -104,7 +104,7 @@ test("[e-mini.5 e-cierre.2 e-cierre.3] colgar desde la ventana lleva a la hoja d
   await page.getByRole("button", { name: "Colgar" }).click();
   await expect(page).toHaveURL(/\/aula$/);
   await expect(page.getByText(/¿Cómo te fue con María\?/)).toBeVisible();
-  await expect(page.getByRole("link", { name: /Reservar la siguiente con María/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Reservar otra clase" })).toBeVisible();
   await page.getByRole("button", { name: "Ahora no" }).click();
   await expect(page).toHaveURL(/\/mis-clases/);
   await expect(page.locator(".clase-flotante")).toBeHidden();

@@ -7,13 +7,14 @@ import { apiFetch } from "@/lib/api/fetch";
 import { type Me } from "@/lib/auth/session";
 
 /**
- * CTA de "Enseña en Orión". Isla cliente que decide el destino según la sesión: el aspirante o el
- * profesor van directo al wizard de postulación (/aplicacion); sin sesión, al registro con
+ * CTA de "Enseña en Orión". Isla cliente que decide el destino según la sesión: el aspirante sigue
+ * con su postulación (/aplicacion) y el profesor va a su perfil; sin sesión, al registro con
  * `?rol=profesor`, que ajusta el copy y deja al recién registrado en su postulación en vez de en el
  * buscador. Postularse siempre exige cuenta: la postulación cuelga de un usuario.
  *
  * <p>Con la sesión de un estudiante no hay botón (Pardo, 25/09/2026): desde esa cuenta no se postula,
- * y un enlace al wizard terminaría en un 403. Se le dice cómo, que es con otra cuenta.
+ * y un enlace al wizard terminaría en un 403. Se le dice cómo, que es con otra cuenta. Al admin no se
+ * le ofrece nada: no enseña desde su cuenta.
  */
 export function EnsenaCta({ className = "", etiqueta }: { className?: string; etiqueta?: string }) {
   const { data: me } = useQuery({
@@ -33,8 +34,14 @@ export function EnsenaCta({ className = "", etiqueta }: { className?: string; et
     );
   }
 
-  const href = me ? "/aplicacion" : "/registro?rol=profesor";
-  const texto = me ? "Empieza tu postulación" : (etiqueta ?? "Crea tu cuenta y postúlate");
+  if (me?.role === "ADMIN") return null;
+
+  const { href, texto } =
+    me?.role === "PROFESSOR"
+      ? { href: "/perfil", texto: "Ir a mi perfil" }
+      : me?.role === "TEACHER_APPLICANT"
+        ? { href: "/aplicacion", texto: "Ir a mi postulación" }
+        : { href: "/registro?rol=profesor", texto: etiqueta ?? "Crea tu cuenta y postúlate" };
 
   return (
     <Link

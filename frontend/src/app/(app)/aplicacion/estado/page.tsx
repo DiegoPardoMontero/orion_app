@@ -45,7 +45,7 @@ export default function EstadoAplicacionPage() {
       <main className="mx-auto w-full max-w-lg px-5 py-8">
         <Vacio
           mascota
-          titulo="Aún no has postulado"
+          titulo="Aún no te has postulado"
           texto="¿Quieres enseñar en Orión? Completa tu postulación y nuestro equipo la revisará."
           accion={
             <Link href="/aplicacion">
@@ -102,7 +102,7 @@ export default function EstadoAplicacionPage() {
 
   return (
     <main className="mx-auto w-full max-w-lg px-5 py-6 lg:py-8">
-      <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-primary-strong">Mi solicitud</p>
+      <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-primary-strong">Mi postulación</p>
       <h1 className="mt-2 font-display text-h1 font-bold">Estado de tu postulación</h1>
 
       <div className="mt-5 flex items-center gap-4 rounded-card bg-surface-raised p-5 shadow-sm">

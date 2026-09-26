@@ -53,7 +53,7 @@ export const RECORRIDO_PROFESOR: Recorrido = {
     },
     {
       titulo: "Tus horarios",
-      texto: "Marca las franjas en que das clase cada semana. Si un día no puedes, agrégalo como excepción.",
+      texto: "Marca las franjas en que das clase cada semana. Si un día no puedes, bloquea esa fecha.",
       guia: "rigel",
       // Desde el 24/09 los horarios viven dentro del perfil.
       ruta: "/perfil?seccion=horarios",
@@ -61,7 +61,7 @@ export const RECORRIDO_PROFESOR: Recorrido = {
     },
     {
       titulo: "Tu perfil público",
-      texto: "Es lo que ven los estudiantes antes de reservar: tu tarifa, tu bio y tu enlace propio para compartir.",
+      texto: "Es lo que ven los estudiantes antes de reservar: tu tarifa y tu presentación. Desde aquí también compartes tu enlace.",
       guia: "rigel",
       ruta: "/perfil",
       anclas: ["nav:/perfil"],
@@ -96,7 +96,7 @@ export const RECORRIDO_PROFESOR: Recorrido = {
     },
     {
       titulo: "Tus ganancias y tu desempeño",
-      texto: "Mira lo que has ganado por clase y cómo van tus clases con cada estudiante.",
+      texto: "Mira lo que has ganado, cuándo te pagamos y cómo va tu desempeño.",
       guia: "rigel",
       ruta: "/ganancias",
       anclas: ["nav:/ganancias", "nav:/desempeno"],
@@ -105,8 +105,8 @@ export const RECORRIDO_PROFESOR: Recorrido = {
   cierre: {
     titulo: (nombre) => `¡Listo, ${nombre}! Ya conoces Orión.`,
     texto:
-      "Revisa que tu disponibilidad esté al día: así te encuentran los estudiantes. Si algo se te olvida, el recorrido está en Ayuda.",
-    principal: { etiqueta: "Revisar mi disponibilidad", href: "/perfil?seccion=horarios" },
+      "Revisa que tus horarios estén al día: así te encuentran los estudiantes. Si algo se te olvida, el recorrido está en Ayuda.",
+    principal: { etiqueta: "Revisar mis horarios", href: "/perfil?seccion=horarios" },
     secundaria: { etiqueta: "Ir a mi agenda", href: "/mis-clases" },
   },
 };
@@ -166,7 +166,7 @@ export const RECORRIDO_ESTUDIANTE: Recorrido = {
     titulo: () => "¡Listo! Ya conoces Orión.",
     texto: "Ahora sí, a buscar tu profe. Si algo se te olvida, el recorrido está en Ayuda.",
     principal: { etiqueta: "Buscar profe", href: "/profesores" },
-    secundaria: { etiqueta: "Ir al inicio", href: "/mis-clases" },
+    secundaria: { etiqueta: "Ir a mis clases", href: "/mis-clases" },
   },
 };
 

@@ -27,7 +27,7 @@ const base = (c: PublicFigures): Record<"estudiante" | "profesor" | "general", P
       r: `Busca un profesor, abre su perfil y elige día y hora entre los cupos libres. Las clases duran ${minutos(c.classMinutes)} y empiezan a la hora o a la media hora, en hora de Bogotá.`,
     },
     {
-      p: "Reservé y no me confirmó la clase. ¿Por qué?",
+      p: "Reservé y mi clase no sale confirmada. ¿Por qué?",
       r: `Reservar aparta el horario, pero la clase se confirma cuando entra el pago. Tienes ${minutos(c.paymentHoldMinutes)} para pagar; si no, la reserva se cancela sola y no se te cobra nada.`,
     },
     {
@@ -93,8 +93,8 @@ const base = (c: PublicFigures): Record<"estudiante" | "profesor" | "general", P
       r: "En «Perfil» → «Mis horarios» defines franjas semanales que se repiten, y bloqueas las fechas en que no puedes. Los cupos salen cada media hora y nunca se ofrecen horas ya empezadas.",
     },
     {
-      p: "Me pusieron tarifa en cero. ¿Qué significa?",
-      r: "Que administración te dejó en clases gratuitas para probar el flujo completo sin mover dinero. Tus clases se muestran como «Gratis» y se reservan sin pasar por la pasarela.",
+      p: "Mi tarifa está en cero. ¿Qué significa?",
+      r: "Que Orión dejó tus clases gratis por ahora. Se muestran como «Gratis» y se reservan sin pagar.",
     },
   ],
   general: [
@@ -120,7 +120,7 @@ const base = (c: PublicFigures): Record<"estudiante" | "profesor" | "general", P
     },
     {
       p: "¿Puedo cancelar una clase?",
-      r: `Siempre. Con más de ${horas(c.studentCancelHours)} por delante recuperas el valor completo; dentro de las últimas ${horas(c.studentCancelHours)} la clase se considera prestada y no hay devolución.`,
+      r: `Siempre. Con más de ${horas(c.studentCancelHours)} por delante recuperas el valor completo; dentro de las últimas ${horas(c.studentCancelHours)} la clase se cobra completa y no hay devolución.`,
     },
     {
       p: "¿Hay edad mínima?",

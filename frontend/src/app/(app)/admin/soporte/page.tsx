@@ -23,7 +23,7 @@ export default function AdminSoportePage() {
     <main className="mx-auto w-full max-w-4xl px-5 py-8 lg:px-8">
       <h1 className="font-display text-h1 font-bold">Soporte</h1>
       <p className="mt-1 text-[14px] text-text-secondary">
-        Lo que espera respuesta, con lo que vence antes primero.
+        Las solicitudes sin cerrar, con lo que vence antes primero.
       </p>
 
       {bandeja.isPending && <Cargando filas={3} />}
@@ -51,7 +51,9 @@ export default function AdminSoportePage() {
                           ? "Plazo vencido"
                           : dias === 0
                             ? "Vence hoy"
-                            : `${dias} día${dias === 1 ? "" : "s"}`}
+                            : dias === 1
+                              ? "Queda 1 día"
+                              : `Quedan ${dias} días`}
                       </Badge>
                     )}
                     <Badge tono={TONO_ESTADO[t.status]}>{ETIQUETA_ESTADO[t.status]}</Badge>

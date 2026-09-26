@@ -46,7 +46,7 @@ export default function InvitarPage() {
   const enlace = corto.data?.slug ? `${origen}/p/${corto.data.slug}` : `${origen}/profesores/${me.id}`;
   const p = perfil.data;
   const prueba = p?.acceptsTrial ? " La primera clase, de prueba, es gratis." : "";
-  const mensajeInicial = `¡Hola! Ya doy clases de inglés en Orión. Ahí ves mis horarios y reservas tu clase conmigo en un minuto.${prueba}`;
+  const mensajeInicial = `¡Hola! Ya doy clases de inglés en Orión. Ahí ves mi perfil y reservas tu clase conmigo en un minuto.${prueba}`;
 
   return <Invitar enlace={enlace} publicado={p?.isPublished ?? false} mensajeInicial={mensajeInicial} />;
 }
@@ -86,8 +86,8 @@ function Invitar({ enlace, publicado, mensajeInicial }: { enlace: string; public
     <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-5xl lg:px-12 lg:py-8">
       <h1 className="font-display text-h1 font-bold">Invitar estudiantes</h1>
       <p className="mt-1 text-[14px] text-text-secondary">
-        Tu enlace lleva a tu perfil: tus horarios, tu tarifa y tus reseñas. Quien llega por él crea su cuenta y reserva
-        contigo sin buscarte.
+        Tu enlace lleva a tu perfil: tu presentación, tu tarifa y tus reseñas. Quien llega por él crea su cuenta, ve tus
+        horarios y reserva contigo sin buscarte.
       </p>
 
       {!publicado && (
@@ -165,7 +165,7 @@ function Invitar({ enlace, publicado, mensajeInicial }: { enlace: string; public
           <button
             type="button"
             onClick={() => void copiar("mensaje")}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-pill border-[1.5px] border-border bg-surface-raised px-4 text-[14px] font-semibold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
+            className="inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-pill border-[1.5px] border-border bg-surface-raised px-4 text-[14px] font-semibold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
           >
             {copiado === "mensaje" ? <Check size={16} strokeWidth={2.2} /> : <Copy size={16} strokeWidth={2} />}
             {copiado === "mensaje" ? "Copiado" : "Copiar mensaje"}

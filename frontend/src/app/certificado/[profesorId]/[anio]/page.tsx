@@ -71,8 +71,8 @@ export default function CertificadoPage() {
         <p className="mt-6 text-[14.5px] leading-relaxed">
           <strong>{b.mandataryName}</strong>
           {b.mandataryDocument ? `, identificado con ${b.mandataryDocument},` : ""} en calidad de mandatario, certifica que
-          durante el año {b.year} recibió por cuenta de <strong>{b.professorName}</strong>
-          {b.professorDocument ? `, identificado con ${b.professorDocument},` : ""} (mandante) los valores que pagaron sus
+          durante el año {b.year} recibió por cuenta de <strong>{b.professorName}</strong> (mandante)
+          {b.professorDocument ? `, identificado(a) con ${b.professorDocument},` : ""} los valores que pagaron sus
           estudiantes por las clases dictadas a través de Orión, así:
         </p>
 

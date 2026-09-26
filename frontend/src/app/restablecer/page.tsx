@@ -123,7 +123,7 @@ function Restablecer() {
               </div>
               <p
                 className={`mt-1.5 text-[12px] ${
-                  fuerza.nivel >= 3 ? "text-success" : password ? "text-text-secondary" : "text-text-muted"
+                  fuerza.nivel >= 3 && password.length >= 8 ? "text-success" : password ? "text-text-secondary" : "text-text-muted"
                 }`}
               >
                 {fuerza.mensaje}

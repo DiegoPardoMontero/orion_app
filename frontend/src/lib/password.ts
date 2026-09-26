@@ -21,29 +21,44 @@ export function generarClave(): string {
 
 /**
  * Fuerza de la contraseña para el medidor de 4 segmentos del registro. Un punto por cada regla:
- * longitud ≥8, mayúscula y minúscula, número y símbolo. El mensaje describe qué falta —nunca un
+ * longitud ≥8, mayúscula y minúscula, número y símbolo. El mensaje dice la regla que falta —nunca un
  * escueto «débil/fuerte»— para que el usuario sepa cómo mejorarla.
  */
 export type FuerzaClave = { nivel: 0 | 1 | 2 | 3 | 4; mensaje: string };
 
-const MENSAJES_FUERZA = [
-  "Mínimo 8 caracteres",
-  "Muy corta todavía",
-  "Débil: súmale una mayúscula",
-  "Vas bien: añade un número",
-  "Fuerte: un símbolo la blinda",
-  "Excelente contraseña",
-] as const;
+const MINIMO = 8;
 
 export function fuerzaClave(clave: string): FuerzaClave {
-  if (!clave) return { nivel: 0, mensaje: MENSAJES_FUERZA[0] };
+  if (!clave) return { nivel: 0, mensaje: `Mínimo ${MINIMO} caracteres` };
 
-  let nivel = 0;
-  if (clave.length >= 8) nivel++;
-  if (/[a-z]/.test(clave) && /[A-Z]/.test(clave)) nivel++;
-  if (/[0-9]/.test(clave)) nivel++;
-  if (/[^A-Za-z0-9]/.test(clave)) nivel++;
+  const larga = clave.length >= MINIMO;
+  const mayuscula = /[A-Z]/.test(clave);
+  const minuscula = /[a-z]/.test(clave);
+  const numero = /[0-9]/.test(clave);
+  const simbolo = /[^A-Za-z0-9]/.test(clave);
 
-  const n = nivel as 0 | 1 | 2 | 3 | 4;
-  return { nivel: n, mensaje: MENSAJES_FUERZA[n + 1] ?? MENSAJES_FUERZA[5] };
+  let puntos = 0;
+  if (larga) puntos++;
+  if (mayuscula && minuscula) puntos++;
+  if (numero) puntos++;
+  if (simbolo) puntos++;
+  const nivel = puntos as 0 | 1 | 2 | 3 | 4;
+
+  // La longitud va primero y tapa lo demás: el servidor rechaza una clave corta por variada que sea,
+  // así que llamarla «fuerte» sería mentirle a quien la escribe.
+  if (!larga) return { nivel, mensaje: `Muy corta todavía: usa al menos ${MINIMO} caracteres` };
+
+  const falta = !mayuscula
+    ? "una mayúscula"
+    : !minuscula
+      ? "una minúscula"
+      : !numero
+        ? "un número"
+        : !simbolo
+          ? "un símbolo"
+          : null;
+  if (!falta) return { nivel, mensaje: "Excelente contraseña" };
+  if (nivel === 3) return { nivel, mensaje: `Fuerte: ${falta} la blinda` };
+  if (nivel === 2) return { nivel, mensaje: `Vas bien: añade ${falta}` };
+  return { nivel, mensaje: `Débil: súmale ${falta}` };
 }

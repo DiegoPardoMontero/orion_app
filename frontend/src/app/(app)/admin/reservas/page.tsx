@@ -15,7 +15,7 @@ import { fechaYRango } from "@/lib/format";
 const ESTADOS = [
   { valor: "", etiqueta: "Todas" },
   { valor: "CONFIRMED", etiqueta: "Confirmadas" },
-  { valor: "CANCELLED_BY_STUDENT", etiqueta: "Canceladas" },
+  { valor: "CANCELLED_BY_STUDENT", etiqueta: "Canceladas por el estudiante" },
   { valor: "COMPLETED", etiqueta: "Completadas" },
 ] as const;
 
@@ -62,8 +62,8 @@ export default function AdminReservasPage() {
         <Metrica
           tono="melocoton"
           icono={<Sparkles size={18} strokeWidth={2.2} />}
-          cifra={metricas.data ? `${Math.round(metricas.data.selfServicePctAllTime ?? 0)}%` : "—"}
-          etiqueta="Autoservicio (histórico)"
+          cifra={metricas.data ? `${Math.round(metricas.data.selfServicePctAllTime ?? 0)} %` : "—"}
+          etiqueta="Reservadas por el propio estudiante (histórico)"
         />
       </div>
 
@@ -145,7 +145,7 @@ export default function AdminReservasPage() {
                   <th className={t.th}>Cuándo</th>
                   <th className={t.th}>Estudiante y profesor</th>
                   <th className={t.th}>Estado</th>
-                  <th className={t.th}>Autoservicio</th>
+                  <th className={t.th}>Reservó el estudiante</th>
                   <th className={`${t.th} text-right`}>Limpieza</th>
                 </tr>
               </thead>
@@ -170,7 +170,7 @@ export default function AdminReservasPage() {
                       <Badge tono={tonoEstado(reserva.status)}>{etiquetaEstado(reserva.status)}</Badge>
                     </td>
                     <td className={`${t.celda} text-text-secondary`}>
-                      <span className="lg:hidden">Autoservicio: </span>
+                      <span className="lg:hidden">Reservó el estudiante: </span>
                       {reserva.selfService ? "Sí" : "No"}
                     </td>
                     <td className={t.acciones}>

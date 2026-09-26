@@ -27,7 +27,7 @@ import type {
   AdminApplicationDetail,
   GoalResponse,
 } from "@/lib/api/types";
-import { estadoAplicacion, etiquetaDocumento, etiquetaEvento } from "@/lib/aplicacion";
+import { estadoAplicacionAdmin, etiquetaDocumento, etiquetaEvento } from "@/lib/aplicacion";
 import { fechaCorta, horaBogota, precioCop } from "@/lib/format";
 import { etiquetaNivel, etiquetaObjetivo } from "@/lib/i18n";
 import { paisConBandera } from "@/lib/paises";
@@ -61,7 +61,7 @@ export default function AdminAplicacionDetallePage() {
   if (detalle.isError) {
     return (
       <main className="mx-auto max-w-4xl px-6 py-6">
-        <ErrorCarga mensaje="No pudimos cargar la solicitud." onReintentar={() => void detalle.refetch()} />
+        <ErrorCarga mensaje="No pudimos cargar la postulación." onReintentar={() => void detalle.refetch()} />
       </main>
     );
   }
@@ -69,7 +69,7 @@ export default function AdminAplicacionDetallePage() {
   const data = detalle.data;
   const sol = data.application!;
   const perfil = data.profile ?? {};
-  const cfg = estadoAplicacion(sol.status);
+  const cfg = estadoAplicacionAdmin(sol.status);
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-6">
@@ -78,7 +78,7 @@ export default function AdminAplicacionDetallePage() {
         className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-text-secondary hover:text-text"
       >
         <ArrowLeft size={16} strokeWidth={1.9} />
-        Volver a solicitudes
+        Volver a postulaciones
       </Link>
 
       <header className="mt-4 flex flex-wrap items-center justify-between gap-4">
@@ -268,7 +268,7 @@ function DatosEnviados({
     <div className="space-y-5">
       <Bloque titulo="Presentación">
         <Dato etiqueta="Título" valor={perfil.headline} />
-        <Dato etiqueta="Sobre sí" valor={perfil.bio} multilinea />
+        <Dato etiqueta="Presentación" valor={perfil.bio} multilinea />
       </Bloque>
 
       <Bloque titulo="Idiomas que enseña">
@@ -397,7 +397,7 @@ function PerfilPublico({
       <div className="mt-3 flex flex-wrap gap-2">
         <Badge tono="lavanda"><Video size={12} strokeWidth={2.4} /> Virtual</Badge>
         {perfil.certified && <Badge tono="menta"><BadgeCheck size={12} strokeWidth={2.4} /> Certificado</Badge>}
-        {perfil.acceptsTrial && <Badge tono="coral"><Sparkles size={12} strokeWidth={2.4} /> Clase de prueba</Badge>}
+        {perfil.acceptsTrial && <Badge tono="coral"><Sparkles size={12} strokeWidth={2.4} /> Primera clase gratis</Badge>}
       </div>
 
       {perfil.bio && (

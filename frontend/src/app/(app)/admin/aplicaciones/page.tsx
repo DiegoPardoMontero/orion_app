@@ -10,7 +10,7 @@ import { tablaAdmin as t } from "@/components/tablaAdmin";
 import { Badge } from "@/components/ui";
 import { apiFetch } from "@/lib/api/fetch";
 import type { PagedApplications } from "@/lib/api/types";
-import { estadoAplicacion, ESTADOS_ADMIN } from "@/lib/aplicacion";
+import { estadoAplicacionAdmin, ESTADOS_ADMIN } from "@/lib/aplicacion";
 import { fechaCorta } from "@/lib/format";
 
 /**
@@ -62,11 +62,11 @@ export default function AdminAplicacionesPage() {
         {aplicaciones.isPending && <Cargando filas={4} />}
 
         {aplicaciones.isError && (
-          <ErrorCarga mensaje="No pudimos cargar las solicitudes." onReintentar={() => void aplicaciones.refetch()} />
+          <ErrorCarga mensaje="No pudimos cargar las postulaciones." onReintentar={() => void aplicaciones.refetch()} />
         )}
 
         {data && data.content?.length === 0 && (
-          <Vacio titulo="Sin solicitudes" texto="Cuando alguien postule para enseñar, la verás aquí." />
+          <Vacio titulo="Sin postulaciones" texto="Cuando alguien se postule para enseñar, la verás aquí." />
         )}
 
         {!!data?.content?.length && (
@@ -74,7 +74,7 @@ export default function AdminAplicacionesPage() {
             <table className={t.tabla}>
               <thead className={t.cabecera}>
                 <tr className={t.filaCabecera}>
-                  <th className={t.th}>Profesor</th>
+                  <th className={t.th}>Aspirante</th>
                   <th className={t.th}>Estado</th>
                   <th className={t.th}>Enviada</th>
                   <th className={`${t.th} text-right`}>Acción</th>
@@ -82,7 +82,7 @@ export default function AdminAplicacionesPage() {
               </thead>
               <tbody className={t.cuerpo}>
                 {data.content.map((sol) => {
-                  const cfg = estadoAplicacion(sol.status);
+                  const cfg = estadoAplicacionAdmin(sol.status);
                   const fecha = sol.submittedAt ?? sol.createdAt;
                   return (
                     <tr key={sol.id} className={t.fila}>

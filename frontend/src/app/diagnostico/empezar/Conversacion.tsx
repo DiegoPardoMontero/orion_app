@@ -30,6 +30,17 @@ const NOTA_SE_ACABO = "[Time is up]";
 /** Lo que se espera a la despedida después de los dos minutos antes de cerrar igual. */
 const GRACIA_SEGUNDOS = 25;
 
+/**
+ * Los avisos que escribe `ConversacionDeVoz`, en español y pensados para la persona: se muestran tal
+ * cual. Lo demás llega del navegador (permiso del micrófono, red, WebRTC), en inglés y técnico, y se
+ * cambia por el aviso general.
+ */
+const MENSAJES_PROPIOS = new Set([
+  "No pudimos conectar la conversación.",
+  "Se interrumpió la conversación.",
+  "Meissa se quedó sin voz un momento. Intenta de nuevo en un minuto.",
+]);
+
 const ESTADO: Record<FaseDeMeissa, string> = {
   escucha: "te escucha",
   habla: "está hablando",
@@ -214,7 +225,9 @@ export function Conversacion({
           {fallo ? (
             <>
               <p className="text-[15px] font-semibold text-text">
-                No te oímos. Revisa el micrófono e intenta de nuevo.
+                {MENSAJES_PROPIOS.has(fallo)
+                  ? fallo
+                  : "Se cortó la conversación. Revisa tu conexión y el permiso del micrófono, e intenta de nuevo."}
               </p>
               <Boton variante="primario" className="mt-4 w-full" onClick={onReintentar}>
                 Reintentar

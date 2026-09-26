@@ -154,7 +154,7 @@ export default function AulaPage() {
             <p className="mt-2 text-[13.5px] leading-relaxed text-text-secondary">
               Te vas de la sala y {datos.counterpart?.firstName ?? "la otra persona"} deja de verte.
               Puedes volver a entrar mientras la clase siga abierta. Si solo quieres mirar algo de Orión,
-              usa «Minimizar»: la clase sigue en una ventana pequeña.
+              usa «Seguir en Orión»: la clase sigue en una ventana pequeña.
             </p>
             <div className="mt-5 grid grid-cols-2 gap-2.5">
               <Boton variante="contorno" onClick={() => setConfirmandoSalida(false)}>

@@ -133,9 +133,12 @@ export function EjerciciosDelActa({ actaId }: { actaId: string }) {
   );
 }
 
+const EN_LISTA = new Intl.ListFormat("es", { type: "conjunction" });
+
 /** El encabezado según el momento del set (§10.11): preparándose, lista, en curso, completada o vencida. */
 function encabezado(p: PracticaDelActa, nombre: string, resultados: ResultadoDelEjercicio[]): { chip: Chip; cuerpo: string | null } {
   const cuenta = (r: ResultadoDelEjercicio) => resultados.filter((x) => x === r).length;
+  const mostro = (n: number) => (n === 1 ? "se le mostró" : "se le mostraron");
   switch (p.status) {
     case "PENDING":
       return {
@@ -152,24 +155,24 @@ function encabezado(p: PracticaDelActa, nombre: string, resultados: ResultadoDel
       const partes = [
         cuenta("primero") ? `${numeroEnPalabras(cuenta("primero"))} al primer intento` : null,
         cuenta("segundo") ? `${numeroEnPalabras(cuenta("segundo"))} al segundo` : null,
-        cuenta("mostrada") ? `${numeroEnPalabras(cuenta("mostrada"))} se le mostró` : null,
-        cuenta("saltado") ? `${numeroEnPalabras(cuenta("saltado"))} saltada` : null,
-      ].filter(Boolean);
+        cuenta("mostrada") ? `${numeroEnPalabras(cuenta("mostrada"))} ${mostro(cuenta("mostrada"))}` : null,
+        cuenta("saltado") ? `${numeroEnPalabras(cuenta("saltado"))} saltada${cuenta("saltado") === 1 ? "" : "s"}` : null,
+      ].filter((x) => x !== null);
       return {
         chip: { texto: `En curso · va en la ${hechos + 1}`, fondo: "#FFE9D6", tinta: "#6B3E1A", I: PlayCircle },
-        cuerpo: partes.length ? `Lleva ${partes.join(" y ")}. Lo demás aparece cuando lo haga.` : "Ya empezó. Lo demás aparece cuando lo haga.",
+        cuerpo: partes.length ? `Lleva ${EN_LISTA.format(partes)}. Lo demás aparece a medida que avance.` : "Ya empezó. Lo demás aparece a medida que avance.",
       };
     }
     case "COMPLETED": {
       const partes = [
         `${cuenta("primero")} al primer intento`,
         cuenta("segundo") ? `${cuenta("segundo")} al segundo` : null,
-        cuenta("mostrada") ? `${cuenta("mostrada")} se le mostró` : null,
+        cuenta("mostrada") ? `${cuenta("mostrada")} ${mostro(cuenta("mostrada"))}` : null,
         cuenta("saltado") ? `${cuenta("saltado")} saltado${cuenta("saltado") === 1 ? "" : "s"}` : null,
-      ].filter(Boolean);
+      ].filter((x) => x !== null);
       return {
         chip: { texto: `Completada${p.completedAt ? ` · ${diaCorto(p.completedAt)}` : ""}`, fondo: "#DEF3E7", tinta: "#1F5238", I: Check },
-        cuerpo: `${partes.join(", ")}.`,
+        cuerpo: `${EN_LISTA.format(partes)}.`,
       };
     }
     case "EXPIRED":

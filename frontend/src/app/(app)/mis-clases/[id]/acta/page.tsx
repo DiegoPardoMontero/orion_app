@@ -110,7 +110,8 @@ function CerrarClase({ bookingId }: { bookingId: string }) {
     return <Esperando />;
   }
 
-  const suficiente = notas.trim().length >= MIN_NOTAS;
+  const faltan = MIN_NOTAS - notas.trim().length;
+  const suficiente = faltan <= 0;
   // Un dictado largo puede pasarse del límite: el textarea solo frena lo que se teclea.
   const sobran = notas.length - MAX_NOTAS;
 
@@ -143,10 +144,12 @@ function CerrarClase({ bookingId }: { bookingId: string }) {
         aria-live="polite"
       >
         {sobran > 0
-          ? `Sobran ${sobran} caracteres: recorta un poco para generar`
+          ? `${sobran === 1 ? "Sobra 1 carácter" : `Sobran ${sobran} caracteres`}: recorta un poco para generar`
           : suficiente
             ? `${notas.length}/${MAX_NOTAS}`
-            : `Faltan ${MIN_NOTAS - notas.trim().length} caracteres`}
+            : faltan === 1
+              ? "Falta 1 carácter"
+              : `Faltan ${faltan} caracteres`}
       </p>
       {generar.isError && (
         <div className="mt-3">

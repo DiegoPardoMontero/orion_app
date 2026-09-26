@@ -117,7 +117,7 @@ function BloqueLegal({ bloque }: { bloque: Bloque }) {
                   {fila.map((celda, j) => (
                     <td
                       key={j}
-                      className="border-b border-border px-4 py-2.5 align-top text-text-secondary last:border-b-0"
+                      className="border-b border-border px-4 py-2.5 align-top text-text-secondary wrap-anywhere last:border-b-0"
                     >
                       <Inlines contenido={celda} />
                     </td>

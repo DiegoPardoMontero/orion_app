@@ -147,7 +147,7 @@ export function EstadoDelSet({ set }: { set: SetDePractica }) {
   const titulo = preparando ? "Estamos preparando tu práctica" : "Esta práctica ya venció";
   const cuerpo = preparando
     ? `Sale del acta que ${profe} acaba de publicar. Tarda cerca de un minuto; puedes quedarte aquí o volver luego.`
-    : `Era para la semana del ${set.classStartsAt ? diaDeLaClase(set.classStartsAt) : "tu última clase"}. Tu próxima clase con ${profe} trae una nueva.`;
+    : `Era para la semana ${set.classStartsAt ? `del ${diaDeLaClase(set.classStartsAt)}` : "de tu última clase"}. Tu próxima clase con ${profe} trae una nueva.`;
   const apagadas = Array.from({ length: Math.max(set.itemCount, 5) }, () => "off" as const).slice(0, 5);
   const forma = formaDe(set.id);
   const pose = preparando ? "espera" : "animo";

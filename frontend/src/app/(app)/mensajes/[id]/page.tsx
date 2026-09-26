@@ -130,7 +130,7 @@ function Hilo({ id }: { id: string }) {
         )}
         {mensajes.data && mensajes.data.length === 0 && (
           <p className="mx-auto max-w-xs rounded-card bg-surface-sunken px-4 py-3 text-center text-[13px] text-text-secondary">
-            Aún no hay mensajes. Salúdalo y coordina tu clase por aquí.
+            Aún no hay mensajes. Saluda y coordina tu clase por aquí.
           </p>
         )}
 

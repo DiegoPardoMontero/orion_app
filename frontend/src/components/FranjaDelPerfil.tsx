@@ -16,8 +16,8 @@ import { apiFetch } from "@/lib/api/fetch";
  */
 const EN_PALABRAS: Record<string, string> = {
   FOTO: "tu foto",
-  TITULAR: "tu titular",
-  DESCRIPCION: "tu descripción",
+  TITULAR: "tu título",
+  DESCRIPCION: "tu presentación",
   TARIFA: "tu tarifa",
   IDIOMAS: "los idiomas que enseñas",
   HORARIOS: "tus horarios",
@@ -64,7 +64,7 @@ export function FranjaDelPerfil() {
       <p className="min-w-0 flex-1 text-[13px] leading-snug text-rigel-ink">
         <strong>{publicado ? "Termina tu perfil." : "Tu perfil todavía no recibe estudiantes."}</strong>{" "}
         <span className="hidden sm:inline">
-          {lista.length === 1 ? "Te falta" : "Te faltan"} {lista.join(", ")}.{" "}
+          {lista.length === 1 ? "Te falta" : "Te faltan"} {new Intl.ListFormat("es", { type: "conjunction" }).format(lista)}.{" "}
           {publicado
             ? "Un perfil completo da confianza y recibe más reservas."
             : "Con tus horarios abiertos y tu perfil completo y publicado, apareces en el buscador."}

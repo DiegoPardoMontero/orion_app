@@ -25,12 +25,12 @@ export function PoliticaCancelacion({ rol }: { rol: "estudiante" | "profesor" })
           },
           {
             cuando: `Menos de ${limite} antes`,
-            que: "No hay devolución. Tu profesor ya apartó esa hora y no puede darla a nadie más, así que la clase se considera prestada.",
+            que: "No hay devolución. Tu profesor ya apartó esa hora y no puede darla a nadie más, así que la clase se cobra completa.",
             tono: "ojo" as const,
           },
           {
             cuando: "No te conectas",
-            que: "Igual que cancelar tarde: la clase se cobra completa. Si el problema fue del profesor, repórtalo desde la clase y lo revisamos.",
+            que: "Igual que cancelar tarde: la clase se cobra completa. Si el problema fue del profesor, repórtalo desde Mis clases y lo revisamos.",
             tono: "ojo" as const,
           },
         ]
@@ -42,7 +42,7 @@ export function PoliticaCancelacion({ rol }: { rol: "estudiante" | "profesor" })
           },
           {
             cuando: `Menos de ${limite} antes`,
-            que: "Tu estudiante recupera todo igual y tú no cobras. Además queda registrado: las cancelaciones de último momento repetidas alimentan la escalera de sanciones.",
+            que: "Tu estudiante recupera todo igual y tú no cobras. Además queda registrado: las cancelaciones de último momento repetidas pesan en tu perfil.",
             tono: "ojo" as const,
           },
           {

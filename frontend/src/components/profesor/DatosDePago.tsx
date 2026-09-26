@@ -83,7 +83,10 @@ export function DatosDePago() {
           <dl className="mt-3 grid gap-2 text-[14px]">
             <Dato etiqueta={`Llave (${actuales.keyTypeLabel.toLowerCase()})`} valor={actuales.maskedKey} />
             <Dato etiqueta="Titular" valor={actuales.holderName} />
-            <Dato etiqueta="Documento" valor={`${actuales.documentType} ${actuales.maskedDocument}`} />
+            <Dato
+              etiqueta="Documento"
+              valor={`${DOCUMENTOS.find((d) => d.valor === actuales.documentType)?.etiqueta ?? actuales.documentType} ${actuales.maskedDocument}`}
+            />
           </dl>
           <p className="mt-3 text-[12px] text-text-muted">Actualizados el {fechaLarga(actuales.updatedAt)}.</p>
           <Boton variante="contorno" onClick={() => setEditando(true)} className="mt-4 h-11">

@@ -22,7 +22,7 @@ const ESTADOS = [
   { valor: "PAID", etiqueta: "Retenidos" },
   { valor: "RELEASED", etiqueta: "Liberados" },
   { valor: "REFUNDED", etiqueta: "Devueltos" },
-  { valor: "DISPUTED", etiqueta: "En revisión" },
+  { valor: "DISPUTED", etiqueta: "En reclamo" },
 ] as const;
 
 export default function AdminPagosPage() {
@@ -157,13 +157,13 @@ function Conciliacion() {
                   )}
                   <LineaImporte etiqueta="Cobrado por la pasarela" valor={precioCop(pago.chargedCop)} />
                   <LineaImporte
-                    etiqueta={`Comisión Orión (${pago.commissionRateBps / 100} %)`}
+                    etiqueta={`Comisión de Orión (${pago.commissionRateBps / 100} %)`}
                     valor={precioCop(pago.commissionCop)}
                   />
                   <LineaImporte
                     tono="total"
-                    etiqueta="Para el profesor"
-                    valor={precioCop(pago.professorEarningsCop)}
+                    etiqueta={devuelto(pago.status) ? "Para el profesor (se devolvió al estudiante)" : "Para el profesor"}
+                    valor={precioCop(devuelto(pago.status) ? 0 : pago.professorEarningsCop)}
                   />
                 </div>
 
@@ -278,4 +278,9 @@ function RangoFecha({
       />
     </div>
   );
+}
+
+/** Un pago devuelto al estudiante ya no es del profesor: su parte se muestra en cero. */
+function devuelto(estado?: string | null): boolean {
+  return estado === "REFUNDED" || estado === "REFUND_PENDING";
 }

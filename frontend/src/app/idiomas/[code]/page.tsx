@@ -26,9 +26,10 @@ export async function generateMetadata({
   const { code } = await params;
   const codigo = code.toUpperCase();
   const idioma = await resolverIdioma(codigo);
-  const nombre = idioma?.nameEs ?? "idiomas";
+  // El catálogo trae «Inglés»; en estos textos va a mitad de frase, donde en español va en minúscula.
+  const nombre = (idioma?.nameEs ?? "idiomas").toLocaleLowerCase("es");
   const title = `Clases de ${nombre} con profesores reales · Orión`;
-  const description = `Aprende ${nombre} con profesores reales en Orión. Clases en vivo, a tu ritmo. Elige a tu profesor, mira sus horarios y reserva cuando quieras.`;
+  const description = `Aprende ${nombre} con profesores reales en Orión. Clases en vivo, a tu ritmo. Elige a tu profesor y reserva cuando quieras.`;
 
   return {
     title,
@@ -50,7 +51,7 @@ export default async function IdiomaPage({ params }: { params: Promise<{ code: s
   // Un idioma que Orión ya no enseña no tiene landing: antes caía en un genérico «clases de
   // idiomas» sin un solo profesor detrás, que es peor que un 404 honesto.
   if (!idioma) notFound();
-  const nombre = idioma.nameEs ?? "inglés";
+  const nombre = (idioma.nameEs ?? "inglés").toLocaleLowerCase("es");
 
   return (
     <>

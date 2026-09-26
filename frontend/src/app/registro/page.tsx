@@ -55,8 +55,8 @@ const COPY: Record<Intencion, {
     heroTitulo: "Da el primer paso hoy.",
     heroTexto: "Soy Rigel. Te acompaño desde tu primera clase hasta que hables sin pensarlo.",
     pose: "saludo",
-    subtitulo: "Crea tu cuenta y reserva tu primera clase.",
-    whatsapp: "Lo usamos para avisarte de tus clases. Con tu profesor hablas dentro de Orión.",
+    subtitulo: "Y reserva tu primera clase en minutos.",
+    whatsapp: "Solo lo usa el equipo de Orión si necesita avisarte algo de una clase. Con tu profesor hablas dentro de Orión.",
     boton: "Crear cuenta",
   },
   ensenar: {
@@ -125,7 +125,7 @@ function Registro() {
           {
             icono: Wallet,
             texto: invitado?.founder
-              ? `Tú pones tu tarifa. Como profe fundador, Orión retiene el ${invitado.founder.rateBps / 100} % tus primeros ${invitado.founder.periodMonths} meses de clases; después, el ${invitado.founder.baseRateBps / 100} %.`
+              ? `Tú pones tu tarifa. Como profe fundador, Orión retiene el ${invitado.founder.rateBps / 100} % durante tus primeros ${invitado.founder.periodMonths} meses de clases; después, el ${invitado.founder.baseRateBps / 100} %.`
               : `Tú pones tu tarifa, y Orión retiene el ${cifras.commissionPercent} %: lo ves desde el día uno.`,
           },
           { icono: CalendarDays, texto: "Tus horarios, sin mínimos ni permanencia." },
@@ -259,7 +259,8 @@ function Registro() {
           {intencion === "ensenar" && (
             <p className="mt-3 rounded-base bg-accent-lavender-soft px-4 py-3 text-[12.5px] leading-relaxed text-[#5e4a8a]">
               Creamos tu cuenta y sigues con tu postulación: idiomas que enseñas, experiencia,
-              tarifa y documentos. Tu perfil aparece en el marketplace cuando la aprobamos.
+              tarifa y documentos. Cuando la aprobamos, publicas tu perfil y aparece en el buscador
+              de Orión.
             </p>
           )}
 
@@ -354,9 +355,10 @@ function Registro() {
                 />
               ))}
             </div>
+            {/* En verde solo con el largo mínimo: una clave corta y variada suma puntos, pero no sirve. */}
             <p
               className={`mt-1.5 text-[12px] ${
-                fuerza.nivel >= 3
+                fuerza.nivel >= 3 && password.length >= 8
                   ? "text-success"
                   : password
                     ? "text-text-secondary"
@@ -400,7 +402,7 @@ function Registro() {
             <Consentimiento id="acepta-datos" marcado={aceptaDatos} onCambio={setAceptaDatos}>
               Autorizo el tratamiento de mis datos personales conforme a la{" "}
               <Link href="/privacidad" target="_blank" className="font-bold text-primary-strong hover:underline">
-                Política de tratamiento
+                Política de tratamiento de datos
               </Link>
               .
             </Consentimiento>

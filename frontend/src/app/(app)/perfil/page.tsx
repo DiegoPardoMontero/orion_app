@@ -572,8 +572,8 @@ function CamposDelPerfil({ inicial }: { inicial: ProfileResponse }) {
 
         {!publicado && (
           <p className="mt-3 rounded-base bg-warning-bg px-3.5 py-2.5 text-[12px] text-warning">
-            Los estudiantes dejarán de verte y no podrán reservar contigo. Tus clases ya agendadas
-            siguen en pie.
+            Mientras esté oculto, los estudiantes no te ven ni pueden reservar contigo. Tus clases ya
+            agendadas siguen en pie.
           </p>
         )}
       </section>

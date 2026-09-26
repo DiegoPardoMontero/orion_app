@@ -15,6 +15,7 @@ import { fechaCorta, horaBogota, precioCop } from "@/lib/format";
 const MOTIVO_CREDITO: Record<string, string> = {
   PROFESSOR_NO_SHOW: "Tu profesor no llegó a la clase",
   CANCELLED_BY_PROFESSOR: "Tu profesor canceló la clase",
+  CANCELLED_BY_STUDENT: "Cancelaste una clase a tiempo",
   DISPUTE_RESOLVED: "Resolución de un reclamo",
   ADMIN_ADJUSTMENT: "Ajuste de Orión",
 };

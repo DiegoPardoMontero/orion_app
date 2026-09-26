@@ -42,6 +42,7 @@ import { useMe } from "@/lib/auth/session";
 import { etiquetaNivel, etiquetaObjetivo, NIVELES } from "@/lib/i18n";
 import { estadoBio, estadoTitular } from "@/lib/perfil-profesor";
 import { SelectorDePais } from "@/components/SelectorDePais";
+import { nombreDePais } from "@/lib/paises";
 
 type LangEdit = { code: string; isNative: boolean; levels: string[] };
 
@@ -734,7 +735,7 @@ function Resumen({
 
   const r = respuestas;
   const documentos = vista.documents ?? [];
-  const lugar = [r?.city, r?.countryCode].filter(Boolean).join(", ");
+  const lugar = [r?.city, r?.countryCode && nombreDePais(r.countryCode.toUpperCase())].filter(Boolean).join(", ");
 
   return (
     <main className="mx-auto w-full max-w-lg px-5 py-6 lg:max-w-2xl lg:py-8">
@@ -768,7 +769,7 @@ function Resumen({
               <p className="truncate text-[12.5px] text-text-muted">{lugar || "Sin ciudad"}</p>
             </div>
           </div>
-          <DatoResumen etiqueta="Titular" valor={r?.headline} />
+          <DatoResumen etiqueta="Título" valor={r?.headline} />
         </BloqueResumen>
 
         <BloqueResumen titulo="Enseñanza" onEditar={() => onEditar(1)}>
@@ -810,10 +811,10 @@ function Resumen({
 
         <BloqueResumen titulo="Experiencia" onEditar={() => onEditar(2)}>
           <DatoResumen
-            etiqueta="Años enseñando"
+            etiqueta="Años de experiencia"
             valor={r?.yearsExperience != null ? String(r.yearsExperience) : null}
           />
-          <DatoResumen etiqueta="Estudios" valor={r?.education} />
+          <DatoResumen etiqueta="Formación" valor={r?.education} />
           <div className="flex flex-wrap gap-1.5">
             {r?.certified && <Badge tono="menta">Certificado</Badge>}
             {r?.acceptsTrial && <Badge tono="melocoton">Primera clase gratis</Badge>}
@@ -982,7 +983,7 @@ function PasoRevisar({
       {!completo && (
         <p className="flex items-center justify-center gap-1.5 text-[12px] text-text-muted">
           <GraduationCap size={14} strokeWidth={1.9} />
-          Vuelve a los pasos anteriores para completar lo que falta.
+          Completa lo que falta y vuelve aquí para enviar.
         </p>
       )}
     </section>

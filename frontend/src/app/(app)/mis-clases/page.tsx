@@ -504,7 +504,7 @@ function TarjetaClase({
         <div className="flex items-center justify-between gap-2">
           <span className="flex items-center gap-2 text-[13.5px] font-bold">
             <Clock size={15} strokeWidth={1.9} className="text-primary" />
-            {rangoHoras(clase.startsAt!, clase.endsAt!)}
+            <span className="whitespace-nowrap">{rangoHoras(clase.startsAt!, clase.endsAt!)}</span>
             {enCurso ? (
               <span className="whitespace-nowrap rounded-pill bg-primary px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.06em] text-on-primary">
                 En curso
@@ -1041,7 +1041,7 @@ function OpcionDestino({
 /** Motivos de reclamo, en el idioma del estudiante. Los códigos son los del backend. */
 const MOTIVOS_RECLAMO = [
   { codigo: "PROFESSOR_NO_SHOW", etiqueta: "El profesor no se presentó" },
-  { codigo: "PROFESSOR_LATE", etiqueta: "Llegó demasiado tarde" },
+  { codigo: "PROFESSOR_LATE", etiqueta: "El profesor llegó demasiado tarde" },
   { codigo: "TECHNICAL_PROBLEM", etiqueta: "Hubo un problema técnico" },
   { codigo: "LESSON_NOT_HELD", etiqueta: "La clase no se dio" },
   { codigo: "OTHER", etiqueta: "Otra cosa" },
@@ -1155,7 +1155,7 @@ function ModalAsistencia({ clase, onCerrar }: { clase: MyBookingResponse; onCerr
 
   return (
     <Modal
-      titulo={`¿Cómo fue la clase con ${clase.counterpart?.fullName?.split(" ")[0] ?? ""}?`}
+      titulo={`¿${clase.counterpart?.fullName?.split(" ")[0] || "Tu estudiante"} asistió a la clase?`}
       onCerrar={onCerrar}
     >
       <div className="flex gap-2">

@@ -8,6 +8,7 @@ import { Rigel } from "@/components/Rigel";
 import { Boton } from "@/components/ui";
 import { VistaPrevia } from "@/components/aula/VistaPrevia";
 import type { ClassroomResponse } from "@/lib/api/aula";
+import { fechaCorta, horaBogota, rangoHoras } from "@/lib/format";
 
 /**
  * La antesala: lo que se ve antes de entrar a clase.
@@ -38,19 +39,12 @@ export function Antesala({
 }) {
   const ahora = useReloj();
   const otro = datos.counterpart;
-  const nombre = otro?.firstName || "tu clase";
+  const nombre = otro?.firstName || "la otra persona";
   const esAnfitrion = datos.moderator;
 
   const inicio = new Date(datos.startsAt).getTime();
   const faltan = Math.max(0, Math.ceil((inicio - ahora) / 60000));
   const llevan = Math.max(0, Math.floor((ahora - inicio) / 60000));
-
-  const hora = (iso: string) =>
-    new Date(iso).toLocaleTimeString("es-CO", {
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone: "America/Bogota",
-    });
 
   const chip = (() => {
     switch (datos.state) {
@@ -59,8 +53,12 @@ export function Antesala({
           icono: <Clock size={15} strokeWidth={2.2} />,
           tono: "bg-surface-sunken text-text-secondary",
           punto: null,
-          titulo: `La sala abre a las ${hora(datos.opensAt)}`,
-          cifra: `Faltan ${faltan} min`,
+          // Con más de un día por delante, la hora sola confunde y «Faltan 5546 min» no se entiende.
+          titulo:
+            faltan >= 24 * 60
+              ? `La sala abre el ${fechaCorta(datos.opensAt)} a las ${horaBogota(datos.opensAt)}`
+              : `La sala abre a las ${horaBogota(datos.opensAt)}`,
+          cifra: `Faltan ${cuentaAtras(faltan)}`,
         };
       case "OPEN":
         return {
@@ -68,7 +66,7 @@ export function Antesala({
           tono: "bg-success-bg text-success",
           punto: true,
           titulo: "Sala abierta",
-          cifra: `Empieza en ${faltan} min`,
+          cifra: faltan === 0 ? "Empieza ya" : `Empieza en ${cuentaAtras(faltan)}`,
         };
       case "STARTED":
         return datos.counterpartPresent
@@ -83,7 +81,7 @@ export function Antesala({
               icono: <Clock size={15} strokeWidth={2.2} />,
               tono: "bg-surface-sunken text-text-secondary",
               punto: null,
-              titulo: "Aún no ha entrado",
+              titulo: `${nombre} aún no ha entrado`,
               cifra: `Empezó hace ${llevan} min`,
             };
       default:
@@ -91,7 +89,7 @@ export function Antesala({
           icono: <Lock size={15} strokeWidth={2.2} />,
           tono: "bg-surface-sunken text-text-muted",
           punto: null,
-          titulo: `Esta clase terminó a las ${hora(datos.endsAt)}`,
+          titulo: `Esta clase terminó a las ${horaBogota(datos.endsAt)}`,
           cifra: null,
         };
     }
@@ -135,7 +133,7 @@ export function Antesala({
                 <p className="truncate text-[13px] text-text-secondary">{otro.headline}</p>
               )}
               <p className="mt-0.5 text-[13px] text-text-muted">
-                {hora(datos.startsAt)} – {hora(datos.endsAt)} · {datos.classMinutes} minutos
+                {rangoHoras(datos.startsAt, datos.endsAt)} · {datos.classMinutes} minutos
               </p>
             </div>
           </div>
@@ -217,7 +215,7 @@ export function Antesala({
                 )}
                 {!esAnfitrion && puedeEntrar && (
                   <p className="text-center text-[12.5px] text-text-muted">
-                    No pasa nada. Entra cuando estés listo.
+                    No pasa nada. Entra cuando quieras.
                   </p>
                 )}
               </>
@@ -237,4 +235,15 @@ function useReloj() {
     return () => clearInterval(id);
   }, []);
   return ahora;
+}
+
+/** «45 min», «2 h 10 min», «3 días». */
+function cuentaAtras(minutos: number): string {
+  if (minutos < 60) return `${minutos} min`;
+  if (minutos < 24 * 60) {
+    const resto = minutos % 60;
+    return `${Math.floor(minutos / 60)} h${resto ? ` ${resto} min` : ""}`;
+  }
+  const dias = Math.floor(minutos / (24 * 60));
+  return `${dias} ${dias === 1 ? "día" : "días"}`;
 }

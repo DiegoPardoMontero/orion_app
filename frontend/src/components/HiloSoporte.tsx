@@ -118,9 +118,11 @@ export function HiloSoporte({ code, esAdmin = false }: { code: string; esAdmin?:
           rows={4}
           maxLength={4000}
           placeholder={
-            ticket.status === "CLOSED"
-              ? "Esta solicitud está cerrada. Si escribes, se vuelve a abrir."
-              : "Escribe tu respuesta"
+            ticket.status !== "CLOSED"
+              ? "Escribe tu respuesta"
+              : esAdmin
+                ? "Esta solicitud está cerrada. Tu respuesta le llega, pero la solicitud sigue cerrada."
+                : "Esta solicitud está cerrada. Si escribes, se vuelve a abrir."
           }
           value={texto}
           onChange={(event) => setTexto(event.target.value)}

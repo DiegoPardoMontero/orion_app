@@ -49,7 +49,7 @@ export function CambiarClave({ onCerrar }: { onCerrar: () => void }) {
         <>
           <p className="text-[13px] text-text-secondary">
             {crear
-              ? "Listo. Desde ahora puedes entrar con Google o con tu correo y esta contraseña."
+              ? "Listo. Desde ahora puedes entrar como hasta ahora o con tu correo y esta contraseña."
               : "Listo, tu contraseña quedó actualizada. Úsala la próxima vez que entres."}
           </p>
           <Boton variante="primario" onClick={onCerrar} className="mt-5 h-12 w-full">
@@ -60,8 +60,9 @@ export function CambiarClave({ onCerrar }: { onCerrar: () => void }) {
         <>
           {crear ? (
             <p className="text-[13px] leading-relaxed text-text-secondary">
-              Entras con Google, así que no tienes una contraseña propia. Si quieres entrar también con
-              tu correo ({me?.email}), crea una aquí: Google sigue funcionando igual.
+              Entras con tu cuenta de Google, Microsoft, Apple o Facebook, así que no tienes una contraseña
+              propia. Si quieres entrar también con tu correo ({me?.email}), crea una aquí: ese acceso sigue
+              funcionando igual.
             </p>
           ) : (
             <>

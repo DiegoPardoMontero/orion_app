@@ -3,6 +3,9 @@ import Link from "next/link";
 import { Mic } from "lucide-react";
 import { Constelacion, Wordmark } from "@/components/marca";
 import { Meissa } from "@/components/Meissa";
+import { serverFetch } from "@/lib/api/server";
+import type { PublicFigures } from "@/lib/api/types";
+import { minutos, minutosEnLetras } from "@/lib/cifras";
 
 /**
  * La puerta al diagnóstico: el destino del botón grande de la portada.
@@ -22,14 +25,25 @@ import { Meissa } from "@/components/Meissa";
  * antes de hablar. Meissa aparece hablando, con su burbuja; Rigel no sale aquí, porque es quien
  * recibe a la persona en el registro y nunca comparten pantalla.
  */
-export const metadata: Metadata = {
-  title: "Prueba tu inglés en 2 minutos · Orión",
-  description:
-    "Una conversación de dos minutos con Meissa, sin cuenta y sin examen. Recibe tu Confidence Score, un resumen de lo que contaste y tres profesores elegidos para ti. Gratis.",
-  alternates: { canonical: "/diagnostico" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const duracion = await minutosDelDiagnostico();
+  return {
+    title: `Prueba tu inglés en ${minutos(duracion)} · Orión`,
+    description: `Una conversación de ${minutosEnLetras(duracion)} con Meissa, sin cuenta y sin examen. Recibe tu Confidence Score, un resumen de lo que contaste y tres profesores elegidos para ti. Gratis.`,
+    alternates: { canonical: "/diagnostico" },
+  };
+}
 
-export default function DiagnosticoPage() {
+/** Lo que dura la conversación sale de Ajustes, como en la portada; sin backend, los dos del guion. */
+async function minutosDelDiagnostico(): Promise<number> {
+  const cifras = await serverFetch<PublicFigures>("/api/v1/catalog/figures");
+  return cifras?.assessmentMinutes ?? 2;
+}
+
+export default async function DiagnosticoPage() {
+  const enLetras = minutosEnLetras(await minutosDelDiagnostico());
+  const EnLetras = enLetras.charAt(0).toUpperCase() + enLetras.slice(1);
+
   return (
     <main className="flex min-h-dvh flex-col lg:flex-row">
       {/* Marca: arriba en móvil (300 px) con Meissa abajo a la derecha; panel izquierdo del 47 %
@@ -42,7 +56,7 @@ export default function DiagnosticoPage() {
 
         <div className="absolute bottom-3 right-3 flex flex-col items-end lg:right-10 lg:top-20 lg:bottom-auto">
           <p className="max-w-[210px] rounded-[22px_22px_6px_22px] bg-[#FFF6EE] px-4 py-3 text-[14px] font-medium leading-[1.45] text-text lg:max-w-[250px] lg:text-[16px]">
-            Hola, soy Meissa. Hablemos dos minutos y te digo por dónde empezar.
+            Hola, soy Meissa. Hablemos {enLetras} y te digo por dónde empezar.
           </p>
           <Meissa estado="habla" sobreAmanecer decorativo className="mt-1 h-[146px] w-auto lg:h-[236px]" />
         </div>
@@ -52,7 +66,7 @@ export default function DiagnosticoPage() {
             Prueba tu inglés hablando.
           </h1>
           <p className="mt-3 text-[15px] text-on-primary/80">
-            Dos minutos de conversación, si quieres. Sin cuenta, sin tarjeta, sin nota.
+            {EnLetras} de conversación, si quieres. Sin cuenta, sin tarjeta, sin nota.
           </p>
         </div>
       </div>
@@ -60,7 +74,7 @@ export default function DiagnosticoPage() {
       <div className="flex flex-1 items-start justify-center px-6 py-6 lg:items-center lg:px-10">
         <div className="w-full max-w-md lg:max-w-[440px]">
           <h2 className="font-display text-[28px] font-bold leading-tight lg:text-[38px]">
-            Habla dos minutos con Meissa
+            Habla {enLetras} con Meissa
           </h2>
           <p className="mt-2 text-[15px] leading-relaxed text-text-secondary">
             Es voluntario y no es un examen. <strong className="text-text">Puedes hablarle en español</strong>:
@@ -90,7 +104,7 @@ export default function DiagnosticoPage() {
             El diagnóstico te queda en tu perfil, para cuando quieras hacerlo.
           </p>
           <p className="mt-4 text-center text-[13px] text-text-secondary">
-            ¿Prefieres que te llame una persona?{" "}
+            ¿Prefieres que te escriba una persona?{" "}
             <Link
               href="/diagnostico/llamame"
               className="rounded-base font-bold text-primary-strong underline underline-offset-2 focus-visible:shadow-focus"

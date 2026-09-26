@@ -26,6 +26,27 @@ import { etiquetaEstado } from "@/lib/estados-clase";
 import { fechaCorta, horaBogota, precioCop } from "@/lib/format";
 
 /**
+ * Los procesos automáticos por su nombre. Las claves son las constantes `JOB`/`JOB_NAME` de cada job
+ * del backend: uno nuevo que no esté aquí sale con su identificador, feo pero reconocible.
+ */
+const NOMBRE_DEL_PROCESO: Record<string, string> = {
+  "lesson-auto-complete": "Cierre de clases",
+  "payment-expiry": "Vencimiento de pagos",
+  "payout-cut": "Corte de liquidaciones",
+  "founder-expiry": "Fin del beneficio de fundador",
+  "class-reminders": "Recordatorios de clase",
+  "professor-metrics": "Métricas de profesores",
+};
+
+/** Cómo terminó cada llamada a la IA (`AiUsageOutcome` en el backend). */
+const RESULTADO_DE_LA_IA: Record<string, string> = {
+  OK: "bien",
+  ERROR: "con error",
+  TIMEOUT: "sin respuesta a tiempo",
+  INVALID_OUTPUT: "respuesta inválida",
+};
+
+/**
  * El pulso de Orión. Se ordena por urgencia y no por tema: primero lo que espera una decisión tuya,
  * después el dinero, después la actividad. Un tablero cuya primera fila no exige nada es un tablero
  * que se puede cerrar tranquilo.
@@ -95,7 +116,7 @@ export default function AdminPanelPage() {
               n={d.attention.proposedSanctions}
               etiqueta="Sanciones propuestas"
               ayuda="El sistema las calculó; tú confirmas"
-              href="/admin/reclamos"
+              href="/admin/reclamos?pestana=sanciones"
             />
             <Pendiente
               n={d.attention.reportedReviews}
@@ -184,12 +205,12 @@ export default function AdminPanelPage() {
           <Tarjeta className="mt-3">
             <Linea
               icono={<CalendarDays size={16} strokeWidth={1.9} />}
-              etiqueta="Reservadas en 7 días"
+              etiqueta="Reservadas en los últimos 7 días"
               valor={d.lessons.bookedLast7Days}
             />
             <Linea
               icono={<CheckCircle2 size={16} strokeWidth={1.9} />}
-              etiqueta="Autoservicio"
+              etiqueta="Reservadas por el propio estudiante"
               valor={`${d.lessons.selfServicePercentage.toFixed(0)} %`}
             />
             <div className="mt-3 border-t border-border pt-3">
@@ -215,8 +236,9 @@ export default function AdminPanelPage() {
       <Tarjeta className="mt-3">
         {d.jobs.length === 0 ? (
           <p className="text-[13px] text-text-muted">
-            Ninguno ha corrido todavía desde el último reinicio. El de cierre de clases corre cada
-            hora: si sigue vacío mañana, algo lo detuvo, y es el que libera los pagos.
+            Ninguno ha corrido todavía desde el último reinicio. El de «
+            {NOMBRE_DEL_PROCESO["lesson-auto-complete"]}» corre cada hora: si sigue vacío mañana, algo
+            lo detuvo, y es el que libera los pagos.
           </p>
         ) : (
           d.jobs.map((job) => (
@@ -227,7 +249,7 @@ export default function AdminPanelPage() {
                 <XCircle size={16} strokeWidth={2} className="mt-0.5 shrink-0 text-error" />
               )}
               <div className="min-w-0">
-                <p className="text-[13px] font-semibold text-text">{job.job}</p>
+                <p className="text-[13px] font-semibold text-text">{NOMBRE_DEL_PROCESO[job.job] ?? job.job}</p>
                 <p className="text-[12px] text-text-muted">
                   {/* Con las mismas funciones que el resto: `toLocaleString` devolvía «6:30:35 a. m.»,
                       con segundos y con el meridiano en minúsculas y partido, que no es como Orión
@@ -477,7 +499,7 @@ function FilaDeLasActas() {
           icono={<NotebookPen size={18} strokeWidth={2.2} />}
           valor={porcentaje(d.reescritas, conRatio)}
           etiqueta="Reescritas por el profesor"
-          ayuda="Si pasa de la mitad, se revisa el prompt antes de ampliar"
+          ayuda="Si pasa de la mitad, hay que revisar las instrucciones de la IA antes de ampliar la función"
         />
         <Cifra
           tono="neutral"
@@ -495,7 +517,7 @@ function FilaDeLasActas() {
           Llamadas al proveedor hoy:{" "}
           {resultados.length === 0
             ? "ninguna."
-            : resultados.map(([resultado, n]) => `${n} ${resultado}`).join(" · ")}
+            : resultados.map(([resultado, n]) => `${n} ${RESULTADO_DE_LA_IA[resultado] ?? resultado}`).join(" · ")}
         </p>
       </Tarjeta>
     </section>
@@ -544,7 +566,7 @@ function FilaDeLaPractica() {
           icono={<Sparkles size={18} strokeWidth={2.2} />}
           valor={String(d.generados)}
           etiqueta="Ofrecidas"
-          ayuda={`Últimos 30 días · ${d.fallidos} sin ejercicios anclados`}
+          ayuda={`Últimos 30 días · ${d.fallidos} en las que la IA no sacó ejercicios del acta`}
         />
         <Cifra
           tono="menta"
