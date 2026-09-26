@@ -92,7 +92,8 @@ class AcuerdoDelProfesorIT extends ApiIntegrationSupport {
                 Integer.class, maria.getId())).isEqualTo(1);
         assertThat(get("/api/v1/me/legal/pending", sesion, Map.class).getBody())
                 .containsEntry("documents", List.of());
-        assertThat(holds.motivo(maria.getId())).isEmpty();
+        // El mandato ya no la retiene (lo que quede es otro motivo: los datos de pago, paso 2).
+        assertThat(holds.motivo(maria.getId())).isNotEqualTo(java.util.Optional.of(PayoutHolds.SIN_MANDATO));
     }
 
     /** A quien no enseña no se le pide el acuerdo del profesor. */

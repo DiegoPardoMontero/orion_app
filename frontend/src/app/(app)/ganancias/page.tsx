@@ -3,8 +3,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Banknote, Hourglass, Landmark, Send } from "lucide-react";
 import { useState } from "react";
+import Link from "next/link";
 import { Cifra, LineaImporte } from "@/components/dinero";
 import { Cargando, ErrorCarga, Vacio } from "@/components/estados";
+import { useDatosDePago } from "@/components/profesor/DatosDePago";
 import { Badge, Campo, Tarjeta } from "@/components/ui";
 import { apiFetch } from "@/lib/api/fetch";
 import { estadoDePago, PARA_EL_PROFESOR } from "@/lib/estadosDePago";
@@ -24,6 +26,7 @@ export default function GananciasPage() {
     queryKey: ["me", "earnings", query],
     queryFn: () => apiFetch<EarningsResponse>(`/api/v1/me/earnings${query ? `?${query}` : ""}`),
   });
+  const datosDePago = useDatosDePago();
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-6 lg:max-w-5xl lg:px-12 lg:py-8">
@@ -31,6 +34,22 @@ export default function GananciasPage() {
       <p className="mt-1 text-[13.5px] text-text-secondary">
         Orión cobra al estudiante y te transfiere lo tuyo cuando la clase ya se dictó.
       </p>
+
+      {/* El único aviso nuevo del brief de liquidaciones: sin llave Bre-B no hay a dónde pagarle. */}
+      {datosDePago.data && !datosDePago.data.details && (
+        <div className="mt-4 flex flex-col gap-3 rounded-card bg-warning-bg p-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[13.5px] leading-relaxed text-text">
+            <strong>Para pagarte necesitamos tu llave Bre-B.</strong> Mientras no la registres, tus liquidaciones quedan
+            retenidas.
+          </p>
+          <Link
+            href="/perfil?seccion=pagos"
+            className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-pill bg-primary px-5 text-[14px] font-bold text-on-primary shadow-primary hover:bg-primary-strong focus-visible:shadow-focus"
+          >
+            Registrar mis datos de pago
+          </Link>
+        </div>
+      )}
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <Campo

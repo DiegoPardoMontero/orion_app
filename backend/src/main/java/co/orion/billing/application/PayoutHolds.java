@@ -16,17 +16,21 @@ import co.orion.legal.domain.LegalDocumentCode;
  *
  * <p>El primer motivo es el mandato: sin la versión vigente del acuerdo del profesor aceptada (la 2.0
  * trae el mandato de recaudo), Orión no tiene la constancia de que recibe ese dinero por su cuenta.
- * Sus clases se pueden seguir reservando; lo que no se le paga es la liquidación.
+ * Sus clases se pueden seguir reservando; lo que no se le paga es la liquidación. El segundo, que no
+ * haya registrado a dónde pagarle.
  */
 @Service
 public class PayoutHolds {
 
     public static final String SIN_MANDATO = "Falta aceptar el acuerdo del profesor";
+    public static final String SIN_DATOS_DE_PAGO = "Faltan los datos de pago";
 
     private final LegalDocumentService legal;
+    private final PayoutDetailsService details;
 
-    public PayoutHolds(LegalDocumentService legal) {
+    public PayoutHolds(LegalDocumentService legal, PayoutDetailsService details) {
         this.legal = legal;
+        this.details = details;
     }
 
     /** El motivo de retención, o vacío si la liquidación de este profe se puede pagar. */
@@ -34,6 +38,9 @@ public class PayoutHolds {
     public Optional<String> motivo(UUID professorId) {
         if (!legal.aceptoLaVigente(professorId, LegalDocumentCode.TEACHER_AGREEMENT)) {
             return Optional.of(SIN_MANDATO);
+        }
+        if (!details.registered(professorId)) {
+            return Optional.of(SIN_DATOS_DE_PAGO);
         }
         return Optional.empty();
     }

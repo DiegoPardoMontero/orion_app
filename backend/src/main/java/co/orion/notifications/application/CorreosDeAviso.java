@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import co.orion.billing.domain.PayoutDetailsChangedEvent;
 import co.orion.billing.domain.PayoutPaidEvent;
 import co.orion.identity.domain.User;
 import co.orion.identity.persistence.UserRepository;
@@ -123,6 +124,23 @@ public class CorreosDeAviso {
                         + FechasEnPalabras.periodo(event.periodStart(), event.periodEnd()) + ".",
                 "Clase por clase, con la comisión de Orión, está en «Mis ganancias».",
                 "Ver mis ganancias", baseUrl + "/ganancias"));
+    }
+
+    /**
+     * Cada cambio de los datos de pago, al correo del profe (brief de liquidaciones, regla 13): si no
+     * lo hizo él, es la señal de que alguien quiere desviar sus pagos. Con la llave enmascarada.
+     */
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void on(PayoutDetailsChangedEvent event) {
+        String cuando = FechasEnPalabras.dia(event.changedAt()) + " a las " + FechasEnPalabras.hora(event.changedAt());
+        users.findById(event.professorId()).ifPresent(u -> enviar(u,
+                event.firstTime() ? "Registraste tus datos de pago en Orión" : "Cambiaron tus datos de pago en Orión",
+                (event.firstTime() ? "Tus datos para recibir pagos quedaron registrados el " : "Tus datos para recibir pagos cambiaron el ")
+                        + cuando + ": llave " + event.keyTypeLabel().toLowerCase() + " " + event.maskedKey()
+                        + ", a nombre de " + event.holderName() + ".",
+                "Si no fuiste tú, escríbenos de inmediato desde Ayuda en Orión.",
+                "Ver mis datos de pago", baseUrl + "/perfil?seccion=pagos"));
     }
 
     private void enviar(User a, String asunto, String primera, String segunda, String boton, String enlace) {

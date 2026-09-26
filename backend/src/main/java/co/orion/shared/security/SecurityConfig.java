@@ -214,6 +214,8 @@ public class SecurityConfig {
                 // El admin llega a lo mismo por /api/v1/admin/payments, que ya exige rol ADMIN.
                 .requestMatchers("/api/v1/me/credits", "/api/v1/me/payments").hasAnyRole("STUDENT", "ADMIN")
                 .requestMatchers("/api/v1/me/earnings").hasRole("PROFESSOR")
+                // A dónde se le paga: solo el profe, y enmascarado (brief de liquidaciones, paso 2).
+                .requestMatchers("/api/v1/me/payout-details").hasRole("PROFESSOR")
                 // El estado del pago de una clase lo consulta su estudiante (el servicio comprueba
                 // que la reserva sea suya y responde 404 si no lo es).
                 .requestMatchers(HttpMethod.GET, "/api/v1/bookings/*/payment")

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { CambiarFoto } from "@/components/CambiarFoto";
+import { DatosDePago } from "@/components/profesor/DatosDePago";
 import { MisHorarios } from "@/components/profesor/MisHorarios";
 import { bordeSegun, ContadorPalabras } from "@/components/ContadorPalabras";
 import { Cargando, ErrorCarga } from "@/components/estados";
@@ -29,7 +30,7 @@ import { SelectorDePais } from "@/components/SelectorDePais";
 /** El idioma tal como lo edita el profesor: código + si es nativo + niveles que enseña. */
 type LangEdit = { code: string; isNative: boolean; levels: string[] };
 
-type SeccionPerfil = "perfil" | "horarios";
+type SeccionPerfil = "perfil" | "horarios" | "pagos";
 
 /**
  * «Mi perfil» del profesor: lo que ven los estudiantes y sus horarios, en dos secciones de una misma
@@ -45,13 +46,24 @@ export default function PerfilPage() {
 }
 
 function Perfil() {
-  const seccion: SeccionPerfil = useSearchParams().get("seccion") === "horarios" ? "horarios" : "perfil";
+  const pedida = useSearchParams().get("seccion");
+  const seccion: SeccionPerfil = pedida === "horarios" || pedida === "pagos" ? pedida : "perfil";
   const perfil = useQuery({
     queryKey: ["me", "profile"],
     queryFn: () => apiFetch<ProfileResponse>("/api/v1/me/profile"),
   });
 
   // Las dos pestañas con el mismo ancho, para que la cabecera no salte al cambiar de una a otra.
+  // Privada: a dónde le paga Orión (brief de liquidaciones, paso 2). No sale en el perfil público.
+  if (seccion === "pagos") {
+    return (
+      <main className="mx-auto w-full max-w-md px-5 py-5 lg:max-w-[1180px] lg:px-12 lg:py-8">
+        <Cabecera seccion="pagos" />
+        <DatosDePago />
+      </main>
+    );
+  }
+
   if (seccion === "horarios") {
     return (
       <main className="mx-auto w-full max-w-md px-5 py-5 lg:max-w-[1180px] lg:px-12 lg:py-8">
@@ -89,6 +101,7 @@ function Cabecera({ seccion }: { seccion: SeccionPerfil }) {
   const secciones: { clave: SeccionPerfil; label: string; href: string }[] = [
     { clave: "perfil", label: "Perfil público", href: "/perfil" },
     { clave: "horarios", label: "Mis horarios", href: "/perfil?seccion=horarios" },
+    { clave: "pagos", label: "Datos de pago", href: "/perfil?seccion=pagos" },
   ];
   return (
     <>
