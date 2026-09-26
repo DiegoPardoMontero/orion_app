@@ -269,6 +269,10 @@ test("[v-verificar.2 v-invitacion.2] los enlaces inválidos dicen qué hacer", a
   await expect(page).toHaveURL(/\/invitacion\/invalido$/);
   await expect(page.getByRole("heading", { name: "Esta invitación ya venció." })).toBeVisible();
   await expect(page.getByRole("link", { name: "Aceptar la invitación" })).toHaveCount(0);
+  // Y si alguien llega al registro con ese enlace, lo avisa y deja elegir «Quiero aprender».
+  await page.goto("/registro?invitacion=invalido");
+  await expect(page.getByText(/Esta invitación ya venció o ya se usó/)).toBeVisible();
+  await expect(page.getByRole("button", { name: /Quiero aprender/ })).toBeVisible();
 });
 
 test("[v-terminos.1 v-privacidad.1] los documentos legales tienen versión y responsable", async ({ page }) => {

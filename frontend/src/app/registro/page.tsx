@@ -105,6 +105,9 @@ function Registro() {
   });
   const invitado = invitacion.data?.state === "VALID" ? invitacion.data : null;
   const invitacionCaida = !!tokenDeInvitacion && !!invitacion.data && !invitado;
+  // Mientras llega o si es válida, la cuenta es de profesor. Si venció o ya se usó, el registro vuelve
+  // a ser el de siempre: quien quería aprender tiene que poder elegirlo.
+  const conInvitacion = !!tokenDeInvitacion && !invitacionCaida;
   const [intencion, setIntencion] = useState<Intencion>(
     rolInicial === "profesor" || tokenDeInvitacion ? "ensenar" : "aprender",
   );
@@ -236,7 +239,7 @@ function Registro() {
           )}
 
           {/* Con invitación no hay nada que elegir: la cuenta es de profesor. */}
-          <div className={`mt-5 ${tokenDeInvitacion ? "hidden" : ""}`}>
+          <div className={`mt-5 ${conInvitacion ? "hidden" : ""}`}>
             <Segmento<Intencion>
               valor={intencion}
               onCambio={setIntencion}
@@ -263,7 +266,7 @@ function Registro() {
           {/* En las dos pestañas: desde «Quiero enseñar», la intención viaja con la ida al
               proveedor y la cuenta nace como aspirante a profesor, como con contraseña. */}
           {/* Con invitación, solo correo y contraseña: una cuenta de Google podría traer otro correo. */}
-          {!tokenDeInvitacion && (
+          {!conInvitacion && (
             <div className="mt-5">
               <BotonesSociales ensenar={intencion === "ensenar"} />
             </div>
