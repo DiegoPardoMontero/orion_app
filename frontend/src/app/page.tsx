@@ -267,14 +267,9 @@ export default async function PortadaPage() {
                   Buscar profesor
                 </Link>
               </div>
-              {/* Textos de Sofía (25/09/2026). */}
-              <p className="mt-3 max-w-[56ch] text-[13.5px] leading-relaxed text-on-primary/85">
-                {Duracion} de conversación, gratis y sin crear cuenta. Al terminar sabes en qué nivel estás y te
-                mostramos tres profesores que encajan contigo. Puedes hacerlo en español si prefieres.
-              </p>
               {/* Voluntario (Pardo, 25/09/2026): el diagnóstico sigue siendo el primer paso que Orión
                   propone, pero quien no quiere hacerlo tiene la puerta directa a su cuenta. */}
-              <p className="mt-2 max-w-[56ch] text-[13.5px] leading-relaxed text-on-primary/85">
+              <p className="mt-3 max-w-[56ch] text-[13.5px] leading-relaxed text-on-primary/85">
                 ¿Quieres ir directo?{" "}
                 <Link
                   href="/registro"
