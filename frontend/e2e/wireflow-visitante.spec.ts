@@ -190,7 +190,7 @@ test("[v-login-error.2] tras muchos intentos seguidos con un correo, frena con u
   await expect(page.getByText(/Demasiados intentos con este correo/)).toBeVisible();
 });
 
-test("[v-registro.1 v-registro.2 v-registro.3 v-registro.4] el registro valida y manda el correo", async ({ page }) => {
+test("[v-registro.1 v-registro.2 v-registro.3 v-registro.4 v-registro.6] el registro valida y manda el correo", async ({ page }) => {
   await page.goto("/registro");
   await page.waitForLoadState("networkidle");
   await page.locator("#nombre").fill("Correo Repetido");

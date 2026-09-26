@@ -330,7 +330,7 @@ test("[v-invitacion.1 v-invitacion.3 v-invitacion.4 ad-usuarios.2] la invitació
   await ctx.close();
 });
 
-test("[p-bienvenida.1 p-bienvenida.2 p-bienvenida.3] con video: la bienvenida una vez, «Lo veo después» y Rigel ofrece el recorrido", async ({ page, browser }) => {
+test("[p-bienvenida.1 p-bienvenida.2 p-bienvenida.3 e-whatsapp.2 e-whatsapp.3 p-acuerdo.1 p-acuerdo.2 ad-usuarios.7] con video: la bienvenida una vez, «Lo veo después» y Rigel ofrece el recorrido", async ({ page, browser }) => {
   await entrar(page, SEMILLA.admin);
   // Los profesores de la semilla ya la vieron: la ve uno recién aprobado. Desde la V71 la invitación
   // pasa por la postulación, que en local no se completa sin Cloudinary: el admin crea al profe y la
