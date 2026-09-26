@@ -17,7 +17,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import co.orion.billing.persistence.PaymentCreditApplicationRepository;
 import co.orion.billing.persistence.PaymentEventRepository;
 import co.orion.billing.persistence.PaymentRepository;
-import co.orion.billing.persistence.PayoutItemRepository;
+import co.orion.billing.persistence.PayoutAdjustmentRepository;
+import co.orion.billing.persistence.PayoutCutRepository;
+import co.orion.billing.persistence.PayoutLineRepository;
+import co.orion.billing.persistence.ProfessorPayoutDetailsRepository;
 import co.orion.billing.persistence.PayoutRepository;
 import co.orion.billing.persistence.StudentCreditRepository;
 import co.orion.lifecycle.persistence.DisputeRepository;
@@ -74,7 +77,16 @@ public abstract class ApiIntegrationSupport {
     private PaymentEventRepository paymentEvents;
 
     @Autowired
-    private PayoutItemRepository payoutItems;
+    private PayoutLineRepository payoutLines;
+
+    @Autowired
+    private PayoutAdjustmentRepository payoutAdjustments;
+
+    @Autowired
+    private PayoutCutRepository payoutCuts;
+
+    @Autowired
+    private ProfessorPayoutDetailsRepository payoutDetails;
 
     @Autowired
     private PayoutRepository payouts;
@@ -122,8 +134,11 @@ public abstract class ApiIntegrationSupport {
         agreementAcceptances.deleteAll();
         teacherApplications.deleteAll(); // los eventos caen por ON DELETE CASCADE
 
-        payoutItems.deleteAll();
+        payoutLines.deleteAll();
+        payoutAdjustments.deleteAll();
         payouts.deleteAll();
+        payoutCuts.deleteAll();
+        payoutDetails.deleteAll();
         paymentEvents.deleteAll();
         creditApplications.deleteAll();
         payments.deleteAll();

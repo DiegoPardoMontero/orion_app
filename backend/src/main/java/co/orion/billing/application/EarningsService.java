@@ -27,6 +27,11 @@ import co.orion.shared.time.BusinessZone;
 @Service
 public class EarningsService {
 
+    /** En una liquidación que todavía no se paga: borrador, aprobada, retenida o arrastrada. */
+    private static final List<PayoutStatus> EN_LIQUIDACION =
+            List.of(PayoutStatus.DRAFT, PayoutStatus.APPROVED, PayoutStatus.ON_HOLD, PayoutStatus.CARRIED_OVER);
+
+
     private static final int DEFAULT_RANGE_DAYS = 30;
 
     private final PaymentRepository payments;
@@ -85,9 +90,9 @@ public class EarningsService {
         // línea mira si va en una: si no, la clase de un pago ya transferido decía «Por cobrar».
         List<UUID> ids = found.stream().map(Payment::getId).toList();
         Set<UUID> transferidos = ids.isEmpty() ? Set.of()
-                : Set.copyOf(payments.findInPayoutsWithStatus(ids, PayoutStatus.PAID));
+                : Set.copyOf(payments.findInPayoutsWithStatus(ids, List.of(PayoutStatus.PAID)));
         Set<UUID> enCamino = ids.isEmpty() ? Set.of()
-                : Set.copyOf(payments.findInPayoutsWithStatus(ids, PayoutStatus.PENDING));
+                : Set.copyOf(payments.findInPayoutsWithStatus(ids, EN_LIQUIDACION));
 
         return found.stream()
                 .map(payment -> {

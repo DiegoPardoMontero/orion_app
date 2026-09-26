@@ -216,6 +216,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/me/earnings").hasRole("PROFESSOR")
                 // A dónde se le paga: solo el profe, y enmascarado (brief de liquidaciones, paso 2).
                 .requestMatchers("/api/v1/me/payout-details").hasRole("PROFESSOR")
+                // Sus liquidaciones y sus comprobantes (paso 5): solo las suyas, y solo el profe.
+                .requestMatchers("/api/v1/me/payouts", "/api/v1/me/payouts/**").hasRole("PROFESSOR")
                 // El estado del pago de una clase lo consulta su estudiante (el servicio comprueba
                 // que la reserva sea suya y responde 404 si no lo es).
                 .requestMatchers(HttpMethod.GET, "/api/v1/bookings/*/payment")

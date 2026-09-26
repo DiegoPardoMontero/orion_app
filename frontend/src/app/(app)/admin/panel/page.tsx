@@ -149,6 +149,8 @@ export default function AdminPanelPage() {
         />
       </div>
 
+      <IndicadorDelMandato />
+
       <FilaDelDiagnostico />
       <FilaDeLasActas />
       <FilaDeLaPractica />
@@ -566,6 +568,53 @@ function FilaDeLaPractica() {
           ayuda={`De ${precioCop(d.topeCop)} de tope diario`}
         />
       </div>
+    </section>
+  );
+}
+
+type ResumenDelAnio = {
+  year: number;
+  commissionCop: number;
+  collectedCop: number;
+  uvtCop: number;
+  collectedUvt: number;
+  referenceUvt: number;
+  note: string;
+};
+
+/**
+ * El año en curso bajo mandato (brief de liquidaciones, paso 6): lo que Orión ganó en comisiones y lo
+ * que pasó por la cuenta de Pardo, también en UVT junto a la referencia de 3.500.
+ */
+function IndicadorDelMandato() {
+  const resumen = useQuery({
+    queryKey: ["admin", "payouts", "year-summary"],
+    queryFn: () => apiFetch<ResumenDelAnio>("/api/v1/admin/payouts/year-summary"),
+  });
+  if (!resumen.data) return null;
+  const r = resumen.data;
+  const proporcion = Math.min(100, Math.round((r.collectedUvt / r.referenceUvt) * 100));
+  return (
+    <section className="mt-4 rounded-card border border-border bg-surface-raised p-5">
+      <h3 className="text-[13px] font-bold uppercase tracking-[0.04em] text-text-secondary">El año {r.year} bajo mandato</h3>
+      <div className="mt-3 grid gap-4 sm:grid-cols-2">
+        <div>
+          <p className="text-[12.5px] text-text-secondary">Comisiones acumuladas (tu ingreso)</p>
+          <p className="font-display text-[22px] font-bold tabular-nums">{precioCop(r.commissionCop)}</p>
+        </div>
+        <div>
+          <p className="text-[12.5px] text-text-secondary">Recaudo total por la pasarela</p>
+          <p className="font-display text-[22px] font-bold tabular-nums">{precioCop(r.collectedCop)}</p>
+          <p className="text-[12.5px] text-text-secondary">
+            {r.collectedUvt.toLocaleString("es-CO")} UVT de {r.referenceUvt.toLocaleString("es-CO")} de referencia (UVT a{" "}
+            {precioCop(r.uvtCop)})
+          </p>
+          <div className="mt-2 h-2 overflow-hidden rounded-pill bg-surface-sunken" aria-hidden="true">
+            <div className="h-full bg-primary" style={{ width: `${proporcion}%` }} />
+          </div>
+        </div>
+      </div>
+      <p className="mt-3 text-[13px] text-text">{r.note}</p>
     </section>
   );
 }

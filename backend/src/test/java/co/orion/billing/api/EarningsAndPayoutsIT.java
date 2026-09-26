@@ -12,6 +12,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -29,6 +30,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import co.orion.TestcontainersConfiguration;
+import co.orion.billing.application.PayoutService;
+import co.orion.billing.domain.PayoutCalculator;
 import co.orion.admin.api.DashboardResponse;
 import co.orion.billing.domain.PaymentStatus;
 import co.orion.billing.persistence.PaymentRepository;
@@ -88,6 +91,9 @@ class EarningsAndPayoutsIT extends ApiIntegrationSupport {
 
     @Autowired
     private JdbcTemplate jdbc;
+
+    @Autowired
+    private PayoutService payoutService;
 
     private User ana;
     private User maria;
@@ -184,48 +190,65 @@ class EarningsAndPayoutsIT extends ApiIntegrationSupport {
                 .isEqualTo(HttpStatus.FORBIDDEN);
     }
 
+    /**
+     * El corte quincenal crea la liquidación (brief de liquidaciones, paso 3); el admin la aprueba,
+     * transfiere y registra el pago (paso 4). La clase de María se dictó el 13 de julio: el corte del
+     * 16 ya la ve fuera del plazo de reclamo.
+     */
+    @SuppressWarnings({"rawtypes", "unchecked"})
     @Test
-    void theAdminGeneratesAPayoutMarksItPaidAndExportsIt() {
+    void elCorteCreaLaLiquidacionYElAdminLaApruebaLaPagaYLaExporta() {
         UUID bookingId = bookAndPay(maria, 9);
         recordAttendance(bookingId, mariaSession);
+        listaParaCobrar(mariaSession);
 
-        ResponseEntity<PayoutResponse[]> generated = post("/api/v1/admin/payouts/generate",
-                adminSession, new GeneratePayoutsRequest(WEDNESDAY.minusDays(7), WEDNESDAY.plusDays(1)),
-                PayoutResponse[].class);
+        assertThat(payoutService.runCut(PayoutCalculator.closedBy(LocalDate.of(2026, 7, 16)))).isEqualTo(1);
+        // El mismo corte otra vez no paga la clase dos veces.
+        assertThat(payoutService.runCut(PayoutCalculator.closedBy(LocalDate.of(2026, 7, 16)))).isZero();
 
-        assertThat(generated.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(generated.getBody()).hasSize(1);
-        PayoutResponse payout = generated.getBody()[0];
-        assertThat(payout.professorId()).isEqualTo(maria.getId());
-        assertThat(payout.amountCop()).isEqualTo(EARNINGS_COP);
-        assertThat(payout.status()).isEqualTo("PENDING");
+        Map quincena = get("/api/v1/admin/payouts?periodStart=2026-07-01", adminSession, Map.class).getBody();
+        assertThat(((Number) quincena.get("toTransferCop")).longValue()).isEqualTo(EARNINGS_COP);
+        Map fila = ((List<Map>) quincena.get("payouts")).getFirst();
+        assertThat(fila).containsEntry("professorName", "María Gómez").containsEntry("status", "DRAFT")
+                .containsEntry("committedPayDate", "2026-07-21");
+        String payoutId = (String) fila.get("id");
         // La clase ya va en una liquidación: su línea no dice «por cobrar».
         assertThat(earnings(mariaSession).lines()).singleElement()
                 .extracting(EarningsResponse.Line::status).isEqualTo("IN_TRANSIT");
 
-        // Volver a generar el mismo período no paga la clase dos veces.
-        ResponseEntity<PayoutResponse[]> again = post("/api/v1/admin/payouts/generate",
-                adminSession, new GeneratePayoutsRequest(WEDNESDAY.minusDays(7), WEDNESDAY.plusDays(1)),
-                PayoutResponse[].class);
-        assertThat(again.getBody()).isEmpty();
-
-        // Sin referencia de transferencia no se marca como pagada.
-        assertThat(post("/api/v1/admin/payouts/" + payout.id() + "/mark-paid", adminSession,
-                new MarkPayoutPaidRequest(""), Map.class).getStatusCode())
+        // Sin aprobar no se paga, y la llave completa tampoco se ve.
+        assertThat(post("/api/v1/admin/payouts/" + payoutId + "/pay", adminSession,
+                pago("BREB-99812", true), Map.class).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(get("/api/v1/admin/payouts/" + payoutId + "/payee", adminSession, Map.class).getStatusCode())
                 .isEqualTo(HttpStatus.BAD_REQUEST);
 
-        ResponseEntity<PayoutResponse> paid = post(
-                "/api/v1/admin/payouts/" + payout.id() + "/mark-paid", adminSession,
-                new MarkPayoutPaidRequest("BANCOLOMBIA-99812"), PayoutResponse.class);
-        assertThat(paid.getBody().status()).isEqualTo("PAID");
-        assertThat(paid.getBody().reference()).isEqualTo("BANCOLOMBIA-99812");
+        assertThat(post("/api/v1/admin/payouts/" + payoutId + "/approve", adminSession, null, Map.class)
+                .getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(get("/api/v1/admin/payouts/" + payoutId + "/payee", adminSession, Map.class).getBody())
+                .containsEntry("key", "3001234567").containsEntry("holderName", "María Gómez");
 
-        String csv = get("/api/v1/admin/payouts/" + payout.id() + "/export",
-                adminSession, String.class).getBody();
+        // Sin referencia, o sin confirmar el titular, no se marca pagada.
+        assertThat(post("/api/v1/admin/payouts/" + payoutId + "/pay", adminSession, pago("", true), Map.class)
+                .getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(post("/api/v1/admin/payouts/" + payoutId + "/pay", adminSession, pago("BREB-99812", false), Map.class)
+                .getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+
+        Map pagada = post("/api/v1/admin/payouts/" + payoutId + "/pay", adminSession, pago("BREB-99812", true),
+                Map.class).getBody();
+        assertThat((Map<String, Object>) pagada.get("payout")).containsEntry("status", "PAID")
+                .containsEntry("reference", "BREB-99812").containsEntry("paidOn", "2026-07-13");
+        assertThat(pagada).containsEntry("payeeMaskedKey", "••••4567");
+        // Pagada es inmutable: ni se vuelve a pagar ni se regenera.
+        assertThat(post("/api/v1/admin/payouts/" + payoutId + "/pay", adminSession, pago("OTRA", true), Map.class)
+                .getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(post("/api/v1/admin/payouts/" + payoutId + "/regenerate", adminSession, null, Map.class)
+                .getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+
+        String csv = get("/api/v1/admin/payouts/" + payoutId + "/export", adminSession, String.class).getBody();
         assertThat(csv)
-                .contains("fecha_clase,estudiante,precio_cop,comision_cop,ganancia_cop")
-                .contains("\"Ana Ramírez\",60000," + COMMISSION_COP + "," + EARNINGS_COP)
-                .contains("TOTAL,,,," + EARNINGS_COP);
+                .startsWith("\uFEFFfecha_clase,estudiante,concepto,bruto_cop,comision_pct,comision_cop,neto_cop")
+                .contains("\"Ana R.\"").contains(",60000,15," + COMMISSION_COP + "," + EARNINGS_COP)
+                .contains("TOTAL,,,60000,," + COMMISSION_COP + "," + EARNINGS_COP);
 
         // Y ya transferido, deja de estar "por cobrar" para el profesor.
         EarningsResponse after = earnings(mariaSession);
@@ -237,6 +260,32 @@ class EarningsAndPayoutsIT extends ApiIntegrationSupport {
         await().atMost(Duration.ofSeconds(5)).until(() -> jdbc.queryForObject(
                 "select count(*) from notifications where user_id = ? and type = 'PAYOUT_PAID'", Integer.class,
                 maria.getId()) == 1);
+        // La aprobación y el pago quedan en la auditoría del admin, y también quién vio la llave.
+        assertThat(jdbc.queryForList("select action from admin_audit_log where entity_id = ?::uuid order by created_at",
+                String.class, payoutId)).containsExactlyInAnyOrder("APPROVE_PAYOUT", "VIEW_PAYOUT_PAYEE", "PAY_PAYOUT");
+    }
+
+    /** Sin la llave Bre-B, la liquidación queda retenida, dice por qué, y se libera sola al registrarla. */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    @Test
+    void sinAcuerdoNiDatosQuedaRetenidaYSeLevantaSola() {
+        UUID bookingId = bookAndPay(maria, 9);
+        recordAttendance(bookingId, mariaSession);
+        payoutService.runCut(PayoutCalculator.closedBy(LocalDate.of(2026, 7, 16)));
+
+        Map fila = ((List<Map>) get("/api/v1/admin/payouts?periodStart=2026-07-01", adminSession, Map.class)
+                .getBody().get("payouts")).getFirst();
+        // Con el reloj en julio de 2026 el acuerdo 2.0 (el del mandato) todavía no rige, así que lo que
+        // falta son los datos de pago. La retención por el mandato la prueba LiquidacionesIT, en octubre.
+        assertThat(fila).containsEntry("status", "ON_HOLD").containsEntry("holdReason", "Faltan los datos de pago");
+        assertThat(post("/api/v1/admin/payouts/" + fila.get("id") + "/approve", adminSession, null, Map.class)
+                .getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+
+        listaParaCobrar(mariaSession);
+
+        Map despues = ((List<Map>) get("/api/v1/admin/payouts?periodStart=2026-07-01", adminSession, Map.class)
+                .getBody().get("payouts")).getFirst();
+        assertThat(despues).containsEntry("status", "DRAFT").containsEntry("holdReason", null);
     }
 
     /**
@@ -254,13 +303,13 @@ class EarningsAndPayoutsIT extends ApiIntegrationSupport {
         assertThat(delta(panel(), antes)).containsExactly(0L, EARNINGS_COP, 0L, COMMISSION_COP);
 
         // Liquidada pero sin transferir: sigue siendo algo que Orión tiene que pagar.
-        PayoutResponse payout = post("/api/v1/admin/payouts/generate", adminSession,
-                new GeneratePayoutsRequest(WEDNESDAY.minusDays(7), WEDNESDAY.plusDays(1)),
-                PayoutResponse[].class).getBody()[0];
+        listaParaCobrar(mariaSession);
+        payoutService.runCut(PayoutCalculator.closedBy(LocalDate.of(2026, 7, 16)));
         assertThat(delta(panel(), antes)).containsExactly(0L, EARNINGS_COP, 0L, COMMISSION_COP);
 
-        post("/api/v1/admin/payouts/" + payout.id() + "/mark-paid", adminSession,
-                new MarkPayoutPaidRequest("BANCOLOMBIA-1"), PayoutResponse.class);
+        UUID payoutId = payoutService.ofFortnight(LocalDate.of(2026, 7, 1)).getFirst().getId();
+        post("/api/v1/admin/payouts/" + payoutId + "/approve", adminSession, null, Map.class);
+        post("/api/v1/admin/payouts/" + payoutId + "/pay", adminSession, pago("BREB-1", true), Map.class);
         assertThat(delta(panel(), antes)).containsExactly(0L, 0L, EARNINGS_COP, COMMISSION_COP);
     }
 
@@ -282,11 +331,7 @@ class EarningsAndPayoutsIT extends ApiIntegrationSupport {
     void aClassThatWasNeverGivenDoesNotEnterAPayout() {
         bookAndPay(maria, 9);   // pagada, pero sin registro de asistencia
 
-        ResponseEntity<PayoutResponse[]> generated = post("/api/v1/admin/payouts/generate",
-                adminSession, new GeneratePayoutsRequest(WEDNESDAY.minusDays(7), WEDNESDAY.plusDays(1)),
-                PayoutResponse[].class);
-
-        assertThat(generated.getBody()).isEmpty();
+        assertThat(payoutService.runCut(PayoutCalculator.closedBy(LocalDate.of(2026, 8, 1)))).isZero();
     }
 
     /** Si el profesor cancela, el estudiante recupera el valor completo de la clase como saldo. */
@@ -342,6 +387,17 @@ class EarningsAndPayoutsIT extends ApiIntegrationSupport {
         ResponseEntity<Map> response = post(BOOKINGS + "/" + bookingId + "/attendance",
                 professorSession, new RecordAttendanceRequest(true, null), Map.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+    }
+
+    /** María acepta el acuerdo con el mandato y registra su llave: si no, su liquidación queda retenida. */
+    private void listaParaCobrar(Session sesion) {
+        post("/api/v1/me/agreements/TEACHER_AGREEMENT/accept", sesion, null, Void.class);
+        put("/api/v1/me/payout-details", sesion, Map.of("keyType", "PHONE", "key", "3001234567",
+                "documentType", "CC", "documentNumber", "1020304050", "holderName", "María Gómez"), Map.class);
+    }
+
+    private static Map<String, Object> pago(String referencia, boolean titularVerificado) {
+        return Map.of("paidOn", "2026-07-13", "reference", referencia, "holderVerified", titularVerificado);
     }
 
     private EarningsResponse earnings(Session session) {

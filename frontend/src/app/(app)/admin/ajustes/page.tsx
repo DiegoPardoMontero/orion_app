@@ -235,6 +235,16 @@ function FilaAjuste({
                 </option>
               ))}
             </select>
+          ) : ajuste.type === "TEXTO" ? (
+            <Campo
+              type="text"
+              value={valor}
+              maxLength={150}
+              onChange={(e) => setValor(e.target.value)}
+              placeholder="Vacío: el de los datos legales"
+              aria-label={ajuste.label}
+              className="w-full sm:w-80"
+            />
           ) : ajuste.type === "ENLACE" ? (
             <Campo
               type="url"

@@ -85,6 +85,11 @@ public final class FechasEnPalabras {
         return "el " + dia(instante);
     }
 
+    /** «16 de octubre de 2026». */
+    public static String fecha(LocalDate dia) {
+        return dia.getDayOfMonth() + " de " + dia.getMonth().getDisplayName(TextStyle.FULL, ES) + " de " + dia.getYear();
+    }
+
     /** «$ 180.000». */
     public static String pesos(long cop) {
         return "$ " + NumberFormat.getIntegerInstance(ES).format(cop);

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Cifra, LineaImporte } from "@/components/dinero";
 import { Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { useDatosDePago } from "@/components/profesor/DatosDePago";
+import { MisLiquidaciones } from "@/components/profesor/MisLiquidaciones";
 import { Badge, Campo, Tarjeta } from "@/components/ui";
 import { apiFetch } from "@/lib/api/fetch";
 import { estadoDePago, PARA_EL_PROFESOR } from "@/lib/estadosDePago";
@@ -51,6 +52,11 @@ export default function GananciasPage() {
         </div>
       )}
 
+      {/* Las quincenas bajo mandato (brief de liquidaciones, paso 5): lo primero que el profe quiere
+          saber es cuándo le pagan. Las cifras y la lista de abajo siguen filtrando por fechas. */}
+      <MisLiquidaciones />
+
+      <h2 className="mt-8 font-display text-h3 font-bold">Clase por clase</h2>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <Campo
           type="date"

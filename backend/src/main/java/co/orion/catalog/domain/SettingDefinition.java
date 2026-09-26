@@ -223,6 +223,25 @@ public enum SettingDefinition {
             "Por defecto no: las clases de prueba en producción no deben ensuciar el perfil de nadie.",
             false),
 
+    // ------------------------------------------------------------------------- mandato
+    MANDATARY_NAME("mandatary_name", Grupo.DINERO, Tipo.TEXTO,
+            "Nombre del mandatario",
+            "Quien recibe el dinero de las clases por cuenta de cada profe y se lo entrega. Sale en el "
+                    + "comprobante de cada liquidación y en el certificado anual. Vacío: el responsable "
+                    + "de los datos legales.",
+            false),
+    MANDATARY_DOCUMENT("mandatary_document", Grupo.DINERO, Tipo.TEXTO,
+            "Documento del mandatario",
+            "Cédula o NIT, como aparece en el RUT. Sale en el comprobante y en el certificado anual. "
+                    + "Vacío: el documento de los datos legales.",
+            false),
+
+    UVT_COP("uvt_cop", Grupo.DINERO, Tipo.ENTERO,
+            "Valor de la UVT",
+            "En pesos, el del año en curso (la DIAN lo publica cada diciembre). El panel expresa en UVT "
+                    + "el recaudo del año, junto a la referencia de 3.500 UVT.",
+            1, 10_000_000, false),
+
     // ------------------------------------------------------------------------- contenido
     PROFESSOR_WELCOME_VIDEO_URL("professor_welcome_video_url", Grupo.CONTENIDO, Tipo.ENLACE,
             "Video de bienvenida para profesores",
@@ -232,8 +251,11 @@ public enum SettingDefinition {
 
     public enum Grupo { DINERO, PLAZOS, REPUTACION, POLITICAS, CONTENIDO }
 
-    /** {@code ENLACE} es el único que admite quedar vacío: un enlace vacío es «no hay». */
-    public enum Tipo { ENTERO, BOOLEANO, OPCION, ENLACE }
+    /**
+     * {@code ENLACE} y {@code TEXTO} admiten quedar vacíos: un enlace vacío es «no hay», y un texto
+     * vacío es «usar el de siempre» (el mandatario, por ejemplo, cae a los datos legales).
+     */
+    public enum Tipo { ENTERO, BOOLEANO, OPCION, ENLACE, TEXTO }
 
     private final String key;
     private final Grupo grupo;
@@ -283,7 +305,7 @@ public enum SettingDefinition {
      */
     public String validate(String raw) {
         String value = raw == null ? "" : raw.trim();
-        if (value.isEmpty() && tipo == Tipo.ENLACE) {
+        if (value.isEmpty() && (tipo == Tipo.ENLACE || tipo == Tipo.TEXTO)) {
             return "";
         }
         if (value.isEmpty()) {
@@ -294,6 +316,7 @@ public enum SettingDefinition {
             case BOOLEANO -> validarBooleano(value);
             case OPCION -> validarOpcion(value);
             case ENLACE -> validarEnlace(value);
+            case TEXTO -> validarTexto(value);
         };
     }
 
@@ -309,6 +332,13 @@ public enum SettingDefinition {
                     "«" + etiqueta + "» debe estar entre " + min + " y " + max + ".");
         }
         return String.valueOf(numero);
+    }
+
+    private String validarTexto(String value) {
+        if (value.length() > 150) {
+            throw new UnprocessableException("«" + etiqueta + "» admite hasta 150 caracteres.");
+        }
+        return value;
     }
 
     private String validarBooleano(String value) {

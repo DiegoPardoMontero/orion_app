@@ -84,6 +84,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/payout-details": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["mine_2"];
+        put: operations["save_1"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/cosmetics": {
         parameters: {
             query?: never;
@@ -411,7 +427,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["mine_2"];
+        get: operations["mine_3"];
         put?: never;
         post: operations["open"];
         delete?: never;
@@ -1316,7 +1332,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/admin/payouts/{id}/mark-paid": {
+    "/api/v1/admin/payouts/{id}/regenerate": {
         parameters: {
             query?: never;
             header?: never;
@@ -1325,14 +1341,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["markPaid"];
+        post: operations["regenerate"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/admin/payouts/generate": {
+    "/api/v1/admin/payouts/{id}/pay": {
         parameters: {
             query?: never;
             header?: never;
@@ -1341,7 +1357,39 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["generate"];
+        post: operations["pay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/payouts/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["approve_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/payouts/certificates/{professorId}/{year}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["upload_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1771,7 +1819,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["mine_3"];
+        get: operations["mine_4"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1908,6 +1956,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/payouts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["mine_5"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/payouts/{id}/receipt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["receipt"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/payouts/certificates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["certificates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/payouts/certificates/{year}/url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["certificateUrl"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/payments": {
         parameters: {
             query?: never;
@@ -2020,6 +2132,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/legal/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["pending"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/engagement": {
         parameters: {
             query?: never;
@@ -2091,7 +2219,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["mine_4"];
+        get: operations["mine_6"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2283,7 +2411,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["pending"];
+        get: operations["pending_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2571,7 +2699,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["pending_1"];
+        get: operations["pending_2"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2635,7 +2763,55 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["listPayouts"];
+        get: operations["fortnight"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/payouts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["detail_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/payouts/{id}/receipt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["receipt_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/payouts/{id}/payee": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["payee"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2652,6 +2828,134 @@ export interface paths {
             cookie?: never;
         };
         get: operations["export"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/payouts/year-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["yearSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/payouts/reports/ledger.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ledger"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/payouts/reports/commissions.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["commissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/payouts/reports/annual.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["annual"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/payouts/fortnights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["fortnights"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/payouts/certificates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["certificates_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/payouts/certificates/{professorId}/{year}/url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["url"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/payouts/certificates/{professorId}/{year}/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["draft_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3133,6 +3437,30 @@ export interface components {
         RateRequest: {
             /** Format: int64 */
             hourlyRateCop: number;
+        };
+        SaveRequest: {
+            /** @enum {string} */
+            keyType: "PHONE" | "ID_NUMBER" | "EMAIL" | "ALPHANUMERIC";
+            key: string;
+            /** @enum {string} */
+            documentType: "CC" | "CE" | "PPT" | "PAS";
+            documentNumber: string;
+            holderName: string;
+        };
+        Masked: {
+            /** @enum {string} */
+            keyType?: "PHONE" | "ID_NUMBER" | "EMAIL" | "ALPHANUMERIC";
+            keyTypeLabel?: string;
+            maskedKey?: string;
+            /** @enum {string} */
+            documentType?: "CC" | "CE" | "PPT" | "PAS";
+            maskedDocument?: string;
+            holderName?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        MineResponse: {
+            details?: components["schemas"]["Masked"];
         };
         EquipCosmeticsRequest: {
             frameCode: string;
@@ -3782,10 +4110,36 @@ export interface components {
             founder?: boolean;
             inviterTitle?: string;
         };
-        MarkPayoutPaidRequest: {
-            reference: string;
+        LineView: {
+            kind?: string;
+            /** Format: date-time */
+            classAt?: string;
+            studentLabel?: string;
+            /** Format: int64 */
+            grossCop?: number;
+            /** Format: int32 */
+            commissionRateBps?: number;
+            /** Format: int64 */
+            commissionCop?: number;
+            /** Format: int64 */
+            netCop?: number;
+            description?: string;
         };
-        PayoutResponse: {
+        PayoutDetailResponse: {
+            payout?: components["schemas"]["PayoutRow"];
+            /** Format: date-time */
+            cutoffAt?: string;
+            /** Format: date-time */
+            approvedAt?: string;
+            /** Format: date-time */
+            paidAt?: string;
+            payeeRegistered?: boolean;
+            payeeKeyTypeLabel?: string;
+            payeeMaskedKey?: string;
+            payeeHolder?: string;
+            lines?: components["schemas"]["LineView"][];
+        };
+        PayoutRow: {
             /** Format: uuid */
             id?: string;
             /** Format: uuid */
@@ -3795,20 +4149,28 @@ export interface components {
             periodStart?: string;
             /** Format: date */
             periodEnd?: string;
-            /** Format: int64 */
-            amountCop?: number;
             status?: string;
+            statusLabel?: string;
+            holdReason?: string;
+            /** Format: int64 */
+            grossCop?: number;
+            /** Format: int64 */
+            commissionCop?: number;
+            /** Format: int64 */
+            adjustmentsCop?: number;
+            /** Format: int64 */
+            netCop?: number;
+            /** Format: date */
+            committedPayDate?: string;
+            /** Format: date */
+            paidOn?: string;
             reference?: string;
-            /** Format: date-time */
-            paidAt?: string;
-            /** Format: date-time */
-            createdAt?: string;
         };
-        GeneratePayoutsRequest: {
+        PayRequest: {
             /** Format: date */
-            periodStart: string;
-            /** Format: date */
-            periodEnd: string;
+            paidOn: string;
+            reference: string;
+            holderVerified?: boolean;
         };
         ResolveDisputeRequest: {
             outcome: string;
@@ -4169,6 +4531,101 @@ export interface components {
             /** Format: date-time */
             computedAt?: string;
             sanctions?: components["schemas"]["SanctionView"][];
+        };
+        ForProfessor: {
+            explanation?: string;
+            /** Format: date-time */
+            nextCutoff?: string;
+            /** Format: date */
+            nextPeriodStart?: string;
+            /** Format: date */
+            nextPeriodEnd?: string;
+            /** Format: date */
+            nextPayDate?: string;
+            pending?: components["schemas"]["Pending"][];
+            payouts?: components["schemas"]["History"][];
+        };
+        History: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: date */
+            periodStart?: string;
+            /** Format: date */
+            periodEnd?: string;
+            status?: string;
+            statusLabel?: string;
+            holdReason?: string;
+            /** Format: int64 */
+            netCop?: number;
+            /** Format: date */
+            committedPayDate?: string;
+            /** Format: date */
+            paidOn?: string;
+        };
+        Pending: {
+            /** Format: uuid */
+            bookingId?: string;
+            /** Format: date-time */
+            classAt?: string;
+            studentLabel?: string;
+            kind?: string;
+            /** Format: int64 */
+            netCop?: number;
+            reason?: string;
+        };
+        Receipt: {
+            /** Format: uuid */
+            id?: string;
+            status?: string;
+            statusLabel?: string;
+            /** Format: date */
+            periodStart?: string;
+            /** Format: date */
+            periodEnd?: string;
+            /** Format: date-time */
+            cutoffAt?: string;
+            /** Format: date */
+            committedPayDate?: string;
+            mandataryName?: string;
+            mandataryDocument?: string;
+            professorName?: string;
+            professorDocument?: string;
+            lines?: components["schemas"]["ReceiptLine"][];
+            /** Format: int64 */
+            grossCop?: number;
+            /** Format: int64 */
+            commissionCop?: number;
+            /** Format: int64 */
+            adjustmentsCop?: number;
+            /** Format: int64 */
+            netCop?: number;
+            /** Format: date */
+            paidOn?: string;
+            reference?: string;
+            payeeKeyTypeLabel?: string;
+            payeeMaskedKey?: string;
+            payeeHolder?: string;
+        };
+        ReceiptLine: {
+            kind?: string;
+            /** Format: date-time */
+            classAt?: string;
+            studentLabel?: string;
+            /** Format: int64 */
+            grossCop?: number;
+            /** Format: int32 */
+            commissionRateBps?: number;
+            /** Format: int64 */
+            commissionCop?: number;
+            /** Format: int64 */
+            netCop?: number;
+            description?: string;
+        };
+        Uploaded: {
+            /** Format: int32 */
+            year?: number;
+            /** Format: date-time */
+            uploadedAt?: string;
         };
         MyPaymentResponse: {
             /** Format: uuid */
@@ -4606,6 +5063,107 @@ export interface components {
             topeCop?: number;
             encendida?: boolean;
         };
+        FortnightResponse: {
+            /** Format: date */
+            periodStart?: string;
+            /** Format: date */
+            periodEnd?: string;
+            /** Format: date-time */
+            cutoffAt?: string;
+            /** Format: date */
+            committedPayDate?: string;
+            /** Format: date-time */
+            ranAt?: string;
+            /** Format: int64 */
+            toTransferCop?: number;
+            /** Format: int64 */
+            paidCop?: number;
+            /** Format: int32 */
+            onHold?: number;
+            payouts?: components["schemas"]["PayoutRow"][];
+        };
+        PayeeResponse: {
+            keyType?: string;
+            keyTypeLabel?: string;
+            key?: string;
+            documentType?: string;
+            documentNumber?: string;
+            holderName?: string;
+        };
+        YearSummary: {
+            /** Format: int32 */
+            year?: number;
+            /** Format: int64 */
+            commissionCop?: number;
+            /** Format: int64 */
+            collectedCop?: number;
+            /** Format: int32 */
+            uvtCop?: number;
+            /** Format: double */
+            collectedUvt?: number;
+            /** Format: int32 */
+            referenceUvt?: number;
+            note?: string;
+        };
+        CutView: {
+            /** Format: date */
+            periodStart?: string;
+            /** Format: date */
+            periodEnd?: string;
+            /** Format: date-time */
+            cutoffAt?: string;
+            /** Format: date */
+            committedPayDate?: string;
+            /** Format: date-time */
+            ranAt?: string;
+            /** Format: int32 */
+            payoutsCreated?: number;
+        };
+        FortnightsResponse: {
+            next?: components["schemas"]["Upcoming"];
+            cuts?: components["schemas"]["CutView"][];
+        };
+        Upcoming: {
+            /** Format: date */
+            start?: string;
+            /** Format: date */
+            end?: string;
+            /** Format: date-time */
+            cutoff?: string;
+            /** Format: date */
+            committedPayDate?: string;
+        };
+        CertificateRow: {
+            /** Format: uuid */
+            professorId?: string;
+            professorName?: string;
+            /** Format: int64 */
+            receivedCop?: number;
+            /** Format: int64 */
+            commissionCop?: number;
+            /** Format: int64 */
+            deliveredCop?: number;
+            /** Format: int64 */
+            pendingCop?: number;
+            /** Format: date-time */
+            uploadedAt?: string;
+        };
+        CertificateDraft: {
+            /** Format: int32 */
+            year?: number;
+            mandataryName?: string;
+            mandataryDocument?: string;
+            professorName?: string;
+            professorDocument?: string;
+            /** Format: int64 */
+            receivedCop?: number;
+            /** Format: int64 */
+            commissionCop?: number;
+            /** Format: int64 */
+            deliveredCop?: number;
+            /** Format: int64 */
+            withheldCop?: number;
+        };
         AdminPaymentResponse: {
             /** Format: uuid */
             paymentId?: string;
@@ -4955,6 +5513,50 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["RateBreakdownResponse"];
+                };
+            };
+        };
+    };
+    mine_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MineResponse"];
+                };
+            };
+        };
+    };
+    save_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MineResponse"];
                 };
             };
         };
@@ -5466,7 +6068,7 @@ export interface operations {
             };
         };
     };
-    mine_2: {
+    mine_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -7011,7 +7613,29 @@ export interface operations {
             };
         };
     };
-    markPaid: {
+    regenerate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PayoutDetailResponse"];
+                };
+            };
+        };
+    };
+    pay: {
         parameters: {
             query?: never;
             header?: never;
@@ -7022,7 +7646,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["MarkPayoutPaidRequest"];
+                "application/json": components["schemas"]["PayRequest"];
             };
         };
         responses: {
@@ -7032,21 +7656,49 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["PayoutResponse"];
+                    "*/*": components["schemas"]["PayoutDetailResponse"];
                 };
             };
         };
     };
-    generate: {
+    approve_1: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PayoutDetailResponse"];
+                };
+            };
+        };
+    };
+    upload_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professorId: string;
+                year: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
             content: {
-                "application/json": components["schemas"]["GeneratePayoutsRequest"];
+                "application/json": {
+                    /** Format: binary */
+                    file: string;
+                };
             };
         };
         responses: {
@@ -7056,7 +7708,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["PayoutResponse"][];
+                    "*/*": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };
@@ -7652,7 +8306,7 @@ export interface operations {
             };
         };
     };
-    mine_3: {
+    mine_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -7834,6 +8488,92 @@ export interface operations {
             };
         };
     };
+    mine_5: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ForProfessor"];
+                };
+            };
+        };
+    };
+    receipt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Receipt"];
+                };
+            };
+        };
+    };
+    certificates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Uploaded"][];
+                };
+            };
+        };
+    };
+    certificateUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                year: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": {
+                        [key: string]: string;
+                    };
+                };
+            };
+        };
+    };
     myPayments: {
         parameters: {
             query?: never;
@@ -7977,6 +8717,26 @@ export interface operations {
             };
         };
     };
+    pending: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PendingResponse"];
+                };
+            };
+        };
+    };
     resumen_1: {
         parameters: {
             query?: never;
@@ -8062,7 +8822,7 @@ export interface operations {
             };
         };
     };
-    mine_4: {
+    mine_6: {
         parameters: {
             query?: never;
             header?: never;
@@ -8315,7 +9075,7 @@ export interface operations {
             };
         };
     };
-    pending: {
+    pending_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -8692,7 +9452,7 @@ export interface operations {
             };
         };
     };
-    pending_1: {
+    pending_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -8774,9 +9534,11 @@ export interface operations {
             };
         };
     };
-    listPayouts: {
+    fortnight: {
         parameters: {
-            query?: never;
+            query?: {
+                periodStart?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -8789,7 +9551,73 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["PayoutResponse"][];
+                    "*/*": components["schemas"]["FortnightResponse"];
+                };
+            };
+        };
+    };
+    detail_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PayoutDetailResponse"];
+                };
+            };
+        };
+    };
+    receipt_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Receipt"];
+                };
+            };
+        };
+    };
+    payee: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PayeeResponse"];
                 };
             };
         };
@@ -8812,6 +9640,185 @@ export interface operations {
                 };
                 content: {
                     "*/*": string;
+                };
+            };
+        };
+    };
+    yearSummary: {
+        parameters: {
+            query?: {
+                year?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["YearSummary"];
+                };
+            };
+        };
+    };
+    ledger: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    commissions: {
+        parameters: {
+            query: {
+                year: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    annual: {
+        parameters: {
+            query: {
+                year: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    fortnights: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FortnightsResponse"];
+                };
+            };
+        };
+    };
+    certificates_1: {
+        parameters: {
+            query: {
+                year: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CertificateRow"][];
+                };
+            };
+        };
+    };
+    url: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professorId: string;
+                year: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": {
+                        [key: string]: string;
+                    };
+                };
+            };
+        };
+    };
+    draft_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professorId: string;
+                year: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CertificateDraft"];
                 };
             };
         };

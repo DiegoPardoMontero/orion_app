@@ -44,7 +44,9 @@ public class JobWatchdog {
             new Vigilado("class-reminders", "Recordatorios de clase", Duration.ofMinutes(30),
                     "Nadie recibe el aviso de su clase de mañana ni el de una hora antes."),
             new Vigilado("founder-expiry", "Aviso de fin del beneficio de fundador", Duration.ofHours(3),
-                    "Los profes fundadores no se enteran a tiempo de que su comisión sube a la estándar."));
+                    "Los profes fundadores no se enteran a tiempo de que su comisión sube a la estándar."),
+            new Vigilado("payout-cut", "Corte de liquidaciones", Duration.ofHours(3),
+                    "Las liquidaciones de la quincena no se crean y a nadie se le paga a tiempo."));
 
     private final JobRunRegistry runs;
     private final AlertService alerts;

@@ -30,35 +30,6 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID>,
 
     List<Payment> findByProfessorIdAndStatus(UUID professorId, PaymentStatus status);
 
-    /**
-     * Los pagos liberados de un profesor que aún no están en ninguna liquidación, dentro del
-     * período. El NOT EXISTS —y no un LEFT JOIN— porque payout_items no tiene entidad propia
-     * relacionada: el UNIQUE de la tabla es quien impide de verdad pagar dos veces.
-     */
-    @Query("""
-            select p from Payment p
-            where p.professorId = :professorId
-              and p.status = co.orion.billing.domain.PaymentStatus.RELEASED
-              and p.releasedAt >= :from
-              and p.releasedAt < :to
-              and not exists (select i from PayoutItem i where i.id.paymentId = p.id)
-            order by p.releasedAt asc
-            """)
-    List<Payment> findPayableOfProfessor(@Param("professorId") UUID professorId,
-                                         @Param("from") Instant from,
-                                         @Param("to") Instant to);
-
-    /** Los profesores con algo que cobrar en el período: la entrada del generador de liquidaciones. */
-    @Query("""
-            select distinct p.professorId from Payment p
-            where p.status = co.orion.billing.domain.PaymentStatus.RELEASED
-              and p.releasedAt >= :from
-              and p.releasedAt < :to
-              and not exists (select i from PayoutItem i where i.id.paymentId = p.id)
-            """)
-    List<UUID> findProfessorsWithPayableEarnings(@Param("from") Instant from,
-                                                 @Param("to") Instant to);
-
     @Query("""
             select coalesce(sum(p.professorEarningsCop), 0) from Payment p
             where p.professorId = :professorId
@@ -83,9 +54,9 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID>,
             where p.professorId = :professorId
               and p.createdAt >= :from
               and p.createdAt < :to
-              and exists (select 1 from PayoutItem i, Payout o
-                          where i.id.paymentId = p.id
-                            and o.id = i.id.payoutId
+              and exists (select 1 from PayoutLine l, Payout o
+                          where l.paymentId = p.id
+                            and o.id = l.payoutId
                             and o.status = co.orion.billing.domain.PayoutStatus.PAID)
             """)
     long sumAlreadyTransferred(@Param("professorId") UUID professorId,
@@ -102,10 +73,10 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID>,
             where p.professorId = :professorId
               and p.createdAt >= :from
               and p.createdAt < :to
-              and exists (select 1 from PayoutItem i, Payout o
-                          where i.id.paymentId = p.id
-                            and o.id = i.id.payoutId
-                            and o.status = co.orion.billing.domain.PayoutStatus.PENDING)
+              and exists (select 1 from PayoutLine l, Payout o
+                          where l.paymentId = p.id
+                            and o.id = l.payoutId
+                            and o.status <> co.orion.billing.domain.PayoutStatus.PAID)
             """)
     long sumInTransit(@Param("professorId") UUID professorId,
                       @Param("from") Instant from,
@@ -126,25 +97,25 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID>,
     @Query("""
             select coalesce(sum(p.professorEarningsCop), 0) from Payment p
             where p.status = co.orion.billing.domain.PaymentStatus.RELEASED
-              and not exists (select 1 from PayoutItem i, Payout o
-                              where i.id.paymentId = p.id and o.id = i.id.payoutId
+              and not exists (select 1 from PayoutLine l, Payout o
+                              where l.paymentId = p.id and o.id = l.payoutId
                                 and o.status = co.orion.billing.domain.PayoutStatus.PAID)
             """)
     long sumPayableAllProfessors();
 
-    /** De estos pagos, los que van en una liquidación con ese estado. */
+    /** De estos pagos, los que van en una liquidación con alguno de esos estados. */
     @Query("""
-            select i.id.paymentId from PayoutItem i, Payout o
-             where o.id = i.id.payoutId and o.status = :status and i.id.paymentId in :paymentIds
+            select l.paymentId from PayoutLine l, Payout o
+             where o.id = l.payoutId and o.status in :statuses and l.paymentId in :paymentIds
             """)
     List<UUID> findInPayoutsWithStatus(@Param("paymentIds") java.util.Collection<UUID> paymentIds,
-                                      @Param("status") co.orion.billing.domain.PayoutStatus status);
+                                      @Param("statuses") java.util.Collection<co.orion.billing.domain.PayoutStatus> statuses);
 
     /** Lo que ya salió hacia las cuentas de los profesores. */
     @Query("""
             select coalesce(sum(p.professorEarningsCop), 0) from Payment p
-            where exists (select 1 from PayoutItem i, Payout o
-                          where i.id.paymentId = p.id and o.id = i.id.payoutId
+            where exists (select 1 from PayoutLine l, Payout o
+                          where l.paymentId = p.id and o.id = l.payoutId
                             and o.status = co.orion.billing.domain.PayoutStatus.PAID)
             """)
     long sumTransferred();

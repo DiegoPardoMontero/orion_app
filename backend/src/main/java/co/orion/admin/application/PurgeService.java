@@ -108,7 +108,7 @@ public class PurgeService {
 
         PurgePreview.Money money = moneyOfBooking(bookingId);
         return new PurgePreview("booking", describeBooking(bookingId), rows, money,
-                warningsFor(money, count("select count(*) from payout_items i join payments p "
+                warningsFor(money, count("select count(*) from payout_lines i join payments p "
                         + "on p.id = i.payment_id where p.booking_id = ?", bookingId)));
     }
 
@@ -117,7 +117,8 @@ public class PurgeService {
         PurgePreview preview = previewBooking(bookingId);
 
         // De la hoja a la raíz: nada apunta a lo que se borra cuando le llega el turno.
-        jdbc.update("delete from payout_items where payment_id in (select id from payments where booking_id = ?)", bookingId);
+        jdbc.update("delete from payout_lines where booking_id = ? or payment_id in (select id from payments where booking_id = ?)", bookingId, bookingId);
+        jdbc.update("delete from payout_adjustments where booking_id = ?", bookingId);
         jdbc.update("delete from payment_credit_applications where payment_id in (select id from payments where booking_id = ?)", bookingId);
         jdbc.update("delete from payment_events where payment_id in (select id from payments where booking_id = ?)", bookingId);
         jdbc.update("delete from student_credits where booking_id = ?", bookingId);
@@ -168,7 +169,7 @@ public class PurgeService {
 
         PurgePreview.Money money = moneyOfUser(userId);
         List<String> warnings = new ArrayList<>(warningsFor(money,
-                count("select count(*) from payout_items i join payments p on p.id = i.payment_id "
+                count("select count(*) from payout_lines i join payments p on p.id = i.payment_id "
                       + "where p.student_id = ? or p.professor_id = ?", userId, userId)));
 
         if (user.getRole() == UserRole.ADMIN && users.countByRole(UserRole.ADMIN) <= 1) {
@@ -199,9 +200,11 @@ public class PurgeService {
         bookingIds.forEach(this::deleteBookingCascade);
 
         // Y el resto de su rastro, otra vez de la hoja a la raíz.
-        jdbc.update("delete from payout_items where payment_id in (select id from payments where student_id = ? or professor_id = ?)", userId, userId);
+        jdbc.update("delete from payout_lines where payment_id in (select id from payments where student_id = ? or professor_id = ?)", userId, userId);
         jdbc.update("delete from payments where student_id = ? or professor_id = ?", userId, userId);
+        jdbc.update("delete from payout_adjustments where professor_id = ?", userId);
         jdbc.update("delete from payouts where professor_id = ?", userId);
+        jdbc.update("delete from professor_payout_details where professor_id = ?", userId);
         jdbc.update("delete from student_credits where student_id = ? or created_by = ?", userId, userId);
         jdbc.update("delete from messages where sender_id = ?", userId);
         jdbc.update("delete from messages where conversation_id in (select id from conversations where student_id = ? or professor_id = ?)", userId, userId);
@@ -310,7 +313,8 @@ public class PurgeService {
     }
 
     private void deleteBookingCascade(UUID bookingId) {
-        jdbc.update("delete from payout_items where payment_id in (select id from payments where booking_id = ?)", bookingId);
+        jdbc.update("delete from payout_lines where booking_id = ? or payment_id in (select id from payments where booking_id = ?)", bookingId, bookingId);
+        jdbc.update("delete from payout_adjustments where booking_id = ?", bookingId);
         jdbc.update("delete from payment_credit_applications where payment_id in (select id from payments where booking_id = ?)", bookingId);
         jdbc.update("delete from payment_events where payment_id in (select id from payments where booking_id = ?)", bookingId);
         jdbc.update("delete from student_credits where booking_id = ?", bookingId);
@@ -328,7 +332,7 @@ public class PurgeService {
                 sum("select coalesce(sum(amount_cop), 0) from payments where booking_id = ?", bookingId),
                 sum("""
                     select coalesce(sum(p.professor_earnings_cop), 0) from payments p
-                    join payout_items i on i.payment_id = p.id
+                    join payout_lines i on i.payment_id = p.id
                     join payouts o on o.id = i.payout_id and o.status = 'PAID'
                     where p.booking_id = ?
                     """, bookingId),
@@ -340,7 +344,7 @@ public class PurgeService {
                 sum("select coalesce(sum(amount_cop), 0) from payments where student_id = ? or professor_id = ?", userId, userId),
                 sum("""
                     select coalesce(sum(p.professor_earnings_cop), 0) from payments p
-                    join payout_items i on i.payment_id = p.id
+                    join payout_lines i on i.payment_id = p.id
                     join payouts o on o.id = i.payout_id and o.status = 'PAID'
                     where p.student_id = ? or p.professor_id = ?
                     """, userId, userId),

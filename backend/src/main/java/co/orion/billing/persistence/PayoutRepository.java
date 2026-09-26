@@ -1,5 +1,7 @@
 package co.orion.billing.persistence;
 
+import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -12,7 +14,11 @@ public interface PayoutRepository extends JpaRepository<Payout, UUID> {
 
     List<Payout> findAllByOrderByCreatedAtDesc();
 
-    List<Payout> findByProfessorIdOrderByCreatedAtDesc(UUID professorId);
+    List<Payout> findByProfessorIdOrderByPeriodStartDesc(UUID professorId);
 
-    List<Payout> findByStatusOrderByCreatedAtDesc(PayoutStatus status);
+    List<Payout> findByPeriodStartOrderByCreatedAtAsc(LocalDate periodStart);
+
+    List<Payout> findByStatusIn(Collection<PayoutStatus> statuses);
+
+    boolean existsByProfessorIdAndPeriodStart(UUID professorId, LocalDate periodStart);
 }

@@ -1,18 +1,20 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Coins, Download, FileSpreadsheet, Wallet } from "lucide-react";
+import { AlertTriangle, Wallet } from "lucide-react";
 import { useState } from "react";
+import { Liquidaciones } from "@/components/admin/Liquidaciones";
+import { ReportesDelMandato } from "@/components/admin/ReportesDelMandato";
 import { LineaImporte } from "@/components/dinero";
 import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Badge, Boton, Campo, Segmento, Spinner, Tarjeta } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
-import type { AdminPaymentResponse, PayoutResponse } from "@/lib/api/types";
+import type { AdminPaymentResponse } from "@/lib/api/types";
 import { etiquetaEstado } from "@/lib/estados-clase";
 import { estadoDePago, PARA_EL_ADMIN } from "@/lib/estadosDePago";
 import { fechaCorta, precioCop } from "@/lib/format";
 
-type Pestana = "pagos" | "liquidaciones";
+type Pestana = "pagos" | "liquidaciones" | "reportes";
 
 const ESTADOS = [
   { valor: "", etiqueta: "Todos" },
@@ -30,7 +32,8 @@ export default function AdminPagosPage() {
     <main className="mx-auto max-w-5xl px-6 py-6">
       <h1 className="font-display text-h1 font-bold">Pagos</h1>
       <p className="mt-1 text-[13.5px] text-text-secondary">
-        Orión calcula; la transferencia la haces tú y la registras aquí con su referencia.
+        Orión recibe el dinero de cada clase por cuenta del profe y se lo entrega cada quincena. Orión calcula; la
+        transferencia la haces tú y la registras aquí con su referencia.
       </p>
 
       <div className="mt-4">
@@ -40,11 +43,12 @@ export default function AdminPagosPage() {
           opciones={[
             { valor: "pagos", etiqueta: "Conciliación" },
             { valor: "liquidaciones", etiqueta: "Liquidaciones" },
+            { valor: "reportes", etiqueta: "Reportes" },
           ]}
         />
       </div>
 
-      {pestana === "pagos" ? <Conciliacion /> : <Liquidaciones />}
+      {pestana === "pagos" ? <Conciliacion /> : pestana === "liquidaciones" ? <Liquidaciones /> : <ReportesDelMandato />}
     </main>
   );
 }
@@ -242,170 +246,6 @@ function AbonarSaldo({ pago }: { pago: AdminPaymentResponse }) {
         el panel de Wompi: su API no expone reembolsos.
       </p>
     </div>
-  );
-}
-
-function Liquidaciones() {
-  const queryClient = useQueryClient();
-  const [inicio, setInicio] = useState("");
-  const [fin, setFin] = useState("");
-
-  const liquidaciones = useQuery({
-    queryKey: ["admin", "payouts"],
-    queryFn: () => apiFetch<PayoutResponse[]>("/api/v1/admin/payouts"),
-  });
-
-  const generar = useMutation({
-    mutationFn: () =>
-      apiFetch<PayoutResponse[]>("/api/v1/admin/payouts/generate", {
-        method: "POST",
-        body: { periodStart: inicio, periodEnd: fin },
-      }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin", "payouts"] }),
-  });
-
-  const errorGenerar = generar.error instanceof ApiError ? generar.error.message : null;
-
-  return (
-    <>
-      <Tarjeta className="mt-4">
-        <h2 className="text-[13px] font-bold uppercase tracking-[0.04em] text-text-secondary">
-          Generar liquidación
-        </h2>
-        <p className="mt-1 text-[12.5px] text-text-muted">
-          Entran solo las clases que ya se dictaron y que no estén en otra liquidación.
-        </p>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <RangoFecha id="liq-desde" etiqueta="Desde" valor={inicio} onCambio={setInicio} />
-          <RangoFecha id="liq-hasta" etiqueta="Hasta" valor={fin} onCambio={setFin} />
-        </div>
-        {errorGenerar && (
-          <div className="mt-3">
-            <AvisoError mensaje={errorGenerar} />
-          </div>
-        )}
-        <Boton
-          className="mt-3"
-          disabled={!inicio || !fin || generar.isPending}
-          onClick={() => generar.mutate()}
-        >
-          {generar.isPending ? <Spinner /> : <Coins size={17} strokeWidth={1.75} />}
-          Generar
-        </Boton>
-        {generar.isSuccess && generar.data.length === 0 && (
-          <p className="mt-3 text-[13px] text-text-secondary">
-            No había nada por liquidar en ese período.
-          </p>
-        )}
-      </Tarjeta>
-
-      {liquidaciones.isPending ? (
-        <div className="mt-5">
-          <Cargando filas={3} />
-        </div>
-      ) : liquidaciones.isError ? (
-        <div className="mt-5">
-          <ErrorCarga
-            mensaje="No pudimos cargar las liquidaciones."
-            onReintentar={() => void liquidaciones.refetch()}
-          />
-        </div>
-      ) : liquidaciones.data.length === 0 ? (
-        <div className="mt-5">
-          <Vacio
-            titulo="Todavía no hay liquidaciones"
-            texto="Genera la primera con el período de arriba."
-          />
-        </div>
-      ) : (
-        <ul className="mt-5 grid gap-2.5">
-          {liquidaciones.data.map((payout) => (
-            <li key={payout.id}>
-              <FilaLiquidacion payout={payout} />
-            </li>
-          ))}
-        </ul>
-      )}
-    </>
-  );
-}
-
-function FilaLiquidacion({ payout }: { payout: PayoutResponse }) {
-  const queryClient = useQueryClient();
-  const [referencia, setReferencia] = useState("");
-
-  const marcar = useMutation({
-    mutationFn: () =>
-      apiFetch<PayoutResponse>(`/api/v1/admin/payouts/${payout.id}/mark-paid`, {
-        method: "POST",
-        body: { reference: referencia.trim() },
-      }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin", "payouts"] }),
-  });
-
-  const error = marcar.error instanceof ApiError ? marcar.error.message : null;
-
-  return (
-    <Tarjeta>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="font-semibold text-text">{payout.professorName ?? "Profesor"}</p>
-          <p className="text-[12.5px] text-text-secondary">
-            {fechaCorta(`${payout.periodStart}T12:00:00-05:00`)} –{" "}
-            {fechaCorta(`${payout.periodEnd}T12:00:00-05:00`)}
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="font-display text-h3 font-bold tabular-nums text-text">
-            {precioCop(payout.amountCop)}
-          </p>
-          <Badge tono={payout.status === "PAID" ? "menta" : "melocoton"} punto>
-            {payout.status === "PAID" ? "Transferida" : "Por transferir"}
-          </Badge>
-        </div>
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
-        <a
-          href={`/api/v1/admin/payouts/${payout.id}/export`}
-          className="inline-flex min-h-9 items-center gap-1.5 rounded-pill border-[1.5px] border-border px-4 text-[13px] font-bold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
-        >
-          <Download size={15} strokeWidth={1.75} />
-          CSV
-        </a>
-
-        {payout.status === "PAID" ? (
-          <span className="flex items-center gap-1.5 text-[12.5px] text-text-secondary">
-            <FileSpreadsheet size={14} strokeWidth={1.75} />
-            Referencia: <span className="font-mono">{payout.reference}</span>
-          </span>
-        ) : (
-          <>
-            <Campo
-              type="text"
-              value={referencia}
-              onChange={(event) => setReferencia(event.target.value)}
-              maxLength={140}
-              placeholder="Referencia de la transferencia"
-              className="min-w-[220px] flex-1"
-            />
-            <Boton
-              disabled={!referencia.trim() || marcar.isPending}
-              onClick={() => marcar.mutate()}
-            >
-              {marcar.isPending ? <Spinner /> : null}
-              Marcar transferida
-            </Boton>
-          </>
-        )}
-      </div>
-
-      {error && (
-        <div className="mt-3">
-          <AvisoError mensaje={error} />
-        </div>
-      )}
-    </Tarjeta>
   );
 }
 

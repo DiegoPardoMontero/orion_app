@@ -31,15 +31,18 @@ public class PaymentLifecycleService {
     private final PaymentRepository payments;
     private final CreditService credits;
     private final BookingService bookings;
+    private final PayoutService payouts;
     private final Clock clock;
 
     public PaymentLifecycleService(PaymentRepository payments,
                                    CreditService credits,
                                    BookingService bookings,
+                                   PayoutService payouts,
                                    Clock clock) {
         this.payments = payments;
         this.credits = credits;
         this.bookings = bookings;
+        this.payouts = payouts;
         this.clock = clock;
     }
 
@@ -176,6 +179,8 @@ public class PaymentLifecycleService {
                     payments.save(payment);
                     credits.grant(payment.getStudentId(), payment.getAmountCop(),
                             reason, bookingId, null, actorId);
+                    // Si esa clase ya se le había liquidado al profe, se descuenta en la siguiente.
+                    payouts.onRefunded(bookingId);
                 });
     }
 

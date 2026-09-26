@@ -198,18 +198,6 @@ export type AdminPaymentResponse = {
   suggestedCreditCop: number;
 };
 
-export type PayoutResponse = {
-  id: string;
-  professorId: string;
-  professorName: string | null;
-  periodStart: string;
-  periodEnd: string;
-  amountCop: number;
-  status: "PENDING" | "PAID" | "CANCELLED";
-  reference: string | null;
-  paidAt: string | null;
-  createdAt: string;
-};
 
 /* --------------------------------------------------------------------------------------------
  * Ciclo de vida de la clase, desempeño y panel de admin (Bloques 5 y 6)
