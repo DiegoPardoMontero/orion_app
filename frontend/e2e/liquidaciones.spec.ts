@@ -53,14 +53,17 @@ function sembrarLiquidacionDeMaria(): void {
 }
 
 test("[p-perfil.7 p-datos-pago.1 p-datos-pago.2 ad-pagos.3 ad-liquidacion.1 ad-liquidacion.2 ad-liquidacion.3 p-ganancias.5 p-ganancias.7] la llave Bre-B, el pago de la liquidación y el comprobante", async ({ browser }) => {
-  // 1. María registra a dónde se le paga: lo ve enmascarado.
+  // 1. María cambia a dónde se le paga (la semilla ya trae una llave: es obligatoria): lo ve enmascarado.
   const profe = await (await browser.newContext()).newPage();
   await entrar(profe, SEMILLA.maria);
   await profe.goto("/perfil?seccion=pagos");
   await expect(profe.getByText("La llave debe estar a tu nombre. Solo el equipo de Orión ve estos datos completos.")).toBeVisible();
+  await expect(profe.getByText("••••6543")).toBeVisible();
+  await profe.getByRole("button", { name: "Cambiar mis datos de pago" }).click();
   await profe.locator("#llave").fill("300 123 4567");
+  await profe.locator("#titular").fill("María Gómez");
   await profe.locator("#numero-documento").fill("1020304050");
-  await profe.getByRole("button", { name: "Guardar mis datos de pago" }).click();
+  await profe.getByRole("button", { name: "Guardar el cambio" }).click();
   await expect(profe.getByText("••••4567")).toBeVisible();
   await expect(profe.getByText("3001234567")).toHaveCount(0);
 

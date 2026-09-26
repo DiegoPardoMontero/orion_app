@@ -37,6 +37,8 @@ import { Vacio } from "@/components/estados";
 import { AvisoCorreoSinVerificar } from "@/components/AvisoCorreoSinVerificar";
 import { AvisoMayoriaDeEdad } from "@/components/AvisoMayoriaDeEdad";
 import { AvisoNuevosAcuerdos } from "@/components/AvisoNuevosAcuerdos";
+import { AvisoDatosDePago } from "@/components/profesor/AvisoDatosDePago";
+import { useDatosDePago } from "@/components/profesor/DatosDePago";
 import { AvisoWhatsapp } from "@/components/AvisoWhatsapp";
 import { usePendientesLegales } from "@/lib/acuerdo";
 import { Bienvenida } from "@/components/bienvenida/Bienvenida";
@@ -138,6 +140,7 @@ function Armazon({ children }: { children: ReactNode }) {
   // Los acuerdos vigentes que le faltan (Términos, política y, al profe, el acuerdo del profesor): se
   // piden al entrar y no se aplazan (Pardo, 26/09/2026). El admin responde por ellos.
   const pendientes = usePendientesLegales(!!me && me.role !== "ADMIN");
+  const datosDePago = useDatosDePago(me?.role === "PROFESSOR" && aplic.aprobado);
 
   // El catálogo y el perfil de un profesor se ven sin cuenta: ahí, sin sesión, no se salta al login.
   const publica = esRutaPublica(pathname);
@@ -205,6 +208,10 @@ function Armazon({ children }: { children: ReactNode }) {
     (code) => code !== "TEACHER_AGREEMENT" || aplic.aprobado,
   );
   const faltanAcuerdos = acuerdosQueFaltan.length > 0;
+  // Y a dónde se le paga, obligatorio para el profe aprobado (Pardo, 26/09/2026).
+  const cobra = me.role === "PROFESSOR" && aplic.aprobado;
+  const datosResueltos = !cobra || datosDePago.isFetched;
+  const faltanDatosDePago = cobra && datosDePago.isSuccess && !datosDePago.data.details;
 
   if (enClase) {
     return (
@@ -260,7 +267,14 @@ function Armazon({ children }: { children: ReactNode }) {
         <AvisoNuevosAcuerdos documentos={acuerdosQueFaltan} />
       )}
 
-      {me.adultConfirmed && !faltaWhatsapp && acuerdosResueltos && !faltanAcuerdos && <Bienvenida me={me} />}
+      {/* Los datos de pago, después de los acuerdos (el mandato dice a quién se le paga) y antes de
+          la bienvenida. */}
+      {me.adultConfirmed && !faltaWhatsapp && acuerdosResueltos && !faltanAcuerdos && faltanDatosDePago && (
+        <AvisoDatosDePago />
+      )}
+
+      {me.adultConfirmed && !faltaWhatsapp && acuerdosResueltos && !faltanAcuerdos && datosResueltos &&
+        !faltanDatosDePago && <Bienvenida me={me} />}
     </div>
   );
 }

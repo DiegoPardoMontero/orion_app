@@ -11,14 +11,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 
+import co.orion.billing.domain.BreBKeyType;
 import co.orion.billing.domain.CreditReason;
+import co.orion.billing.domain.IdDocumentType;
+import co.orion.billing.domain.PayoutDestination;
+import co.orion.billing.domain.ProfessorPayoutDetails;
 import co.orion.billing.domain.StudentCredit;
+import co.orion.billing.persistence.ProfessorPayoutDetailsRepository;
 import co.orion.billing.persistence.StudentCreditRepository;
 import co.orion.identity.domain.UserRole;
 import co.orion.identity.persistence.UserRepository;
 
 /**
- * Saldo de desarrollo para la estudiante de prueba.
+ * Saldo de desarrollo para la estudiante de prueba, y los datos de pago de los profes sembrados.
  *
  * Existe por una razón concreta: sin pasarela de por medio no hay forma de llegar a una clase
  * CONFIRMED en local, y media aplicación (la sala virtual, la asistencia, las reseñas, la
@@ -40,10 +45,13 @@ public class BillingDevSeeder implements ApplicationRunner {
 
     private final UserRepository users;
     private final StudentCreditRepository credits;
+    private final ProfessorPayoutDetailsRepository payoutDetails;
 
-    public BillingDevSeeder(UserRepository users, StudentCreditRepository credits) {
+    public BillingDevSeeder(UserRepository users, StudentCreditRepository credits,
+                            ProfessorPayoutDetailsRepository payoutDetails) {
         this.users = users;
         this.credits = credits;
+        this.payoutDetails = payoutDetails;
     }
 
     @Override
@@ -57,6 +65,24 @@ public class BillingDevSeeder implements ApplicationRunner {
                             CreditReason.ADMIN_ADJUSTMENT, null, null, null));
                     log.info("Semilla: saldo de desarrollo de {} COP para {}",
                             DEV_CREDIT_COP, STUDENT_EMAIL);
+                });
+        seedPayoutDetails("maria@orion.local", "3009876543", "1020304050", "María Gómez");
+        seedPayoutDetails("juan@orion.local", "3005556677", "1030405060", "Juan Torres");
+    }
+
+    /**
+     * Los datos de pago son obligatorios para el profe aprobado (Pardo, 26/09/2026): sin ellos la app
+     * no lo deja seguir al entrar, y taparía las pruebas. Directo al repositorio y no por el servicio,
+     * que le mandaría a la semilla un correo de «cambiaron tus datos de pago» en cada arranque limpio.
+     */
+    private void seedPayoutDetails(String email, String celular, String cedula, String titular) {
+        users.findByEmailIgnoreCase(email)
+                .filter(user -> user.getRole() == UserRole.PROFESSOR)
+                .filter(user -> !payoutDetails.existsById(user.getId()))
+                .ifPresent(profe -> {
+                    payoutDetails.save(new ProfessorPayoutDetails(profe.getId(), PayoutDestination.of(
+                            BreBKeyType.PHONE, celular, IdDocumentType.CC, cedula, titular), Instant.now()));
+                    log.info("Semilla: datos de pago de {}", email);
                 });
     }
 }

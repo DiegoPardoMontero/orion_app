@@ -91,7 +91,7 @@ export function DatosDePago() {
           </Boton>
         </div>
       ) : (
-        <Formulario primeraVez={!actuales} onListo={() => setEditando(false)} onCancelar={actuales ? () => setEditando(false) : undefined} />
+        <FormularioDatosDePago primeraVez={!actuales} onListo={() => setEditando(false)} onCancelar={actuales ? () => setEditando(false) : undefined} />
       )}
     </section>
   );
@@ -106,7 +106,8 @@ function Dato({ etiqueta, valor }: { etiqueta: string; valor: string }) {
   );
 }
 
-function Formulario({
+/** El formulario de la llave Bre-B. Lo usan la sección del perfil y el aviso que la pide al entrar. */
+export function FormularioDatosDePago({
   primeraVez,
   onListo,
   onCancelar,
