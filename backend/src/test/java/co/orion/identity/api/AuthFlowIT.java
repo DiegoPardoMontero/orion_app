@@ -88,7 +88,7 @@ class AuthFlowIT {
         ResponseEntity<Map> response = rest.getForEntity("/api/v1/auth/me", Map.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-        assertThat(response.getBody()).containsEntry("error", "Authentication required");
+        assertThat(response.getBody()).containsEntry("error", "Tu sesión expiró. Vuelve a entrar.");
     }
 
     @Test
@@ -98,7 +98,7 @@ class AuthFlowIT {
         ResponseEntity<Map> response = get("/api/v1/admin/ping", session, Map.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        assertThat(response.getBody()).containsEntry("error", "Access denied");
+        assertThat(response.getBody()).containsEntry("error", "No tienes permiso para hacer esto. Recarga la página e intenta de nuevo.");
     }
 
     @Test

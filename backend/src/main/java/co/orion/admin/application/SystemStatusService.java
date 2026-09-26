@@ -81,7 +81,9 @@ public class SystemStatusService {
                         List.of("JAAS_WEBHOOK_SECRET")),
 
                 new Integracion("Pagos (Wompi)", wompiCompleto,
-                        "Reservar responde 422 y ninguna clase se confirma.",
+                        "Nadie puede pagar: al reservar, el estudiante ve «Los pagos no están disponibles en este "
+                                + "momento» y la reserva no se crea. Solo entran las clases que no cobran nada "
+                                + "(gratis o cubiertas con saldo a favor).",
                         sandbox ? "Apuntando al SANDBOX — no se cobra de verdad" : "Producción",
                         List.of("WOMPI_PUBLIC_KEY", "WOMPI_INTEGRITY_SECRET",
                                 "WOMPI_EVENTS_SECRET", "WOMPI_API_BASE_URL")),

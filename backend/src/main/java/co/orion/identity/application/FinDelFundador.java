@@ -5,6 +5,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 import co.orion.shared.time.BusinessZone;
+import co.orion.shared.time.FechasEnPalabras;
 
 /**
  * El aviso de que el beneficio de fundador termina, en las mismas palabras para la campana y el
@@ -33,6 +34,6 @@ public final class FinDelFundador {
     }
 
     private static String porcentaje(int bps) {
-        return (bps % 100 == 0 ? String.valueOf(bps / 100) : String.valueOf(bps / 100.0).replace('.', ',')) + " %";
+        return FechasEnPalabras.porcentaje(bps);
     }
 }

@@ -94,8 +94,7 @@ public class EmailLayout {
                 font-family:'Segoe UI',Helvetica,Arial,sans-serif; font-size:12px; line-height:1.6; \
                 color:%5$s;">
                             <p style="margin:0 0 4px 0; color:%5$s;">Find your right teacher, learn your way.</p>
-                            <p style="margin:0; color:%5$s;">Recibiste este correo porque tienes una \
-                cuenta en Orión.</p>
+                            <p style="margin:0; color:%5$s;">Este correo te lo envió Orión.</p>
                           </td>
                         </tr>
                       </table>

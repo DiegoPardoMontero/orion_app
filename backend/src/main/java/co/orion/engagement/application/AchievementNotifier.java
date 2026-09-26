@@ -14,6 +14,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import co.orion.engagement.domain.Achievement;
 import co.orion.engagement.domain.AchievementUnlockedEvent;
 import co.orion.engagement.domain.StreakProtectedEvent;
+import co.orion.shared.time.FechasEnPalabras;
 import co.orion.engagement.persistence.AchievementRepository;
 import co.orion.identity.persistence.UserRepository;
 import co.orion.messaging.application.NotificationService;
@@ -91,8 +92,11 @@ public class AchievementNotifier {
         try {
             notifications.create(event.studentId(), TIPO_PROTECCION,
                     "Protegimos tu racha",
-                    "Esta semana no tuviste clase y tu racha sigue en pie. Es una protección al mes "
-                            + "y no cuenta como clase: la racha se queda donde estaba, no baja.",
+                    // La semana protegida siempre es una que ya pasó: se aplica hacia atrás, al ver
+                    // el hueco. «Esta semana» señalaba la equivocada.
+                    "La semana del " + FechasEnPalabras.dia(event.semana()) + " no tuviste clase y tu racha "
+                            + "sigue en pie. Tienes una protección al mes y no cuenta como clase: la racha "
+                            + "se queda donde estaba, no baja.",
                     RUTA_PROGRESO);
         } catch (RuntimeException ex) {
             log.error("No se pudo avisar de la protección de racha de {}", event.studentId(), ex);

@@ -178,7 +178,7 @@ public class RecommendationService {
         if (objetivoComun != null) {
             String queHace = nombreDelObjetivo.getOrDefault(objetivoComun, "").toLowerCase();
             return new Recomendacion(profesor.id(), posicion, ReasonCode.GOAL_MATCH,
-                    nombre + " trabaja justo con estudiantes que buscan " + queHace + ".");
+                    nombre + " enseña justo lo que buscas: " + queHace + ".");
         }
 
         // Se comprueba contra el nivel pedido y no contra «tiene niveles»: un profesor que entró de
@@ -195,7 +195,7 @@ public class RecommendationService {
                     .filter(l -> l.code().equalsIgnoreCase(idioma))
                     .map(LanguageBadge::nameEs).findFirst().orElse(idioma);
             return new Recomendacion(profesor.id(), posicion, ReasonCode.NATIVE,
-                    "Es hablante nativo de " + nombreIdioma.toLowerCase() + ".");
+                    "Su lengua materna es el " + nombreIdioma.toLowerCase() + ".");
         }
 
         if (profesor.headline() != null && !profesor.headline().isBlank()) {
@@ -209,7 +209,7 @@ public class RecommendationService {
         }
 
         return new Recomendacion(profesor.id(), posicion, ReasonCode.VERIFIED,
-                "Profesor verificado por Orión: revisamos sus documentos, su formación y su experiencia.");
+                "Orión revisó sus documentos, su formación y su experiencia.");
     }
 
     private static String primerNombre(String nombre) {

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import co.orion.shared.mail.MailTransport;
 import co.orion.shared.mail.OutgoingEmail;
+import co.orion.shared.text.ListaEnPalabras;
 
 /**
  * El correo del segundo día al profesor que todavía no recibe estudiantes: qué le falta y por qué
@@ -31,18 +32,18 @@ public class PerfilMailer {
     public void recordar(String correo, String nombre, List<String> faltan, String ruta, boolean yaRecibe) {
         String primer = nombre == null ? "" : nombre.trim().split("\\s+")[0];
         String enlace = baseUrl + ruta;
-        String lista = String.join(", ", faltan);
+        String lista = ListaEnPalabras.unir(faltan);
         String estado = yaRecibe ? "A tu perfil le falta poco" : "Tu perfil todavía no recibe estudiantes";
         String porque = yaRecibe
-                ? "Un perfil completo da confianza: los estudiantes reservan más con quien muestran completo."
+                ? "Un perfil completo da confianza: los estudiantes reservan más con quien se muestra completo."
                 : "Con tus horarios abiertos y tu perfil completo y publicado, apareces en el buscador y los "
                         + "estudiantes pueden reservar contigo.";
         String texto = "Hola, " + primer + ":\n\n"
-                + "Soy Rigel, de Orión. " + estado + ": te falta " + lista + ".\n\n"
+                + "Soy Rigel, de Orión. " + estado + ": " + ListaEnPalabras.teFalta(faltan) + ".\n\n"
                 + porque + "\n\n"
                 + "Termínalo aquí: " + enlace + "\n\nOrión";
         String html = "<p>Hola, " + escape(primer) + ":</p>"
-                + "<p>Soy Rigel, de Orión. " + estado + ": te falta <strong>"
+                + "<p>Soy Rigel, de Orión. " + estado + ": te " + ListaEnPalabras.falta(faltan) + " <strong>"
                 + escape(lista) + "</strong>.</p>"
                 + "<p>" + escape(porque) + "</p>"
                 + "<p><a href=\"" + escape(enlace) + "\">Terminar mi perfil</a></p><p>Orión</p>";

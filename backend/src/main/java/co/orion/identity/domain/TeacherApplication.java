@@ -126,8 +126,10 @@ public class TeacherApplication {
 
     private void require(ApplicationStatus expected, String action) {
         if (this.status != expected) {
+            // «action» ya no sale en el mensaje: quien lo lee es el admin al que otra pestaña (o
+            // la propia persona) le cambió la postulación mientras la tenía abierta.
             throw new ConflictException(
-                    "No se puede " + action + " una postulación en estado " + this.status);
+                    "Esta postulación cambió de estado mientras tanto. Recarga la página para ver en qué va.");
         }
     }
 

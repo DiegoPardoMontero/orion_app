@@ -322,8 +322,8 @@ public class PracticeService {
         long abiertos = suyos.stream().filter(i -> !i.cerrado(max)).count();
         if (set.getStatus() != PracticeSetStatus.COMPLETED && abiertos > 0) {
             throw new UnprocessableException(abiertos == 1
-                    ? "Te falta un ejercicio. Respóndelo y ves cómo te fue."
-                    : "Te faltan " + abiertos + " ejercicios. Respóndelos y ves cómo te fue.");
+                    ? "Te falta un ejercicio. Respóndelo y verás cómo te fue."
+                    : "Te faltan " + abiertos + " ejercicios. Respóndelos y verás cómo te fue.");
         }
         int correctos = (int) suyos.stream().filter(i -> Boolean.TRUE.equals(i.getCorrect())).count();
         if (set.completar(correctos, clock.instant())) {

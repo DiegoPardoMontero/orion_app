@@ -93,7 +93,7 @@ public class TestClassService {
         // la práctica solo la abre una cuenta de estudiante.
         if (pareja.student().getRole() != UserRole.STUDENT) {
             throw new UnprocessableException(
-                    studentEmail + " no tiene rol STUDENT: la práctica del ensayo solo la abre un estudiante.");
+                    studentEmail + " no es una cuenta de estudiante: la práctica del ensayo solo la abre un estudiante.");
         }
 
         Instant ahora = clock.instant();
@@ -121,7 +121,7 @@ public class TestClassService {
         }
         if (professor.getRole() != UserRole.PROFESSOR) {
             throw new UnprocessableException(
-                    professorEmail + " no tiene rol PROFESSOR. Cámbialo desde Usuarios y repite.");
+                    professorEmail + " no es una cuenta de profesor. Cámbiala desde Usuarios y repite.");
         }
         return new Pareja(student, professor);
     }

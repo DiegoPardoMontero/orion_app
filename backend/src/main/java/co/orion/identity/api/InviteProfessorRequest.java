@@ -9,7 +9,8 @@ import jakarta.validation.constraints.Size;
  *
  * @param professorName con qué nombre se le saluda en la pantalla de invitación; opcional
  * @param founder       si trae el beneficio de profe fundador; si no se manda, sí
- * @param inviterTitle  el cargo de quien invita («directora académica»); queda en su cuenta
+ * @param inviterTitle  ya no se usa: la invitación la firma Orión y no sale el cargo de nadie. Se sigue
+ *                      aceptando para no romper a un cliente que lo mande, y se ignora.
  */
 public record InviteProfessorRequest(@NotBlank @Email @Size(max = 254) String email,
                                      @Size(max = 80) String professorName,

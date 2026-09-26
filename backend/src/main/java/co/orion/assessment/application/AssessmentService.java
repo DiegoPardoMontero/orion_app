@@ -43,6 +43,7 @@ import co.orion.shared.error.ConflictException;
 import co.orion.shared.error.ResourceNotFoundException;
 import co.orion.shared.error.UnprocessableException;
 import co.orion.shared.time.BusinessZone;
+import co.orion.shared.time.FechasEnPalabras;
 
 /**
  * El diagnóstico de confianza, de principio a fin.
@@ -195,7 +196,7 @@ public class AssessmentService {
                     if (clock.instant().isBefore(puedeDesde)) {
                         LocalDate cuando = LocalDate.ofInstant(puedeDesde, BusinessZone.BOGOTA);
                         throw new ConflictException(
-                                "Puedes repetir tu diagnóstico a partir del " + cuando
+                                "Puedes repetir tu diagnóstico a partir del " + FechasEnPalabras.fecha(cuando)
                                         + ". Mientras tanto, tu resultado anterior sigue disponible.");
                     }
                 });

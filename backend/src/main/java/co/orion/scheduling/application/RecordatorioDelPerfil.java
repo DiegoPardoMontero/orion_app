@@ -34,7 +34,7 @@ public class RecordatorioDelPerfil {
     private static final Duration ENTRE_PASOS = Duration.ofHours(20);
 
     private static final Map<String, String> EN_PALABRAS = Map.of(
-            "FOTO", "tu foto", "TITULAR", "tu titular", "DESCRIPCION", "tu descripción", "TARIFA", "tu tarifa",
+            "FOTO", "tu foto", "TITULAR", "tu título", "DESCRIPCION", "tu presentación", "TARIFA", "tu tarifa",
             "IDIOMAS", "los idiomas que enseñas", "HORARIOS", "tus horarios", "PUBLICAR", "publicar tu perfil");
 
     private final JdbcTemplate jdbc;

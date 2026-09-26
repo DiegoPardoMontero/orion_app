@@ -76,7 +76,7 @@ class AvailabilityRuleIT extends ApiIntegrationSupport {
                 Map.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody().get("error").toString()).contains("anterior a endTime");
+        assertThat(response.getBody().get("error").toString()).contains("La hora de fin tiene que ser después de la hora de inicio");
     }
 
     @Test
@@ -99,7 +99,7 @@ class AvailabilityRuleIT extends ApiIntegrationSupport {
                 Map.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody().get("error").toString()).contains("solapa");
+        assertThat(response.getBody().get("error").toString()).contains("se cruza con otra");
     }
 
     @Test

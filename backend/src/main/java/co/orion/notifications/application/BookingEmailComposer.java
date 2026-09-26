@@ -3,6 +3,7 @@ package co.orion.notifications.application;
 import java.time.Clock;
 import java.util.Locale;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.HtmlUtils;
 
@@ -28,15 +29,29 @@ public class BookingEmailComposer {
     private final GoogleCalendarLinkBuilder calendarLinks;
     private final LanguageRepository languages;
     private final Clock clock;
+    private final String baseUrl;
 
     public BookingEmailComposer(IcsGenerator icsGenerator,
                                 GoogleCalendarLinkBuilder calendarLinks,
                                 LanguageRepository languages,
-                                Clock clock) {
+                                Clock clock,
+                                @Value("${orion.app.base-url}") String baseUrl) {
         this.icsGenerator = icsGenerator;
         this.calendarLinks = calendarLinks;
         this.languages = languages;
         this.clock = clock;
+        this.baseUrl = baseUrl.replaceAll("/+$", "");
+    }
+
+    /**
+     * La sala es una ruta de la app («/mis-clases/…/aula»), y un correo no sabe de rutas: sin el
+     * dominio delante, el botón, el texto plano, el .ics y Google Calendar llevaban a ninguna parte.
+     */
+    private String absoluto(String enlace) {
+        if (enlace == null || enlace.startsWith("http://") || enlace.startsWith("https://")) {
+            return enlace;
+        }
+        return baseUrl + (enlace.startsWith("/") ? enlace : "/" + enlace);
     }
 
     /**
@@ -68,7 +83,7 @@ public class BookingEmailComposer {
                 ? "Tu " + que.toLowerCase(ES_CO) + " en Orión con " + counterpart.getFullName() + "."
                 : que + " en Orión con " + counterpart.getFullName() + ".";
 
-        String meetingLink = booking.getMeetingLink();
+        String meetingLink = absoluto(booking.getMeetingLink());
         String location = booking.getLocationNote() != null
                 ? booking.getLocationNote()
                 : (meetingLink != null ? meetingLink : modality);
@@ -89,14 +104,17 @@ public class BookingEmailComposer {
                 : "";
         String meetingText = meetingLink != null ? "Sala de la clase: " + meetingLink + "\n" : "";
 
+        // La clase de prueba se dice así, como en la campana: el profe tiene que saber que es la
+        // primera, y el estudiante, que es la gratis.
+        String clase = booking.isTrial() ? "clase de prueba" : "clase";
         String subject = recipientIsStudent
-                ? "¡Listo! Tu clase con " + counterpart.getFullName() + " quedó agendada"
-                : "Nueva clase agendada con " + counterpart.getFullName();
+                ? "¡Listo! Tu " + clase + " con " + counterpart.getFullName() + " quedó agendada"
+                : "Nueva " + clase + " agendada con " + counterpart.getFullName();
 
         String greeting = "Hola, " + firstName(recipient) + ".";
         String opening = recipientIsStudent
-                ? "Tu clase quedó confirmada. Aquí tienes los detalles:"
-                : counterpart.getFullName() + " agendó una clase contigo. Aquí tienes los detalles:";
+                ? "Tu " + clase + " quedó confirmada. Aquí tienes los detalles:"
+                : counterpart.getFullName() + " agendó una " + clase + " contigo. Aquí tienes los detalles:";
 
         String html = """
                 <p>%s</p>
@@ -150,44 +168,67 @@ public class BookingEmailComposer {
         return new BookingEmail(recipient.getEmail(), subject, html, text, ics);
     }
 
-    /** Cancelación: sin adjunto. La clase ya no existe, no hay nada que añadir al calendario. */
+    /**
+     * Cancelación: sin adjunto. La clase ya no existe, no hay nada que añadir al calendario.
+     *
+     * <p>Quién canceló se dice de tres maneras: «Cancelaste…» a quien lo hizo; «María canceló la clase
+     * que tenían…» al otro, sin repetir su nombre al final; y «Orión canceló…» a los dos cuando no fue
+     * ninguno de ellos (un admin): el nombre de quien lo hizo desde administración no le dice nada a
+     * nadie, y ellos tratan con Orión.
+     */
     public BookingEmail cancellation(Booking booking, User recipient, User counterpart, User cancelledBy) {
         String when = humanWhen(booking);
-        String who = cancelledBy.getId().equals(recipient.getId())
-                ? "Cancelaste"
-                : cancelledBy.getFullName() + " canceló";
+        boolean recipientIsStudent = recipient.getId().equals(booking.getStudentId());
+        boolean fueOrion = !cancelledBy.getId().equals(booking.getStudentId())
+                && !cancelledBy.getId().equals(booking.getProfessorId());
 
         String subject = "Clase cancelada: " + when;
         String reason = booking.getCancellationReason();
+        boolean hayMotivo = reason != null && !reason.isBlank();
+
+        String queHtml;
+        String queTexto;
+        if (fueOrion) {
+            queHtml = "Orión canceló tu clase del <strong>" + h(when) + "</strong> con " + h(counterpart.getFullName()) + ".";
+            queTexto = "Orión canceló tu clase del " + when + " con " + counterpart.getFullName() + ".";
+        } else if (cancelledBy.getId().equals(recipient.getId())) {
+            queHtml = "Cancelaste la clase del <strong>" + h(when) + "</strong> con " + h(counterpart.getFullName()) + ".";
+            queTexto = "Cancelaste la clase del " + when + " con " + counterpart.getFullName() + ".";
+        } else {
+            queHtml = h(cancelledBy.getFullName()) + " canceló la clase que tenían el <strong>" + h(when) + "</strong>.";
+            queTexto = cancelledBy.getFullName() + " canceló la clase que tenían el " + when + ".";
+        }
+
+        // El profe no agenda: al estudiante se le invita a reservar otra; al profe se le dice que
+        // la hora vuelve a estar libre.
+        String despues = recipientIsStudent
+                ? "Cuando quieras, puedes agendar otra clase desde Orión."
+                : "Ese horario vuelve a quedar libre en tu agenda.";
+        String hablarlo = "Si necesitan hablarlo, escríbanse dentro de Orión, en Mensajes.";
 
         String html = """
                 <p>Hola, %s.</p>
-                <p>%s la clase del <strong>%s</strong> con %s.</p>
+                <p>%s</p>
                 %s
-                <p>Cuando quieras, puedes agendar otra clase desde Orión. Y si necesitan hablarlo,
-                pueden escribirse dentro de la plataforma, en la sección de Mensajes.</p>
+                <p>%s %s</p>
                 <p>Un abrazo,<br>El equipo de Orión</p>
                 """.formatted(
                 h(firstName(recipient)),
-                h(who),
-                when,
-                h(counterpart.getFullName()),
-                reason != null && !reason.isBlank()
-                        ? "<p><strong>Motivo:</strong> " + h(reason) + "</p>"
-                        : "");
+                queHtml,
+                hayMotivo ? "<p><strong>Motivo:</strong> " + h(reason) + "</p>" : "",
+                h(despues), h(hablarlo));
 
         String text = """
                 Hola, %s.
 
-                %s la clase del %s con %s.
                 %s
-                Cuando quieras, puedes agendar otra clase desde Orión.
-                Si necesitan hablarlo, escríbanse dentro de la plataforma, en la sección de Mensajes.
+                %s
+                %s %s
 
                 Un abrazo,
                 El equipo de Orión
-                """.formatted(firstName(recipient), who, when, counterpart.getFullName(),
-                reason != null && !reason.isBlank() ? "Motivo: " + reason + "\n" : "");
+                """.formatted(firstName(recipient), queTexto,
+                hayMotivo ? "Motivo: " + reason + "\n" : "", despues, hablarlo);
 
         return new BookingEmail(recipient.getEmail(), subject, html, text, null);
     }

@@ -143,7 +143,8 @@ orion:
   legal:
     responsable: ${ORION_LEGAL_NOMBRE:Diego Alejandro Pardo Montero}
     documento:   ${ORION_LEGAL_DOCUMENTO:C.C. 1.013.576.324}
-    domicilio:   ${ORION_LEGAL_DOMICILIO:Carrera 32 #28-08}
+    # Entre comillas: sin ellas, el « #» de la dirección abre un comentario y el valor se corta.
+    domicilio:   "${ORION_LEGAL_DOMICILIO:Carrera 32 #28-08}"
     ciudad:      ${ORION_LEGAL_CIUDAD:Bogotá D.C.}
     correo:      ${ORION_LEGAL_CORREO:diegopardomontero@gmail.com}
     whatsapp:    ${ORION_LEGAL_WHATSAPP:+573023063447}

@@ -87,7 +87,8 @@ public class RescheduleRequestService {
         Duration margin = Duration.ofHours(settings.getInt(MIN_HOURS));
         if (proposedStartsAt.isBefore(now.plus(margin))) {
             throw new UnprocessableException(
-                    "Propón un horario con al menos " + margin.toHours() + " horas de anticipación");
+                    "Propón un horario con al menos " + margin.toHours()
+                            + (margin.toHours() == 1 ? " hora" : " horas") + " de anticipación.");
         }
         if (proposedStartsAt.equals(booking.getStartsAt())) {
             throw new BusinessRuleViolationException("Propón un horario distinto al actual");

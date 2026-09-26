@@ -75,7 +75,7 @@ public class AttendanceService {
         }
         // Una clase cancelada, ya registrada o en revisión no admite registro de asistencia.
         if (!booking.isConfirmed()) {
-            throw new ConflictException("La reserva no está confirmada: no admite registro de asistencia");
+            throw new ConflictException("Ya no puedes marcar la asistencia: la clase se cerró, se canceló o está en revisión.");
         }
 
         booking.closeWithAttendance(present, now);

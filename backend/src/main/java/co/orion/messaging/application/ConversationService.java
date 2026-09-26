@@ -72,7 +72,7 @@ public class ConversationService {
      */
     @Transactional
     public Conversation openAsStudent(User student, UUID professorId) {
-        professorAccess.assertCanTeach(professorId);
+        professorAccess.assertCanBeWrittenTo(professorId);
         return conversations.findByStudentIdAndProfessorId(student.getId(), professorId)
                 .orElseGet(() -> conversations.save(new Conversation(student.getId(), professorId)));
     }

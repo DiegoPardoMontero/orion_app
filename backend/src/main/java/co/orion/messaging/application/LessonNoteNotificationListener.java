@@ -51,7 +51,7 @@ public class LessonNoteNotificationListener {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onPublished(LessonNotePublishedEvent e) {
         safely(() -> bookings.findById(e.bookingId()).ifPresent(b -> {
-            String profe = primerNombre(e.professorId());
+            String profe = primerNombre(e.professorId(), "Tu profesor");
             String dia = b.getStartsAt().atZone(BusinessZone.BOGOTA).format(DIA);
             notifications.create(e.studentId(),
                     e.actualizacion() ? "LESSON_NOTE_UPDATED" : "LESSON_NOTE_PUBLISHED",
@@ -66,17 +66,18 @@ public class LessonNoteNotificationListener {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onNudge(LessonNoteNudgeEvent e) {
         safely(() -> notifications.create(e.professorId(), "LESSON_NOTE_NUDGE",
-                "¿Nos cuentas cómo estuvo tu clase con " + primerNombre(e.studentId()) + "?",
+                "¿Nos cuentas cómo estuvo tu clase con " + primerNombre(e.studentId(), "tu estudiante") + "?",
                 "Escribe lo que se te venga a la cabeza: nosotros le damos forma.",
                 "/mis-clases/" + e.bookingId() + "/acta"));
     }
 
-    private String primerNombre(UUID userId) {
+    /** El primer nombre, o {@code siFalta} —escrito para el sitio de la frase donde va— si ya no está. */
+    private String primerNombre(UUID userId, String siFalta) {
         return users.findById(userId).map(u -> {
             String n = u.getFullName() == null ? "" : u.getFullName().trim();
             int espacio = n.indexOf(' ');
             return espacio < 0 ? n : n.substring(0, espacio);
-        }).orElse("Tu profesor");
+        }).filter(n -> !n.isEmpty()).orElse(siFalta);
     }
 
     private void safely(Runnable action) {

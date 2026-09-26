@@ -13,8 +13,10 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 
 import co.orion.TestcontainersConfiguration;
+import co.orion.identity.api.RegisterRequest;
 import co.orion.support.ApiIntegrationSupport;
 
 /**
@@ -49,6 +51,39 @@ class ErroresDelClienteIT extends ApiIntegrationSupport {
         assertThat(rest.postForEntity("/api/v1/auth/login",
                 Map.of("email", "ana@orion.test", "password", cuarentaEmojis), String.class)
                 .getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * Un solo campo mal, con su mensaje escrito para la persona: ese mensaje es el {@code error}, que
+     * es lo único que enseña la pantalla. Antes quedaba en {@code details} y se leía el genérico.
+     */
+    @Test
+    @DisplayName("Un solo campo mal con mensaje propio devuelve ese mensaje")
+    @SuppressWarnings("rawtypes")
+    void unSoloCampoConMensajePropio() {
+        ResponseEntity<Map> r = rest.postForEntity("/api/v1/auth/register", new RegisterRequest(
+                "Ana Ramírez", "ana.menor@orion.test", "orion123*", "+573001112233", false, false, true, true),
+                Map.class);
+
+        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(r.getBody()).containsEntry("error", "Orión está disponible solo para mayores de 18 años.");
+    }
+
+    /** Con varios, o con el mensaje por defecto de la anotación (que no dice de qué campo), el genérico. */
+    @Test
+    @DisplayName("Varios campos mal, o uno sin mensaje propio, devuelven el genérico")
+    @SuppressWarnings("rawtypes")
+    void variosCamposOUnoSinMensajePropio() {
+        ResponseEntity<Map> varios = rest.postForEntity("/api/v1/auth/register", new RegisterRequest(
+                "Ana Ramírez", "ana.varios@orion.test", "orion123*", "+573001112233", false, false, false, true),
+                Map.class);
+        assertThat(varios.getBody()).containsEntry("error", GlobalExceptionHandler.MENSAJE_VALIDACION);
+
+        ResponseEntity<Map> sinMensaje = rest.postForEntity("/api/v1/auth/register", new RegisterRequest(
+                "", "ana.sinnombre@orion.test", "orion123*", "+573001112233", false, true, true, true),
+                Map.class);
+        assertThat(sinMensaje.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(sinMensaje.getBody()).containsEntry("error", GlobalExceptionHandler.MENSAJE_VALIDACION);
     }
 
     @Test

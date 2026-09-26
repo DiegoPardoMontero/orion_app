@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import co.orion.identity.domain.SignupIntent;
 import co.orion.shared.mail.MailTransport;
 import co.orion.shared.mail.OutgoingEmail;
+import co.orion.shared.time.FechasEnPalabras;
 
 /**
  * Compone el correo de verificación y lo entrega al transporte activo, que le pone la marca.
@@ -27,12 +28,13 @@ public class EmailVerificationLinkMailer implements EmailVerificationMailer {
     public void sendVerificationLink(String toEmail, String fullName, String verificationLink,
                                      SignupIntent intent) {
         String motivo = paraQue(intent);
-        String text = "Hola " + fullName + ",\n\n"
+        String primer = FechasEnPalabras.primerNombre(fullName);
+        String text = "Hola, " + primer + ":\n\n"
                 + "Confirma que este correo es tuyo " + motivo + ". "
                 + "Abre este enlace (vence en 24 horas):\n"
                 + verificationLink + "\n\n"
                 + "Si no creaste una cuenta en Orión, ignora este correo.\n\nOrión";
-        String html = "<p>Hola " + escape(fullName) + ",</p>"
+        String html = "<p>Hola, " + escape(primer) + ":</p>"
                 + "<p>Confirma que este correo es tuyo " + motivo + ". "
                 + "El enlace vence en 24 horas.</p>"
                 + "<p><a href=\"" + escape(verificationLink) + "\">Confirmar mi correo</a></p>"

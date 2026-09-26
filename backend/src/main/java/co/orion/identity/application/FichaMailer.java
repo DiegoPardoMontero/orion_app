@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import co.orion.shared.mail.MailTransport;
 import co.orion.shared.mail.OutgoingEmail;
+import co.orion.shared.text.ListaEnPalabras;
 
 /**
  * El correo del segundo día: «Rigel te guardó un lugar». Corto, con lo que falta y el logro que se
@@ -30,15 +31,16 @@ public class FichaMailer {
     public void recordar(String correo, String nombre, List<String> faltan) {
         String primer = nombre == null ? "" : nombre.trim().split("\\s+")[0];
         String enlace = baseUrl + "/cuenta?seccion=ficha";
-        String lista = String.join(", ", faltan);
+        String lista = ListaEnPalabras.unir(faltan);
         String texto = "Hola, " + primer + ":\n\n"
-                + "Soy Rigel, de Orión. Tu ficha está a medias: te falta " + lista + ".\n\n"
-                + "Con tu ficha completa —y visible, te lo recomiendo— los profes llegan a tu clase sabiendo qué "
+                + "Soy Rigel, de Orión. Tu ficha está a medias: " + ListaEnPalabras.teFalta(faltan) + ".\n\n"
+                + "Con tu ficha completa los profes llegan a tu clase sabiendo qué "
                 + "buscas, y te llevas el logro «Ficha completa» (+25 puntos).\n\n"
                 + "Complétala aquí, es un minuto: " + enlace + "\n\nOrión";
         String html = "<p>Hola, " + escape(primer) + ":</p>"
-                + "<p>Soy Rigel, de Orión. Tu ficha está a medias: te falta <strong>" + escape(lista) + "</strong>.</p>"
-                + "<p>Con tu ficha completa —y visible, te lo recomiendo— los profes llegan a tu clase sabiendo qué "
+                + "<p>Soy Rigel, de Orión. Tu ficha está a medias: te " + ListaEnPalabras.falta(faltan) + " <strong>"
+                + escape(lista) + "</strong>.</p>"
+                + "<p>Con tu ficha completa los profes llegan a tu clase sabiendo qué "
                 + "buscas, y te llevas el logro <strong>«Ficha completa»</strong> (+25 puntos).</p>"
                 + "<p><a href=\"" + escape(enlace) + "\">Completar mi ficha</a> · es un minuto.</p><p>Orión</p>";
         try {

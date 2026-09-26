@@ -34,8 +34,8 @@ public class CorreoDePrueba {
     public Resultado enviar(User admin, String para) {
         String destino = para == null || para.isBlank() ? admin.getEmail() : para.trim();
         String cuando = FechasEnPalabras.dia(clock.instant()) + " a las " + FechasEnPalabras.hora(clock.instant());
-        String texto = "Hola:\n\nEste es un correo de prueba de Orión, enviado por " + admin.getFullName() + " el "
-                + cuando + " (hora de Colombia) desde Sistema.\n\nSi lo estás leyendo, el correo sale bien.\n\nOrión";
+        String texto = "Hola:\n\nEste es un correo de prueba de Orión, enviado desde Sistema el " + cuando
+                + " (hora de Colombia).\n\nSi lo estás leyendo, el correo sale bien.\n\nOrión";
         String html = "<p>Hola:</p><p>Este es un correo de prueba de Orión, enviado desde Sistema el " + cuando
                 + " (hora de Colombia).</p><p><strong>Si lo estás leyendo, el correo sale bien.</strong></p><p>Orión</p>";
         try {

@@ -4,8 +4,10 @@ package co.orion.identity.application;
 public interface ProfessorInviteMailer {
 
     /**
+     * Sin quién invita: la invitación la firma Orión (Pardo, 26/09/2026), nunca el nombre ni el cargo
+     * de la persona que la mandó desde administración.
+     *
      * @param professorName con qué nombre se saluda al profe, o {@code null}
-     * @param inviterName   quién lo invita, como lo ve el profe
      */
-    void sendInvite(String toEmail, String professorName, String inviterName, String inviteLink);
+    void sendInvite(String toEmail, String professorName, String inviteLink);
 }

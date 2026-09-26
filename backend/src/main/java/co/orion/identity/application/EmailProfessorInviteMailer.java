@@ -7,7 +7,12 @@ import org.springframework.stereotype.Component;
 import co.orion.shared.mail.MailTransport;
 import co.orion.shared.mail.OutgoingEmail;
 
-/** Compone la invitación y la entrega al transporte activo. Un fallo de correo se registra, no rompe. */
+/**
+ * Compone la invitación y la entrega al transporte activo. Un fallo de correo se registra, no rompe.
+ *
+ * <p>La firma es «El equipo de Orión», siempre: el nombre de quien invita no sale en ningún texto para
+ * usuarios (Pardo, 26/09/2026). El profe trata con Orión.
+ */
 @Component
 public class EmailProfessorInviteMailer implements ProfessorInviteMailer {
 
@@ -20,20 +25,19 @@ public class EmailProfessorInviteMailer implements ProfessorInviteMailer {
     }
 
     @Override
-    public void sendInvite(String toEmail, String professorName, String inviterName, String inviteLink) {
+    public void sendInvite(String toEmail, String professorName, String inviteLink) {
         String saludo = professorName == null || professorName.isBlank() ? "Hola" : "Hola, " + professorName.trim();
-        String quien = inviterName == null || inviterName.isBlank() ? "El equipo de Orión" : inviterName.trim();
         String text = saludo + ",\n\n"
-                + quien + " te invita a ser de los primeros profes de Orión. Acepta la invitación en"
+                + "El equipo de Orión te invita a ser de sus primeros profes. Acepta la invitación en"
                 + " este enlace (vence en 7 días):\n" + inviteLink + "\n\n"
                 + "Nos vemos adentro.\nEl equipo de Orión";
         String html = "<p>" + escape(saludo) + ",</p>"
-                + "<p>" + escape(quien) + " te invita a ser de los primeros profes de <strong>Orión</strong>."
+                + "<p>El equipo de <strong>Orión</strong> te invita a ser de sus primeros profes."
                 + " El enlace es solo para ti y vence en 7 días.</p>"
                 + "<p><a href=\"" + escape(inviteLink) + "\">Ver la invitación</a></p>"
                 + "<p>Nos vemos adentro.<br>El equipo de Orión</p>";
         try {
-            transport.send(OutgoingEmail.plain(toEmail, quien + " te invita a enseñar en Orión", text, html));
+            transport.send(OutgoingEmail.plain(toEmail, "Orión te invita a enseñar", text, html));
         } catch (Exception ex) {
             log.warn("No se pudo enviar la invitación a {}: {}", toEmail, ex.getMessage());
         }

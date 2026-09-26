@@ -22,4 +22,30 @@ public record SanctionChangedEvent(UUID sanctionId, UUID professorId, SanctionTy
             case ACCOUNT_SUSPENDED -> "Tu cuenta quedó suspendida";
         };
     }
+
+    /**
+     * El motivo, sin el punto final si lo trae: quien lo escribe en administración a veces lo cierra y a
+     * veces no, y la frase que lo contiene pone el suyo. Sin esto salía «…por no presentarse..».
+     */
+    public String motivoSinPunto() {
+        if (reason == null) {
+            return "";
+        }
+        String m = reason.strip();
+        while (m.endsWith(".")) {
+            m = m.substring(0, m.length() - 1).strip();
+        }
+        return m;
+    }
+
+    /**
+     * Qué se levantó, con su motivo: «Ya no aplica la medida que tenías por: <motivo>.». Sin la frase
+     * de «si crees que es un error»: nadie reclama que le quiten una medida.
+     */
+    public String levantadaEnPalabras() {
+        String motivo = motivoSinPunto();
+        return motivo.isEmpty()
+                ? "Ya no aplica la medida que tenías."
+                : "Ya no aplica la medida que tenías por: " + motivo + ".";
+    }
 }

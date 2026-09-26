@@ -175,7 +175,8 @@ public class RetractionService {
         if (now.isAfter(limite)) {
             return Elegibilidad.no(
                     "El plazo de retracto es de 5 días hábiles desde que reservaste y ya pasó. "
-                            + "Puedes cancelar si aún estás a tiempo.");
+                            + "Todavía puedes cancelar la clase; lo que pase con tu dinero depende de "
+                            + "cuánto falte para que empiece.");
         }
         return new Elegibilidad(true, null, limite);
     }

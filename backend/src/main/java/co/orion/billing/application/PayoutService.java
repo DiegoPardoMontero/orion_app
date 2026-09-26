@@ -36,6 +36,7 @@ import co.orion.identity.application.AdminAuditService;
 import co.orion.shared.error.BusinessRuleViolationException;
 import co.orion.shared.error.ResourceNotFoundException;
 import co.orion.shared.time.BusinessZone;
+import co.orion.shared.time.FechasEnPalabras;
 
 /**
  * Las liquidaciones quincenales bajo mandato (brief de liquidaciones, pasos 3 y 4). El sistema
@@ -144,7 +145,7 @@ public class PayoutService {
             payout.carryOver();
             if (r.netCop() < 0) {
                 adjustments.save(new PayoutAdjustment(payout.getProfessorId(), null, PayoutLineKind.CARRY_OVER,
-                        r.netCop(), "Saldo de la liquidación del " + payout.getPeriodStart() + " al " + payout.getPeriodEnd()));
+                        r.netCop(), "Saldo de la liquidación del " + FechasEnPalabras.periodo(payout.getPeriodStart(), payout.getPeriodEnd())));
             }
         } else {
             payout.applyHold(holds.motivo(payout.getProfessorId()).orElse(null));

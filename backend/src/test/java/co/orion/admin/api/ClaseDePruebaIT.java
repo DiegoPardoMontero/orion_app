@@ -115,7 +115,7 @@ class ClaseDePruebaIT extends ApiIntegrationSupport {
                 LocalDateTime.of(2026, 9, 15, 20, 0));
 
         assertThat(r.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
-        assertThat((String) r.getBody().get("error")).contains("PROFESSOR");
+        assertThat((String) r.getBody().get("error")).contains("no es una cuenta de profesor");
     }
 
     @SuppressWarnings("rawtypes")

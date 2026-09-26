@@ -41,6 +41,26 @@ class FechasEnPalabrasTest {
                 .isEqualTo("el sábado 26 de septiembre de 7:00 a 7:55 PM");
     }
 
+    /** Un ajuste que descuenta lleva el signo delante del símbolo, no entre el símbolo y la cifra. */
+    @Test
+    void pesosNegativos() {
+        assertThat(FechasEnPalabras.pesos(-5_000)).isEqualTo("−$ 5.000");
+        assertThat(FechasEnPalabras.pesos(0)).isEqualTo("$ 0");
+    }
+
+    /** 1250 son 12,5 %, no «12 %»: la división entera se comía el medio punto. */
+    @Test
+    void porcentajeDePuntosBasicos() {
+        assertThat(FechasEnPalabras.porcentaje(2000)).isEqualTo("20 %");
+        assertThat(FechasEnPalabras.porcentaje(1250)).isEqualTo("12,5 %");
+    }
+
+    @Test
+    void elDiaDeUnaFechaSinHora() {
+        assertThat(FechasEnPalabras.dia(LocalDate.of(2026, 9, 14))).isEqualTo("lunes 14 de septiembre");
+        assertThat(FechasEnPalabras.fecha(LocalDate.of(2026, 10, 16))).isEqualTo("16 de octubre de 2026");
+    }
+
     @Test
     void pesosYPeriodos() {
         assertThat(FechasEnPalabras.pesos(180_000)).isEqualTo("$ 180.000");

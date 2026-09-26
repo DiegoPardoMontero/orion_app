@@ -14,6 +14,7 @@ import co.orion.identity.persistence.UserRepository;
 import co.orion.shared.mail.MailTransport;
 import co.orion.shared.mail.OutgoingEmail;
 import co.orion.shared.time.BusinessZone;
+import co.orion.shared.time.FechasEnPalabras;
 
 /**
  * Los dos correos del retracto: al aceptarlo y al confirmar la devolución.
@@ -37,8 +38,8 @@ public class RetractionMailer {
 
     public void confirmarRetracto(UUID studentId, long montoCop, Instant vence) {
         users.findById(studentId).ifPresent(user -> {
-            String fecha = LocalDate.ofInstant(vence, BusinessZone.BOGOTA).toString();
-            String texto = "Hola " + user.getFullName() + ",\n\n"
+            String fecha = FechasEnPalabras.fecha(LocalDate.ofInstant(vence, BusinessZone.BOGOTA));
+            String texto = "Hola, " + FechasEnPalabras.primerNombre(user.getFullName()) + ":\n\n"
                     + "Registramos tu retracto. Cancelamos la clase y te vamos a devolver "
                     + formato(montoCop) + " al mismo medio de pago que usaste.\n\n"
                     + "El plazo legal para hacerlo vence el " + fecha + ". Normalmente es antes.\n\n"
@@ -49,7 +50,7 @@ public class RetractionMailer {
 
     public void confirmarDevolucion(UUID studentId, long montoCop, String referencia) {
         users.findById(studentId).ifPresent(user -> {
-            String texto = "Hola " + user.getFullName() + ",\n\n"
+            String texto = "Hola, " + FechasEnPalabras.primerNombre(user.getFullName()) + ":\n\n"
                     + "Ya devolvimos " + formato(montoCop) + " a tu medio de pago.\n"
                     + "Referencia: " + referencia + "\n\n"
                     + "Según tu banco, puede tardar unos días en reflejarse.\n\nOrión";

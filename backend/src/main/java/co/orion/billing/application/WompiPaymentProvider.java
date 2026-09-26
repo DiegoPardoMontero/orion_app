@@ -8,6 +8,8 @@ import java.time.Duration;
 import java.util.HexFormat;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -35,6 +37,8 @@ import co.orion.shared.error.BusinessRuleViolationException;
 public class WompiPaymentProvider implements PaymentProvider {
 
     public static final String PROVIDER = "WOMPI";
+
+    private static final Logger log = LoggerFactory.getLogger(WompiPaymentProvider.class);
 
     /** Wompi no acepta cobros por debajo de este monto. */
     private static final long MIN_CHARGE_COP = 1500;
@@ -202,10 +206,16 @@ public class WompiPaymentProvider implements PaymentProvider {
         }
     }
 
+    /**
+     * La variable que falta va al log, no a la respuesta: el mensaje lo lee el estudiante que intenta
+     * pagar, y a él el nombre de una variable de entorno no le sirve de nada. Quien sí lo necesita lo
+     * ve en el log y en la pantalla Sistema del admin.
+     */
     private void requireConfigured(String secret, String envVar) {
         if (secret == null || secret.isBlank()) {
+            log.error("La pasarela no está configurada: falta {}", envVar);
             throw new BusinessRuleViolationException(
-                    "La pasarela no está configurada (falta " + envVar + ")");
+                    "Los pagos no están disponibles en este momento. Inténtalo de nuevo más tarde.");
         }
     }
 

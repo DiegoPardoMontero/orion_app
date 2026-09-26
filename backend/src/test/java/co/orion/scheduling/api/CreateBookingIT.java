@@ -265,7 +265,7 @@ class CreateBookingIT extends ApiIntegrationSupport {
                 BOOKINGS, anaSession, request(juan.getId(), 9, null), Map.class);
 
         assertThat(response.getStatusCode().value()).isEqualTo(422);
-        assertThat(response.getBody().get("error").toString()).contains("ya tiene una clase");
+        assertThat(response.getBody().get("error").toString()).contains("Ya tienes una clase reservada a esa hora");
     }
 
     @Test

@@ -135,7 +135,7 @@ public class PaymentLifecycleService {
         try {
             payment.refund(clock.instant());
         } catch (IllegalStateException ex) {
-            throw new ConflictException("Este pago ya se resolvió: " + ex.getMessage());
+            throw new ConflictException("Este pago ya se resolvió y no se puede volver a devolver.");
         }
         payments.save(payment);
         return credits.grant(payment.getStudentId(), amountCop, reason, bookingId, null, actorId);

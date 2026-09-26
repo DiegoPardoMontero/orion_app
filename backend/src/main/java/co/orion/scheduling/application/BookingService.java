@@ -139,7 +139,10 @@ public class BookingService {
         requireSlotIsAvailable(professorId, startsAt);
 
         if (bookings.studentHasOverlappingBooking(studentId, startsAt, endsAt)) {
-            throw new UnprocessableException("El estudiante ya tiene una clase reservada a esa hora");
+            // Casi siempre lo lee el propio estudiante; un admin que reserva por él, en tercera persona.
+            throw new UnprocessableException(actor.getRole() == UserRole.ADMIN
+                    ? "El estudiante ya tiene una clase reservada a esa hora."
+                    : "Ya tienes una clase reservada a esa hora.");
         }
 
         // locationNote describía dónde verse en persona. Sin presencial no tiene sentido, y
@@ -278,9 +281,10 @@ public class BookingService {
         // esperando delante de una sala vacía; y al profesor con un imprevisto real se le empujaba
         // a no aparecer, que es justo lo que la ventana pretendía castigar. Ahora quien cancela
         // tarde lo dice, el otro se entera a tiempo, y el precio de hacerlo lo pone el dinero.
+        BookingStatus antes = booking.getStatus();
         booking.cancel(cancellationStatusFor(actor), actor.getId(), now, reason);
         Booking cancelled = bookings.save(booking);
-        events.publishEvent(new BookingCancelledEvent(cancelled.getId()));
+        events.publishEvent(new BookingCancelledEvent(cancelled.getId(), antes));
         return cancelled;
     }
 
@@ -307,10 +311,11 @@ public class BookingService {
         if (booking.getStatus().isTerminal()) {
             throw new ConflictException("La reserva ya no está activa");
         }
+        BookingStatus antes = booking.getStatus();
         booking.cancel(BookingStatus.CANCELLED_BY_STUDENT, studentId, now,
                 "Retracto (art. 47 Ley 1480 de 2011)");
         Booking cancelada = bookings.save(booking);
-        events.publishEvent(new BookingCancelledEvent(cancelada.getId()));
+        events.publishEvent(new BookingCancelledEvent(cancelada.getId(), antes));
         return cancelada;
     }
 
@@ -422,7 +427,7 @@ public class BookingService {
                 List.of(BookingStatus.PENDING_PAYMENT, BookingStatus.CONFIRMED, BookingStatus.UNDER_REVIEW,
                         BookingStatus.COMPLETED, BookingStatus.NO_SHOW_STUDENT)) > 0) {
             return new Prueba(true, false,
-                    "La clase de prueba es para conocer al profesor, y tú ya tienes clases con él.");
+                    "La clase de prueba es para conocerse, y tú ya tienes o tuviste clases con este profesor.");
         }
         // Cancelarla cuando ya empezó no la devuelve: si no, se podía tomar entera, cancelarla antes
         // de que se cerrara y pedir otra gratis, sin fin. El índice de la V67 lo sostiene en la base.

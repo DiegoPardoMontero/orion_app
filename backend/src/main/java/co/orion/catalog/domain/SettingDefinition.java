@@ -47,7 +47,8 @@ public enum SettingDefinition {
     // ---------------------------------------------------------------------------- plazos
     STUDENT_CANCEL_HOURS("student_cancel_hours", Grupo.PLAZOS, Tipo.ENTERO,
             "Horas para que el estudiante cancele",
-            "Con menos de estas horas por delante ya no puede cancelar, solo proponer otro horario.",
+            "Con más de estas horas por delante, el estudiante que cancela recupera el valor como saldo a "
+                    + "favor; con menos, puede cancelar igual, pero la clase se le paga al profesor.",
             0, 168, true),
     PROFESSOR_CANCEL_HOURS("professor_cancel_hours", Grupo.PLAZOS, Tipo.ENTERO,
             "Horas para que el profesor cancele",
@@ -56,8 +57,8 @@ public enum SettingDefinition {
     // --------------------------------------------------------------- diagnóstico de confianza
     ASSESSMENT_ENABLED("assessment_enabled", Grupo.POLITICAS, Tipo.BOOLEANO,
             "Diagnóstico de confianza activo",
-            "Apagarlo retira el bloque de la portada sin dejar rastro: ni mensaje de error ni "
-                    + "botón deshabilitado. Quien llegue verá el buscador de siempre.",
+            "Apagado, nadie puede empezar un diagnóstico: quien lo intente ve «El diagnóstico no "
+                    + "está disponible ahora mismo». La portada lo sigue ofreciendo.",
             true),
     ASSESSMENT_MAX_MINUTES("assessment_max_minutes", Grupo.PLAZOS, Tipo.ENTERO,
             "Duración máxima del diagnóstico",
@@ -65,7 +66,7 @@ public enum SettingDefinition {
                     + "factura a la vez: se paga por minuto hablado.", 2, 15, false),
     ASSESSMENT_MIN_MINUTES("assessment_min_minutes", Grupo.PLAZOS, Tipo.ENTERO,
             "Duración mínima para puntuar",
-            "Por debajo de esto no se calcula puntaje: un número sacado de noventa segundos es "
+            "Por debajo de esto no se calcula puntaje: un número sacado de muy poca conversación es "
                     + "peor que ningún número.", 1, 10, false),
     ASSESSMENT_COOLDOWN_DAYS("assessment_cooldown_days", Grupo.PLAZOS, Tipo.ENTERO,
             "Días entre un diagnóstico y el siguiente",
@@ -132,21 +133,21 @@ public enum SettingDefinition {
     // pondera sobre el total que haya. Cambiar cualquiera cambia la versión del puntaje, así que
     // los diagnósticos de antes siguen siendo comparables entre ellos y no con los de después.
     SCORE_WEIGHT_ARRANQUE("score_weight_arranque", Grupo.REPUTACION, Tipo.ENTERO,
-            "Peso · arranque",
+            "Diagnóstico · peso del arranque",
             "Cuánto pesa lo que tarda en empezar a responder. Es el marcador más directo de la "
                     + "confianza al hablar.", 0, 100, true),
     SCORE_WEIGHT_CONTINUIDAD("score_weight_continuidad", Grupo.REPUTACION, Tipo.ENTERO,
-            "Peso · continuidad",
+            "Diagnóstico · peso de la continuidad",
             "Cuánto pesa empezar frases y soltarlas a mitad.", 0, 100, true),
     SCORE_WEIGHT_EXTENSION("score_weight_extension", Grupo.REPUTACION, Tipo.ENTERO,
-            "Peso · extensión",
+            "Diagnóstico · peso de la extensión",
             "Cuánto pesa lo largo que responde.", 0, 100, true),
     SCORE_WEIGHT_AUTONOMIA("score_weight_autonomia", Grupo.REPUTACION, Tipo.ENTERO,
-            "Peso · autonomía",
+            "Diagnóstico · peso de la autonomía",
             "Cuánto pesa devolverse al idioma propio cuando el terreno se pone difícil.",
             0, 100, true),
     SCORE_WEIGHT_SOLTURA("score_weight_soltura", Grupo.REPUTACION, Tipo.ENTERO,
-            "Peso · soltura",
+            "Diagnóstico · peso de la fluidez",
             "Cuánto pesan las muletillas y las autocorrecciones por cada cien palabras.",
             0, 100, true),
 
@@ -158,8 +159,8 @@ public enum SettingDefinition {
     BOOKING_MIN_LEAD_HOURS("booking_min_lead_hours", Grupo.PLAZOS, Tipo.ENTERO,
             "Antelación mínima para reservar",
             "Con menos de estas horas por delante, el cupo ya no se ofrece ni se puede reservar. "
-                    + "Subirlo por encima de las horas de cancelación deja al estudiante sin margen "
-                    + "para arrepentirse.",
+                    + "Subirlo por encima de las horas de cancelación hace que toda reserva nazca dentro "
+                    + "de la ventana de cancelación: si el estudiante cancela, ya no recupera el valor.",
             0, 72, true),
     NO_SHOW_REPORT_MINUTES("no_show_report_minutes", Grupo.PLAZOS, Tipo.ENTERO,
             "Espera antes de reportar una ausencia",
@@ -170,16 +171,16 @@ public enum SettingDefinition {
             "Plazo máximo para abrir un reclamo después de que la clase termina.", 1, 168, false),
     AUTO_COMPLETE_HOURS("auto_complete_hours", Grupo.PLAZOS, Tipo.ENTERO,
             "Horas hasta el cierre automático",
-            "Tras las cuales una clase sin reclamo se cierra sola y su pago se libera.",
+            "Horas después de terminar la clase en que, si nadie reclamó, se cierra sola y su pago se libera.",
             1, 168, true),
     RESCHEDULE_MIN_HOURS("reschedule_min_hours", Grupo.PLAZOS, Tipo.ENTERO,
-            "Anticipación mínima al reprogramar",
+            "Antelación mínima al reprogramar",
             "Un horario propuesto tiene que estar al menos a estas horas de distancia.", 0, 72, false),
 
     // ------------------------------------------------------------------------ reputación
     METRICS_WINDOW_DAYS("metrics_window_days", Grupo.REPUTACION, Tipo.ENTERO,
             "Ventana de las métricas",
-            "Días que mira el desempeño de un profesor. Todo lo anterior deja de contar.",
+            "Cuántos días hacia atrás se mira el desempeño de un profesor. Todo lo anterior deja de contar.",
             7, 365, false),
     RANKING_COLD_START_LESSONS("ranking_cold_start_lessons", Grupo.REPUTACION, Tipo.ENTERO,
             "Clases para salir del arranque en frío",
@@ -187,7 +188,8 @@ public enum SettingDefinition {
             0, 50, false),
     SANCTIONS_MODE("sanctions_mode", Grupo.REPUTACION, Tipo.OPCION,
             "Modo de las sanciones",
-            "OBSERVE las propone y espera tu confirmación; ENFORCE las aplica solas.",
+            "OBSERVE (observar): el sistema las propone y tú las confirmas en Reclamos; ENFORCE (aplicar): "
+                    + "se aplican solas.",
             Set.of("OBSERVE", "ENFORCE"), true),
     SANCTION_PENALTY_POINTS("sanction_penalty_points", Grupo.REPUTACION, Tipo.ENTERO,
             "Puntos de penalización por sanción",
@@ -212,15 +214,17 @@ public enum SettingDefinition {
     // ------------------------------------------------------------------------- políticas
     CONTACT_POLICY_MODE("contact_policy_mode", Grupo.POLITICAS, Tipo.OPCION,
             "Política de contacto en mensajes",
-            "MASK oculta teléfonos y correos dentro de los mensajes; OFF los deja pasar.",
+            "MASK (ocultar): tapa teléfonos y correos dentro de los mensajes; OFF (apagado): los deja pasar.",
             Set.of("MASK", "OFF"), true),
     REQUIRE_PHONE_VERIFICATION("require_phone_verification", Grupo.POLITICAS, Tipo.BOOLEANO,
             "Exigir verificación de teléfono",
-            "Hoy no hay flujo de verificación de teléfono: dejarlo en verdadero no verifica nada.",
+            "Hoy no hay flujo de verificación de teléfono: dejarlo encendido no verifica nada.",
             false),
     GAMIFICATION_COUNT_FREE_LESSONS("gamification_count_free_lessons", Grupo.POLITICAS,
-            Tipo.BOOLEANO, "Las clases gratuitas suman puntos",
-            "Por defecto no: las clases de prueba en producción no deben ensuciar el perfil de nadie.",
+            Tipo.BOOLEANO, "Las clases con tarifa 0 suman puntos",
+            "Por defecto no: las clases de un profe con tarifa 0 (la que se pone desde Usuarios para "
+                    + "probar la reserva) no deben ensuciar el perfil de nadie. No se refiere a la primera "
+                    + "clase gratis.",
             false),
 
     // ------------------------------------------------------------------------- mandato

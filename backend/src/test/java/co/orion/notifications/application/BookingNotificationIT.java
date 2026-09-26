@@ -93,6 +93,9 @@ class BookingNotificationIT extends ApiIntegrationSupport {
     @Autowired
     private ProfessorProfileRepository profiles;
 
+    @org.springframework.beans.factory.annotation.Value("${orion.app.base-url}")
+    private String baseUrl;
+
     @org.springframework.beans.factory.annotation.Autowired
     private org.springframework.jdbc.core.JdbcTemplate jdbc;
 
@@ -305,6 +308,106 @@ class BookingNotificationIT extends ApiIntegrationSupport {
         assertThat(toAna).doesNotContain("wa.me");
         assertThat(toAna).doesNotContain("WhatsApp");
         assertThat(toAna).contains("Mensajes");
+    }
+
+    /**
+     * La sala es una ruta de la app («/mis-clases/…/aula»): en un correo, sin el dominio delante, el
+     * botón, el texto plano, el .ics y Google Calendar no llevaban a ninguna parte.
+     */
+    @Test
+    void theMeetingLinkInTheEmailIsAbsolute() throws Exception {
+        BookingResponse booking = book();
+
+        ArgumentCaptor<MimeMessage> sent = ArgumentCaptor.forClass(MimeMessage.class);
+        verify(mailSender, timeout(5000).times(2)).send(sent.capture());
+
+        String sala = baseUrl.replaceAll("/+$", "") + "/mis-clases/" + booking.id() + "/aula";
+        assertThat(sent.getAllValues()).allSatisfy(message -> {
+            String cuerpo = decoded(message);
+            assertThat(cuerpo).contains("href=\"" + sala + "\"");
+            assertThat(cuerpo).contains("Sala de la clase: " + sala);
+            assertThat(cuerpo).doesNotContain("href=\"/mis-clases/");
+        });
+    }
+
+    /**
+     * Al otro no se le repite el nombre de quien canceló, y al profe no se le invita a «agendar otra
+     * clase», que no es algo que él haga: se le dice que la hora vuelve a estar libre.
+     */
+    @Test
+    void eachSideReadsTheCancellationInItsOwnWords() throws Exception {
+        BookingResponse booking = book();
+
+        ArgumentCaptor<MimeMessage> sent = ArgumentCaptor.forClass(MimeMessage.class);
+        post("/api/v1/bookings/" + booking.id() + "/cancel", anaSession,
+                new CancelBookingRequest("Viaje imprevisto"), BookingResponse.class);
+        verify(mailSender, timeout(5000).times(4)).send(sent.capture());
+
+        String aMaria = cancellationTo(sent.getAllValues(), "maria@orion.test");
+        assertThat(aMaria).contains("Ana Ramírez canceló la clase que tenían el miércoles 15 de julio");
+        assertThat(aMaria).doesNotContain("con Ana Ramírez");
+        assertThat(aMaria).contains("Ese horario vuelve a quedar libre en tu agenda.");
+        assertThat(aMaria).doesNotContain("agendar otra clase");
+
+        String aAna = cancellationTo(sent.getAllValues(), "ana@orion.test");
+        assertThat(aAna).contains("Cancelaste la clase del miércoles 15 de julio");
+        assertThat(aAna).contains("Cuando quieras, puedes agendar otra clase desde Orión.");
+    }
+
+    /**
+     * Una reserva sin pagar nunca se le anunció al profe (la confirmación sale con el pago): si el
+     * estudiante la suelta, al profe no le llega ni el correo ni el aviso de algo que no sabía.
+     */
+    @Test
+    void cancellingAnUnpaidBookingDoesNotTellTheProfessor() throws Exception {
+        BookingResponse created = post(
+                "/api/v1/bookings", anaSession, bookingRequest(), BookingResponse.class).getBody();
+
+        ResponseEntity<BookingResponse> cancelled = post("/api/v1/bookings/" + created.id() + "/cancel",
+                anaSession, new CancelBookingRequest("Mejor otro dia"), BookingResponse.class);
+        assertThat(cancelled.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        ArgumentCaptor<MimeMessage> sent = ArgumentCaptor.forClass(MimeMessage.class);
+        verify(mailSender, timeout(5000).times(1)).send(sent.capture());
+        assertThat(sent.getValue().getAllRecipients()[0].toString()).isEqualTo("ana@orion.test");
+        assertThat(jdbc.queryForObject(
+                "select count(*) from notifications where user_id = ?", Integer.class, maria.getId())).isZero();
+    }
+
+    private String cancellationTo(List<MimeMessage> messages, String email) {
+        return messages.stream()
+                .filter(message -> {
+                    try {
+                        return message.getSubject().contains("cancelada")
+                                && message.getAllRecipients()[0].toString().equals(email);
+                    } catch (Exception ex) {
+                        throw new IllegalStateException(ex);
+                    }
+                })
+                .map(this::decoded)
+                .findFirst()
+                .orElseThrow();
+    }
+
+    /** El texto de todas las partes, ya decodificado: sin quoted-printable de por medio. */
+    private String decoded(MimeMessage message) {
+        try {
+            StringBuilder out = new StringBuilder();
+            collect(message.getContent(), out);
+            return out.toString();
+        } catch (Exception ex) {
+            throw new IllegalStateException(ex);
+        }
+    }
+
+    private void collect(Object content, StringBuilder out) throws Exception {
+        if (content instanceof String texto) {
+            out.append(texto).append('\n');
+        } else if (content instanceof jakarta.mail.Multipart partes) {
+            for (int i = 0; i < partes.getCount(); i++) {
+                collect(partes.getBodyPart(i).getContent(), out);
+            }
+        }
     }
 
     private String messageAsString(MimeMessage message) {

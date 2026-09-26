@@ -258,25 +258,18 @@ class MotorDeLogrosIT extends ApiIntegrationSupport {
         assertThat(estadoDe(ana.getId()).get("amplitud-tres-voces").isUnlocked()).isTrue();
     }
 
+    /**
+     * «Dos idiomas» se retiró en la V77: Orión enseña solo inglés (V42). Una clase de francés de antes
+     * ya no enciende nada, porque no queda ninguna estrella que la pida.
+     */
     @Test
-    void dosIdiomasDistintosEnciendenDosIdiomas() {
+    void unaClaseEnOtroIdiomaYaNoEnciendeNada() {
         claseTomada(maria, LocalDate.of(2026, 7, 13), BookingModality.VIRTUAL, "EN");
         claseTomada(juan, LocalDate.of(2026, 7, 20), BookingModality.VIRTUAL, "FR");
 
         motor.onSomethingHappened(ana.getId());
 
-        assertThat(estadoDe(ana.getId()).get("amplitud-dos-idiomas").isUnlocked()).isTrue();
-    }
-
-    /** Una reserva sin idioma no puede contar como «otro idioma»: no sabemos cuál era. */
-    @Test
-    void unaClaseSinIdiomaNoCuentaComoOtroIdioma() {
-        claseTomada(maria, LocalDate.of(2026, 7, 13), BookingModality.VIRTUAL, "EN");
-        claseTomada(juan, LocalDate.of(2026, 7, 20), BookingModality.VIRTUAL, null);
-
-        motor.onSomethingHappened(ana.getId());
-
-        assertThat(estadoDe(ana.getId()).get("amplitud-dos-idiomas").isUnlocked()).isFalse();
+        assertThat(estadoDe(ana.getId())).doesNotContainKey("amplitud-dos-idiomas");
     }
 
     @Test

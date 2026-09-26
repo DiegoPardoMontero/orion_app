@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import co.orion.billing.domain.PayoutCalculator;
 import co.orion.billing.domain.PayoutCalculator.Fortnight;
 import co.orion.shared.observability.JobRunRegistry;
+import co.orion.shared.time.FechasEnPalabras;
 
 /**
  * El corte quincenal (brief de liquidaciones, paso 3). Corre cada hora y mira si la última quincena
@@ -39,9 +40,10 @@ public class PayoutCutJob {
         try {
             Fortnight quincena = PayoutCalculator.latestClosed(clock.instant());
             int creadas = run();
+            String periodo = FechasEnPalabras.periodo(quincena.start(), quincena.end());
             runs.recordSuccess(JOB, clock.instant(), creadas == 0
-                    ? "Quincena del " + quincena.start() + " al " + quincena.end() + ": ya cortada"
-                    : creadas + " liquidación(es) de la quincena del " + quincena.start() + " al " + quincena.end());
+                    ? "Quincena del " + periodo + ": ya cortada"
+                    : creadas + (creadas == 1 ? " liquidación" : " liquidaciones") + " de la quincena del " + periodo);
         } catch (RuntimeException ex) {
             log.error("El corte de liquidaciones falló", ex);
             runs.recordFailure(JOB, clock.instant(), ex.getMessage());

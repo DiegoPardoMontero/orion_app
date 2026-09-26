@@ -124,7 +124,9 @@ public class LifecycleNotificationListener {
                             event.absenceRecorded()
                                     ? "Quedó registrada como ausencia. Puedes ver el detalle en tu desempeño."
                                     : "La clase quedó como dictada y tu pago sigue su curso.",
-                            "/ganancias");
+                            // Cada texto lleva adonde dice: la ausencia se ve en el desempeño, el pago
+                            // en las ganancias.
+                            event.absenceRecorded() ? "/desempeno" : "/ganancias");
                 })));
     }
 

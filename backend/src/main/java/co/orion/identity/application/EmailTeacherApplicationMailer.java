@@ -54,12 +54,12 @@ public class EmailTeacherApplicationMailer implements TeacherApplicationMailer {
 
         String text = "Revisamos tu postulación y necesitamos algunos ajustes antes de aprobarla:\n\n"
                 + note + "\n\n"
-                + "Actualízala y vuélvela a enviar cuando estés listo: " + aplicacion
+                + "Actualízala y vuélvela a enviar cuando la tengas lista: " + aplicacion
                 + "\nEl equipo de Orión";
         String html = "<p>Revisamos tu postulación y necesitamos algunos ajustes antes de aprobarla:</p>"
                 + "<blockquote>" + escape(note) + "</blockquote>"
                 + "<p><a href=\"" + aplicacion + "\">Actualiza tu postulación</a> y vuélvela a enviar "
-                + "cuando estés listo.</p>"
+                + "cuando la tengas lista.</p>"
                 + "<p>El equipo de Orión</p>";
         send(toEmail, "Tu postulación en Orión necesita cambios", text, html);
     }

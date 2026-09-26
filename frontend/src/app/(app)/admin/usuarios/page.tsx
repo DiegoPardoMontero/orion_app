@@ -136,23 +136,15 @@ export default function AdminUsuariosPage() {
 /**
  * La invitación a un profe (V71): ya no crea la cuenta. El profe abre el enlace, ve la pantalla de
  * invitación, crea su cuenta de aspirante con este correo y lleva su postulación, que se aprueba
- * aquí mismo, en Postulaciones. El nombre es con el que se le saluda, y el cargo de quien invita
- * queda en su cuenta para las siguientes.
+ * aquí mismo, en Postulaciones. El nombre es con el que se le saluda. Quien invita no sale en
+ * ningún lado —ni su nombre ni su cargo—: la invitación la firma el equipo de Orión (Pardo,
+ * 26/09/2026).
  */
 function ModalInvitarProfesor({ onCerrar }: { onCerrar: () => void }) {
-  const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
   const [nombre, setNombre] = useState("");
-  const [cargo, setCargo] = useState<string | null>(null);
   const [fundador, setFundador] = useState(true);
   const [enviado, setEnviado] = useState(false);
-
-  const firma = useQuery({
-    queryKey: ["admin", "invite-defaults"],
-    queryFn: () =>
-      apiFetch<{ inviterName: string; inviterTitle: string | null }>("/api/v1/admin/professors/invite/defaults"),
-  });
-  const cargoMostrado = cargo ?? firma.data?.inviterTitle ?? "";
 
   const invitar = useMutation({
     mutationFn: () =>
@@ -162,13 +154,9 @@ function ModalInvitarProfesor({ onCerrar }: { onCerrar: () => void }) {
           email: email.trim(),
           professorName: nombre.trim() || undefined,
           founder: fundador,
-          inviterTitle: cargoMostrado.trim() || undefined,
         },
       }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "invite-defaults"] });
-      setEnviado(true);
-    },
+    onSuccess: () => setEnviado(true),
   });
 
   const error = invitar.error instanceof ApiError ? invitar.error.message : null;
@@ -203,7 +191,7 @@ function ModalInvitarProfesor({ onCerrar }: { onCerrar: () => void }) {
             className="mt-1.5"
           />
           <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="invite-nombre">
-            Nombre <span className="font-semibold text-text-muted">(opcional, para saludarlo)</span>
+            Nombre <span className="font-semibold text-text-muted">(opcional, para el saludo)</span>
           </label>
           <Campo
             id="invite-nombre"
@@ -214,21 +202,8 @@ function ModalInvitarProfesor({ onCerrar }: { onCerrar: () => void }) {
             placeholder="Mariana"
             className="mt-1.5"
           />
-          <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="invite-cargo">
-            Tu cargo <span className="font-semibold text-text-muted">(lo ve el profe)</span>
-          </label>
-          <Campo
-            id="invite-cargo"
-            type="text"
-            maxLength={80}
-            value={cargoMostrado}
-            onChange={(event) => setCargo(event.target.value)}
-            placeholder="directora académica"
-            className="mt-1.5"
-          />
           <p className="mt-1.5 text-[12px] text-text-muted">
-            Así se lee: «Te invita {firma.data?.inviterName ?? "tu nombre"}
-            {cargoMostrado.trim() ? `, ${cargoMostrado.trim()}` : ""}».
+            La invitación la firma Orión: el profe lee «Te invita el equipo de Orión».
           </p>
           <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-base bg-surface-sunken p-3" htmlFor="invite-fundador">
             <input
@@ -388,7 +363,7 @@ function BotonTarifa({ profesorId }: { profesorId: string }) {
 
   return (
     <>
-      <BotonIcono etiqueta="Tarifa" onClick={() => setAbierto(true)}>
+      <BotonIcono etiqueta="Cambiar la tarifa" onClick={() => setAbierto(true)}>
         <BadgeDollarSign size={17} strokeWidth={1.75} />
       </BotonIcono>
       {abierto && <ModalTarifa profesorId={profesorId} onCerrar={() => setAbierto(false)} />}

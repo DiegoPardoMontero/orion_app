@@ -61,10 +61,14 @@ public class AdminProfessorsController {
     public void invite(@AuthenticationPrincipal OrionUserDetails principal,
                        @Valid @RequestBody InviteProfessorRequest body) {
         inviteService.invite(principal.user().getId(), body.email(), body.professorName(),
-                body.founder() == null || body.founder(), body.inviterTitle());
+                body.founder() == null || body.founder());
     }
 
-    /** Con qué nombre y cargo firma el admin sus invitaciones, para prellenar el formulario. */
+    /**
+     * El nombre y el cargo del admin. Lo usaba el formulario de invitar para mostrar «Te invita …»;
+     * desde el 26/09/2026 la invitación la firma Orión y el formulario ya no lo pide. Se deja para no
+     * romper a quien lo llame.
+     */
     @GetMapping("/invite/defaults")
     public InviteDefaults inviteDefaults(@AuthenticationPrincipal OrionUserDetails principal) {
         return new InviteDefaults(principal.user().getFullName(), principal.user().getJobTitle());

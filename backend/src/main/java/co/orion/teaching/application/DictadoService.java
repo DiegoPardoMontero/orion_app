@@ -48,7 +48,7 @@ public class DictadoService {
         }
         if (b.getStatus() != BookingStatus.COMPLETED || b.getCompletedAt() == null
                 || b.getCompletedAt().isBefore(lanzamiento.desde())) {
-            throw new UnprocessableException("El acta se dicta cuando la clase ya se dictó y quedó cerrada.");
+            throw new UnprocessableException("Puedes dictar el acta cuando la clase ya terminó y quedó cerrada.");
         }
         if (audio == null || audio.length == 0 || tipo == null
                 || !(tipo.startsWith("audio/") || tipo.startsWith("video/webm"))) {

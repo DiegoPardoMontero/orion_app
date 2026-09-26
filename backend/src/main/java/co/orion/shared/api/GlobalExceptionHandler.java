@@ -15,6 +15,7 @@ import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -39,6 +40,7 @@ import co.orion.shared.error.UnprocessableException;
 import co.orion.shared.observability.AlertService;
 import co.orion.shared.security.OrionUserDetails;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -51,14 +53,40 @@ public class GlobalExceptionHandler {
         this.alerts = alerts;
     }
 
+    /** Lo que ve quien manda un formulario con más de un campo mal, o con uno sin mensaje propio. */
+    static final String MENSAJE_VALIDACION = "Revisa los datos: hay campos que no son válidos.";
+
+    /**
+     * Un solo campo mal con su propio {@code message=} («Tu WhatsApp es obligatorio.») devuelve ese
+     * mensaje como {@code error}: el frontend enseña {@code error} e ignora {@code details}, así que
+     * antes la frase que alguien escribió para esa persona nunca llegaba a la pantalla. Con varios
+     * errores, o con el mensaje por defecto de la anotación («no debe estar vacío», sin decir de qué
+     * campo), se queda el genérico: una frase suelta sin su campo confunde más que ayuda.
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
         List<String> details = ex.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .toList();
+        List<ObjectError> errores = ex.getBindingResult().getAllErrors();
+        String mensaje = errores.size() == 1 && tieneMensajePropio(errores.getFirst())
+                ? errores.getFirst().getDefaultMessage()
+                : MENSAJE_VALIDACION;
         // En español: este texto llega tal cual a la pantalla.
-        return ResponseEntity.badRequest()
-                .body(Map.of("error", "Revisa los datos: hay campos que no son válidos.", "details", details));
+        return ResponseEntity.badRequest().body(Map.of("error", mensaje, "details", details));
+    }
+
+    /** El mensaje por defecto de una anotación es una clave entre llaves («{jakarta.validation…}»). */
+    private static boolean tieneMensajePropio(ObjectError error) {
+        if (error.getDefaultMessage() == null || error.getDefaultMessage().isBlank()) {
+            return false;
+        }
+        try {
+            String plantilla = error.unwrap(ConstraintViolation.class).getMessageTemplate();
+            return plantilla != null && !plantilla.startsWith("{");
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
     }
 
     /**
@@ -217,7 +245,7 @@ public class GlobalExceptionHandler {
                         + "\nUsuario: " + usuarioDe()
                         + "\n\n" + AlertService.trazaCorta(ex, 8));
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Unexpected error"));
+                .body(Map.of("error", "Algo no salió como esperábamos. Inténtalo de nuevo."));
     }
 
     /** Solo el id: el nombre y el correo de una persona no tienen por qué viajar a una alerta. */

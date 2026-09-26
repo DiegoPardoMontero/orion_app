@@ -221,6 +221,10 @@ class AvisosYCorreosIT extends ApiIntegrationSupport {
 
         sanciones.revoke(aviso.getId(), admin.getId());
         await().atMost(Duration.ofSeconds(5)).until(() -> avisos(maria, "SANCTION_LIFTED").size() == 1);
+        // Al levantarla no se le dice «si crees que es un error», y el punto del motivo no se duplica.
+        assertThat(jdbc.queryForObject("select body from notifications where user_id = ? and type = 'SANCTION_LIFTED'",
+                String.class, maria.getId()))
+                .isEqualTo("Ya no aplica la medida que tenías por: Llegó tarde tres veces.");
     }
 
     @SuppressWarnings("rawtypes")

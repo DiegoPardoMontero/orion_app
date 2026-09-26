@@ -102,7 +102,7 @@ public class ProfessorProfileService {
 
         if (Boolean.TRUE.equals(req.isPublished())) {
             // El gate: un profesor sin postulación APPROVED no puede publicarse (403), antes de la tarifa.
-            access.assertCanTeach(professorId);
+            access.assertCanPublishOwnProfile(professorId);
             if (!profile.canPublish()) {
                 throw new UnprocessableException(
                         "Fija tu tarifa por hora antes de publicar tu perfil.");

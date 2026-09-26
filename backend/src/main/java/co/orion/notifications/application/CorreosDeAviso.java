@@ -112,10 +112,14 @@ public class CorreosDeAviso {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void on(SanctionChangedEvent event) {
+        String detalle = event.lifted()
+                ? event.levantadaEnPalabras()
+                : (event.motivoSinPunto().isEmpty() ? "" : "Motivo: " + event.motivoSinPunto() + ". ")
+                        + "Si crees que es un error, escríbenos desde Ayuda.";
         users.findById(event.professorId()).ifPresent(u -> enviar(u,
                 event.enPalabras(),
                 event.enPalabras() + ".",
-                "Motivo: " + event.reason() + ". Si crees que es un error, escríbenos desde Ayuda.",
+                detalle,
                 "Ver mi desempeño", baseUrl + "/desempeno"));
     }
 
@@ -135,7 +139,7 @@ public class CorreosDeAviso {
             StringBuilder filas = new StringBuilder();
             for (PayoutViews.ReceiptLine l : r.lines()) {
                 String detalle = l.commissionRateBps() != null
-                        ? FechasEnPalabras.pesos(l.grossCop()) + " − " + (l.commissionRateBps() / 100) + " % = "
+                        ? FechasEnPalabras.pesos(l.grossCop()) + " − " + FechasEnPalabras.porcentaje(l.commissionRateBps()) + " = "
                                 + FechasEnPalabras.pesos(l.netCop())
                         : FechasEnPalabras.pesos(l.netCop());
                 String quien = l.studentLabel() != null ? " · " + l.studentLabel() : "";

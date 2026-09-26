@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 
 import co.orion.shared.mail.MailTransport;
 import co.orion.shared.mail.OutgoingEmail;
+import co.orion.shared.time.FechasEnPalabras;
 
 /** Compone el correo de recuperación y lo entrega al transporte activo. Un fallo se registra y se traga. */
 @Component
@@ -21,11 +22,12 @@ public class EmailPasswordResetMailer implements PasswordResetMailer {
 
     @Override
     public void sendResetLink(String toEmail, String fullName, String resetLink) {
-        String text = "Hola " + fullName + ",\n\n"
+        String primer = FechasEnPalabras.primerNombre(fullName);
+        String text = "Hola, " + primer + ":\n\n"
                 + "Pediste restablecer tu contraseña. Abre este enlace (vence en 30 minutos):\n"
                 + resetLink + "\n\n"
                 + "Si no fuiste tú, ignora este correo: tu contraseña sigue igual.\n\nOrión";
-        String html = "<p>Hola " + escape(fullName) + ",</p>"
+        String html = "<p>Hola, " + escape(primer) + ":</p>"
                 + "<p>Pediste restablecer tu contraseña. El enlace vence en 30 minutos.</p>"
                 + "<p><a href=\"" + escape(resetLink) + "\">Restablecer mi contraseña</a></p>"
                 + "<p>Si no fuiste tú, ignora este correo: tu contraseña sigue igual.</p><p>Orión</p>";

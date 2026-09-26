@@ -22,6 +22,7 @@ import co.orion.identity.domain.UserRole;
 import co.orion.identity.persistence.UserRepository;
 import co.orion.shared.error.BusinessRuleViolationException;
 import co.orion.shared.error.ResourceNotFoundException;
+import co.orion.shared.time.FechasEnPalabras;
 
 /**
  * Borrado DEFINITIVO de clases y usuarios, para dejar el sistema limpio antes de abrirlo al público.
@@ -358,7 +359,7 @@ public class PurgeService {
                     + "la contabilidad se queda sin su respaldo.");
         }
         if (money.creditsCop() > 0) {
-            warnings.add("Se pierden $" + money.creditsCop() + " de saldo a favor de estudiantes.");
+            warnings.add("Se pierden " + FechasEnPalabras.pesos(money.creditsCop()) + " de saldo a favor de estudiantes.");
         }
         if (!money.isEmpty()) {
             warnings.add("Esto NO se puede deshacer.");

@@ -35,13 +35,15 @@ class CatalogoGamificacionIT {
     private CosmeticRepository cosmetics;
 
     /**
-     * Diecinueve de los veinte del diseño —«Cara a cara» pedía tomar una clase presencial y Orión
-     * dejó de darlas (V30): una estrella que nadie puede encender ya no es una meta—, los seis de
-     * la práctica (V53) y «Ficha completa» (V58).
+     * Dieciocho de los veinte del diseño —«Cara a cara» pedía tomar una clase presencial y Orión
+     * dejó de darlas (V30); «Dos idiomas» pedía un segundo idioma y Orión enseña solo inglés (V42,
+     * retirado en la V77): una estrella que nadie puede encender ya no es una meta—, los seis de la
+     * práctica (V53) y «Ficha completa» (V58).
      */
     @Test
     void estanLosLogrosDelDisenoQueSiguenSiendoPosibles() {
-        assertThat(achievements.findByActiveTrueOrderByDisplayOrderAsc()).hasSize(26);
+        assertThat(achievements.findByActiveTrueOrderByDisplayOrderAsc()).hasSize(25);
+        assertThat(achievements.findById("amplitud-dos-idiomas")).isEmpty();
     }
 
     @Test
@@ -53,19 +55,25 @@ class CatalogoGamificacionIT {
                 .containsEntry(AchievementFamily.PRIMEROS, 4L)
                 .containsEntry(AchievementFamily.CONSTANCIA, 5L)
                 .containsEntry(AchievementFamily.VOLUMEN, 5L)
-                // AMPLITUD perdió «Cara a cara» al desaparecer las clases presenciales.
-                .containsEntry(AchievementFamily.AMPLITUD, 2L)
+                // AMPLITUD perdió «Cara a cara» al desaparecer las clases presenciales (V30) y «Dos
+                // idiomas» al quedar solo el inglés (V77).
+                .containsEntry(AchievementFamily.AMPLITUD, 1L)
                 .containsEntry(AchievementFamily.COMPROMISO, 4L)
                 .containsEntry(AchievementFamily.PRACTICA, 6L);
     }
 
-    /** Los textos son los del diseño, aprobados con la voz de marca. No se reescriben. */
+    /**
+     * Los textos son los del diseño, aprobados con la voz de marca; los que hablaban del estudiante en
+     * tercera persona («Reservó su primera clase.») se le dicen de tú desde la V77.
+     */
     @Test
     void losTextosSonLosDelDiseno() {
         assertThat(achievements.findById("constancia-8-semanas").orElseThrow().getDescription())
                 .isEqualTo("8 semanas consecutivas. Sube el sello a nivel 2.");
-        assertThat(achievements.findById("amplitud-dos-idiomas").orElseThrow().getDescription())
-                .isEqualTo("Al menos una clase en un segundo idioma.");
+        assertThat(achievements.findById("primeros-primera-reserva").orElseThrow().getDescription())
+                .isEqualTo("Tu primera clase reservada.");
+        assertThat(achievements.findById("compromiso-ficha-completa").orElseThrow().getDescription())
+                .isEqualTo("Tu ficha completa: foto, nivel, idioma, objetivo y motivación.");
     }
 
     /** Los de brillo 3 son los dos hitos grandes, y son los únicos que además mandan correo. */

@@ -69,19 +69,16 @@ public class ProfessorInviteService {
      * El admin invita a un profe por correo. Si ya hay una cuenta con ese correo no se invita: si es
      * un profe, el beneficio de fundador se le otorga desde Usuarios.
      *
-     * @param inviterTitle el cargo del admin, si lo escribió: queda en su cuenta para las siguientes
+     * <p>Quién invita se guarda ({@code invited_by}) para la trazabilidad, pero no se le muestra al
+     * profe: ni en el correo ni en la pantalla de la invitación sale el nombre ni el cargo de nadie,
+     * la invitación es de Orión (Pardo, 26/09/2026). Por eso el cargo que antes se pedía ya no se guarda.
      */
     @Transactional
-    public void invite(UUID adminId, String email, String professorName, boolean founder, String inviterTitle) {
+    public void invite(UUID adminId, String email, String professorName, boolean founder) {
         String correo = email.trim().toLowerCase(Locale.ROOT);
         if (users.existsByEmailIgnoreCase(correo)) {
             throw new ConflictException(
                     "Ya existe una cuenta con ese correo. Si es un profe, dale el beneficio de fundador desde Usuarios.");
-        }
-        User admin = users.findById(adminId).orElse(null);
-        if (admin != null && inviterTitle != null) {
-            admin.changeJobTitle(inviterTitle);
-            users.save(admin);
         }
 
         invites.deleteUnusedByEmail(correo);
@@ -89,8 +86,7 @@ public class ProfessorInviteService {
         ProfessorInvite invite = invites.saveAndFlush(new ProfessorInvite(correo, professorName, adminId, founder,
                 sha256Hex(rawToken), clock.instant().plus(TTL)));
 
-        mailer.sendInvite(correo, invite.getProfessorName(), admin == null ? null : admin.getFullName(),
-                baseUrl + "/invitacion/" + rawToken);
+        mailer.sendInvite(correo, invite.getProfessorName(), baseUrl + "/invitacion/" + rawToken);
     }
 
     /** Lo que ve quien abre el enlace. Nunca falla: un token que no existe se muestra como vencido. */
@@ -105,14 +101,11 @@ public class ProfessorInviteService {
         if (state != ProfessorInvite.State.VALID) {
             return InvitationView.soloEstado(state.name());
         }
-        User admin = invite.getInvitedBy() == null ? null : users.findById(invite.getInvitedBy()).orElse(null);
         InvitationView.FounderOffer founder = invite.isFounder()
                 ? new InvitationView.FounderOffer(settings.getInt(FounderService.RATE_KEY),
                         settings.getInt(FounderService.MONTHS_KEY), settings.getInt(BASE_RATE_KEY))
                 : null;
         return new InvitationView(state.name(), invite.getEmail(), invite.getProfessorName(),
-                admin == null ? null : admin.getFullName(),
-                admin == null ? null : admin.getJobTitle(),
                 invite.getExpiresAt().atZone(BusinessZone.BOGOTA),
                 founder);
     }
@@ -126,7 +119,7 @@ public class ProfessorInviteService {
         ProfessorInvite invite = invites.findByTokenHash(sha256Hex(rawToken))
                 .filter(i -> i.state(clock.instant()) == ProfessorInvite.State.VALID)
                 .orElseThrow(() -> new UnprocessableException(
-                        "La invitación ya venció o ya se usó. Escríbele a quien te invitó y te enviamos un enlace nuevo."));
+                        "La invitación ya venció o ya se usó. Escríbele a quien te invitó para que te envíe un enlace nuevo."));
         if (!invite.isFor(newUser.getEmail())) {
             throw new UnprocessableException("Esta invitación es para otro correo.");
         }

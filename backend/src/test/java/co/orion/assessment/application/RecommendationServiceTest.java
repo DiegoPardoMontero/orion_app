@@ -199,7 +199,7 @@ class RecommendationServiceTest {
 
         assertThat(r.reasonCode()).isEqualTo(ReasonCode.GOAL_MATCH);
         // Primer nombre, y el objetivo tal como lo llama el catálogo: nada lo escribe un modelo.
-        assertThat(r.reasonText()).isEqualTo("María trabaja justo con estudiantes que buscan trabajo.");
+        assertThat(r.reasonText()).isEqualTo("María enseña justo lo que buscas: trabajo.");
     }
 
     @Test

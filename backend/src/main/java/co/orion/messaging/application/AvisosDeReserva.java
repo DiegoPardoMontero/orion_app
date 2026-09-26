@@ -47,11 +47,11 @@ public class AvisosDeReserva {
         String enlace = "/mis-clases?clase=" + b.getId();
         String clase = b.isTrial() ? "clase de prueba" : "clase";
         notifications.create(b.getStudentId(), "BOOKING_CREATED",
-                "Tu " + clase + " con " + nombre(b.getProfessorId()) + " quedó agendada",
+                "Tu " + clase + " con " + profe(b) + " quedó agendada",
                 capital(cuando) + " (" + FechasEnPalabras.duracion(b.getStartsAt(), b.getEndsAt())
                         + "). Entras desde «Mis clases» a la hora de la clase.", enlace);
         notifications.create(b.getProfessorId(), "BOOKING_RECEIVED",
-                (b.isTrial() ? "Nueva clase de prueba con " : "Nueva clase con ") + nombre(b.getStudentId()),
+                (b.isTrial() ? "Nueva clase de prueba con " : "Nueva clase con ") + estudiante(b),
                 capital(cuando) + " (" + FechasEnPalabras.duracion(b.getStartsAt(), b.getEndsAt())
                         + "). Ya está en tu agenda.", enlace);
     }
@@ -64,14 +64,25 @@ public class AvisosDeReserva {
             return;
         }
         UUID quien = b.getCancelledBy();
+        // Si no fue ninguno de los dos, fue un admin: para ellos, «Orión canceló». El nombre de quien lo
+        // hizo desde administración no le dice nada a nadie.
+        boolean fueOrion = !b.getStudentId().equals(quien) && !b.getProfessorId().equals(quien);
         String cuando = cuando(b);
         String enlace = "/mis-clases?clase=" + b.getId() + "&scope=past";
         // A quien canceló, la confirmación; al otro, el aviso con quién fue.
         for (UUID destino : new UUID[] {b.getStudentId(), b.getProfessorId()}) {
-            UUID otro = destino.equals(b.getStudentId()) ? b.getProfessorId() : b.getStudentId();
-            String titulo = destino.equals(quien)
-                    ? "Cancelaste tu clase con " + nombre(otro)
-                    : nombre(otro) + " canceló la clase";
+            boolean esProfe = destino.equals(b.getProfessorId());
+            // Una reserva que se soltó sin pagar nunca se le anunció al profe: tampoco se le avisa de
+            // que se canceló, salvo que la soltara él.
+            if (esProfe && event.wasAwaitingPayment() && !destino.equals(quien)) {
+                continue;
+            }
+            String otro = esProfe ? estudiante(b) : profe(b);
+            String titulo = fueOrion
+                    ? "Orión canceló tu clase con " + otro
+                    : destino.equals(quien)
+                            ? "Cancelaste tu clase con " + otro
+                            : capital(otro) + " canceló la clase";
             // Tipos distintos porque solo uno de los dos avisos suena en el dispositivo: el de quien se
             // enteró, no la confirmación de lo que uno mismo acaba de hacer.
             notifications.create(destino, destino.equals(quien) ? "BOOKING_CANCELLED_SELF" : "BOOKING_CANCELLED",
@@ -88,7 +99,15 @@ public class AvisosDeReserva {
         return s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1);
     }
 
-    private String nombre(UUID userId) {
-        return users.findById(userId).map(User::getFullName).orElse("Tu contraparte");
+    /**
+     * El nombre, o cómo se le dice si ya no está: en minúscula, porque casi siempre va a mitad de
+     * frase («Tu clase con tu profesor…»); al comienzo se le pone la mayúscula.
+     */
+    private String profe(Booking b) {
+        return users.findById(b.getProfessorId()).map(User::getFullName).orElse("tu profesor");
+    }
+
+    private String estudiante(Booking b) {
+        return users.findById(b.getStudentId()).map(User::getFullName).orElse("tu estudiante");
     }
 }

@@ -27,6 +27,12 @@ public final class FechasEnPalabras {
                 + z.getMonth().getDisplayName(TextStyle.FULL, ES);
     }
 
+    /** «lunes 14 de septiembre», de un día sin hora: el lunes de una semana, por ejemplo. */
+    public static String dia(LocalDate dia) {
+        return dia.getDayOfWeek().getDisplayName(TextStyle.FULL, ES) + " " + dia.getDayOfMonth() + " de "
+                + dia.getMonth().getDisplayName(TextStyle.FULL, ES);
+    }
+
     /** «jue 26 sep». */
     public static String diaCorto(Instant instante) {
         ZonedDateTime z = instante.atZone(BusinessZone.BOGOTA);
@@ -90,9 +96,18 @@ public final class FechasEnPalabras {
         return dia.getDayOfMonth() + " de " + dia.getMonth().getDisplayName(TextStyle.FULL, ES) + " de " + dia.getYear();
     }
 
-    /** «$ 180.000». */
+    /**
+     * «$ 180.000», y «−$ 5.000» si es negativo (un ajuste que descuenta): el signo va delante del
+     * símbolo, como en la app, y no entre el símbolo y la cifra («$ -5.000»).
+     */
     public static String pesos(long cop) {
-        return "$ " + NumberFormat.getIntegerInstance(ES).format(cop);
+        String cifra = NumberFormat.getIntegerInstance(ES).format(Math.abs(cop));
+        return (cop < 0 ? "−$ " : "$ ") + cifra;
+    }
+
+    /** «15 %», o «12,5 %» si no es entero: de puntos básicos (1250) a porcentaje, sin redondear. */
+    public static String porcentaje(int bps) {
+        return (bps % 100 == 0 ? String.valueOf(bps / 100) : String.valueOf(bps / 100.0).replace('.', ',')) + " %";
     }
 
     /** «1 al 15 de septiembre», o «28 de agosto al 3 de septiembre» si cambia de mes. */

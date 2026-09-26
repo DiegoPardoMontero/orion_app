@@ -46,7 +46,9 @@ public class AvisosDeCuenta {
     public void on(SanctionChangedEvent event) {
         try {
             notifications.create(event.professorId(), event.lifted() ? "SANCTION_LIFTED" : "SANCTION_APPLIED",
-                    event.enPalabras(), corto(event.reason(), 380), "/desempeno");
+                    event.enPalabras(),
+                    event.lifted() ? corto(event.levantadaEnPalabras(), 380) : corto(event.reason(), 380),
+                    "/desempeno");
         } catch (RuntimeException ex) {
             log.warn("No se pudo avisar la sanción {}: {}", event.sanctionId(), ex.getMessage());
         }

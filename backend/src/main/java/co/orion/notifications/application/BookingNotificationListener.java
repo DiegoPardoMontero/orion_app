@@ -58,13 +58,20 @@ public class BookingNotificationListener {
         });
     }
 
+    /**
+     * Una reserva que se suelta sin haberse pagado no le llega al profesor: nunca se le anunció (la
+     * confirmación sale con el pago), así que avisarle de que se canceló es contarle algo que no sabía
+     * que existía. Si la soltó él mismo, sí recibe su confirmación.
+     */
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onBookingCancelled(BookingCancelledEvent event) {
         participants(event.bookingId()).ifPresent(trio -> {
             User cancelledBy = users.findById(trio.booking().getCancelledBy()).orElse(trio.student());
             send(composer.cancellation(trio.booking(), trio.student(), trio.professor(), cancelledBy));
-            send(composer.cancellation(trio.booking(), trio.professor(), trio.student(), cancelledBy));
+            if (!event.wasAwaitingPayment() || cancelledBy.getId().equals(trio.professor().getId())) {
+                send(composer.cancellation(trio.booking(), trio.professor(), trio.student(), cancelledBy));
+            }
         });
     }
 

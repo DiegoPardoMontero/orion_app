@@ -196,7 +196,7 @@ class EnsayoDelActaIT extends ApiIntegrationSupport {
                 Map.of("studentEmail", "juan@orion.test", "professorEmail", "maria@orion.test"), Map.class);
 
         assertThat(r.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
-        assertThat((String) r.getBody().get("error")).contains("STUDENT");
+        assertThat((String) r.getBody().get("error")).contains("no es una cuenta de estudiante");
     }
 
     @SuppressWarnings("rawtypes")

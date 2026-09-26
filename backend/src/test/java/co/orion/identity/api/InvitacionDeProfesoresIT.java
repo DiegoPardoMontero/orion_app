@@ -79,13 +79,11 @@ class InvitacionDeProfesoresIT extends ApiIntegrationSupport {
     static class CorreoCapturado implements ProfessorInviteMailer {
         volatile String enlace;
         volatile String saludo;
-        volatile String quien;
 
         @Override
-        public void sendInvite(String toEmail, String professorName, String inviterName, String inviteLink) {
+        public void sendInvite(String toEmail, String professorName, String inviteLink) {
             this.enlace = inviteLink;
             this.saludo = professorName;
-            this.quien = inviterName;
         }
     }
 
@@ -186,24 +184,26 @@ class InvitacionDeProfesoresIT extends ApiIntegrationSupport {
 
     /* ---- invitar ---- */
 
+    /**
+     * Quién invita no sale en ningún lado (Pardo, 26/09/2026): la invitación es de Orión. El cargo que
+     * un cliente viejo todavía mande se acepta y se ignora; no se guarda en la cuenta del admin.
+     */
     @Test
     @SuppressWarnings("rawtypes")
-    void invitarNoCreaLaCuentaYMandaElEnlaceConNombres() {
+    void invitarNoCreaLaCuentaYMandaElEnlaceSinQuienInvita() {
         String token = invitar(CORREO, true);
 
         assertThat(users.findByEmailIgnoreCase(CORREO)).isEmpty();
         assertThat(correo.enlace).contains("/invitacion/");
         assertThat(correo.saludo).isEqualTo("Mariana");
-        assertThat(correo.quien).isEqualTo("Sofía");
-        // El cargo queda en la cuenta del admin, para las siguientes invitaciones.
-        assertThat(users.findById(admin.getId()).orElseThrow().getJobTitle()).isEqualTo("directora académica");
+        assertThat(users.findById(admin.getId()).orElseThrow().getJobTitle()).isNull();
 
         Map vista = ver(token);
         assertThat(vista.get("state")).isEqualTo("VALID");
         assertThat(vista.get("email")).isEqualTo(CORREO);
         assertThat(vista.get("professorName")).isEqualTo("Mariana");
-        assertThat(vista.get("invitedByName")).isEqualTo("Sofía");
-        assertThat(vista.get("invitedByTitle")).isEqualTo("directora académica");
+        assertThat(vista).doesNotContainKeys("invitedByName", "invitedByTitle");
+        assertThat(vista.values()).doesNotContain("Sofía", "directora académica");
         assertThat(vista.get("expiresAt")).isNotNull();
         assertThat((Map) vista.get("founder")).containsEntry("rateBps", 1500)
                 .containsEntry("periodMonths", 3).containsEntry("baseRateBps", 2000);
@@ -246,7 +246,7 @@ class InvitacionDeProfesoresIT extends ApiIntegrationSupport {
 
         assertThat(vista.get("state")).isEqualTo("EXPIRED");
         assertThat(vista.get("email")).isNull();
-        assertThat(vista.get("invitedByName")).isNull();
+        assertThat(vista).doesNotContainKey("invitedByName");
     }
 
     @Test

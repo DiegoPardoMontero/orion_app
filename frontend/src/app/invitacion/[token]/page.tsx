@@ -8,9 +8,11 @@ import { serverFetch } from "@/lib/api/server";
  * La invitación personal al profesor (handoff `design_handoff_orion_invitacion`, 25/09/2026): lo
  * primero que ve el profe que recibe el enlace de Sofía. Pública y sin la navegación de la app.
  *
- * <p>El token se resuelve aquí, en el servidor. Vigente, muestra a quién se saluda, quién invita,
- * cuándo vence y el beneficio de profe fundador si lo trae; vencida o usada, solo el estado —el
- * backend no manda más—, y un token que no existe se ve igual que uno vencido. «Aceptar la
+ * <p>El token se resuelve aquí, en el servidor. Vigente, muestra a quién se saluda, cuándo vence y el
+ * beneficio de profe fundador si lo trae; vencida o usada, solo el estado —el backend no manda más—, y
+ * un token que no existe se ve igual que uno vencido. Quien invita es siempre «el equipo de Orión»:
+ * el nombre y el cargo de la persona que la mandó no salen (Pardo, 26/09/2026), y el backend ya no
+ * los envía. «Aceptar la
  * invitación» lleva al registro de profesor con el correo puesto y bloqueado; el token se consume
  * al crear la cuenta, no al abrir el enlace.
  *
@@ -25,8 +27,6 @@ type Invitacion = {
   state: "VALID" | "EXPIRED" | "USED";
   email: string | null;
   professorName: string | null;
-  invitedByName: string | null;
-  invitedByTitle: string | null;
   expiresAt: string | null;
   founder: { rateBps: number; periodMonths: number; baseRateBps: number } | null;
 };
@@ -106,7 +106,7 @@ export default async function InvitacionPage({ params }: { params: Promise<{ tok
               {invitacion.founder && (
                 <div className="rounded-card border border-border bg-surface-raised px-4 py-3.5 lg:px-5 lg:py-4">
                   <p className="text-[15px] font-semibold leading-[1.5] text-text lg:text-[16px]">
-                    La comisión de Orión es {porcentaje(invitacion.founder.baseRateBps)}. Como profe fundador, tienes{" "}
+                    La comisión de Orión es {porcentaje(invitacion.founder.baseRateBps)}. Por ser de los profes fundadores, tienes{" "}
                     {porcentaje(invitacion.founder.rateBps)} durante {meses(invitacion.founder.periodMonths)} de
                     clases.
                   </p>
@@ -117,24 +117,23 @@ export default async function InvitacionPage({ params }: { params: Promise<{ tok
                 </div>
               )}
 
-              {invitacion.invitedByName && (
-                <p className="flex items-center gap-3 text-[14px] text-text-secondary lg:text-[16px]">
-                  <span
-                    aria-hidden="true"
-                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-peach font-display text-[15px] font-extrabold text-text lg:h-11 lg:w-11 lg:text-[18px]"
-                  >
-                    {invitacion.invitedByName.trim().charAt(0).toUpperCase()}
-                  </span>
-                  <span className="whitespace-nowrap">
-                    Te invita <strong className="font-bold text-text">{invitacion.invitedByName}</strong>
-                    {invitacion.invitedByTitle ? `, ${invitacion.invitedByTitle}` : ""}
-                  </span>
-                </p>
-              )}
+              <p className="flex items-center gap-3 text-[14px] text-text-secondary lg:text-[16px]">
+                <span
+                  aria-hidden="true"
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-peach font-display text-[15px] font-extrabold text-text lg:h-11 lg:w-11 lg:text-[18px]"
+                >
+                  O
+                </span>
+                <span className="whitespace-nowrap">
+                  Te invita <strong className="font-bold text-text">el equipo de Orión</strong>
+                </span>
+              </p>
             </>
           ) : (
             <p className="text-[16px] leading-[1.55] text-text lg:text-[18px]">
-              Escríbele a quien te invitó y te enviamos un enlace nuevo.
+              {usada
+                ? "Si ya creaste tu cuenta con ella, inicia sesión. Si no fuiste tú, escríbele a quien te invitó."
+                : "Escríbele a quien te invitó para que te envíe un enlace nuevo."}
             </p>
           )}
 

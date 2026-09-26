@@ -596,6 +596,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/legal/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["accept_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/bookings/{bookingId}/retraction": {
         parameters: {
             query?: never;
@@ -3715,6 +3731,9 @@ export interface components {
             currentPassword?: string;
             newPassword: string;
         };
+        AcceptRequest: {
+            documents: string[];
+        };
         RefundResponse: {
             /** Format: uuid */
             id?: string;
@@ -4913,8 +4932,6 @@ export interface components {
             state?: string;
             email?: string;
             professorName?: string;
-            invitedByName?: string;
-            invitedByTitle?: string;
             /** Format: date-time */
             expiresAt?: string;
             founder?: components["schemas"]["FounderOffer"];
@@ -6321,6 +6338,28 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    accept_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptRequest"];
+            };
+        };
         responses: {
             /** @description No Content */
             204: {

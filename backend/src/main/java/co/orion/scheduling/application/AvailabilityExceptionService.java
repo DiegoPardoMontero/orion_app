@@ -44,7 +44,7 @@ public class AvailabilityExceptionService {
                         "startTime y endTime van juntos: ambos presentes (bloqueo parcial) o ambos ausentes (día completo)");
             }
             if (!startTime.isBefore(endTime)) {
-                throw new BusinessRuleViolationException("startTime debe ser anterior a endTime");
+                throw new BusinessRuleViolationException("La hora de fin tiene que ser después de la hora de inicio.");
             }
         }
 

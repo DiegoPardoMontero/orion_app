@@ -36,7 +36,7 @@ public class AvailabilityRuleService {
 
         if (rules.overlapsActiveRule(professorId, day, startTime, endTime)) {
             throw new BusinessRuleViolationException(
-                    "La franja se solapa con otra regla activa del mismo día");
+                    "Esta franja se cruza con otra que ya tienes ese día.");
         }
         return rules.save(new AvailabilityRule(professorId, day, startTime, endTime));
     }
@@ -55,7 +55,7 @@ public class AvailabilityRuleService {
 
     private void requireStartBeforeEnd(LocalTime startTime, LocalTime endTime) {
         if (!startTime.isBefore(endTime)) {
-            throw new BusinessRuleViolationException("startTime debe ser anterior a endTime");
+            throw new BusinessRuleViolationException("La hora de fin tiene que ser después de la hora de inicio.");
         }
     }
 

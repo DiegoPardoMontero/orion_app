@@ -39,13 +39,38 @@ public class ProfessorAccessService {
 
     @Transactional(readOnly = true)
     public void assertCanTeach(UUID professorId) {
+        exigir(professorId, "Tu perfil aún no está aprobado para enseñar.",
+                "Este profesor no está recibiendo reservas nuevas en este momento.");
+    }
+
+    /**
+     * La misma puerta, dicha al profesor que intenta publicar su perfil. Con la reserva suspendida
+     * leía «Este profesor no está recibiendo reservas nuevas…», como si hablara de otro.
+     */
+    @Transactional(readOnly = true)
+    public void assertCanPublishOwnProfile(UUID professorId) {
+        exigir(professorId, "Tu perfil aún no está aprobado para enseñar.",
+                "Mientras tengas las reservas suspendidas no puedes publicar tu perfil. Lo ves en «Desempeño».");
+    }
+
+    /**
+     * La misma puerta, dicha al estudiante que quiere escribirle a un profesor. Leía «Tu perfil aún no
+     * está aprobado para enseñar.», que es una frase para el profesor; y el porqué (una sanción, una
+     * postulación) no es asunto suyo.
+     */
+    @Transactional(readOnly = true)
+    public void assertCanBeWrittenTo(UUID professorId) {
+        String noDisponible = "Este profesor no está disponible en este momento.";
+        exigir(professorId, noDisponible, noDisponible);
+    }
+
+    private void exigir(UUID professorId, String sinAprobar, String sinReservasNuevas) {
         if (!isApproved(professorId)) {
-            throw new ForbiddenException("Tu perfil aún no está aprobado para enseñar.");
+            throw new ForbiddenException(sinAprobar);
         }
         // Las clases YA confirmadas se respetan siempre: esto solo cierra la puerta a las nuevas.
         if (!sanctions.acceptsNewBookings(professorId)) {
-            throw new ForbiddenException(
-                    "Este profesor no está recibiendo reservas nuevas en este momento.");
+            throw new ForbiddenException(sinReservasNuevas);
         }
     }
 }

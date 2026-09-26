@@ -91,7 +91,7 @@ public class DisputeService {
 
         if (!booking.isConfirmed()) {
             throw new ConflictException(
-                    "Solo una clase confirmada admite un reclamo (esta está en " + booking.getStatus() + ")");
+                    "Esta clase ya no admite un reclamo: ya tiene uno abierto, se canceló o ya se cerró.");
         }
 
         Instant now = clock.instant();

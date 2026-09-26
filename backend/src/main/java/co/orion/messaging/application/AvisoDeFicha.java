@@ -7,6 +7,7 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import co.orion.identity.domain.FichaPorCompletarEvent;
+import co.orion.shared.text.ListaEnPalabras;
 
 /**
  * Los recordatorios de la ficha que van a la campana: el del día 1 y el del día 3 (el 2 es correo).
@@ -27,11 +28,12 @@ public class AvisoDeFicha {
         if (event.paso() == 2) {
             return;
         }
-        String faltan = String.join(", ", event.faltan());
         String titulo = event.paso() == 1
                 ? "Rigel: completa tu ficha y gana «Ficha completa»"
-                : "Tu ficha sigue a medias: te falta " + (event.faltan().size() == 1 ? event.faltan().getFirst() : "poco");
-        String cuerpo = "Te falta " + faltan + ". Con tu ficha completa —y visible, te lo recomiendo— los profes"
+                : "Tu ficha sigue a medias: "
+                        + (event.faltan().size() == 1 ? ListaEnPalabras.teFalta(event.faltan()) : "te falta poco");
+        String cuerpo = ListaEnPalabras.teFaltaAlComienzo(event.faltan())
+                + ". Con tu ficha completa los profes"
                 + " preparan tu clase sabiendo qué buscas. +25 puntos.";
         notifications.create(event.studentId(), "PROFILE_NUDGE", titulo, cuerpo, "/cuenta?seccion=ficha");
     }
