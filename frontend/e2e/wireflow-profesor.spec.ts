@@ -367,15 +367,23 @@ test("[p-bienvenida.1 p-bienvenida.2 p-bienvenida.3 e-whatsapp.2 e-whatsapp.3 p-
     await falta.getByRole("button", { name: "Guardar" }).click();
     await expect(falta).toBeHidden();
 
-    // Y el acuerdo del profesor vigente, con el mandato de recaudo (brief de liquidaciones, paso 1):
-    // sin aceptarlo puede dar clases, pero sus liquidaciones quedan retenidas, y se le dice.
-    const acuerdo = profe.getByRole("dialog", { name: "Actualizamos el acuerdo del profesor" });
-    await expect(acuerdo.getByText(/no podemos pagarte tus liquidaciones/)).toBeVisible({ timeout: 20_000 });
-    await expect(acuerdo.getByText("Mandato de recaudo.", { exact: false }).first()).toBeVisible();
-    await expect(acuerdo.getByRole("button", { name: "Aceptar" })).toBeDisabled();
-    await acuerdo.getByLabel(/Leí y acepto el acuerdo del profesor \(versión 2\.0\)/).check();
-    await acuerdo.getByRole("button", { name: "Aceptar" }).click();
-    await expect(acuerdo).toBeHidden();
+    // Y los acuerdos (26/09): la cuenta que crea el admin nunca aceptó los Términos ni la política, y
+    // al profe aprobado se le suma el acuerdo del profesor con el mandato de recaudo. Un solo
+    // «Aceptar los nuevos acuerdos», un botón que los despliega todos, y sin «Ahora no».
+    const acuerdos = profe.getByRole("dialog", { name: "Acepta los nuevos acuerdos" });
+    await expect(acuerdos.getByText(/Incluye el mandato de recaudo/)).toBeVisible({ timeout: 20_000 });
+    await expect(acuerdos.getByRole("button", { name: "Ahora no" })).toHaveCount(0);
+    await acuerdos.getByRole("button", { name: "Ver los acuerdos completos" }).click();
+    await expect(acuerdos.getByRole("region", { name: "Términos y condiciones" })).toBeVisible();
+    await expect(
+      acuerdos.getByRole("region", { name: "Acuerdo del profesor" }).getByText("Mandato de recaudo.", { exact: false }).first(),
+    ).toBeVisible();
+    // La autorización de datos va aparte, como en el registro: sin ella no se acepta.
+    const aceptar = acuerdos.getByRole("button", { name: "Aceptar los nuevos acuerdos" });
+    await expect(aceptar).toBeDisabled();
+    await acuerdos.getByLabel(/Autorizo el tratamiento de mis datos personales/).check();
+    await aceptar.click();
+    await expect(acuerdos).toBeHidden();
 
     const bienvenida = profe.getByRole("dialog", { name: "Bienvenida a Orión" });
     await expect(bienvenida).toBeVisible({ timeout: 20_000 });

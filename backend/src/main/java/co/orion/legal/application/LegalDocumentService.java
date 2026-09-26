@@ -17,6 +17,7 @@ import co.orion.legal.persistence.AgreementAcceptanceRepository;
 import co.orion.catalog.application.PublicFiguresService;
 import co.orion.legal.domain.LegalDocument;
 import co.orion.legal.domain.LegalDocumentCode;
+import co.orion.shared.error.BusinessRuleViolationException;
 import co.orion.legal.persistence.LegalDocumentRepository;
 import co.orion.shared.time.BusinessZone;
 import co.orion.shared.config.LegalIdentity;
@@ -112,17 +113,41 @@ public class LegalDocumentService {
     }
 
     /**
-     * Lo que la app le tiene que pedir aceptar a alguien al entrar, según su rol. Hoy solo el
-     * acuerdo del profesor: su versión 2.0 trae el mandato de recaudo, y sin él sus liquidaciones
-     * quedan retenidas. Los Términos y la política no entran aquí todavía: pedirlos a quien nunca
-     * los aceptó (cuentas anteriores al Bloque 9, o creadas por el admin) es otra decisión.
+     * Lo que la app le tiene que pedir aceptar a alguien al entrar, según su rol: los Términos y la
+     * política vigentes a todos, y el acuerdo del profesor a quien enseña (su 2.0 trae el mandato de
+     * recaudo). Los dos primeros prometen que una versión nueva se acepta «antes de seguir usando
+     * Orión»; y así también los acepta quien nunca lo hizo, como las cuentas que crea el admin
+     * (Pardo, 26/09/2026: «todos van a entrar a aceptar los nuevos acuerdos»).
+     *
+     * <p>El admin no: es quien responde por esos documentos.
      */
     @Transactional(readOnly = true)
     public List<LegalDocumentCode> pendientesAlEntrar(UUID userId, String rolEfectivo) {
-        if (!"PROFESSOR".equals(rolEfectivo) || aceptoLaVigente(userId, LegalDocumentCode.TEACHER_AGREEMENT)) {
+        if ("ADMIN".equals(rolEfectivo)) {
             return List.of();
         }
-        return List.of(LegalDocumentCode.TEACHER_AGREEMENT);
+        List<LegalDocumentCode> aplican = "PROFESSOR".equals(rolEfectivo)
+                ? List.of(LegalDocumentCode.TERMS, LegalDocumentCode.PRIVACY, LegalDocumentCode.TEACHER_AGREEMENT)
+                : List.of(LegalDocumentCode.TERMS, LegalDocumentCode.PRIVACY);
+        return aplican.stream().filter(code -> !aceptoLaVigente(userId, code)).toList();
+    }
+
+    /**
+     * Acepta de una vez los documentos que se le piden al entrar, cada uno con su constancia. Uno que
+     * ya aceptó no cuenta dos veces; uno que no le corresponde (el acuerdo del profesor a un
+     * estudiante) se rechaza en vez de guardarse.
+     */
+    @Transactional
+    public void aceptarAlEntrar(UUID userId, String rolEfectivo, List<LegalDocumentCode> codes, String ip,
+                                String userAgent) {
+        List<LegalDocumentCode> pendientes = pendientesAlEntrar(userId, rolEfectivo);
+        for (LegalDocumentCode code : codes) {
+            if (pendientes.contains(code)) {
+                record(userId, code, ip, userAgent);
+            } else if (!aceptoLaVigente(userId, code)) {
+                throw new BusinessRuleViolationException("No tienes que aceptar ese documento");
+            }
+        }
     }
 
     /** Qué documentos vigentes le faltan por aceptar a alguien. Vacío = está al día. */

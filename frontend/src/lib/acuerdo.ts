@@ -15,7 +15,7 @@ export function useAcuerdoDelProfesor(activo = true) {
   });
 }
 
-/** Lo que la app le tiene que pedir aceptar a quien entra (hoy, al profe, el acuerdo vigente). */
+/** Lo que la app le tiene que pedir aceptar a quien entra: Términos, política y, al profe, su acuerdo. */
 export const PENDIENTES_KEY = ["me", "legal", "pending"] as const;
 
 export function usePendientesLegales(activo: boolean) {

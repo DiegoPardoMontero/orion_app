@@ -36,7 +36,7 @@ import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import { Vacio } from "@/components/estados";
 import { AvisoCorreoSinVerificar } from "@/components/AvisoCorreoSinVerificar";
 import { AvisoMayoriaDeEdad } from "@/components/AvisoMayoriaDeEdad";
-import { AvisoAcuerdoDelProfesor } from "@/components/AvisoAcuerdoDelProfesor";
+import { AvisoNuevosAcuerdos } from "@/components/AvisoNuevosAcuerdos";
 import { AvisoWhatsapp } from "@/components/AvisoWhatsapp";
 import { usePendientesLegales } from "@/lib/acuerdo";
 import { Bienvenida } from "@/components/bienvenida/Bienvenida";
@@ -97,8 +97,6 @@ const ICONO: Record<string, LucideIcon> = {
 const RUTAS_PROFESOR_APROBADO = ["/disponibilidad", "/perfil", "/invitar"];
 
 /** «Ahora no» en la ventana del acuerdo del profesor: vale por la sesión del navegador. */
-const ACUERDO_APLAZADO = "orion.acuerdo-aplazado";
-
 const ETIQUETA_ROL: Record<Role, string> = {
   STUDENT: "Estudiante",
   PROFESSOR: "Profesor",
@@ -137,16 +135,9 @@ function Armazon({ children }: { children: ReactNode }) {
   const tieneMensajeria = me?.role === "STUDENT" || me?.role === "PROFESSOR";
   const noLeidosMensajes = useMensajesNoLeidos(tieneMensajeria);
 
-  // El acuerdo del profesor vigente (la 2.0 trae el mandato de recaudo): si le falta, se le pide al
-  // entrar. «Ahora no» lo aplaza por esta sesión; mientras tanto sus liquidaciones quedan retenidas.
-  const pendientes = usePendientesLegales(me?.role === "PROFESSOR");
-  const [acuerdoAplazado, setAcuerdoAplazado] = useState(() => {
-    try {
-      return window.sessionStorage.getItem(ACUERDO_APLAZADO) === "1";
-    } catch {
-      return false;
-    }
-  });
+  // Los acuerdos vigentes que le faltan (Términos, política y, al profe, el acuerdo del profesor): se
+  // piden al entrar y no se aplazan (Pardo, 26/09/2026). El admin responde por ellos.
+  const pendientes = usePendientesLegales(!!me && me.role !== "ADMIN");
 
   // El catálogo y el perfil de un profesor se ven sin cuenta: ahí, sin sesión, no se salta al login.
   const publica = esRutaPublica(pathname);
@@ -206,7 +197,14 @@ function Armazon({ children }: { children: ReactNode }) {
    */
   const practicando = /^\/practica\/[^/]+$/.test(pathname);
   const faltaWhatsapp = me.role !== "ADMIN" && !me.hasWhatsapp;
-  const faltaAcuerdo = !!pendientes.data?.documents.includes("TEACHER_AGREEMENT") && !acuerdoAplazado;
+  // El acuerdo del profesor se le pide al profe aprobado; el aspirante lo acepta en su postulación.
+  // Hasta saber si está aprobado no se muestra nada: el diálogo no debe cambiar de forma a medio leer.
+  const acuerdosResueltos =
+    me.role === "ADMIN" || (pendientes.isFetched && (me.role !== "PROFESSOR" || aplic.isFetched));
+  const acuerdosQueFaltan = (pendientes.data?.documents ?? []).filter(
+    (code) => code !== "TEACHER_AGREEMENT" || aplic.aprobado,
+  );
+  const faltanAcuerdos = acuerdosQueFaltan.length > 0;
 
   if (enClase) {
     return (
@@ -257,21 +255,12 @@ function Armazon({ children }: { children: ReactNode }) {
           la edad y antes de la bienvenida: dos diálogos a la vez no se leen. El admin no lo necesita. */}
       {me.adultConfirmed && faltaWhatsapp && <AvisoWhatsapp me={me} />}
 
-      {/* El acuerdo del profesor con el mandato, antes de la bienvenida: un diálogo a la vez. */}
-      {me.adultConfirmed && !faltaWhatsapp && faltaAcuerdo && (
-        <AvisoAcuerdoDelProfesor
-          onAplazar={() => {
-            try {
-              window.sessionStorage.setItem(ACUERDO_APLAZADO, "1");
-            } catch {
-              // Sin almacenamiento, se aplaza solo mientras la pestaña siga abierta.
-            }
-            setAcuerdoAplazado(true);
-          }}
-        />
+      {/* Los acuerdos, antes de la bienvenida: un diálogo a la vez. */}
+      {me.adultConfirmed && !faltaWhatsapp && acuerdosResueltos && faltanAcuerdos && (
+        <AvisoNuevosAcuerdos documentos={acuerdosQueFaltan} />
       )}
 
-      {me.adultConfirmed && !faltaWhatsapp && !faltaAcuerdo && <Bienvenida me={me} />}
+      {me.adultConfirmed && !faltaWhatsapp && acuerdosResueltos && !faltanAcuerdos && <Bienvenida me={me} />}
     </div>
   );
 }

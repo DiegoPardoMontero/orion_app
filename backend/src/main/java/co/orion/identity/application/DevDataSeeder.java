@@ -292,6 +292,12 @@ public class DevDataSeeder implements ApplicationRunner {
         user.confirmAdulthood(clock.instant());
         user.markEmailVerified(clock.instant());
         User saved = users.save(user);
+        // Los Términos y la política vigentes, como quien se registra: sin ellos la app se los pediría
+        // al entrar (26/09/2026) y taparía las pruebas. El admin no los acepta: responde por ellos.
+        if (role != UserRole.ADMIN) {
+            legal.record(saved.getId(), LegalDocumentCode.TERMS, "127.0.0.1", "Semilla de desarrollo");
+            legal.record(saved.getId(), LegalDocumentCode.PRIVACY, "127.0.0.1", "Semilla de desarrollo");
+        }
         log.info("Semilla: usuario {} creado con rol {}", saved.getEmail(), role);
         return Optional.of(saved);
     }

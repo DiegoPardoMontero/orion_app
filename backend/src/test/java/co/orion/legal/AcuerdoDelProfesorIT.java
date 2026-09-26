@@ -66,7 +66,8 @@ class AcuerdoDelProfesorIT extends ApiIntegrationSupport {
     /**
      * Un profe que solo aceptó la 1.0 tiene pendiente la 2.0: la app se la pide al entrar y su
      * liquidación queda retenida. Al aceptarla queda la constancia con su versión y su fecha, y la
-     * retención se levanta.
+     * retención se levanta. Como nunca aceptó los Términos ni la política (lo crea la prueba, como
+     * el admin), también se le piden, y los acepta de una vez con el resto.
      */
     @SuppressWarnings("rawtypes")
     @Test
@@ -77,10 +78,11 @@ class AcuerdoDelProfesorIT extends ApiIntegrationSupport {
         Session sesion = login(maria.getEmail());
 
         assertThat(get("/api/v1/me/legal/pending", sesion, Map.class).getBody())
-                .containsEntry("documents", List.of("TEACHER_AGREEMENT"));
+                .containsEntry("documents", List.of("TERMS", "PRIVACY", "TEACHER_AGREEMENT"));
         assertThat(holds.motivo(maria.getId())).contains(PayoutHolds.SIN_MANDATO);
 
-        ResponseEntity<Void> aceptar = post("/api/v1/me/agreements/TEACHER_AGREEMENT/accept", sesion, null, Void.class);
+        ResponseEntity<Void> aceptar = post("/api/v1/me/legal/accept", sesion,
+                Map.of("documents", List.of("TERMS", "PRIVACY", "TEACHER_AGREEMENT")), Void.class);
         assertThat(aceptar.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         // Dos veces es lo mismo que una: la constancia no se duplica.
         post("/api/v1/me/agreements/TEACHER_AGREEMENT/accept", sesion, null, Void.class);
@@ -96,15 +98,59 @@ class AcuerdoDelProfesorIT extends ApiIntegrationSupport {
         assertThat(holds.motivo(maria.getId())).isNotEqualTo(java.util.Optional.of(PayoutHolds.SIN_MANDATO));
     }
 
-    /** A quien no enseña no se le pide el acuerdo del profesor. */
+    /**
+     * Quien aceptó los Términos y la política 1.0 tiene que aceptar la 1.1 al entrar: los dos lo
+     * prometen para toda versión nueva (Pardo, 26/09/2026). La constancia queda con la versión nueva.
+     */
+    @SuppressWarnings("rawtypes")
+    @Test
+    void quienAceptoLaUnoCeroAceptaLaVersionNueva() {
+        User ana = estudiante();
+        jdbc.update("insert into agreement_acceptances (user_id, document_code, version, accepted_at) values (?, 'TERMS', '1.0', now()), (?, 'PRIVACY', '1.0', now())",
+                ana.getId(), ana.getId());
+        Session sesion = login(ana.getEmail());
+
+        assertThat(get("/api/v1/me/legal/pending", sesion, Map.class).getBody())
+                .containsEntry("documents", List.of("TERMS", "PRIVACY"));
+
+        post("/api/v1/me/legal/accept", sesion, Map.of("documents", List.of("TERMS", "PRIVACY")), Void.class);
+
+        assertThat(jdbc.queryForList("select document_code || ' ' || version from agreement_acceptances where user_id = ? and version = '1.1' order by 1",
+                String.class, ana.getId())).containsExactly("PRIVACY 1.1", "TERMS 1.1");
+        assertThat(get("/api/v1/me/legal/pending", sesion, Map.class).getBody())
+                .containsEntry("documents", List.of());
+    }
+
+    /** A quien no enseña no se le pide el acuerdo del profesor, ni lo puede aceptar por la puerta nueva. */
     @SuppressWarnings("rawtypes")
     @Test
     void aUnEstudianteNoSeLePide() {
+        User ana = estudiante();
+        Session sesion = login(ana.getEmail());
+
+        assertThat(get("/api/v1/me/legal/pending", sesion, Map.class).getBody())
+                .containsEntry("documents", List.of("TERMS", "PRIVACY"));
+        assertThat(post("/api/v1/me/legal/accept", sesion, Map.of("documents", List.of("TEACHER_AGREEMENT")), String.class)
+                .getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(jdbc.queryForObject("select count(*) from agreement_acceptances where user_id = ? and document_code = 'TEACHER_AGREEMENT'",
+                Integer.class, ana.getId())).isZero();
+    }
+
+    /** El admin no acepta: responde por los documentos. */
+    @SuppressWarnings("rawtypes")
+    @Test
+    void alAdminNoSeLePideNada() {
+        User admin = createUser("admin." + UUID.randomUUID() + "@orion.test", "Admin", UserRole.ADMIN);
+        creados.add(admin.getId());
+
+        assertThat(get("/api/v1/me/legal/pending", login(admin.getEmail()), Map.class).getBody())
+                .containsEntry("documents", List.of());
+    }
+
+    private User estudiante() {
         User ana = createUser("ana." + UUID.randomUUID() + "@orion.test", "Ana Ramírez", UserRole.STUDENT);
         creados.add(ana.getId());
-
-        assertThat(get("/api/v1/me/legal/pending", login(ana.getEmail()), Map.class).getBody())
-                .containsEntry("documents", List.of());
+        return ana;
     }
 
     private User profe() {
