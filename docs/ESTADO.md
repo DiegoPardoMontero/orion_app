@@ -30,6 +30,21 @@ dentro de `/cuenta`).
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots), con Rigel de protagonista.
 
 ## Verificación
+Al 26/09/2026, con la sexta tanda del Bloque 11 (textos legales 1.1 sin el nombre de Pardo, un solo
+«Aceptar los nuevos acuerdos» y datos de pago obligatorios):
+- **Backend: `./mvnw verify`, 428 unitarias y 640 de integración, en verde.**
+  - `PoliticaDeTratamientoTest` lee la 1.1 y exige que el nombre del responsable salga solo en la
+    tabla de identificación.
+  - `AcuerdoDelProfesorIT` cubre lo que se pide al entrar según el rol, la 1.1 para quien aceptó la
+    1.0, la aceptación de varios documentos a la vez y el rechazo del que no aplica.
+- **Frontend:** `tsc` y `lint` en verde; 138 pruebas de Vitest.
+- **E2E Playwright, sobre la base recreada y sin la prueba de Wompi: 102 pasaron y 1 se saltó.**
+  - La bienvenida del profe creado por el admin pasa ahora por los acuerdos (con la casilla de datos
+    aparte) y por «Falta a dónde te pagamos».
+  - Una estudiante con los Términos 1.0 acepta la 1.1 al entrar, y la ventana no se cierra.
+  - La prueba de la estudiante falló la primera vez por un error de la prueba: recargaba la
+    confirmación del correo y no una pantalla de la app. Corregida, pasó sola.
+
 Al 25/09/2026 muy tarde, con las liquidaciones quincenales bajo mandato (V72–V76):
 - **Backend: `./mvnw verify`, 422 unitarias y 638 de integración, en verde.**
   - Las nuevas: `PayoutCalculatorTest` (cortes de fin de mes, febrero y bisiesto, plazo de reclamo,
@@ -797,8 +812,9 @@ manual (Bre-B desde la cuenta de Pardo), y no hay integración bancaria ni de Wo
     (`TEACHER_AGREEMENT`): la 1.0 con el texto de siempre y la 2.0 con la cláusula de mandato (Anexo A).
   - La constancia es la de los Términos: `agreement_acceptances` guarda versión, fecha, IP y
     user-agent.
-  - Los profes lo aceptan en una ventana al entrar (`AvisoAcuerdoDelProfesor`, que se puede aplazar
-    por la sesión), y los nuevos al postular. Hay página pública en `/acuerdo-del-profesor`.
+  - El profe aprobado lo acepta al entrar en «Acepta los nuevos acuerdos» (`AvisoNuevosAcuerdos`,
+    sin aplazar desde el 26/09), y el aspirante al postular. Hay página pública en
+    `/acuerdo-del-profesor`.
   - Sin la versión vigente aceptada, sus liquidaciones quedan retenidas (`PayoutHolds`).
 - **Los datos de pago (paso 2, V73).**
   - Se guardan en `professor_payout_details`: la llave Bre-B (celular, cédula, correo o
@@ -807,7 +823,9 @@ manual (Bre-B desde la cuenta de Pardo), y no hay integración bancaria ni de Wo
   - El profe los escribe en la pestaña privada «Datos de pago» de su perfil y los ve enmascarados.
     El servidor nunca los devuelve completos, ni a él.
   - Cada cambio le llega por correo («Cambiaron tus datos de pago en Orión»).
-  - Si le faltan, `/ganancias` lo dice, y su liquidación queda retenida.
+  - Son obligatorios desde el 26/09: el profe aprobado que no los tiene no sigue hasta registrarlos
+    («Falta a dónde te pagamos», `AvisoDatosDePago`). Si aun así faltaran, su liquidación queda
+    retenida.
 - **El motor (paso 3, V74).**
   - Quincenas con corte a las 00:00 del 16 y del 1, en Bogotá. El corte (`PayoutCutJob`, cada hora,
     vigilado por `JobWatchdog`) corta una vez por quincena: `payout_cuts` lo registra, y el único
@@ -839,8 +857,8 @@ manual (Bre-B desde la cuenta de Pardo), y no hay integración bancaria ni de Wo
     estimado, las clases por liquidar con su motivo («En plazo de reclamo hasta el…», «Tiene un
     reclamo abierto», «Entra en el corte del…») y el historial.
   - El comprobante vive en `/comprobante/[id]`: imprimible, sin menú, para guardarlo como PDF.
-    Lleva el mandatario (ajustes `mandatary_name` y `mandatary_document`; vacíos, los datos legales),
-    el profe, las líneas, los totales, la fecha, la referencia y la llave enmascarada.
+    Lleva «Orión» como mandatario (desde el 26/09 sin el nombre de Pardo), el profe, las líneas, los
+    totales, la fecha, la referencia y la llave enmascarada.
   - El mismo contenido va en el correo de pago. `PAYOUT_PAID` sigue sonando en la campana y en push.
 - **Reportes y certificado (paso 6, V76).**
   - En `/admin/pagos` → «Reportes», tres CSV en UTF-8 con BOM: el libro de mandato por fechas, el
@@ -855,11 +873,34 @@ manual (Bre-B desde la cuenta de Pardo), y no hay integración bancaria ni de Wo
     `/ganancias` solo cuando existe.
 
 Pendiente para Pardo:
-- Escribir su nombre y documento según el RUT en Ajustes → «Nombre / Documento del mandatario». Si
-  quedan vacíos, el comprobante usa `ORION_LEGAL_NOMBRE` y `ORION_LEGAL_DOCUMENTO`.
+- Escribir su nombre y documento según el RUT en Ajustes → «Nombre / Documento del mandatario». Salen
+  solo en el certificado anual; vacíos, usa `ORION_LEGAL_NOMBRE` y `ORION_LEGAL_DOCUMENTO`.
 - Que el abogado lea la versión 2.0 del acuerdo del profesor. Su texto dice «liquidamos las clases
   que dictaste», y desde la decisión 4 también entran las cancelaciones tardías.
 - El manual técnico necesita esta sección.
+
+## Sexta tanda del Bloque 11 (26/09/2026)
+
+Pasos 41–45 del brief, pedidos por Pardo:
+
+- **Portada** (paso 41): sin el párrafo «Dos minutos de conversación, gratis y sin crear cuenta…»
+  bajo los botones del inicio. `/diagnostico` no cambia.
+- **Sin el nombre de Pardo** (paso 43). Los Términos y la Política pasan a la **1.1**: la redacción
+  dice «Orión» y «los representantes legales de Orión». El nombre queda solo en la tabla de
+  identificación de cada uno, porque el art. 50 de la Ley 1480 y el art. 13 del Decreto 1377 exigen
+  decir quién responde; sale de `ORION_LEGAL_*`, así que con una sociedad basta cambiar esas
+  variables. El acuerdo del profesor 2.0 se corrigió en su sitio (ningún profe lo había aceptado en
+  producción). El comprobante y el correo de pago dicen «Orión»; el certificado anual, que es
+  tributario, conserva la identificación completa.
+- **Un solo «Aceptar los nuevos acuerdos»** (paso 44). `GET /api/v1/me/legal/pending` pide a todos
+  menos al admin los Términos y la Política vigentes, y al profe el acuerdo del profesor (el
+  armazón solo se lo muestra al aprobado). Los acepta de una vez `POST /api/v1/me/legal/accept`,
+  con constancia por documento. La ventana no se cierra ni se aplaza; un botón despliega todos los
+  textos, y la autorización de datos lleva su propia casilla (Decreto 1377). Así también aceptan
+  por fin los Términos las cuentas que crea el admin.
+- **Los datos de pago son obligatorios** (paso 45) para el profe aprobado: «Falta a dónde te
+  pagamos», sin salida, antes de la bienvenida. La semilla local les pone llave a María
+  (••••6543) y a Juan.
 
 ## Quinta tanda del Bloque 11 (25/09/2026, noche)
 

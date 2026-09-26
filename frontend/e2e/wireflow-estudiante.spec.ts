@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { api, aparece, apartarCelebraciones, cerrarCelebraciones, entrar, estudianteNueva, horariosAmplios, SEMILLA, ultimoCorreo } from "./apoyo";
+import { api, aparece, apartarCelebraciones, cerrarCelebraciones, entrar, estudianteNueva, horariosAmplios, SEMILLA, sqlLocal, ultimoCorreo } from "./apoyo";
 
 /**
  * El wireflow del estudiante (24/09/2026). Lo que cambia datos lo hace una estudiante recién
@@ -527,4 +527,33 @@ test("[e-pasadas.3 ad-reclamos.1] reportar un problema de una clase llega a los 
   await admin.goto("/admin/reclamos");
   await expect(admin.getByText(/Se cortó el audio|problema técnico/i).first()).toBeVisible();
   await adminCtx.close();
+});
+
+test("[e-acuerdos.1 e-acuerdos.2 e-acuerdos.3] quien aceptó los Términos 1.0 acepta la 1.1 al entrar", async ({ page }) => {
+  const { email } = await estudianteNueva(page, "Acuerdos Nuevos");
+  // Como una cuenta de antes del 26/09/2026: aceptó la 1.0 de los Términos y de la Política.
+  const deElla = `user_id = (select id from users where email = '${email}')`;
+  sqlLocal(`update agreement_acceptances set version = '1.0' where document_code in ('TERMS', 'PRIVACY') and ${deElla}`);
+  // El registro termina en la confirmación del correo, fuera de la app: se entra a una pantalla suya.
+  await page.goto("/mis-clases");
+
+  const acuerdos = page.getByRole("dialog", { name: "Acepta los nuevos acuerdos" });
+  await expect(acuerdos.getByText(/Términos y condiciones/).first()).toBeVisible({ timeout: 20_000 });
+  await expect(acuerdos.getByText(/Política de tratamiento de la información/).first()).toBeVisible();
+  await expect(acuerdos.getByText("· versión 1.1")).toHaveCount(2);
+  // No se cierra: ni con Escape ni con un «Ahora no».
+  await page.keyboard.press("Escape");
+  await expect(acuerdos).toBeVisible();
+  await expect(acuerdos.getByRole("button", { name: "Ahora no" })).toHaveCount(0);
+  // La autorización de datos va en su propia casilla: sin ella, el botón no acepta.
+  const aceptar = acuerdos.getByRole("button", { name: "Aceptar los nuevos acuerdos" });
+  await expect(aceptar).toBeDisabled();
+  await acuerdos.getByLabel(/Autorizo el tratamiento de mis datos personales/).check();
+  await aceptar.click();
+  await expect(acuerdos).toBeHidden();
+
+  expect(sqlLocal(`select count(*) from agreement_acceptances where version = '1.1' and ${deElla}`)).toBe("2");
+  await page.reload();
+  await page.waitForLoadState("networkidle");
+  await expect(page.getByRole("dialog", { name: "Acepta los nuevos acuerdos" })).toHaveCount(0);
 });
