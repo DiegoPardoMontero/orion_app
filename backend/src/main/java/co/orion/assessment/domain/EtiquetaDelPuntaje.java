@@ -32,7 +32,8 @@ public final class EtiquetaDelPuntaje {
             return "Casi sin pensarlo";
         }
         if (puntaje >= 65) {
-            return "Con soltura";
+            // «Con fluidez», no «Con soltura» (Pardo, 26/09/2026).
+            return "Con fluidez";
         }
         if (puntaje >= 45) {
             return "Ya te defiendes";

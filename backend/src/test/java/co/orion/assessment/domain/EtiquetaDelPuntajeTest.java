@@ -15,7 +15,7 @@ class EtiquetaDelPuntajeTest {
         assertThat(EtiquetaDelPuntaje.de(24)).isEqualTo("Primeros pasos");
         assertThat(EtiquetaDelPuntaje.de(25)).isEqualTo("Básico con ganas");
         assertThat(EtiquetaDelPuntaje.de(45)).isEqualTo("Ya te defiendes");
-        assertThat(EtiquetaDelPuntaje.de(65)).isEqualTo("Con soltura");
+        assertThat(EtiquetaDelPuntaje.de(65)).isEqualTo("Con fluidez");
         assertThat(EtiquetaDelPuntaje.de(85)).isEqualTo("Casi sin pensarlo");
         assertThat(EtiquetaDelPuntaje.de(100)).isEqualTo("Casi sin pensarlo");
     }
