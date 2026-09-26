@@ -45,7 +45,6 @@ public class SecurityConfig {
                 // Endpoints anónimos: no hay sesión ni token todavía que exigir.
                 .ignoringRequestMatchers("/api/v1/auth/login", "/api/v1/auth/register",
                         "/api/v1/auth/forgot-password", "/api/v1/auth/reset-password",
-                        "/api/v1/auth/accept-invite",
                         // Se llega desde el enlace del correo, a veces en otro navegador: no hay
                         // cookie CSRF que presentar. Lo que autoriza es el token del enlace, que
                         // es de un solo uso y caduca.
@@ -81,7 +80,6 @@ public class SecurityConfig {
                 // problema antes de resolverlo.
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/verify-email").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/auth/invite").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/auth/accept-invite").permitAll()
                 // Términos, política de datos y contacto del responsable: abiertos porque el
                 // art. 50 de la Ley 1480 de 2011 exige que estén disponibles ANTES de contratar.
                 // Un documento que solo se ve tras iniciar sesión llega tarde.
