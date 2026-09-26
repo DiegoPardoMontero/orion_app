@@ -52,7 +52,7 @@ function sembrarLiquidacionDeMaria(): void {
       from liquidacion, pago`);
 }
 
-test("[p-pagos.1 ad-liquidaciones.1 p-ganancias.2] la llave Bre-B, el pago de la liquidación y el comprobante", async ({ browser }) => {
+test("[p-perfil.7 p-datos-pago.1 p-datos-pago.2 ad-pagos.3 ad-liquidacion.1 ad-liquidacion.2 ad-liquidacion.3 p-ganancias.5 p-ganancias.7] la llave Bre-B, el pago de la liquidación y el comprobante", async ({ browser }) => {
   // 1. María registra a dónde se le paga: lo ve enmascarado.
   const profe = await (await browser.newContext()).newPage();
   await entrar(profe, SEMILLA.maria);

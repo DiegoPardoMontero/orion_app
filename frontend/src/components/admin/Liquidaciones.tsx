@@ -108,8 +108,8 @@ export function Liquidaciones() {
   return (
     <section className="mt-5">
       <p className="text-[13.5px] leading-relaxed text-text-secondary">
-        Orión recibe en nombre de cada profe lo que pagan sus estudiantes y se lo entrega cada quincena, menos la
-        comisión. El sistema corta a las 00:00 del 1 y del 16; tú apruebas, transfieres por Bre-B y registras el pago.
+        El sistema corta a las 00:00 del 1 y del 16 y arma una liquidación por profe; tú la apruebas, transfieres por
+        Bre-B y registras el pago.
       </p>
 
       {cortes.data && (
