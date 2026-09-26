@@ -679,9 +679,10 @@ function TarjetaProfesor({ profesor }: { profesor: ProfessorCard }) {
       <div className="flex items-start gap-3">
         <Avatar nombre={profesor.fullName ?? ""} fotoUrl={profesor.photoUrl} size="lg" />
         <div className="min-w-0 flex-1">
-          <p className="truncate font-display text-[16px] font-bold">{profesor.fullName}</p>
+          {/* El nombre y la descripción corta se leen enteros: nunca se cortan con «…». */}
+          <p className="font-display text-[16px] leading-tight font-bold text-balance wrap-break-word">{profesor.fullName}</p>
           {profesor.headline && (
-            <p className="mt-0.5 line-clamp-2 text-[13px] font-semibold text-text-secondary">{profesor.headline}</p>
+            <p className="mt-1 text-[13px] leading-snug font-semibold text-pretty wrap-break-word text-text-secondary">{profesor.headline}</p>
           )}
           <div className="mt-1.5">
             <EstrellaRating ratingAvg={profesor.ratingAvg} ratingCount={profesor.ratingCount} />
