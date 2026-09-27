@@ -79,14 +79,32 @@ class AvailabilityRuleIT extends ApiIntegrationSupport {
         assertThat(response.getBody().get("error").toString()).contains("La hora de fin tiene que ser después de la hora de inicio");
     }
 
+    /** Los cupos van cada media hora: una franja a las :15 caería fuera de esa rejilla. */
     @Test
-    void rejectsMinutesThatAreNotOnTheHour() {
-        ResponseEntity<Map> response = post(
-                RULES, mariaSession, new CreateRuleRequest(2, LocalTime.of(9, 30), LocalTime.of(11, 30)),
+    void rejectsMinutesThatAreNotOnTheHourOrTheHalfHour() {
+        ResponseEntity<Map> start = post(
+                RULES, mariaSession, new CreateRuleRequest(2, LocalTime.of(9, 15), LocalTime.of(11, 0)),
+                Map.class);
+        ResponseEntity<Map> end = post(
+                RULES, mariaSession, new CreateRuleRequest(2, LocalTime.of(9, 0), LocalTime.of(10, 45)),
                 Map.class);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody().get("error").toString()).contains(":00");
+        assertThat(start.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(end.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(start.getBody().get("error").toString())
+                .isEqualTo("Las franjas empiezan y terminan a la hora en punto o a la media hora.");
+    }
+
+    /** El formulario del profesor ofrece :00 y :30 a propósito; las dos se guardan. */
+    @Test
+    void acceptsARuleThatStartsAndEndsAtTheHalfHour() {
+        ResponseEntity<RuleResponse> response = post(
+                RULES, mariaSession, new CreateRuleRequest(2, LocalTime.of(9, 30), LocalTime.of(11, 30)),
+                RuleResponse.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(response.getBody().startTime()).isEqualTo(LocalTime.of(9, 30));
+        assertThat(response.getBody().endTime()).isEqualTo(LocalTime.of(11, 30));
     }
 
     @Test

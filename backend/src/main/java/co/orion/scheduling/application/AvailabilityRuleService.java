@@ -31,8 +31,8 @@ public class AvailabilityRuleService {
     public AvailabilityRule create(UUID professorId, int weekday, LocalTime startTime, LocalTime endTime) {
         DayOfWeek day = DayOfWeek.of(weekday);
         requireStartBeforeEnd(startTime, endTime);
-        requireWholeHour(startTime, "startTime");
-        requireWholeHour(endTime, "endTime");
+        requireHourOrHalfHour(startTime);
+        requireHourOrHalfHour(endTime);
 
         if (rules.overlapsActiveRule(professorId, day, startTime, endTime)) {
             throw new BusinessRuleViolationException(
@@ -59,10 +59,16 @@ public class AvailabilityRuleService {
         }
     }
 
-    /** Los cupos son de 60 minutos alineados a la hora, así que las reglas empiezan y acaban en :00. */
-    private void requireWholeHour(LocalTime time, String field) {
-        if (time.getMinute() != 0 || time.getSecond() != 0 || time.getNano() != 0) {
-            throw new BusinessRuleViolationException(field + " debe estar alineado a la hora en punto (:00)");
+    /**
+     * Los cupos arrancan cada media hora desde el inicio de la franja (ver {@code SlotCalculator}),
+     * así que una franja que empieza o acaba a la media hora cae en la misma rejilla que las demás.
+     * Lo que no se admite es cualquier otro minuto: una franja de 18:15 daría cupos a las 18:15 y
+     * 18:45, fuera de la rejilla que ve el estudiante y que usa el buscador.
+     */
+    private void requireHourOrHalfHour(LocalTime time) {
+        if (time.getMinute() % 30 != 0 || time.getSecond() != 0 || time.getNano() != 0) {
+            throw new BusinessRuleViolationException(
+                    "Las franjas empiezan y terminan a la hora en punto o a la media hora.");
         }
     }
 }

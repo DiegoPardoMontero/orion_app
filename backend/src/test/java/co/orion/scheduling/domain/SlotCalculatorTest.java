@@ -253,9 +253,37 @@ class SlotCalculatorTest {
                 bogota(MONDAY, 19), bogota(MONDAY, 19, 30), bogota(MONDAY, 20));
     }
 
+    /**
+     * Desde que las franjas admiten la media hora, los cupos arrancan donde arranca la franja: una
+     * de 18:30 a 20:00 da las 18:30 y las 19:00 (termina a las 19:55), no las 19:30 (20:25).
+     */
+    @Test
+    void aRuleThatStartsAtTheHalfHourProducesSlotsFromThere() {
+        List<Slot> slots = calculator.calculate(
+                List.of(rule(DayOfWeek.MONDAY, LocalTime.of(18, 30), LocalTime.of(20, 0))),
+                List.of(), List.of(),
+                MONDAY, MONDAY, LONG_BEFORE);
+
+        assertThat(startTimes(slots)).containsExactly(bogota(MONDAY, 18, 30), bogota(MONDAY, 19));
+    }
+
+    @Test
+    void aRuleThatEndsAtTheHalfHourFitsOneMoreHalfHourSlot() {
+        List<Slot> slots = calculator.calculate(
+                List.of(rule(DayOfWeek.MONDAY, LocalTime.of(18, 0), LocalTime.of(19, 30))),
+                List.of(), List.of(),
+                MONDAY, MONDAY, LONG_BEFORE);
+
+        // 18:30 + 55 min = 19:25, dentro de la franja.
+        assertThat(startTimes(slots)).containsExactly(bogota(MONDAY, 18), bogota(MONDAY, 18, 30));
+    }
+
     private AvailabilityRule rule(DayOfWeek weekday, int startHour, int endHour) {
-        return new AvailabilityRule(PROFESSOR, weekday,
-                LocalTime.of(startHour, 0), LocalTime.of(endHour, 0));
+        return rule(weekday, LocalTime.of(startHour, 0), LocalTime.of(endHour, 0));
+    }
+
+    private AvailabilityRule rule(DayOfWeek weekday, LocalTime start, LocalTime end) {
+        return new AvailabilityRule(PROFESSOR, weekday, start, end);
     }
 
     private AvailabilityException partialException(LocalDate date,
