@@ -17,13 +17,13 @@ Quien aparece en esta tabla es el responsable del tratamiento de los datos recog
 
 Recogemos únicamente lo que la plataforma necesita para funcionar:
 
-- **De toda cuenta:** nombre completo, correo electrónico, contraseña (almacenada cifrada, nunca en texto claro) y, si decides darlo, un número de WhatsApp.
-- **De estudiantes:** las clases que reservas, su fecha y modalidad, tu saldo a favor y tu historial de pagos, y, si decides completarla, tu ficha de aprendizaje: nivel autodeclarado, idioma, objetivos y motivación.
-- **De profesores:** la información de tu postulación (experiencia, formación, idiomas que enseñas), los documentos que adjuntas, tu tarifa, tu disponibilidad y tus ganancias.
+- **De toda cuenta:** nombre completo, correo electrónico, contraseña (almacenada cifrada, nunca en texto claro) y tu número de WhatsApp, que es obligatorio: es el canal para ubicarte si pasa algo con una clase o con tu cuenta.
+- **De estudiantes:** las clases que reservas y su fecha, tu saldo a favor y tu historial de pagos, y, si decides completarla, tu ficha de aprendizaje: nivel autodeclarado, idioma, objetivos y motivación.
+- **De profesores:** la información de tu postulación (experiencia, formación, idiomas que enseñas), los documentos que adjuntas, tu tarifa, tu disponibilidad y tus ganancias; y, una vez aprobado, tus datos de pago: la llave Bre-B, su titular y tu documento de identidad, para entregarte lo que recibimos en tu nombre.
 - **De la conversación:** los mensajes que intercambias dentro de Orión con la otra parte de una clase.
 - **Técnicos:** dirección IP y navegador en el momento en que aceptas los documentos legales, porque la ley nos exige poder probar esa autorización.
 
-**No recogemos** tu fecha de nacimiento, ni datos de tarjetas o cuentas bancarias. Los pagos los procesa Wompi en su propia plataforma: los datos de tu medio de pago nunca pasan por Orión ni quedan almacenados aquí.
+**No recogemos** tu fecha de nacimiento, ni datos de tarjetas, ni el número o las claves de tus cuentas bancarias. Los pagos los procesa Wompi en su propia plataforma: los datos de tu medio de pago nunca pasan por Orión ni quedan almacenados aquí.
 
 **No tratamos datos sensibles.** Si nos envías información de salud, origen étnico, convicciones religiosas o políticas, orientación sexual o datos biométricos (por ejemplo, dentro de un mensaje), no la solicitamos ni la usamos para ninguna finalidad, y puedes pedir su eliminación.
 
@@ -32,7 +32,7 @@ Recogemos únicamente lo que la plataforma necesita para funcionar:
 1. Crear y mantener tu cuenta, y autenticarte cuando entras.
 2. Permitir que reserves clases, que se te confirmen y que recibas su invitación de calendario.
 3. Procesar los pagos y llevar tu saldo a favor, y liquidar a los profesores lo que les corresponde.
-4. Comunicarte lo que ocurre con tus clases: confirmaciones, cancelaciones, recordatorios y respuestas a tus solicitudes.
+4. Comunicarte lo que ocurre con tus clases: confirmaciones, cancelaciones, recordatorios y respuestas a tus solicitudes, por correo, dentro de Orión y, cuando haga falta, por WhatsApp.
 5. Mostrar tu perfil público de profesor en el marketplace, cuando tu postulación esté aprobada.
 6. Atender tus peticiones, quejas y reclamos.
 7. Cumplir obligaciones legales, contables y tributarias.

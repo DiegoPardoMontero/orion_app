@@ -32,10 +32,10 @@ Una cuenta es de una sola persona y de un solo tipo a la vez: estudiante, profes
 
 ## 4. Cómo funciona una clase
 
-1. Todas las clases duran **{{duracion_clase}}** y empiezan en punto. Todo se rige por la hora de **Bogotá (America/Bogotá)**.
-2. Eliges profesor, día y hora, y la modalidad: virtual o presencial.
+1. Todas las clases duran **{{duracion_clase}}** y empiezan a la hora en punto o a la media hora. Todo se rige por la hora de **Bogotá (America/Bogotá)**.
+2. Eliges profesor, día y hora. Todas las clases son virtuales: se dan por videollamada, dentro de Orión.
 3. La reserva **no queda confirmada al crearla**. Queda pendiente de pago, con el cupo apartado durante **{{retencion_pago}}**. Si no pagas en ese plazo, el horario se libera.
-4. Cuando el pago se confirma, recibes el correo con la invitación de calendario y, si la clase es virtual, el enlace de la sala.
+4. Cuando el pago se confirma, recibes el correo con la invitación de calendario y el enlace de la sala.
 5. Cuando la clase termina, el profesor registra la asistencia. Si no registra nada, el sistema cierra la clase a las **{{cierre_automatico}}**.
 
 ## 5. Precios, comisión e impuestos
