@@ -875,6 +875,9 @@ function ModalCancelar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
   const fallo = alMedioDePago ? retractarse.error : cancelar.error;
   const cifras = useCifras();
   const error = fallo instanceof ApiError ? fallo.message : null;
+  // `lateCancel` llega calculado con la ventana de quien mira: aquí, la del profesor.
+  const profesorTarde = esProfesor && !!clase.lateCancel;
+  const estudiante = clase.counterpart?.fullName?.split(" ")[0] || "Tu estudiante";
 
   function confirmar() {
     if (alMedioDePago) {
@@ -930,7 +933,23 @@ function ModalCancelar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
       {/* La prueba es gratis (V65): no hay dinero que devolver, y cancelada antes de empezar deja de
           contar, así que se puede volver a pedir. Si el estudiante la cancela ya empezada, la gasta
           (V67): si no, se podía tomar entera y pedir otra. */}
-      {!sinPagar && clase.trial && (
+      {/* El profesor que cancela dentro de su ventana deja constancia (LateCancellationListener), con
+          prueba gratis o sin ella. Se dice antes de confirmar: enterarse después, por el perfil, es
+          enterarse tarde. */}
+      {!sinPagar && profesorTarde && (
+        <div className="mt-3 rounded-base bg-warning-bg px-4 py-3 text-[13px] leading-relaxed text-warning">
+          <p className="font-bold">Cancelar ahora cuenta como cancelación de último momento</p>
+          <p className="mt-1">
+            Faltan menos de {horas(cifras.professorCancelHours)} para la clase. Si cancelas, queda
+            registrada en tu perfil y pesa en él.{" "}
+            {clase.trial
+              ? `Es su clase de prueba gratis: no hay dinero de por medio, y ${estudiante} podrá pedirla otra vez.`
+              : `${estudiante} recupera todo como saldo a favor, y tú no cobras esta clase.`}
+          </p>
+        </div>
+      )}
+
+      {!sinPagar && clase.trial && !profesorTarde && (
         <p className="mt-3 rounded-base bg-surface-sunken px-4 py-3 text-[13px] leading-relaxed text-text-secondary">
           {esProfesor
             ? "Es su clase de prueba gratis: no hay dinero de por medio, y podrá pedirla otra vez."
@@ -940,7 +959,7 @@ function ModalCancelar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
         </p>
       )}
 
-      {!sinPagar && !clase.trial && !puedeElegirDestino && (
+      {!sinPagar && !clase.trial && !puedeElegirDestino && !profesorTarde && (
         <p
           className={`mt-3 rounded-base px-4 py-3 text-[13px] leading-relaxed ${
             esProfesor
