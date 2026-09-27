@@ -10,12 +10,95 @@ import { Avatar } from "./Avatar";
 const TIPOS = ["image/jpeg", "image/png", "image/webp"];
 const MAX_BYTES = 5 * 1024 * 1024;
 
+/** Por debajo de esto, y sin pasarse de lado, la foto se sube tal cual. */
+const SIN_TOCAR_BYTES = 1.5 * 1024 * 1024;
+const LADO_MAXIMO = 1600;
+const CALIDAD_JPEG = 0.85;
+
+type Decodificada = { fuente: CanvasImageSource; ancho: number; alto: number; soltar: () => void };
+
 /**
- * Subir/cambiar la foto de perfil (cualquier rol). Valida tipo y tamaño en el cliente antes de
- * gastar red, sube por POST /me/photo e invalida las cachés que pintan avatares para que la nueva
- * foto aparezca en toda la app. El fallback de iniciales se mantiene si no hay foto.
+ * La imagen lista para dibujar, girada como la muestra el celular (EXIF). `createImageBitmap` con
+ * `imageOrientation` lo hace explícito; si el navegador no lo tiene, un `<img>` también respeta la
+ * orientación en los navegadores de hoy.
  */
-export function CambiarFoto({ nombre, fotoUrl }: { nombre: string; fotoUrl?: string | null }) {
+async function decodificar(file: File): Promise<Decodificada | null> {
+  if (typeof createImageBitmap === "function") {
+    try {
+      const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+      return { fuente: bitmap, ancho: bitmap.width, alto: bitmap.height, soltar: () => bitmap.close() };
+    } catch {
+      // Sigue con <img>.
+    }
+  }
+  const url = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    return { fuente: img, ancho: img.naturalWidth, alto: img.naturalHeight, soltar: () => URL.revokeObjectURL(url) };
+  } catch {
+    URL.revokeObjectURL(url);
+    return null;
+  }
+}
+
+/**
+ * Las fotos de un celular reciente pesan a veces más de 5 MB (el límite del servidor) y miden 4000 px
+ * para verse en un círculo de 96. Si pasa de ~1,5 MB o de 1600 px de lado, se achica en el navegador
+ * a 1600 px de lado mayor en JPEG: se sube en segundos y ya no se rechaza. Si no se puede leer, va la
+ * original y el servidor decide.
+ */
+async function prepararFoto(file: File): Promise<File> {
+  const imagen = await decodificar(file);
+  if (!imagen) return file;
+  try {
+    const { fuente, ancho, alto } = imagen;
+    if (file.size <= SIN_TOCAR_BYTES && Math.max(ancho, alto) <= LADO_MAXIMO) return file;
+
+    const escala = Math.min(1, LADO_MAXIMO / Math.max(ancho, alto));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(ancho * escala));
+    canvas.height = Math.max(1, Math.round(alto * escala));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    // JPEG no tiene transparencia: sin fondo, lo transparente de un PNG sale negro.
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(fuente, 0, 0, canvas.width, canvas.height);
+
+    const blob = await new Promise<Blob | null>((resolver) =>
+      canvas.toBlob(resolver, "image/jpeg", CALIDAD_JPEG),
+    );
+    if (!blob || blob.size >= file.size) return file;
+    const nombre = file.name.replace(/\.[^.]+$/, "") || "foto";
+    return new File([blob], `${nombre}.jpg`, { type: "image/jpeg" });
+  } finally {
+    imagen.soltar();
+  }
+}
+
+/**
+ * Subir/cambiar la foto de perfil (cualquier rol). Valida el tipo, achica en el navegador la que
+ * viene grande, sube por POST /me/photo e invalida las cachés que pintan avatares para que la nueva
+ * foto aparezca en toda la app. El fallback de iniciales se mantiene si no hay foto.
+ *
+ * @param id el del botón, para que un formulario pueda llevar el foco aquí y describirlo.
+ * @param onSubida avisa en cuanto la foto quedó arriba, sin esperar a que la sesión se refresque.
+ */
+export function CambiarFoto({
+  nombre,
+  fotoUrl,
+  id,
+  describedBy,
+  onSubida,
+}: {
+  nombre: string;
+  fotoUrl?: string | null;
+  id?: string;
+  describedBy?: string;
+  onSubida?: (url: string) => void;
+}) {
   const input = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const [foto, setFoto] = useState<string | null | undefined>(fotoUrl);
@@ -23,23 +106,25 @@ export function CambiarFoto({ nombre, fotoUrl }: { nombre: string; fotoUrl?: str
   const [error, setError] = useState<string | null>(null);
 
   async function onFile(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const original = event.target.files?.[0];
+    if (!original) return;
     setError(null);
 
-    if (!TIPOS.includes(file.type)) {
+    if (!TIPOS.includes(original.type)) {
       setError("La foto debe ser JPEG, PNG o WEBP.");
-      return;
-    }
-    if (file.size > MAX_BYTES) {
-      setError("La imagen no puede superar 5 MB.");
       return;
     }
 
     setSubiendo(true);
     try {
+      const file = await prepararFoto(original);
+      if (file.size > MAX_BYTES) {
+        setError("La imagen no puede superar 5 MB.");
+        return;
+      }
       const { photoUrl } = await uploadFoto(file);
       setFoto(photoUrl);
+      onSubida?.(photoUrl);
       // Todo lo que pinta avatares se refresca: sesión, cuenta, perfil y directorio.
       void queryClient.invalidateQueries({ queryKey: meQueryKey });
       void queryClient.invalidateQueries({ queryKey: ["me"] });
@@ -57,15 +142,17 @@ export function CambiarFoto({ nombre, fotoUrl }: { nombre: string; fotoUrl?: str
       <Avatar nombre={nombre} fotoUrl={foto} size="xl" />
       <div>
         <button
+          id={id}
           type="button"
           onClick={() => input.current?.click()}
           disabled={subiendo}
+          aria-describedby={describedBy}
           className="inline-flex min-h-11 items-center gap-2 rounded-pill border-[1.5px] border-border px-5 text-[14px] font-bold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus disabled:opacity-60"
         >
           <Camera size={16} strokeWidth={1.75} />
-          {subiendo ? "Subiendo…" : "Cambiar foto"}
+          {subiendo ? "Subiendo…" : foto ? "Cambiar foto" : "Subir foto"}
         </button>
-        <p className="mt-1.5 text-[12px] text-text-muted">JPEG, PNG o WEBP · máx. 5 MB</p>
+        <p className="mt-1.5 text-[12px] text-text-muted">JPEG, PNG o WEBP</p>
         {error && <p className="mt-1 text-[12px] font-semibold text-error">{error}</p>}
         <input
           ref={input}
