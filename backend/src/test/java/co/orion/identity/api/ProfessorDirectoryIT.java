@@ -20,6 +20,7 @@ import co.orion.identity.domain.ProfessorProfile;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.identity.persistence.ProfessorProfileRepository;
+import co.orion.reputation.application.SanctionService;
 import co.orion.support.ApiIntegrationSupport;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -38,6 +39,9 @@ class ProfessorDirectoryIT extends ApiIntegrationSupport {
 
     @Autowired
     private ProfessorProfileRepository profiles;
+
+    @Autowired
+    private SanctionService sanctions;
 
     private User maria;
     private User juan;
@@ -205,6 +209,78 @@ class ProfessorDirectoryIT extends ApiIntegrationSupport {
                 Map.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    /**
+     * Una sanción activa impide PUBLICARSE, no editar. El editor manda siempre `isPublished`, y antes
+     * el gate corría en cada guardado: un profe ya publicado con las reservas suspendidas no podía
+     * cambiar ni una coma de su perfil.
+     */
+    @Test
+    void aPublishedProfessorWithAnActiveSanctionCanStillEditTheirProfile() {
+        sanction(maria, "BOOKINGS_SUSPENDED");
+
+        ResponseEntity<ProfileResponse> updated = put(MY_PROFILE, mariaSession,
+                profileRequest(OTRO_TITULAR, BIO, true), ProfileResponse.class);
+
+        assertThat(updated.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(updated.getBody().headline()).isEqualTo(OTRO_TITULAR);
+        assertThat(updated.getBody().isPublished()).isTrue();
+    }
+
+    /** Y el paso a publicado sí se cierra, antes de escribir nada: el perfil no queda a medias. */
+    @Test
+    void anUnpublishedProfessorWithAnActiveSanctionCannotPublishAndNothingIsSaved() {
+        ProfessorProfile profile = profiles.findById(maria.getId()).orElseThrow();
+        profile.unpublish();
+        profiles.save(profile);
+        sanction(maria, "BOOKINGS_SUSPENDED");
+
+        ResponseEntity<Map> response = put(MY_PROFILE, mariaSession,
+                profileRequest(OTRO_TITULAR, BIO, true), Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        ProfessorProfile after = profiles.findById(maria.getId()).orElseThrow();
+        assertThat(after.isPublished()).isFalse();
+        assertThat(after.getHeadline()).isEqualTo(TITULAR);
+    }
+
+    /**
+     * Lo que el buscador esconde tampoco se ve por enlace directo: un perfil oculto por una sanción
+     * seguía abierto en /p/{slug} y por id.
+     */
+    @Test
+    void aProfileHiddenByASanctionIsNotFoundByIdNorByItsInviteLink() {
+        ProfessorProfile profile = profiles.findById(maria.getId()).orElseThrow();
+        profile.assignPublicSlug("maria-gomez");
+        profiles.save(profile);
+        assertThat(get(PROFESSORS + "/by-slug/maria-gomez", anaSession, Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.OK);
+
+        sanction(maria, "PROFILE_HIDDEN");
+
+        assertThat(get(PROFESSORS, anaSession, PagedProfessors.class).getBody().content()).isEmpty();
+        assertThat(get(PROFESSORS + "/" + maria.getId(), anaSession, Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(get(PROFESSORS + "/by-slug/maria-gomez", anaSession, Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void negativeYearsOfExperienceAreRejected() {
+        UpdateProfileRequest negative = new UpdateProfileRequest(TITULAR, BIO, null, null, null,
+                (short) -3, null, false, true, null, null, true);
+
+        ResponseEntity<Map> response = put(MY_PROFILE, mariaSession, negative, Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).containsEntry("error", "Los años de experiencia no pueden ser negativos.");
+        assertThat(profiles.findById(maria.getId()).orElseThrow().getYearsExperience()).isNull();
+    }
+
+    private void sanction(User professor, String type) {
+        User admin = createUser("admin." + UUID.randomUUID() + "@orion.test", "Orion Admin", UserRole.ADMIN);
+        sanctions.applyManually(professor.getId(), type, "Prueba del gate de visibilidad", admin.getId());
     }
 
     @Test

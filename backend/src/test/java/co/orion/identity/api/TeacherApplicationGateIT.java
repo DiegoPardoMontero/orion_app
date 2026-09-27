@@ -116,6 +116,11 @@ class TeacherApplicationGateIT extends ApiIntegrationSupport {
 
     @Test
     void aPendingProfessorCannotPublish() {
+        // Publicar es el PASO a publicado (el gate no corre en cada guardado de un perfil que ya lo
+        // está), así que aquí el perfil parte sin publicar.
+        ProfessorProfile profile = profiles.findById(pending.getId()).orElseThrow();
+        profile.unpublish();
+        profiles.save(profile);
         // La ficha es válida a propósito: lo que este test aísla es el gate de la postulación,
         // y con textos demasiado cortos el 422 taparía el 403 que se quiere comprobar.
         UpdateProfileRequest req = new UpdateProfileRequest(
@@ -125,6 +130,7 @@ class TeacherApplicationGateIT extends ApiIntegrationSupport {
                 List.of("CONVERSATION"), true);
         ResponseEntity<Map> res = put("/api/v1/me/profile", pendingSession, req, Map.class);
         assertThat(res.getStatusCode().value()).isEqualTo(403);
+        assertThat(profiles.findById(pending.getId()).orElseThrow().isPublished()).isFalse();
     }
 
     @Test

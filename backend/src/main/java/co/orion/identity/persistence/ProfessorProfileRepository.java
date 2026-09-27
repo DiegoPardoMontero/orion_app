@@ -52,8 +52,14 @@ public interface ProfessorProfileRepository
 
     boolean existsByPublicSlug(String publicSlug);
 
-    /** El profesor de un enlace para invitar, si está publicado. */
-    @Query("select p from ProfessorProfile p where p.publicSlug = :slug and p.published = true")
+    /** El profesor de un enlace para invitar, si está publicado y su usuario sigue activo. */
+    @Query("""
+            select p from ProfessorProfile p
+            join fetch p.user u
+            where p.publicSlug = :slug
+              and p.published = true
+              and u.status = co.orion.identity.domain.UserStatus.ACTIVE
+            """)
     Optional<ProfessorProfile> findPublishedBySlug(@Param("slug") String slug);
 
     /**

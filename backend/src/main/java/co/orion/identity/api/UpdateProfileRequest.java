@@ -4,6 +4,8 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 
 /**
@@ -22,6 +24,8 @@ public record UpdateProfileRequest(
         @Size(max = 2) String countryCode,
         @Size(max = 80) String city,
         @Size(max = 5) String nativeLanguage,
+        @Min(value = 0, message = "Los años de experiencia no pueden ser negativos.")
+        @Max(value = 80, message = "Los años de experiencia no pueden pasar de 80.")
         Short yearsExperience,
         @Size(max = 300) String education,
         Boolean certified,

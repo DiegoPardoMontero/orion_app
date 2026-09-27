@@ -95,18 +95,26 @@ public class ProfessorProfileService {
         ProfessorProfile profile = profiles.findByIdWithUser(professorId)
                 .orElseGet(() -> createEmptyProfileFor(professorId));
 
-        profile.describe(req.headline(), req.bio());
-        profile.enrich(req.countryCode(), req.city(), req.nativeLanguage(),
-                req.yearsExperience(), req.education(),
-                Boolean.TRUE.equals(req.certified()), Boolean.TRUE.equals(req.acceptsTrial()));
-
-        if (Boolean.TRUE.equals(req.isPublished())) {
-            // El gate: un profesor sin postulación APPROVED no puede publicarse (403), antes de la tarifa.
+        // El gate mira solo el PASO a publicado, y antes de tocar nada. El editor manda siempre
+        // `isPublished`, así que con el gate en cada guardado un profe ya publicado con una sanción
+        // activa no podía cambiar ni una coma de su perfil. Que un sancionado siga visible o no lo
+        // decide la sanción (el buscador y el detalle la aplican), no este formulario.
+        boolean quierePublicar = Boolean.TRUE.equals(req.isPublished());
+        if (quierePublicar && !profile.isPublished()) {
+            // Sin postulación APPROVED o con las reservas suspendidas: 403, antes que la tarifa.
             access.assertCanPublishOwnProfile(professorId);
             if (!profile.canPublish()) {
                 throw new UnprocessableException(
                         "Fija tu tarifa por hora antes de publicar tu perfil.");
             }
+        }
+
+        profile.describe(req.headline(), req.bio());
+        profile.enrich(req.countryCode(), req.city(), req.nativeLanguage(),
+                req.yearsExperience(), req.education(),
+                Boolean.TRUE.equals(req.certified()), Boolean.TRUE.equals(req.acceptsTrial()));
+
+        if (quierePublicar) {
             profile.publish();
         } else {
             profile.unpublish();
@@ -184,10 +192,14 @@ public class ProfessorProfileService {
         return profile.getPublicSlug();
     }
 
-    /** El profesor de un enlace para invitar. 404 si no existe o si su perfil no está publicado. */
+    /**
+     * El profesor de un enlace para invitar. 404 si no existe o si el marketplace no lo muestra
+     * (sin publicar, sin aprobar, sin tarifa, desactivado u oculto por una sanción).
+     */
     @Transactional(readOnly = true)
     public UUID profesorDelEnlace(String slug) {
         return profiles.findPublishedBySlug(slug == null ? "" : slug.trim().toLowerCase(Locale.ROOT))
+                .filter(this::seVeEnElMarketplace)
                 .map(ProfessorProfile::getUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("Profesor no encontrado"));
     }
@@ -199,12 +211,11 @@ public class ProfessorProfileService {
 
     @Transactional(readOnly = true)
     public ProfessorDetail publicDetail(UUID professorId) {
+        // Lo que el buscador no muestra tampoco se ve por enlace directo: 404, sin revelar que el
+        // perfil existe ni por qué no se ve.
         ProfessorProfile profile = profiles.findPublishedById(professorId)
+                .filter(this::seVeEnElMarketplace)
                 .orElseThrow(() -> new ResourceNotFoundException("Profesor no encontrado"));
-        // No aprobado: 404, no revelamos que el perfil existe.
-        if (!access.isApproved(professorId)) {
-            throw new ResourceNotFoundException("Profesor no encontrado");
-        }
         RatingSummary rating = ratings.summaryFor(professorId);
         return new ProfessorDetail(
                 profile.getUserId(),
@@ -223,6 +234,19 @@ public class ProfessorProfileService {
                 rating.ratingCount(),
                 loadLanguages(professorId),
                 loadGoals(professorId));
+    }
+
+    /**
+     * Las mismas reglas que la base del buscador (ProfessorSpecifications) para un perfil ya
+     * publicado y con el usuario activo: postulación APPROVED, tarifa si cobra por comisión y
+     * ninguna sanción activa que lo saque del marketplace. Antes el detalle solo miraba la
+     * aprobación, así que un perfil oculto por PROFILE_HIDDEN seguía abierto en /p/{slug} y por id.
+     */
+    private boolean seVeEnElMarketplace(ProfessorProfile profile) {
+        UUID id = profile.getUserId();
+        return profile.canPublish()
+                && access.isApproved(id)
+                && !access.isHiddenFromMarketplace(id);
     }
 
     /** 404 si el profesor no está publicado. La regla "oculto sin tarifa" vive en el buscador. */

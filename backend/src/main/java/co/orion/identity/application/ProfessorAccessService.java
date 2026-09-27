@@ -37,6 +37,12 @@ public class ProfessorAccessService {
         return applications.existsByUserIdAndStatus(professorId, ApplicationStatus.APPROVED);
     }
 
+    /** Una sanción activa (PROFILE_HIDDEN, ACCOUNT_SUSPENDED) lo saca del marketplace. */
+    @Transactional(readOnly = true)
+    public boolean isHiddenFromMarketplace(UUID professorId) {
+        return sanctions.hiddenProfessorIds().contains(professorId);
+    }
+
     @Transactional(readOnly = true)
     public void assertCanTeach(UUID professorId) {
         exigir(professorId, "Tu perfil aún no está aprobado para enseñar.",
