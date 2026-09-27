@@ -30,7 +30,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Suspense, useEffect, useState, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { CambiarClave } from "@/components/CambiarClave";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import { Vacio } from "@/components/estados";
@@ -40,7 +41,7 @@ import { AvisoNuevosAcuerdos } from "@/components/AvisoNuevosAcuerdos";
 import { AvisoDatosDePago } from "@/components/profesor/AvisoDatosDePago";
 import { useDatosDePago } from "@/components/profesor/DatosDePago";
 import { AvisoWhatsapp } from "@/components/AvisoWhatsapp";
-import { usePendientesLegales } from "@/lib/acuerdo";
+import { PENDIENTES_KEY, usePendientesLegales } from "@/lib/acuerdo";
 import { Bienvenida } from "@/components/bienvenida/Bienvenida";
 import { Encendido } from "@/components/gamificacion/Encendido";
 import { ClaseEnCurso } from "@/components/aula/ClaseEnCurso";
@@ -49,7 +50,7 @@ import { FranjaDelPerfil } from "@/components/FranjaDelPerfil";
 import { Wordmark } from "@/components/marca";
 import { MisPuntosChip } from "@/components/Puntos";
 import { Boton } from "@/components/ui";
-import { useMiAplicacion } from "@/lib/aplicacion";
+import { MI_APLICACION_KEY, useMiAplicacion } from "@/lib/aplicacion";
 import {
   canAccess,
   esRutaPublica,
@@ -154,6 +155,21 @@ function Armazon({ children }: { children: ReactNode }) {
       router.replace(HOME_BY_ROLE[me.role]);
     }
   }, [isError, me, allowed, router, publica]);
+
+  // Cuando cambia el rol con la sesión abierta (el aspirante aprobado pasa a profesor; el rechazado,
+  // a estudiante), la postulación y los acuerdos que le tocan también cambian: se vuelven a pedir.
+  // Solo al cambiar, no al montar, que ahí ya se piden solos.
+  const queryClient = useQueryClient();
+  const rolAnterior = useRef<Role | undefined>(undefined);
+  const rol = me?.role;
+  useEffect(() => {
+    if (!rol) return;
+    if (rolAnterior.current && rolAnterior.current !== rol) {
+      void queryClient.invalidateQueries({ queryKey: MI_APLICACION_KEY });
+      void queryClient.invalidateQueries({ queryKey: PENDIENTES_KEY });
+    }
+    rolAnterior.current = rol;
+  }, [rol, queryClient]);
 
   if (isError && publica) {
     return (

@@ -100,10 +100,16 @@ export const ESTADOS_ADMIN = [
 /** La clave de caché de la postulación propia. Compartida por el wizard, el estado y el shell. */
 export const MI_APLICACION_KEY = ["me", "teacher-application"] as const;
 
+/** Mientras la revisan, la decisión puede llegar en cualquier momento. */
+const EN_REVISION = ["PENDING_REVIEW", "UNDER_REVIEW"];
+
 /**
  * La postulación del usuario actual. Un 404 (aún no ha postulado) NO es un fallo de red: se expone
  * como `noAplico` para que el shell distinga «no aplicó» de «error real». `retry:false` para no
  * reintentar un 404, y `redirectOn401:false` NO hace falta (un 401 sí debe ir al login).
+ *
+ * <p>En revisión se vuelve a preguntar cada minuto: si no, quien tenía la sesión abierta no se
+ * enteraba de la decisión hasta recargar.
  */
 export function useMiAplicacion(enabled = true) {
   const query = useQuery({
@@ -111,6 +117,7 @@ export function useMiAplicacion(enabled = true) {
     queryFn: () => apiFetch<TeacherApplicationView>("/api/v1/me/teacher-application"),
     enabled,
     retry: false,
+    refetchInterval: (q) => (EN_REVISION.includes(q.state.data?.status ?? "") ? 60_000 : false),
   });
 
   const noAplico = query.error instanceof ApiError && query.error.status === 404;

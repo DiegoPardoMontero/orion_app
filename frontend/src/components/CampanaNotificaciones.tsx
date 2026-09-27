@@ -7,6 +7,8 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { createPortal } from "react-dom";
 import { apiFetch } from "@/lib/api/fetch";
 import type { NotificationResponse } from "@/lib/api/types";
+import { MI_APLICACION_KEY } from "@/lib/aplicacion";
+import { meQueryKey } from "@/lib/auth/session";
 import { fechaCorta, horaBogota } from "@/lib/format";
 import {
   notifNoLeidasKey,
@@ -116,6 +118,12 @@ export function CampanaNotificaciones({
   function abrir(notif: NotificationResponse) {
     if (!notif.read && notif.id) {
       marcarUna.mutate(notif.id);
+    }
+    // La decisión sobre la postulación cambia el estado y, al aprobarla, el rol: sin esto, con la
+    // sesión abierta seguía viéndose «En revisión» y el menú de aspirante hasta recargar.
+    if (notif.type?.startsWith("APPLICATION_")) {
+      void queryClient.invalidateQueries({ queryKey: MI_APLICACION_KEY });
+      void queryClient.invalidateQueries({ queryKey: meQueryKey });
     }
     setAbierto(false);
     router.push(rutaNotificacion(notif.linkPath));
