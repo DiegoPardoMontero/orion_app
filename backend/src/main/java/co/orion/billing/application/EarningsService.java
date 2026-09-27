@@ -34,6 +34,14 @@ public class EarningsService {
 
     private static final int DEFAULT_RANGE_DAYS = 30;
 
+    /**
+     * Sin fecha final, el rango queda abierto hacia delante: se filtra por la fecha de la clase, y
+     * cortarlo en hoy dejaba fuera justo las clases pagadas que todavía no se dictan («Por dictar»).
+     * Una fecha lejana y no un parámetro nulo, porque Postgres no infiere el tipo de un nulo.
+     */
+    private static final Instant SIN_FECHA_FINAL = LocalDate.of(3000, 1, 1)
+            .atStartOfDay(BusinessZone.BOGOTA).toInstant();
+
     private final PaymentRepository payments;
     private final BookingRepository bookings;
     private final UserRepository users;
@@ -49,13 +57,19 @@ public class EarningsService {
         this.clock = clock;
     }
 
+    /**
+     * Las ganancias de las clases que caen entre {@code from} y {@code to} (fechas de Bogotá, ambas
+     * incluidas). Sin {@code from}, desde hace 30 días; sin {@code to}, sin límite hacia delante.
+     */
     @Transactional(readOnly = true)
     public EarningsSummary of(UUID professorId, LocalDate from, LocalDate to) {
         LocalDate end = to != null ? to : LocalDate.ofInstant(clock.instant(), BusinessZone.BOGOTA);
         LocalDate start = from != null ? from : end.minusDays(DEFAULT_RANGE_DAYS - 1L);
 
         Instant fromInstant = start.atStartOfDay(BusinessZone.BOGOTA).toInstant();
-        Instant toInstant = end.plusDays(1).atStartOfDay(BusinessZone.BOGOTA).toInstant();
+        Instant toInstant = to != null
+                ? to.plusDays(1).atStartOfDay(BusinessZone.BOGOTA).toInstant()
+                : SIN_FECHA_FINAL;
 
         long held = payments.sumEarningsByStatus(professorId, PaymentStatus.PAID, fromInstant, toInstant);
         long released = payments.sumEarningsByStatus(
@@ -63,9 +77,7 @@ public class EarningsService {
         long transferred = payments.sumAlreadyTransferred(professorId, fromInstant, toInstant);
         long inTransit = payments.sumInTransit(professorId, fromInstant, toInstant);
 
-        List<Payment> found = payments
-                .findByProfessorIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
-                        professorId, fromInstant, toInstant);
+        List<Payment> found = payments.findEarningLines(professorId, fromInstant, toInstant);
 
         return new EarningsSummary(
                 held, released - transferred - inTransit, inTransit, transferred, lines(found));

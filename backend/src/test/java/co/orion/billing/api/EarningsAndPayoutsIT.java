@@ -174,6 +174,46 @@ class EarningsAndPayoutsIT extends ApiIntegrationSupport {
         assertThat(other.totalCop()).isZero();
     }
 
+    /**
+     * Un checkout abandonado o rechazado no es dinero del profe: antes salía en sus ganancias como
+     * «Cancelado · Para ti $51.000» y uno sin pagar como «Sin pagar aún · Para ti $…».
+     */
+    @Test
+    void aPaymentThatNeverHappenedIsNotTheProfessorsMoney() {
+        UUID paid = bookAndPay(maria, 9);
+        book(maria, 10);                                // sin pagar: PENDING
+        declinePayment(book(maria, 8));                 // la pasarela rechazó: CANCELLED
+
+        EarningsResponse mine = earnings(mariaSession);
+        assertThat(mine.lines()).extracting(EarningsResponse.Line::bookingId).containsExactly(paid);
+        assertThat(mine.heldCop()).isEqualTo(EARNINGS_COP);
+        assertThat(mine.totalCop()).isEqualTo(EARNINGS_COP);
+    }
+
+    /**
+     * El período es el de la FECHA DE LA CLASE, que es la que muestra cada línea. La clase de María se
+     * reserva el lunes 13 y se dicta el miércoles 15: antes, filtrar por el 15 la dejaba fuera y
+     * filtrar por el 13 la mostraba fechada el 15.
+     */
+    @Test
+    void theDateFilterIsTheDateOfTheClass() {
+        UUID bookingId = bookAndPay(maria, 9);
+
+        EarningsResponse classDay = earnings(mariaSession, "?from=2026-07-15&to=2026-07-15");
+        assertThat(classDay.lines()).extracting(EarningsResponse.Line::bookingId).containsExactly(bookingId);
+        assertThat(classDay.heldCop()).isEqualTo(EARNINGS_COP);
+
+        EarningsResponse bookingDay = earnings(mariaSession, "?from=2026-07-13&to=2026-07-13");
+        assertThat(bookingDay.lines()).isEmpty();
+        assertThat(bookingDay.totalCop()).isZero();
+
+        // Sin fechas (lo que pide la pantalla al abrir): desde hace 30 días y sin tope hacia delante,
+        // así que la clase que todavía no se dicta sigue en «Por dictar».
+        EarningsResponse byDefault = earnings(mariaSession, "");
+        assertThat(byDefault.lines()).extracting(EarningsResponse.Line::bookingId).containsExactly(bookingId);
+        assertThat(byDefault.heldCop()).isEqualTo(EARNINGS_COP);
+    }
+
     /** El estudiante compra una clase, no un servicio de intermediación: la comisión no es suya. */
     @Test
     void theStudentNeverSeesTheCommissionInAnyResponse() {
@@ -362,6 +402,13 @@ class EarningsAndPayoutsIT extends ApiIntegrationSupport {
     }
 
     private UUID bookAndPay(User professor, int hour) {
+        UUID bookingId = book(professor, hour);
+        approvePayment(bookingId);
+        return bookingId;
+    }
+
+    /** Reserva sin pagar: la reserva queda esperando el pago y el pago, PENDING. */
+    private UUID book(User professor, int hour) {
         OffsetDateTime at = ZonedDateTime
                 .of(WEDNESDAY, LocalTime.of(hour, 0), BusinessZone.BOGOTA).toOffsetDateTime();
         ResponseEntity<BookingResponse> response = post(BOOKINGS, anaSession,
@@ -370,7 +417,6 @@ class EarningsAndPayoutsIT extends ApiIntegrationSupport {
         assertThat(response.getStatusCode())
                 .as("respuesta: %s", response.getBody())
                 .isEqualTo(HttpStatus.CREATED);
-        approvePayment(response.getBody().id());
         return response.getBody().id();
     }
 
@@ -401,7 +447,10 @@ class EarningsAndPayoutsIT extends ApiIntegrationSupport {
     }
 
     private EarningsResponse earnings(Session session) {
-        return get("/api/v1/me/earnings?from=2026-07-01&to=2026-07-31", session,
-                EarningsResponse.class).getBody();
+        return earnings(session, "?from=2026-07-01&to=2026-07-31");
+    }
+
+    private EarningsResponse earnings(Session session, String query) {
+        return get("/api/v1/me/earnings" + query, session, EarningsResponse.class).getBody();
     }
 }

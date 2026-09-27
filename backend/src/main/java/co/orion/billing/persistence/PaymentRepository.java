@@ -30,30 +30,57 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID>,
 
     List<Payment> findByProfessorIdAndStatus(UUID professorId, PaymentStatus status);
 
+    /*
+     * --- «Mis ganancias» del profesor ---
+     *
+     * El período se mide por la FECHA DE LA CLASE (bookings.starts_at), no por cuándo se reservó: cada
+     * línea muestra la fecha de la clase, y filtrar por la de la reserva sacaba del rango clases que
+     * el profe veía fechadas dentro de él (y metía otras de fuera). El join es con la entidad de
+     * scheduling sin relación JPA, como en countNeedingReview.
+     *
+     * Solo cuenta dinero que existió: un checkout abandonado (CANCELLED) o sin pagar (PENDING) no es
+     * del profe. Las sumas por estado ya lo excluyen al pedir PAID o RELEASED, y las de liquidación
+     * también, porque solo un pago RELEASED entra en una.
+     */
+
     @Query("""
-            select coalesce(sum(p.professorEarningsCop), 0) from Payment p
-            where p.professorId = :professorId
+            select coalesce(sum(p.professorEarningsCop), 0) from Payment p, Booking b
+            where b.id = p.bookingId
+              and p.professorId = :professorId
               and p.status = :status
-              and p.createdAt >= :from
-              and p.createdAt < :to
+              and b.startsAt >= :from
+              and b.startsAt < :to
             """)
     long sumEarningsByStatus(@Param("professorId") UUID professorId,
                              @Param("status") PaymentStatus status,
                              @Param("from") Instant from,
                              @Param("to") Instant to);
 
-    List<Payment> findByProfessorIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
-            UUID professorId, Instant from, Instant to);
+    /** Las líneas del desglose: las clases del período con dinero de verdad, la más reciente primero. */
+    @Query("""
+            select p from Payment p, Booking b
+            where b.id = p.bookingId
+              and p.professorId = :professorId
+              and p.status not in (co.orion.billing.domain.PaymentStatus.PENDING,
+                                   co.orion.billing.domain.PaymentStatus.CANCELLED)
+              and b.startsAt >= :from
+              and b.startsAt < :to
+            order by b.startsAt desc
+            """)
+    List<Payment> findEarningLines(@Param("professorId") UUID professorId,
+                                   @Param("from") Instant from,
+                                   @Param("to") Instant to);
 
     /**
      * Lo que ya se le transfirió al profesor: pagos liberados que además viajan en una liquidación
      * marcada como pagada. Un pago liberado y todavía sin liquidar sigue contando como "por cobrar".
      */
     @Query("""
-            select coalesce(sum(p.professorEarningsCop), 0) from Payment p
-            where p.professorId = :professorId
-              and p.createdAt >= :from
-              and p.createdAt < :to
+            select coalesce(sum(p.professorEarningsCop), 0) from Payment p, Booking b
+            where b.id = p.bookingId
+              and p.professorId = :professorId
+              and b.startsAt >= :from
+              and b.startsAt < :to
               and exists (select 1 from PayoutLine l, Payout o
                           where l.paymentId = p.id
                             and o.id = l.payoutId
@@ -69,10 +96,11 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID>,
      * profesor que su pago entraría en la próxima liquidación cuando ya estaba en una.
      */
     @Query("""
-            select coalesce(sum(p.professorEarningsCop), 0) from Payment p
-            where p.professorId = :professorId
-              and p.createdAt >= :from
-              and p.createdAt < :to
+            select coalesce(sum(p.professorEarningsCop), 0) from Payment p, Booking b
+            where b.id = p.bookingId
+              and p.professorId = :professorId
+              and b.startsAt >= :from
+              and b.startsAt < :to
               and exists (select 1 from PayoutLine l, Payout o
                           where l.paymentId = p.id
                             and o.id = l.payoutId
