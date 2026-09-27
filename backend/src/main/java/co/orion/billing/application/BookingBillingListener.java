@@ -86,7 +86,7 @@ public class BookingBillingListener {
                 // Un retracto ya dejó el pago en REFUND_PENDING antes de llegar aquí, y ni
                 // refundToCredit ni release tocan lo que no está en PAID: el dinero de un retracto
                 // sigue su camino (medio de pago) y no acaba convertido en saldo ni en ingreso.
-                case CANCELLED_BY_STUDENT -> resolverCancelacionDelEstudiante(booking);
+                case CANCELLED_BY_STUDENT -> resolverCancelacionDelEstudiante(booking, event);
                 default -> log.warn("Reserva {} cancelada en estado inesperado {}",
                         booking.getId(), booking.getStatus());
             }
@@ -103,7 +103,21 @@ public class BookingBillingListener {
      * apartaría su hora, la perdería por un aviso de última hora y encima no cobraría — que es lo
      * contrario de lo que dicen los Términos.
      */
-    private void resolverCancelacionDelEstudiante(Booking booking) {
+    private void resolverCancelacionDelEstudiante(Booking booking, BookingCancelledEvent event) {
+        // Una reserva que se soltó sin pagar no tiene clase que prestar ni dinero que liberar: se
+        // anula el cobro y vuelve el saldo que se había aplicado, sea cuando sea. Va antes de mirar
+        // la ventana porque la antelación mínima para reservar (hoy 6 h) es menor que la ventana
+        // (hoy 12 h): toda reserva sin pagar hecha entre las 6 y las 12 h antes contaba como
+        // tardía, iba a release() —que solo toca pagos PAID— y dejaba el pago PENDING para siempre
+        // y el saldo sin devolver. refundToCredit resuelve los dos casos: PENDING se anula y el
+        // crédito vuelve a sus filas; si la pasarela alcanzó a cobrar, el estudiante lo recupera
+        // como saldo (al profesor nunca se le anunció esta clase: no hay nada que liberarle).
+        if (event.wasAwaitingPayment()) {
+            payments.refundToCredit(booking.getId(), CreditReason.CANCELLED_BY_STUDENT,
+                    booking.getCancelledBy());
+            return;
+        }
+
         Duration ventana = Duration.ofHours(settings.getInt(STUDENT_WINDOW));
         boolean aTiempo = booking.getCancelledAt() == null
                 || !booking.getStartsAt().minus(ventana).isBefore(booking.getCancelledAt());
@@ -112,6 +126,9 @@ public class BookingBillingListener {
             payments.refundToCredit(booking.getId(), CreditReason.CANCELLED_BY_STUDENT,
                     booking.getCancelledBy());
         } else {
+            // Si aun así el cobro seguía pendiente, no hay nada que liberar: se anula y vuelve el
+            // saldo. Cada llamada solo actúa sobre su estado (PENDING una, PAID la otra).
+            payments.cancelUnpaidOnly(booking.getId());
             payments.release(booking.getId());
         }
     }

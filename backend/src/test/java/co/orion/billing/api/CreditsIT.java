@@ -28,6 +28,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import co.orion.TestcontainersConfiguration;
 import co.orion.billing.application.PaymentExpiryJob;
 import co.orion.billing.domain.CreditReason;
+import co.orion.billing.domain.PaymentStatus;
 import co.orion.billing.domain.StudentCredit;
 import co.orion.billing.persistence.PaymentRepository;
 import co.orion.billing.persistence.StudentCreditRepository;
@@ -36,6 +37,7 @@ import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.identity.persistence.ProfessorProfileRepository;
 import co.orion.scheduling.api.BookingResponse;
+import co.orion.scheduling.api.CancelBookingRequest;
 import co.orion.scheduling.api.CreateBookingRequest;
 import co.orion.scheduling.domain.AvailabilityRule;
 import co.orion.scheduling.domain.BookingStatus;
@@ -217,6 +219,39 @@ class CreditsIT extends ApiIntegrationSupport {
         assertThat(credits.count()).isEqualTo(1);
     }
 
+    /**
+     * Soltar una reserva sin pagar dentro de la ventana de cancelación. Como se puede reservar con 6 h
+     * de antelación y la ventana es de 12, una reserva hecha 8 h antes nace ya «tarde»: antes iba a
+     * liberarle al profesor un pago que nunca ocurrió, lo dejaba PENDING para siempre y el saldo que
+     * la estudiante había aplicado no volvía.
+     */
+    @Test
+    void releasingAnUnpaidBookingInsideTheWindowCancelsTheChargeAndReturnsTheCredit() {
+        // El reloj está congelado el lunes 13 a las 12:00 de Bogotá: la clase de las 20:00 es en 8 h.
+        rules.save(new AvailabilityRule(maria.getId(), DayOfWeek.MONDAY,
+                LocalTime.of(19, 0), LocalTime.of(22, 0)));
+        Instant expiry = FROZEN_NOW.plusSeconds(60 * 60 * 24 * 3);
+        StudentCredit credit = grant(20_000, expiry);
+
+        BookingResponse booking = book(LocalDate.of(2026, 7, 13), 20);
+        assertThat(booking.status()).isEqualTo("PENDING_PAYMENT");
+        assertThat(booking.payment().creditAppliedCop()).isEqualTo(20_000);
+        assertThat(balance()).isZero();
+
+        ResponseEntity<BookingResponse> cancelled = post(BOOKINGS + "/" + booking.id() + "/cancel",
+                anaSession, new CancelBookingRequest("Ya no puedo"), BookingResponse.class);
+        assertThat(cancelled.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        assertThat(payments.findByBookingId(booking.id()).orElseThrow().getStatus())
+                .isEqualTo(PaymentStatus.CANCELLED);
+        // El saldo vuelve entero y a su fila original, con su vencimiento: no es un crédito nuevo.
+        StudentCredit restored = credits.findById(credit.getId()).orElseThrow();
+        assertThat(restored.getRemainingCop()).isEqualTo(20_000);
+        assertThat(restored.getExpiresAt()).isEqualTo(expiry);
+        assertThat(credits.count()).isEqualTo(1);
+        assertThat(balance()).isEqualTo(20_000);
+    }
+
     /** Dos reservas seguidas no pueden gastar el mismo saldo dos veces. */
     @Test
     void theSameCreditCannotBeSpentTwice() {
@@ -255,8 +290,12 @@ class CreditsIT extends ApiIntegrationSupport {
     }
 
     private BookingResponse book(int hour) {
+        return book(WEDNESDAY, hour);
+    }
+
+    private BookingResponse book(LocalDate day, int hour) {
         OffsetDateTime at = ZonedDateTime
-                .of(WEDNESDAY, LocalTime.of(hour, 0), BusinessZone.BOGOTA).toOffsetDateTime();
+                .of(day, LocalTime.of(hour, 0), BusinessZone.BOGOTA).toOffsetDateTime();
         ResponseEntity<BookingResponse> response = post(BOOKINGS, anaSession,
                 new CreateBookingRequest(maria.getId(), at, "VIRTUAL", null, null, null),
                 BookingResponse.class);
