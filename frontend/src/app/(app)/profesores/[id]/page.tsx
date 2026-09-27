@@ -11,11 +11,13 @@ import {
   ChevronRight,
   Clock,
   CreditCard,
+  Eye,
   GraduationCap,
   Languages,
   Mail,
   MapPin,
   MessageCircle,
+  Pencil,
   ShieldCheck,
   Sparkles,
   Video,
@@ -40,6 +42,7 @@ import type {
   SlotView,
   SlotsResponse,
 } from "@/lib/api/types";
+import { HOME_BY_ROLE } from "@/lib/auth/roles";
 import { useMe } from "@/lib/auth/session";
 import { entrarYVolver } from "@/lib/auth/volver";
 import { primerNombre } from "@/lib/practica";
@@ -74,6 +77,10 @@ export default function AgendaProfesorPage() {
   // escribir, no: sin sesión esas llamadas ni se hacen, y en su lugar se invita a crear la cuenta.
   const conSesion = !!me;
   const aqui = `/profesores/${id}`;
+  // Con sesión y sin ser estudiante —hoy, un profesor—: ve el perfil y los horarios, pero reservar y
+  // escribir son del estudiante (el backend le respondería 403 a lo uno y no tiene sentido lo otro).
+  const soloMira = !!me && me.role !== "STUDENT";
+  const esPropio = !!me && me.id === id;
 
   // Abrir (o reencontrar) la conversación con este profesor y saltar a su hilo. Sin cuenta, primero
   // se crea, y al terminar se vuelve a este perfil.
@@ -184,12 +191,31 @@ export default function AgendaProfesorPage() {
   }
 
   if (profesor.isError) {
+    // El perfil sin publicar no existe para nadie (404), tampoco para su dueño: a él se le explica.
+    const oculto = esPropio && profesor.error instanceof ApiError && profesor.error.status === 404;
     return (
       <main className="mx-auto w-full max-w-md px-7 py-6 lg:max-w-[1180px] lg:px-12 lg:py-8">
-        <ErrorCarga
-          mensaje="No pudimos cargar este profesor."
-          onReintentar={() => void profesor.refetch()}
-        />
+        {oculto ? (
+          <Vacio
+            mascota
+            titulo="Tu perfil está oculto"
+            texto="Mientras no lo publiques, los estudiantes no lo encuentran ni pueden abrirlo. Publícalo desde Mi perfil, donde también ves cómo se vería."
+            accion={
+              <Link
+                href="/perfil"
+                className="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-pill bg-primary px-6 text-[15px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus"
+              >
+                <Pencil size={16} strokeWidth={2} />
+                Ir a Mi perfil
+              </Link>
+            }
+          />
+        ) : (
+          <ErrorCarga
+            mensaje="No pudimos cargar este profesor."
+            onReintentar={() => void profesor.refetch()}
+          />
+        )}
       </main>
     );
   }
@@ -354,13 +380,33 @@ export default function AgendaProfesorPage() {
 
   return (
     <main className="mx-auto w-full max-w-md px-7 py-6 lg:max-w-[1180px] lg:px-12 lg:py-8">
+      {/* Al catálogo vuelve quien puede usarlo; al profe, el catálogo lo mandaría a su agenda. */}
       <Link
-        href="/profesores"
-        aria-label="Volver a profesores"
+        href={esPropio ? "/perfil" : me && soloMira ? HOME_BY_ROLE[me.role] : "/profesores"}
+        aria-label={esPropio ? "Volver a mi perfil" : soloMira ? "Volver al inicio" : "Volver a profesores"}
         className="grid h-11 w-11 place-items-center rounded-full bg-surface-sunken text-text transition-colors hover:bg-border focus-visible:shadow-focus"
       >
         <ArrowLeft size={18} strokeWidth={1.75} />
       </Link>
+
+      {esPropio && (
+        <div className="mt-4 flex flex-col gap-3 rounded-card bg-accent-lavender-soft px-4 py-3 text-[#5e4a8a] sm:flex-row sm:items-center sm:justify-between">
+          <p className="flex items-start gap-2 text-[13.5px] leading-snug">
+            <Eye size={17} strokeWidth={2} className="mt-px shrink-0" aria-hidden />
+            <span>
+              <strong className="font-bold">Así te ven los estudiantes.</strong> Ellos ven además los botones
+              para reservar y para escribirte.
+            </span>
+          </p>
+          <Link
+            href="/perfil"
+            className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-pill bg-night px-4 text-[13.5px] font-bold text-on-primary transition-colors hover:bg-[#3d2a63] focus-visible:shadow-focus"
+          >
+            <Pencil size={15} strokeWidth={2} />
+            Editar mi perfil
+          </Link>
+        </div>
+      )}
 
       <div className="lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-10">
         {/* Columna de perfil (compacta) */}
@@ -415,8 +461,8 @@ export default function AgendaProfesorPage() {
             )}
           </div>
 
-          {/* Enviar mensaje: solo el estudiante lo ve; el profesor no se escribe a sí mismo. */}
-          {me?.role !== "PROFESSOR" && (
+          {/* Enviar mensaje: el estudiante, o quien llega sin cuenta y la crea para escribir. */}
+          {!soloMira && (
             <div className="mt-4">
               <Boton
                 variante="secundario"
@@ -555,14 +601,21 @@ export default function AgendaProfesorPage() {
                 cupoElegido={cupoElegido}
                 onElegir={setCupoElegido}
                 minutosDeClase={cifras.classMinutes}
+                soloVer={soloMira}
               />
-              {controles}
+              {soloMira ? <SoloReservanEstudiantes propio={esPropio} /> : controles}
             </div>
           ) : dias.length === 0 ? (
             <Vacio
               mascota
               titulo="Sin cupos esta semana"
-              texto="Vuelve en unos días: seguro encontramos un horario que te sirva."
+              texto={
+                esPropio
+                  ? "Los estudiantes no tienen a qué hora reservarte. Abre horarios en Mi perfil."
+                  : soloMira
+                    ? "No le quedan horas libres en los próximos días."
+                    : "Vuelve en unos días: seguro encontramos un horario que te sirva."
+              }
             />
           ) : (
             <div className="space-y-3">
@@ -603,22 +656,28 @@ export default function AgendaProfesorPage() {
                     </p>
                     {/* Dos columnas y no tres: cada cupo dice de qué hora a qué hora va. */}
                     <div role="group" aria-label="Horarios del día" className="grid grid-cols-2 gap-2.5">
-                      {cuposDelDia.map((cupo) => (
-                        <Chip
-                          key={cupo.startsAt}
-                          familia="hora"
-                          activo={cupo.startsAt === cupoElegido}
-                          onClick={() => setCupoElegido(cupo.startsAt!)}
-                        >
-                          {rangoHoras(cupo.startsAt!, cupo.endsAt ?? finDeClase(cupo.startsAt!, cifras.classMinutes))}
-                        </Chip>
-                      ))}
+                      {cuposDelDia.map((cupo) =>
+                        soloMira ? (
+                          <span key={cupo.startsAt} className={HORA_SOLO_VER}>
+                            {rangoHoras(cupo.startsAt!, cupo.endsAt ?? finDeClase(cupo.startsAt!, cifras.classMinutes))}
+                          </span>
+                        ) : (
+                          <Chip
+                            key={cupo.startsAt}
+                            familia="hora"
+                            activo={cupo.startsAt === cupoElegido}
+                            onClick={() => setCupoElegido(cupo.startsAt!)}
+                          >
+                            {rangoHoras(cupo.startsAt!, cupo.endsAt ?? finDeClase(cupo.startsAt!, cifras.classMinutes))}
+                          </Chip>
+                        ),
+                      )}
                     </div>
                   </>
                 )}
               </Bloque>
 
-              {controles}
+              {soloMira ? <SoloReservanEstudiantes propio={esPropio} /> : controles}
             </div>
           )}
         </section>
@@ -626,6 +685,32 @@ export default function AgendaProfesorPage() {
 
       <SeccionResenas profesorId={id} />
     </main>
+  );
+}
+
+/** Una hora de la agenda que se ve pero no se elige: la del profe que mira un perfil. */
+const HORA_SOLO_VER =
+  "inline-flex min-h-11 w-full items-center justify-center whitespace-nowrap rounded-pill bg-accent-lavender-soft px-2 py-[13px] text-[13px] font-semibold text-[#5e4a8a]";
+
+/**
+ * Donde el estudiante tiene la reserva, el profe que mira un perfil lee por qué no la tiene: el suyo
+ * lo reservan los estudiantes, y en el de un colega él no reserva.
+ */
+function SoloReservanEstudiantes({ propio }: { propio: boolean }) {
+  return (
+    <p className="flex items-start gap-2 rounded-base bg-accent-lavender-soft px-4 py-3 text-[13px] leading-snug text-[#5e4a8a]">
+      <Calendar size={16} strokeWidth={1.75} className="mt-px shrink-0" aria-hidden />
+      {propio ? (
+        <span>
+          Así ven tus horarios los estudiantes: eligen uno y reservan.{" "}
+          <Link href="/perfil?seccion=horarios" className="font-bold underline">
+            Cambiar mis horarios
+          </Link>
+        </span>
+      ) : (
+        <span>Solo los estudiantes reservan clases.</span>
+      )}
+    </p>
   );
 }
 
@@ -750,11 +835,14 @@ function AgendaSemanal({
   cupoElegido,
   onElegir,
   minutosDeClase,
+  soloVer = false,
 }: {
   profesorId: string;
   cupoElegido: string | null;
   onElegir: (startsAt: string) => void;
   minutosDeClase: number;
+  /** Las casillas se ven pero no se eligen: quien mira no reserva. */
+  soloVer?: boolean;
 }) {
   const [offset, setOffset] = useState(0);
   const hoy = diaBogota(new Date().toISOString());
@@ -856,6 +944,17 @@ function AgendaSemanal({
                   if (!slot?.startsAt) {
                     return <div key={dia} className="min-h-11 rounded-base bg-surface-sunken/40" />;
                   }
+                  const franja = rangoHoras(slot.startsAt, slot.endsAt ?? finDeClase(slot.startsAt, minutosDeClase));
+                  if (soloVer) {
+                    return (
+                      <div
+                        key={dia}
+                        className="grid min-h-11 place-items-center rounded-base bg-accent-lavender-soft text-center text-[12px] font-semibold text-[#5e4a8a]"
+                      >
+                        {franja}
+                      </div>
+                    );
+                  }
                   const activo = slot.startsAt === cupoElegido;
                   return (
                     <button
@@ -868,7 +967,7 @@ function AgendaSemanal({
                           : "bg-accent-lavender-soft text-[#5e4a8a] hover:bg-[#e2d7f4]"
                       }`}
                     >
-                      {rangoHoras(slot.startsAt, slot.endsAt ?? finDeClase(slot.startsAt, minutosDeClase))}
+                      {franja}
                     </button>
                   );
                 })}

@@ -179,6 +179,12 @@ export const TABS_BY_ROLE: Record<Role, NavItem[]> = {
 
 /** Qué roles pueden entrar a cada zona de la app. */
 const ACCESS: { prefix: string; roles: Role[] }[] = [
+  // El perfil de un profesor lo abre también un profesor: el suyo, para verse como lo ven los
+  // estudiantes —a ese perfil lleva el enlace que comparte desde Invitar—, o el de un colega que le
+  // pasaron. Reservar y escribir siguen siendo del estudiante: la página no se los ofrece. El
+  // catálogo, en cambio, no: es donde el estudiante elige a quién reservar, y un profe ahí no tiene
+  // nada que hacer. Va antes que «/profesores» porque gana la primera regla que case.
+  { prefix: "/profesores/", roles: ["STUDENT", "PROFESSOR"] },
   { prefix: "/profesores", roles: ["STUDENT"] },
   { prefix: "/cuenta", roles: ["STUDENT"] },
   { prefix: "/logros", roles: ["STUDENT"] },

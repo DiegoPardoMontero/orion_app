@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Check, Copy, Link2, Mail, MessageCircle, Send, Share2 } from "lucide-react";
+import { AlertTriangle, Check, Copy, Globe, Link2, Mail, MessageCircle, Send, Share2 } from "lucide-react";
 import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 import { Cargando } from "@/components/estados";
@@ -48,10 +48,28 @@ export default function InvitarPage() {
   const prueba = p?.acceptsTrial ? " La primera clase, de prueba, es gratis." : "";
   const mensajeInicial = `¡Hola! Ya doy clases de inglés en Orión. Ahí ves mi perfil y reservas tu clase conmigo en un minuto.${prueba}`;
 
-  return <Invitar enlace={enlace} publicado={p?.isPublished ?? false} mensajeInicial={mensajeInicial} />;
+  return (
+    <Invitar
+      enlace={enlace}
+      perfilPublico={`/profesores/${me.id}`}
+      publicado={p?.isPublished ?? false}
+      mensajeInicial={mensajeInicial}
+    />
+  );
 }
 
-function Invitar({ enlace, publicado, mensajeInicial }: { enlace: string; publicado: boolean; mensajeInicial: string }) {
+function Invitar({
+  enlace,
+  perfilPublico,
+  publicado,
+  mensajeInicial,
+}: {
+  enlace: string;
+  /** Su perfil dentro de la app: lo que abre quien toca el enlace, visto desde su propia sesión. */
+  perfilPublico: string;
+  publicado: boolean;
+  mensajeInicial: string;
+}) {
   const [mensaje, setMensaje] = useState(mensajeInicial);
   const [copiado, setCopiado] = useState<"enlace" | "mensaje" | null>(null);
   const completo = `${mensaje.trim()} ${enlace}`;
@@ -122,6 +140,13 @@ function Invitar({ enlace, publicado, mensajeInicial }: { enlace: string; public
             {copiado === "enlace" ? "Copiado" : "Copiar enlace"}
           </button>
         </div>
+        <Link
+          href={perfilPublico}
+          className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-pill px-1 text-[13.5px] font-bold text-primary-strong hover:underline focus-visible:shadow-focus"
+        >
+          <Globe size={15} strokeWidth={2} aria-hidden />
+          Ver mi perfil público
+        </Link>
       </section>
 
       <section className="mt-4 rounded-card bg-surface-raised p-5 shadow-sm">

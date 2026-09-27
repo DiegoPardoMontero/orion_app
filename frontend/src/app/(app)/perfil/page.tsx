@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BadgeCheck, Eye, Plus, Sparkles, UserPlus, X } from "lucide-react";
+import { BadgeCheck, Eye, Globe, Plus, Sparkles, UserPlus, X } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -146,6 +146,13 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
           Invita a tus estudiantes con tu enlace
         </span>
         <span className="shrink-0 text-[12.5px] font-bold text-primary-strong">Compartir</span>
+      </Link>
+      <Link
+        href={`/profesores/${inicial.id}`}
+        className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-pill border-[1.5px] border-border px-4 text-[13.5px] font-bold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
+      >
+        <Globe size={15} strokeWidth={2} aria-hidden />
+        Ver mi perfil público
       </Link>
 
       {/* Las reglas de cancelación y las preguntas frecuentes viven en Ayuda (24/09/2026): son
