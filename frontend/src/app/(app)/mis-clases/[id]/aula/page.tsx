@@ -192,6 +192,11 @@ export default function AulaPage() {
             cerrar();
             volverAClases();
           }}
+          onIr={(ruta) => {
+            cerrar();
+            router.push(ruta);
+          }}
+          onVolverALaClase={volverAEntrar}
         />
       )}
     </div>
