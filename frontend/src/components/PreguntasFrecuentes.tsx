@@ -78,7 +78,7 @@ const base = (c: PublicFigures): Record<"estudiante" | "profesor" | "general", P
     },
     {
       p: "¿Cuándo me pagan?",
-      r: "Cada quincena. Orión recibe en tu nombre lo que pagan tus estudiantes; cuando la clase ya se dictó y venció el plazo de reclamo, entra en el siguiente corte (el 1 y el 16 de cada mes) y te lo transferimos por Bre-B, menos la comisión, a más tardar el tercer día hábil después del corte. Para recibirlo necesitas tus datos de pago registrados y el acuerdo del profesor aceptado.",
+      r: "Cada quincena. Orión recibe en tu nombre lo que pagan tus estudiantes; cuando la clase ya se dictó y venció el plazo de reclamo, entra en el siguiente corte (el 15 y el último día de cada mes) y te lo transferimos por Bre-B, menos la comisión, a más tardar el tercer día hábil después del corte. Para recibirlo necesitas tus datos de pago registrados y el acuerdo del profesor aceptado.",
     },
     {
       p: "¿Qué pasa si tengo que cancelar?",

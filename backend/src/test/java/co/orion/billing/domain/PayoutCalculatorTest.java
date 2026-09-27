@@ -148,7 +148,7 @@ class PayoutCalculatorTest {
     void loQueVeElProfeEnClasesPorLiquidar() {
         Instant ahora = bogota(2026, 10, 20, 12, 0);
         assertThat(PayoutCalculator.whenItEnters(clase(bogota(2026, 10, 19, 18, 55)), ahora, RECLAMO))
-                .isEqualTo("Entra en el corte del 1 de noviembre");
+                .isEqualTo("Entra en el corte del 31 de octubre");
         assertThat(PayoutCalculator.whenItEnters(clase(bogota(2026, 10, 31, 18, 55)), ahora, RECLAMO))
                 .isEqualTo("En plazo de reclamo hasta el 1 de noviembre");
     }

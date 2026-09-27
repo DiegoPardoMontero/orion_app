@@ -58,7 +58,7 @@ export function MisLiquidaciones() {
       <p className="mt-3 flex items-start gap-2 rounded-base bg-accent-lavender-soft px-4 py-3 text-[13px] text-[#5e4a8a]">
         <CalendarClock size={16} strokeWidth={1.9} className="mt-0.5 shrink-0" />
         <span>
-          Próximo corte: <strong>{dia(d.nextCutoff.slice(0, 10))}</strong> (clases del {diaCorto(d.nextPeriodStart)} al{" "}
+          Próximo corte: <strong>{dia(d.nextPeriodEnd)}</strong>, al cierre del día (clases del {diaCorto(d.nextPeriodStart)} al{" "}
           {diaCorto(d.nextPeriodEnd)}). Pago estimado: a más tardar el <strong>{dia(d.nextPayDate)}</strong>.
         </span>
       </p>

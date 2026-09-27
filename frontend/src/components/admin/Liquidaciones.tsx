@@ -108,15 +108,15 @@ export function Liquidaciones() {
   return (
     <section className="mt-5">
       <p className="text-[13.5px] leading-relaxed text-text-secondary">
-        El sistema corta a las 00:00 del 1 y del 16 y arma una liquidación por profe; tú la apruebas, transfieres por
-        Bre-B y registras el pago.
+        El sistema corta al cierre del 15 y del último día de cada mes y arma una liquidación por profe; tú la
+        apruebas, transfieres por Bre-B y registras el pago.
       </p>
 
       {cortes.data && (
         <p className="mt-3 flex items-start gap-2 rounded-base bg-accent-lavender-soft px-4 py-3 text-[13px] text-[#5e4a8a]">
           <CalendarClock size={16} strokeWidth={1.9} className="mt-0.5 shrink-0" />
           <span>
-            Próximo corte: <strong>{dia(cortes.data.next.cutoff.slice(0, 10))}</strong>, para la quincena del{" "}
+            Próximo corte: <strong>{dia(cortes.data.next.end)}</strong>, al cierre del día, para la quincena del{" "}
             {diaCorto(cortes.data.next.start)} al {diaCorto(cortes.data.next.end)}. Se paga a más tardar el{" "}
             {dia(cortes.data.next.committedPayDate)}.
           </span>
@@ -153,7 +153,7 @@ export function Liquidaciones() {
         </div>
       ) : !quincena.data.periodStart ? (
         <div className="mt-5">
-          <Vacio titulo="Todavía no hay cortes" texto="El primero corre solo, a las 00:00 del 1 o del 16." />
+          <Vacio titulo="Todavía no hay cortes" texto="El primero corre solo, al cierre del 15 o del último día del mes." />
         </div>
       ) : (
         <>

@@ -827,7 +827,8 @@ manual (Bre-B desde la cuenta de Pardo), y no hay integración bancaria ni de Wo
     («Falta a dónde te pagamos», `AvisoDatosDePago`). Si aun así faltaran, su liquidación queda
     retenida.
 - **El motor (paso 3, V74).**
-  - Quincenas con corte a las 00:00 del 16 y del 1, en Bogotá. El corte (`PayoutCutJob`, cada hora,
+  - Quincenas con corte al cierre del 15 y del último día de cada mes (el instante son las 00:00 del
+    16 y del 1, en Bogotá; desde el 27/09 la app lo nombra como el acuerdo, por el último día). El corte (`PayoutCutJob`, cada hora,
     vigilado por `JobWatchdog`) corta una vez por quincena: `payout_cuts` lo registra, y el único
     `(professor_id, period_start)` impide duplicar.
   - `PayoutCalculator` es puro y decide qué es liquidable: pago liberado, clase cerrada (o

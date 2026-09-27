@@ -250,7 +250,7 @@ class LiquidacionesIT extends ApiIntegrationSupport {
                 "Orión recibe en tu nombre lo que pagan tus estudiantes y te lo entrega cada quincena, menos la comisión.");
         assertThat(mias.get("nextPeriodStart")).isEqualTo("2026-10-16");
         assertThat((List<Map>) mias.get("pending")).singleElement()
-                .satisfies(p -> assertThat(p.get("reason")).isEqualTo("Entra en el corte del 1 de noviembre"));
+                .satisfies(p -> assertThat(p.get("reason")).isEqualTo("Entra en el corte del 31 de octubre"));
         assertThat((List<Map>) mias.get("payouts")).singleElement()
                 .satisfies(p -> assertThat(p).containsEntry("status", "PAID").containsEntry("paidOn", "2026-10-16"));
 

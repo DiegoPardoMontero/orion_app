@@ -3,7 +3,6 @@ package co.orion.billing.domain;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -158,7 +157,9 @@ public final class PayoutCalculator {
         if (venceElReclamo.isAfter(proxima.cutoff())) {
             return "En plazo de reclamo hasta el " + diaYMes(venceElReclamo);
         }
-        return "Entra en el corte del " + diaYMes(proxima.cutoff());
+        // El corte se nombra por el último día de la quincena, como el acuerdo del profesor: «el 15 y el
+        // último día de cada mes» (<AB>, 27/09/2026). El instante es el mismo: las 00:00 del día siguiente.
+        return "Entra en el corte del " + diaYMes(proxima.end());
     }
 
     /**
@@ -185,8 +186,11 @@ public final class PayoutCalculator {
     }
 
     private static String diaYMes(Instant instante) {
-        ZonedDateTime z = instante.atZone(BusinessZone.BOGOTA);
-        return z.getDayOfMonth() + " de " + z.getMonth().getDisplayName(java.time.format.TextStyle.FULL,
+        return diaYMes(instante.atZone(BusinessZone.BOGOTA).toLocalDate());
+    }
+
+    private static String diaYMes(LocalDate dia) {
+        return dia.getDayOfMonth() + " de " + dia.getMonth().getDisplayName(java.time.format.TextStyle.FULL,
                 java.util.Locale.forLanguageTag("es-CO"));
     }
 }
