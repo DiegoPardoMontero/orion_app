@@ -27,8 +27,9 @@ import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type { ConversationSummary, MyBookingResponse } from "@/lib/api/types";
 import type { EntradaDeActa, ResumenDeActas } from "@/lib/actas";
 import { useMe } from "@/lib/auth/session";
+import { momentosDeAsistencia, useAhoraHasta } from "@/components/aula/asistencia";
 import { esperaPago, etiquetaEstado } from "@/lib/estados-clase";
-import { diaBogota, fechaCorta, fechaYRango, precioCop, rangoHoras } from "@/lib/format";
+import { diaBogota, fechaCorta, fechaYRango, horaBogota, precioCop, rangoHoras } from "@/lib/format";
 import { useElegibilidadRetracto, useRetractarse } from "@/lib/retracto";
 import { horas, minutos, useCifras } from "@/lib/cifras";
 import { AvisoDelRecorrido } from "@/components/bienvenida/AvisoDelRecorrido";
@@ -459,8 +460,17 @@ function TarjetaClase({
   const enCurso = scope === "upcoming" && !!clase.inProgress;
   const yaEmpezo = scope === "past" || enCurso;
 
-  // El profesor registra asistencia de lo que ya ocurrió y sigue confirmado.
-  const puedeRegistrar = esProfesor && yaEmpezo && clase.status === "CONFIRMED";
+  // El profesor registra asistencia de lo que ya ocurrió y sigue confirmado, y solo desde que el
+  // servidor lo admite: «no se presentó» a los 15 minutos del inicio, «asistió» al terminar. Antes el
+  // botón salía con la clase recién empezada y el servidor respondía «aún no termina».
+  const esperaAsistencia =
+    esProfesor && yaEmpezo && clase.status === "CONFIRMED" && !!clase.startsAt && !!clase.endsAt;
+  const desdeAsistencia = esperaAsistencia
+    ? momentosDeAsistencia(clase.startsAt!, clase.endsAt!, cifras.noShowReportMinutes)
+    : null;
+  const ahora = useAhoraHasta(desdeAsistencia ? [desdeAsistencia.asistio, desdeAsistencia.noAsistio] : []);
+  const puedeRegistrar =
+    !!desdeAsistencia && ahora >= Math.min(desdeAsistencia.asistio, desdeAsistencia.noAsistio);
 
   // El estudiante califica una clase pasada que se dio (confirmada o completada). El backend arbitra
   // el plazo/estado real (422) y el duplicado (409); aquí basta con ofrecer el botón en ese rango.
@@ -1136,8 +1146,25 @@ function ModalReportar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
 
 function ModalAsistencia({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar: () => void }) {
   const queryClient = useQueryClient();
+  const cifras = useCifras();
   const [notas, setNotas] = useState("");
   const [asistio, setAsistio] = useState<boolean | null>(null);
+
+  // La misma regla que la tarjeta: con la clase en curso, «No asistió» ya se puede y «Asistió»
+  // espera al final. Si el diálogo sigue abierto, se habilita solo al llegar la hora.
+  const desde = momentosDeAsistencia(clase.startsAt!, clase.endsAt!, cifras.noShowReportMinutes);
+  const ahora = useAhoraHasta([desde.asistio, desde.noAsistio]);
+  const puedeAsistio = ahora >= desde.asistio;
+  const puedeNoAsistio = ahora >= desde.noAsistio;
+  const eleccion =
+    (asistio === true && !puedeAsistio) || (asistio === false && !puedeNoAsistio) ? null : asistio;
+
+  const refrescar = () => {
+    void queryClient.invalidateQueries({ queryKey: ["me", "bookings"] });
+    // Cerrada con asistencia, la tarjeta pasa a ofrecer el acta y «Actas por escribir» la cuenta.
+    void queryClient.invalidateQueries({ queryKey: ["lesson-notes-summary"] });
+    void queryClient.invalidateQueries({ queryKey: ["lesson-notes-index"] });
+  };
 
   const registrar = useMutation({
     mutationFn: (present: boolean) =>
@@ -1146,8 +1173,13 @@ function ModalAsistencia({ clase, onCerrar }: { clase: MyBookingResponse; onCerr
         body: { present, notes: notas.trim() || undefined },
       }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["me", "bookings"] });
+      refrescar();
       onCerrar();
+    },
+    // 409: la clase ya no estaba confirmada. El mensaje del servidor lo explica y la lista se
+    // refresca para que la tarjeta diga en qué quedó.
+    onError: (err) => {
+      if (err instanceof ApiError && err.status === 409) refrescar();
     },
   });
 
@@ -1160,20 +1192,30 @@ function ModalAsistencia({ clase, onCerrar }: { clase: MyBookingResponse; onCerr
     >
       <div className="flex gap-2">
         <Boton
-          variante={asistio === true ? "tinta" : "contorno"}
+          variante={eleccion === true ? "tinta" : "contorno"}
+          disabled={!puedeAsistio}
           onClick={() => setAsistio(true)}
           className="h-11 flex-1"
         >
           Asistió
         </Boton>
         <Boton
-          variante={asistio === false ? "tinta" : "contorno"}
+          variante={eleccion === false ? "tinta" : "contorno"}
+          disabled={!puedeNoAsistio}
           onClick={() => setAsistio(false)}
           className="h-11 flex-1"
         >
           No asistió
         </Boton>
       </div>
+      {(!puedeAsistio || !puedeNoAsistio) && (
+        <p className="mt-2.5 flex items-start gap-1.5 text-[12.5px] leading-relaxed text-text-secondary">
+          <Clock size={14} strokeWidth={2} className="mt-0.5 shrink-0" />
+          {!puedeNoAsistio
+            ? `Podrás registrarla a las ${horaBogota(new Date(desde.noAsistio).toISOString())}, ${cifras.noShowReportMinutes} minutos después del inicio.`
+            : `Podrás marcar «Asistió» a las ${horaBogota(clase.endsAt!)}, cuando termine la clase.`}
+        </p>
+      )}
 
       <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="notas">
         Notas (opcional)
@@ -1199,8 +1241,8 @@ function ModalAsistencia({ clase, onCerrar }: { clase: MyBookingResponse; onCerr
         </Boton>
         <Boton
           variante="primario"
-          disabled={asistio === null || registrar.isPending}
-          onClick={() => asistio !== null && registrar.mutate(asistio)}
+          disabled={eleccion === null || registrar.isPending}
+          onClick={() => eleccion !== null && registrar.mutate(eleccion)}
           className="h-11 flex-1"
         >
           {registrar.isPending ? "Guardando…" : "Guardar"}
