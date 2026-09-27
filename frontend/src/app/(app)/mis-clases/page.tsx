@@ -70,6 +70,7 @@ function Contenido() {
     <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-5xl lg:px-12 lg:py-8">
       <Suspense fallback={null}>
         <BannerReserva />
+        <AvisoAsistenciaCerrada />
       </Suspense>
 
       <h1 className="font-display text-h1 font-bold">Mis clases</h1>
@@ -1291,5 +1292,36 @@ function BannerReserva() {
   );
 }
 
-/** El logo de WhatsApp: SVG inline, como todo en este diseño. */
+/**
+ * Lo que dice Mis clases cuando la hoja de cierre del aula no pudo registrar la asistencia (409): la
+ * clase ya no estaba confirmada. Llega con `?aviso=asistencia-cerrada&clase=<id>`, así que la clase
+ * queda señalada abajo, con el estado en que quedó.
+ */
+function AvisoAsistenciaCerrada() {
+  const params = useSearchParams();
+  const [cerrado, setCerrado] = useState(false);
+  if (params.get("aviso") !== "asistencia-cerrada" || cerrado) return null;
+
+  return (
+    <div role="status" className="anim-rise mb-4 flex items-start gap-3 rounded-card bg-warning-bg p-4">
+      <AlertCircle size={20} strokeWidth={2} className="mt-0.5 shrink-0 text-warning" />
+      <div className="min-w-0 flex-1">
+        <p className="text-[14px] font-bold text-warning">No se registró la asistencia de esa clase</p>
+        <p className="mt-1 text-[13px] leading-relaxed text-text-secondary">
+          Ya no se podía: la asistencia ya estaba registrada, la clase se canceló o está en revisión
+          porque tu estudiante reportó un problema. Si está en revisión, te contamos apenas se
+          resuelva. Abajo la ves señalada, con su estado.
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={() => setCerrado(true)}
+        aria-label="Cerrar el aviso"
+        className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-full text-warning transition-colors hover:bg-surface-raised/60 focus-visible:shadow-focus"
+      >
+        <X size={16} strokeWidth={2.2} />
+      </button>
+    </div>
+  );
+}
 
