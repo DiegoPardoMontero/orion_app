@@ -2,7 +2,7 @@
 
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
-import { componerE164, PAISES, parseTelefono, whatsappValido } from "@/lib/phone";
+import { componerE164, leerNumero, PAISES, parseTelefono, whatsappValido } from "@/lib/phone";
 
 /**
  * Teléfono con selector de país. Produce y consume E.164 (`+573001112233`). Sin librerías: lista
@@ -76,9 +76,10 @@ export function PhoneInput({
         placeholder={placeholder ?? "300 111 2233"}
         value={local}
         onChange={(event) => {
-          const digits = event.target.value.replace(/\D/g, "");
-          setLocal(digits);
-          emitir(dial, digits);
+          const leido = leerNumero(dial, event.target.value);
+          setDial(leido.dial);
+          setLocal(leido.local);
+          emitir(leido.dial, leido.local);
         }}
         className="h-[52px] w-full rounded-base border-[1.5px] border-border bg-surface-raised px-[18px] text-[15px] text-text placeholder:text-text-muted transition-[border-color,box-shadow] focus:border-primary focus:shadow-focus focus:outline-none"
       />

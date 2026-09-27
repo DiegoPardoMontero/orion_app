@@ -25,6 +25,27 @@ export function parseTelefono(value?: string): { dial: string; local: string } {
   return { dial: pais.dial, local: digits.slice(pais.dial.length) };
 }
 
+/** El número local más largo de la lista (Colombia, México, Estados Unidos…). */
+const LOCAL_MAXIMO = 10;
+
+/**
+ * Lo que se escribe o se pega en el campo del número, ya separado en país + número local. Pegar
+ * «+57 300 123 4567» con Colombia elegida daba «+57573001234567»: el indicativo se quedaba dentro
+ * del número. Con «+» delante se lee el indicativo (y se cambia de país si es otro de la lista); sin
+ * él, se quita el del país elegido solo si sobran dígitos, para no comerse un número que empiece igual.
+ */
+export function leerNumero(dial: string, texto: string): { dial: string; local: string } {
+  const digits = texto.replace(/\D/g, "");
+  if (texto.trim().startsWith("+")) {
+    const pais = POR_DIAL.find((p) => digits.startsWith(p.dial));
+    if (pais) return { dial: pais.dial, local: digits.slice(pais.dial.length) };
+  }
+  if (digits.length > LOCAL_MAXIMO && digits.startsWith(dial)) {
+    return { dial, local: digits.slice(dial.length) };
+  }
+  return { dial, local: digits };
+}
+
 /** Compone el E.164 a partir de indicativo + número local. Local vacío → "" (sin teléfono). */
 export function componerE164(dial: string, local: string): string {
   const digits = local.replace(/\D/g, "");
