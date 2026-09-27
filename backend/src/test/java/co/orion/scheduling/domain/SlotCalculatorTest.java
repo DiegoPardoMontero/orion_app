@@ -278,6 +278,85 @@ class SlotCalculatorTest {
         assertThat(startTimes(slots)).containsExactly(bogota(MONDAY, 18), bogota(MONDAY, 18, 30));
     }
 
+    /**
+     * Dos franjas seguidas son una sola tarde. Antes se calculaban por separado y la clase de las
+     * 18:30 —que va hasta las 19:25— no cabía en ninguna de las dos, aunque el profesor estuviera
+     * libre de 18:00 a 20:00 sin interrupción.
+     */
+    @Test
+    void contiguousRulesKeepTheHalfHourSlotThatCrossesTheirBorder() {
+        List<Slot> slots = calculator.calculate(
+                List.of(rule(DayOfWeek.MONDAY, 18, 19), rule(DayOfWeek.MONDAY, 19, 20)),
+                List.of(), List.of(),
+                MONDAY, MONDAY, LONG_BEFORE);
+
+        assertThat(startTimes(slots)).containsExactly(
+                bogota(MONDAY, 18), bogota(MONDAY, 18, 30), bogota(MONDAY, 19));
+    }
+
+    /** El orden en que llegan las reglas no importa, y el borde puede estar a la media hora. */
+    @Test
+    void contiguousRulesMergeRegardlessOfOrderAndAtTheHalfHour() {
+        List<Slot> slots = calculator.calculate(
+                List.of(rule(DayOfWeek.MONDAY, LocalTime.of(19, 30), LocalTime.of(20, 30)),
+                        rule(DayOfWeek.MONDAY, LocalTime.of(18, 0), LocalTime.of(19, 30))),
+                List.of(), List.of(),
+                MONDAY, MONDAY, LONG_BEFORE);
+
+        assertThat(startTimes(slots)).containsExactly(
+                bogota(MONDAY, 18), bogota(MONDAY, 18, 30), bogota(MONDAY, 19), bogota(MONDAY, 19, 30));
+    }
+
+    /** Un hueco de verdad entre dos franjas sigue siendo un hueco. */
+    @Test
+    void rulesWithAGapBetweenThemAreNotMerged() {
+        List<Slot> slots = calculator.calculate(
+                List.of(rule(DayOfWeek.MONDAY, 18, 19),
+                        rule(DayOfWeek.MONDAY, LocalTime.of(19, 30), LocalTime.of(20, 30))),
+                List.of(), List.of(),
+                MONDAY, MONDAY, LONG_BEFORE);
+
+        assertThat(startTimes(slots)).containsExactly(bogota(MONDAY, 18), bogota(MONDAY, 19, 30));
+    }
+
+    /** Una franja apagada no hace de puente entre las de los lados. */
+    @Test
+    void anInactiveRuleDoesNotBridgeItsNeighbours() {
+        AvailabilityRule middle = rule(DayOfWeek.MONDAY, 19, 20);
+        middle.deactivate();
+
+        List<Slot> slots = calculator.calculate(
+                List.of(rule(DayOfWeek.MONDAY, 18, 19), middle, rule(DayOfWeek.MONDAY, 20, 21)),
+                List.of(), List.of(),
+                MONDAY, MONDAY, LONG_BEFORE);
+
+        assertThat(startTimes(slots)).containsExactly(bogota(MONDAY, 18), bogota(MONDAY, 20));
+    }
+
+    /** Si alguna vez coexisten dos franjas solapadas, el mismo cupo no sale dos veces. */
+    @Test
+    void overlappingRulesDoNotDuplicateSlots() {
+        List<Slot> slots = calculator.calculate(
+                List.of(rule(DayOfWeek.MONDAY, 18, 20), rule(DayOfWeek.MONDAY, 19, 21)),
+                List.of(), List.of(),
+                MONDAY, MONDAY, LONG_BEFORE);
+
+        assertThat(startTimes(slots)).containsExactly(
+                bogota(MONDAY, 18), bogota(MONDAY, 18, 30), bogota(MONDAY, 19),
+                bogota(MONDAY, 19, 30), bogota(MONDAY, 20));
+    }
+
+    /** Solo se funden franjas del mismo día: las de otro día de la semana no cuentan. */
+    @Test
+    void rulesOfAnotherWeekdayAreNotMerged() {
+        List<Slot> slots = calculator.calculate(
+                List.of(rule(DayOfWeek.MONDAY, 18, 19), rule(DayOfWeek.TUESDAY, 19, 20)),
+                List.of(), List.of(),
+                MONDAY, MONDAY, LONG_BEFORE);
+
+        assertThat(startTimes(slots)).containsExactly(bogota(MONDAY, 18));
+    }
+
     private AvailabilityRule rule(DayOfWeek weekday, int startHour, int endHour) {
         return rule(weekday, LocalTime.of(startHour, 0), LocalTime.of(endHour, 0));
     }

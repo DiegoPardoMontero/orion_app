@@ -4,7 +4,9 @@ import co.orion.shared.time.ClassLength;
 import co.orion.shared.time.BusinessZone;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -65,11 +67,8 @@ public final class SlotCalculator {
             if (dayExceptions.stream().anyMatch(AvailabilityException::isWholeDay)) {
                 continue;
             }
-            for (AvailabilityRule rule : rules) {
-                if (!rule.isActive() || rule.getWeekday() != date.getDayOfWeek()) {
-                    continue;
-                }
-                addSlotsOf(rule, date, dayExceptions, occupied, now,
+            for (Window window : windowsOf(rules, date.getDayOfWeek())) {
+                addSlotsOf(window, date, dayExceptions, occupied, now,
                         now.plus(antelacionMinima), slots);
             }
         }
@@ -78,20 +77,55 @@ public final class SlotCalculator {
         return slots;
     }
 
-    private void addSlotsOf(AvailabilityRule rule,
+    /** Un tramo continuo de disponibilidad en un día: [start, end), en hora de pared de Bogotá. */
+    private record Window(LocalTime start, LocalTime end) {
+    }
+
+    /**
+     * Las franjas activas de ese día de la semana, con las contiguas o solapadas fundidas en una.
+     *
+     * <p>Sin esto, un profesor con 18:00–19:00 y 19:00–20:00 perdía las 18:30: esa clase va hasta
+     * las 19:25 y no cabe entera en ninguna de las dos franjas por separado, aunque él esté libre de
+     * 18:00 a 20:00 sin interrupción. Para el estudiante son la misma tarde, y así se calcula.
+     * Fundir las solapadas, además, evita ofrecer dos veces el mismo cupo si alguna vez coexisten
+     * (el servicio no las deja crear, pero el cálculo no depende de eso).
+     */
+    private List<Window> windowsOf(List<AvailabilityRule> rules, DayOfWeek weekday) {
+        List<Window> sorted = rules.stream()
+                .filter(rule -> rule.isActive() && rule.getWeekday() == weekday)
+                .map(rule -> new Window(rule.getStartTime(), rule.getEndTime()))
+                .sorted(Comparator.comparing(Window::start))
+                .toList();
+
+        List<Window> merged = new ArrayList<>();
+        for (Window window : sorted) {
+            Window last = merged.isEmpty() ? null : merged.getLast();
+            // Contigua (empieza justo donde acaba la anterior) o solapada: es el mismo tramo.
+            if (last != null && !window.start().isAfter(last.end())) {
+                LocalTime end = window.end().isAfter(last.end()) ? window.end() : last.end();
+                merged.set(merged.size() - 1, new Window(last.start(), end));
+            } else {
+                merged.add(window);
+            }
+        }
+        return merged;
+    }
+
+    private void addSlotsOf(Window window,
                             LocalDate date,
                             List<AvailabilityException> dayExceptions,
                             List<OccupiedInterval> occupied,
                             ZonedDateTime now,
                             ZonedDateTime noAntesDe,
                             List<Slot> slots) {
-        ZonedDateTime ruleEnd = date.atTime(rule.getEndTime()).atZone(BOGOTA);
+        ZonedDateTime windowEnd = date.atTime(window.end()).atZone(BOGOTA);
 
-        // Los cupos empiezan donde empieza la regla y avanzan cada media hora mientras la CLASE
-        // quepa entera: una regla 18:00–21:00 da 18:00, 18:30, 19:00, 19:30 y 20:00 — nunca las
-        // 20:30, porque esa clase terminaría a las 21:25 y la franja cierra a las 21:00.
-        for (ZonedDateTime start = date.atTime(rule.getStartTime()).atZone(BOGOTA);
-             !start.plus(CLASS_LENGTH).isAfter(ruleEnd);
+        // Los cupos empiezan donde empieza el tramo y avanzan cada media hora mientras la CLASE
+        // quepa entera: un tramo 18:00–21:00 da 18:00, 18:30, 19:00, 19:30 y 20:00 — nunca las
+        // 20:30, porque esa clase terminaría a las 21:25 y el tramo cierra a las 21:00. Las
+        // franjas empiezan a la hora o a la media hora, así que el tramo fundido también.
+        for (ZonedDateTime start = date.atTime(window.start()).atZone(BOGOTA);
+             !start.plus(CLASS_LENGTH).isAfter(windowEnd);
              start = start.plus(SLOT_CADENCE)) {
 
             ZonedDateTime end = start.plus(CLASS_LENGTH);
