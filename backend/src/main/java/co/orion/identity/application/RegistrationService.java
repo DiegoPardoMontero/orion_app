@@ -82,6 +82,9 @@ public class RegistrationService {
         try {
             User creado = users.saveAndFlush(user);
             studentProfiles.createFor(creado);
+            if (invites.consumeByEmail(creado)) {
+                creado.intendsToTeach();
+            }
             return creado;
         } catch (DataIntegrityViolationException ex) {
             throw new ConflictException("Ya existe una cuenta con ese correo");
@@ -137,6 +140,8 @@ public class RegistrationService {
             studentProfiles.createFor(creado);
             if (porInvitacion) {
                 invites.consume(inviteToken, creado);
+            } else if (invites.consumeByEmail(creado)) {
+                creado.intendsToTeach();
             }
             return creado;
         } catch (DataIntegrityViolationException ex) {

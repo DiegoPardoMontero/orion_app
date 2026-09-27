@@ -125,6 +125,30 @@ public class ProfessorInviteService {
         }
         invite.consume(newUser.getId(), clock.instant());
         invites.save(invite);
+        // El enlace llegó a ese correo: pedirle que lo confirme otra vez es un paso de más.
+        newUser.markEmailVerified(clock.instant());
+    }
+
+    /**
+     * Quien fue invitado pero creó su cuenta por otro camino —«Quiero enseñar», Google, la entrada
+     * normal— sigue siendo el invitado. Si su correo tiene una invitación vigente, queda usada y
+     * ligada a la cuenta, que nace para enseñar; así el beneficio de fundador llega al aprobarlo y el
+     * enlace ya no ofrece crear una cuenta que existe. Sin esto el beneficio se perdía en silencio.
+     *
+     * @return si había una invitación vigente para ese correo
+     */
+    @Transactional
+    public boolean consumeByEmail(User newUser) {
+        Instant ahora = clock.instant();
+        return invites.findByEmailAndUsedAtIsNull(newUser.getEmail()).stream()
+                .filter(i -> i.state(ahora) == ProfessorInvite.State.VALID)
+                .findFirst()
+                .map(invite -> {
+                    invite.consume(newUser.getId(), ahora);
+                    invites.save(invite);
+                    return true;
+                })
+                .orElse(false);
     }
 
     private String randomToken() {

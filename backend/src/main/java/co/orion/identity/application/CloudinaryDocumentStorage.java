@@ -10,13 +10,17 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import co.orion.shared.error.ServiceUnavailableException;
 
@@ -35,7 +39,13 @@ public class CloudinaryDocumentStorage implements DocumentStorage {
     private final String cloudName;
     private final String apiKey;
     private final String apiSecret;
-    private final RestClient http = RestClient.create();
+    /**
+     * Con tiempos de espera: sin ellos, un Cloudinary lento dejaba la subida colgada hasta que el proxy
+     * de Next la cortaba a los 30 s, y la persona veía un error genérico sin saber qué pasó.
+     */
+    private static final Logger log = LoggerFactory.getLogger(CloudinaryDocumentStorage.class);
+
+    private final RestClient http = RestClient.builder().requestFactory(conTiempos()).build();
 
     public CloudinaryDocumentStorage(Clock clock, @Value("${CLOUDINARY_URL:}") String cloudinaryUrl) {
         this.clock = clock;
@@ -83,12 +93,18 @@ public class CloudinaryDocumentStorage implements DocumentStorage {
         form.add("type", "authenticated");
         form.add("signature", signature);
 
-        Map<?, ?> response = http.post()
-                .uri("https://api.cloudinary.com/v1_1/" + cloudName + "/auto/upload")
-                .contentType(MediaType.MULTIPART_FORM_DATA)
-                .body(form)
-                .retrieve()
-                .body(Map.class);
+        Map<?, ?> response;
+        try {
+            response = http.post()
+                    .uri("https://api.cloudinary.com/v1_1/" + cloudName + "/auto/upload")
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .body(form)
+                    .retrieve()
+                    .body(Map.class);
+        } catch (RestClientException ex) {
+            log.warn("Cloudinary no respondió bien a la subida: {}", ex.getMessage());
+            throw new ServiceUnavailableException("No pudimos subir el archivo. Inténtalo de nuevo en un momento.");
+        }
 
         Object publicId = response == null ? null : response.get("public_id");
         if (publicId == null) {
@@ -173,5 +189,12 @@ public class CloudinaryDocumentStorage implements DocumentStorage {
         } catch (NoSuchAlgorithmException ex) {
             throw new IllegalStateException("SHA-1 no disponible", ex);
         }
+    }
+
+    private static SimpleClientHttpRequestFactory conTiempos() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(10));
+        factory.setReadTimeout(Duration.ofSeconds(25));
+        return factory;
     }
 }

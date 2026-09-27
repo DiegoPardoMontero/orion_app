@@ -276,10 +276,33 @@ class InvitacionDeProfesoresIT extends ApiIntegrationSupport {
         Map vista = ver(token);
         assertThat(vista.get("state")).isEqualTo("USED");
         assertThat(vista.get("email")).isNull();
+        // El enlace llegó a ese correo: queda verificado sin pedirle que lo confirme otra vez.
+        assertThat(users.findByEmailIgnoreCase(CORREO).orElseThrow().isEmailVerified()).isTrue();
         // Y aceptó los Términos y la política en el registro, que antes la invitación se saltaba.
         UUID id = users.findByEmailIgnoreCase(CORREO).orElseThrow().getId();
         assertThat(jdbc.queryForObject("select count(*) from agreement_acceptances where user_id = ?",
                 Integer.class, id)).isGreaterThanOrEqualTo(2);
+    }
+
+    /**
+     * El invitado que se registra sin el enlace (por «Quiero enseñar», o con Google) sigue siendo el
+     * invitado: la invitación queda ligada a su cuenta, que nace para enseñar, y al aprobarse recibe el
+     * beneficio de fundador. Antes lo perdía en silencio y el enlace seguía ofreciendo crear la cuenta.
+     */
+    @Test
+    @SuppressWarnings("rawtypes")
+    void elInvitadoQueSeRegistraSinElEnlaceQuedaLigadoYRecibeElBeneficio() {
+        String token = invitar(CORREO, true);
+
+        assertThat(registrarse(CORREO, null).getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+        assertThat(get("/api/v1/auth/me", login(CORREO), Map.class).getBody().get("role"))
+                .isEqualTo("TEACHER_APPLICANT");
+        assertThat(ver(token).get("state")).isEqualTo("USED");
+        completarPostulacion(login(CORREO), CORREO);
+        aprobar(CORREO);
+        UUID id = users.findByEmailIgnoreCase(CORREO).orElseThrow().getId();
+        assertThat(profiles.findById(id).orElseThrow().founderTerms()).isNotNull();
     }
 
     @Test

@@ -5,15 +5,20 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import co.orion.shared.error.ServiceUnavailableException;
 
@@ -34,7 +39,13 @@ public class CloudinaryPhotoUploader implements PhotoUploader {
     private final String cloudName;
     private final String apiKey;
     private final String apiSecret;
-    private final RestClient http = RestClient.create();
+    /**
+     * Con tiempos de espera: sin ellos, un Cloudinary lento dejaba la subida colgada hasta que el proxy
+     * de Next la cortaba a los 30 s, y la persona veía un error genérico sin saber qué pasó.
+     */
+    private static final Logger log = LoggerFactory.getLogger(CloudinaryPhotoUploader.class);
+
+    private final RestClient http = RestClient.builder().requestFactory(conTiempos()).build();
 
     public CloudinaryPhotoUploader(Clock clock, @Value("${CLOUDINARY_URL:}") String cloudinaryUrl) {
         this.clock = clock;
@@ -83,12 +94,18 @@ public class CloudinaryPhotoUploader implements PhotoUploader {
         form.add("transformation", TRANSFORMATION);
         form.add("signature", signature);
 
-        Map<?, ?> response = http.post()
-                .uri("https://api.cloudinary.com/v1_1/" + cloudName + "/image/upload")
-                .contentType(MediaType.MULTIPART_FORM_DATA)
-                .body(form)
-                .retrieve()
-                .body(Map.class);
+        Map<?, ?> response;
+        try {
+            response = http.post()
+                    .uri("https://api.cloudinary.com/v1_1/" + cloudName + "/image/upload")
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .body(form)
+                    .retrieve()
+                    .body(Map.class);
+        } catch (RestClientException ex) {
+            log.warn("Cloudinary no respondió bien a la subida: {}", ex.getMessage());
+            throw new ServiceUnavailableException("No pudimos subir tu foto. Inténtalo de nuevo en un momento.");
+        }
 
         Object secureUrl = response == null ? null : response.get("secure_url");
         if (secureUrl == null) {
@@ -109,5 +126,12 @@ public class CloudinaryPhotoUploader implements PhotoUploader {
         } catch (NoSuchAlgorithmException ex) {
             throw new IllegalStateException("SHA-1 no disponible", ex);
         }
+    }
+
+    private static SimpleClientHttpRequestFactory conTiempos() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(10));
+        factory.setReadTimeout(Duration.ofSeconds(25));
+        return factory;
     }
 }
