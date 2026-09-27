@@ -1,6 +1,5 @@
 package co.orion.identity.application;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -10,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -74,7 +74,11 @@ public class ProfessorSearchService {
             effective = effective.availableOnly(availability.professorsAvailable(
                     criteria.days(), criteria.from(), criteria.to()));
         }
-        Page<ProfessorProfile> found = profiles.findAll(ProfessorSpecifications.matching(effective), pageable);
+        Specification<ProfessorProfile> spec = ProfessorSpecifications.matching(effective);
+        if (sort == ProfessorSortOption.RELEVANCE || sort == ProfessorSortOption.RATING) {
+            spec = spec.and(ProfessorSpecifications.orderedBy(sort));
+        }
+        Page<ProfessorProfile> found = profiles.findAll(spec, pageable);
 
         List<UUID> ids = found.getContent().stream().map(ProfessorProfile::getUserId).toList();
         Map<UUID, List<ProfessorLanguage>> langs = ids.isEmpty() ? Map.of()
@@ -91,16 +95,6 @@ public class ProfessorSearchService {
         List<ProfessorCard> cards = found.getContent().stream()
                 .map(p -> toCard(p, langs, levels, goals, catalog, ratingsByProfessor))
                 .toList();
-
-        // sort=RATING: la consulta trae el orden estable de RELEVANCE; reordenamos la página en
-        // memoria por promedio DESC (nulls al final). A nuestro volumen, ordenar la página basta.
-        if (sort == ProfessorSortOption.RATING) {
-            cards = cards.stream()
-                    .sorted(Comparator.comparing(ProfessorCard::ratingAvg,
-                                    Comparator.nullsLast(Comparator.reverseOrder()))
-                            .thenComparing(ProfessorCard::ratingCount, Comparator.reverseOrder()))
-                    .toList();
-        }
 
         return new PagedProfessors(cards, found.getNumber(), found.getSize(),
                 found.getTotalElements(), found.getTotalPages());
@@ -148,9 +142,9 @@ public class ProfessorSearchService {
         return switch (sort) {
             case PRICE_ASC -> Sort.by(Sort.Order.asc("hourlyRateCop"));
             case PRICE_DESC -> Sort.by(Sort.Order.desc("hourlyRateCop"));
-            // RATING trae el orden estable de RELEVANCE desde la BD y luego se reordena la página en
-            // memoria por promedio (el agregado vive en otra tabla del módulo reputation).
-            case RELEVANCE, RATING -> Sort.by(Sort.Order.desc("certified"), Sort.Order.asc("userId"));
+            // Los pone ProfessorSpecifications.orderedBy: dependen de las métricas de reputation,
+            // que no son un atributo del perfil y no se pueden pedir con un Sort.
+            case RELEVANCE, RATING -> Sort.unsorted();
         };
     }
 

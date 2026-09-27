@@ -1,5 +1,6 @@
 package co.orion.identity.application;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -14,9 +15,16 @@ import co.orion.identity.domain.ProfessorLanguageLevel;
 import co.orion.identity.domain.ProfessorProfile;
 import co.orion.identity.domain.TeacherApplication;
 import co.orion.identity.domain.UserStatus;
+import co.orion.reputation.application.RatingSummary;
+import co.orion.reputation.domain.ProfessorMetrics;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Nulls;
+import jakarta.persistence.criteria.Order;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
@@ -80,6 +88,55 @@ final class ProfessorSpecifications {
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    /**
+     * El orden de RELEVANCE y RATING, resuelto en la base para que la paginación lo respete. Antes
+     * RELEVANCE era «certificados primero y luego por id» —un orden estable pero ciego— mientras
+     * «Desempeño» le decía al profe que su posición salía de un puntaje; y RATING solo reordenaba
+     * la página que ya había llegado.
+     *
+     * <ul>
+     *   <li>RELEVANCE: {@code ranking_score} de reputation (lo recalcula el job nocturno; nulo hasta
+     *       su primera pasada, y ese va al final), luego certificados.</li>
+     *   <li>RATING: el promedio que se EXHIBE —con menos de {@value RatingSummary#MIN_REVIEWS_FOR_AVERAGE}
+     *       reseñas no hay promedio y va al final—, luego cuántas reseñas, y después lo mismo que
+     *       RELEVANCE.</li>
+     * </ul>
+     *
+     * El desempate final es el nombre y, solo entre homónimos, el id: la paginación necesita un
+     * orden total, o un profe podría salir en dos páginas y otro en ninguna.
+     *
+     * <p>A diferencia de las sanciones, que entran ya resueltas como una lista de ids, esto sí
+     * toca la tabla de reputation dentro de la consulta: un orden no se puede pasar como lista y
+     * tiene que existir antes de cortar la página. Es un LEFT JOIN por la clave (uno a uno), así
+     * que no cambia qué filas salen ni cuántas.
+     */
+    static Specification<ProfessorProfile> orderedBy(ProfessorSortOption sort) {
+        return (root, query, cb) -> {
+            // El conteo de la paginación no ordena: ni join ni ORDER BY para él.
+            if (query == null || Long.class.equals(query.getResultType())) {
+                return null;
+            }
+            Join<ProfessorProfile, ProfessorMetrics> metrics = root.join(ProfessorMetrics.class, JoinType.LEFT);
+            metrics.on(cb.equal(metrics.get("professorId"), root.get("userId")));
+
+            List<Order> orden = new ArrayList<>();
+            if (sort == ProfessorSortOption.RATING) {
+                Expression<BigDecimal> promedioVisible = cb.<BigDecimal>selectCase()
+                        .when(cb.ge(metrics.<Integer>get("ratingCount"), RatingSummary.MIN_REVIEWS_FOR_AVERAGE),
+                                metrics.<BigDecimal>get("ratingAvg"))
+                        .otherwise(cb.nullLiteral(BigDecimal.class));
+                orden.add(cb.desc(promedioVisible, Nulls.LAST));
+                orden.add(cb.desc(metrics.get("ratingCount"), Nulls.LAST));
+            }
+            orden.add(cb.desc(metrics.get("rankingScore"), Nulls.LAST));
+            orden.add(cb.desc(root.get("certified")));
+            orden.add(cb.asc(root.get("user").get("fullName")));
+            orden.add(cb.asc(root.get("userId")));
+            query.orderBy(orden);
+            return null;
         };
     }
 

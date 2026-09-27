@@ -1,8 +1,8 @@
 package co.orion.identity.application;
 
 /**
- * Orden del buscador. RATING cae a RELEVANCE por ahora: el ranking real llega en el Bloque 6, no se
- * inventa aquí. RELEVANCE es un orden estable (certificados primero, luego por id) mientras tanto.
+ * Orden del buscador. RELEVANCE sigue el {@code ranking_score} de reputation y RATING el promedio de
+ * reseñas que se exhibe; los dos se resuelven en la consulta (ver ProfessorSpecifications.orderedBy).
  */
 public enum ProfessorSortOption {
     RELEVANCE,
