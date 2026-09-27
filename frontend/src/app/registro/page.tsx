@@ -12,6 +12,7 @@ import {
   Mail,
   Mic,
   NotebookPen,
+  RotateCw,
   Sparkles,
   User,
   Wallet,
@@ -25,13 +26,13 @@ import { AvisoError } from "@/components/estados";
 import { Constelacion, Wordmark } from "@/components/marca";
 import { AyudaWhatsapp, PhoneInput } from "@/components/PhoneInput";
 import { Rigel, type RigelPose } from "@/components/Rigel";
-import { BotonPrincipal, Campo, Segmento, Spinner } from "@/components/ui";
+import { Boton, BotonPrincipal, Campo, Segmento, Spinner } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import { destinoAlEntrar } from "@/lib/auth/roles";
 import { destinoSeguro, entrarYVolver } from "@/lib/auth/volver";
 import { useRegister } from "@/lib/auth/session";
 import { minutos, useCifras } from "@/lib/cifras";
-import { fuerzaClave } from "@/lib/password";
+import { esFuerte, fuerzaClave } from "@/lib/password";
 import { whatsappValido } from "@/lib/phone";
 import { Consentimiento } from "@/components/Consentimiento";
 import { BotonesSociales } from "@/components/BotonesSociales";
@@ -108,6 +109,11 @@ function Registro() {
   // Mientras llega o si es válida, la cuenta es de profesor. Si venció o ya se usó, el registro vuelve
   // a ser el de siempre: quien quería aprender tiene que poder elegirlo.
   const conInvitacion = !!tokenDeInvitacion && !invitacionCaida;
+  // Sin la respuesta todavía no se sabe si la invitación sirve: crear la cuenta en ese momento la
+  // dejaba sin el enlace, y con él se iba el beneficio de fundador. (Sin token, la consulta está
+  // apagada y en v5 cuenta como «pendiente»: por eso se mira el token.)
+  const esperandoInvitacion = !!tokenDeInvitacion && invitacion.isPending;
+  const invitacionSinRespuesta = !!tokenDeInvitacion && invitacion.isError;
   const [intencion, setIntencion] = useState<Intencion>(
     rolInicial === "profesor" || tokenDeInvitacion ? "ensenar" : "aprender",
   );
@@ -151,10 +157,12 @@ function Registro() {
   const [aceptaDatos, setAceptaDatos] = useState(false);
 
   const fuerza = fuerzaClave(password);
+  const claveFuerte = esFuerte(password);
   const listo =
+    !esperandoInvitacion &&
     nombre.trim().length > 0 &&
     /.+@.+\..+/.test(email) &&
-    password.length >= 8 &&
+    claveFuerte &&
     whatsappValido(whatsapp) &&
     mayorDeEdad &&
     aceptaTerminos &&
@@ -175,7 +183,9 @@ function Registro() {
         adult: mayorDeEdad,
         acceptsTerms: aceptaTerminos,
         acceptsDataPolicy: aceptaDatos,
-        inviteToken: invitado ? (tokenDeInvitacion ?? undefined) : undefined,
+        // Con el enlace siempre que no se sepa vencido o usado, también si su consulta falló: el
+        // backend lo valida al crear la cuenta y, si no sirve, dice por qué.
+        inviteToken: conInvitacion ? (tokenDeInvitacion ?? undefined) : undefined,
       },
       {
         // Quien viene a enseñar entra directo a su postulación; quien viene a aprender, al
@@ -235,6 +245,20 @@ function Registro() {
           {invitacionCaida && (
             <div className="mt-4">
               <AvisoError mensaje="Esta invitación ya venció o ya se usó. Escríbele a quien te invitó y te enviamos un enlace nuevo." />
+            </div>
+          )}
+          {invitacionSinRespuesta && (
+            <div className="mt-4 grid gap-2">
+              <AvisoError mensaje="No pudimos revisar tu invitación. Revisa tu conexión y vuelve a intentarlo: sin ella no se guarda tu beneficio de profe fundador." />
+              <Boton
+                variante="contorno"
+                onClick={() => void invitacion.refetch()}
+                disabled={invitacion.isFetching}
+                className="justify-self-start"
+              >
+                {invitacion.isFetching ? <Spinner /> : <RotateCw size={15} strokeWidth={2} />}
+                Reintentar
+              </Boton>
             </div>
           )}
 
@@ -331,6 +355,7 @@ function Registro() {
               icono={<Lock size={18} strokeWidth={1.75} />}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
+              aria-describedby="password-fuerza"
               className="mt-1.5 pr-12"
             />
             <button
@@ -343,9 +368,11 @@ function Registro() {
             </button>
           </div>
 
-          {/* Medidor de fuerza: 4 segmentos que se encienden en menta; mensaje que dice qué falta. */}
-          <div className="mt-2.5" aria-hidden="true">
-            <div className="flex gap-1.5">
+          {/* Medidor de fuerza: 4 segmentos que se encienden en menta; mensaje que dice qué falta.
+              Hace falta llegar a «Fuerte» (Pardo, 27/09/2026): si no, el botón no se enciende, y
+              el texto lo dice para que nadie se quede mirando un botón apagado. */}
+          <div className="mt-2.5">
+            <div className="flex gap-1.5" aria-hidden="true">
               {[0, 1, 2, 3].map((i) => (
                 <span
                   key={i}
@@ -357,15 +384,18 @@ function Registro() {
             </div>
             {/* En verde solo con el largo mínimo: una clave corta y variada suma puntos, pero no sirve. */}
             <p
+              id="password-fuerza"
+              aria-live="polite"
               className={`mt-1.5 text-[12px] ${
-                fuerza.nivel >= 3 && password.length >= 8
-                  ? "text-success"
-                  : password
-                    ? "text-text-secondary"
-                    : "text-text-muted"
+                claveFuerte ? "text-success" : password ? "text-text-secondary" : "text-text-muted"
               }`}
             >
               {fuerza.mensaje}
+              {password && !claveFuerte && (
+                <span className="block text-text-muted">
+                  Para crear tu cuenta, tiene que quedar «Fuerte» o «Excelente».
+                </span>
+              )}
             </p>
           </div>
 
@@ -419,6 +449,11 @@ function Registro() {
               <>
                 <Spinner />
                 Creando…
+              </>
+            ) : esperandoInvitacion ? (
+              <>
+                <Spinner />
+                Revisando tu invitación…
               </>
             ) : (
               <>

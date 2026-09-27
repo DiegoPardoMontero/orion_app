@@ -60,5 +60,15 @@ export function fuerzaClave(clave: string): FuerzaClave {
   if (!falta) return { nivel, mensaje: "Excelente contraseña" };
   if (nivel === 3) return { nivel, mensaje: `Fuerte: ${falta} la blinda` };
   if (nivel === 2) return { nivel, mensaje: `Vas bien: añade ${falta}` };
-  return { nivel, mensaje: `Débil: súmale ${falta}` };
+  // Con solo el largo le faltan dos reglas para llegar a «Fuerte» (no tiene número ni símbolo), así
+  // que se nombran dos: con una sola, al cumplirla el botón seguiría apagado.
+  return { nivel, mensaje: `Débil: súmale ${falta} y un número` };
+}
+
+/**
+ * Si la clave sirve para crear la cuenta o cambiarla: «Fuerte» o «Excelente» (Pardo, 27/09/2026).
+ * El nivel solo no basta: una clave corta y variada también llega a 3 puntos.
+ */
+export function esFuerte(clave: string): boolean {
+  return clave.length >= MINIMO && fuerzaClave(clave).nivel >= 3;
 }

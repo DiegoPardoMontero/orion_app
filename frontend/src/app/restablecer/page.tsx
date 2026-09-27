@@ -9,7 +9,7 @@ import { AvisoError } from "@/components/estados";
 import { Wordmark } from "@/components/marca";
 import { BotonPrincipal, Campo, Spinner } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
-import { fuerzaClave } from "@/lib/password";
+import { esFuerte, fuerzaClave } from "@/lib/password";
 
 export default function RestablecerPage() {
   return (
@@ -34,10 +34,12 @@ function Restablecer() {
 
   function onSubmit(event: FormEvent) {
     event.preventDefault();
-    if (password.length >= 8) restablecer.mutate();
+    if (esFuerte(password)) restablecer.mutate();
   }
 
   const fuerza = fuerzaClave(password);
+  // Como al crear la cuenta: «Fuerte» o «Excelente», o no se guarda (Pardo, 27/09/2026).
+  const claveFuerte = esFuerte(password);
   const error = restablecer.error instanceof ApiError ? restablecer.error.message : null;
 
   return (
@@ -98,6 +100,7 @@ function Restablecer() {
                 icono={<Lock size={18} strokeWidth={1.75} />}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
+                aria-describedby="password-fuerza"
                 className="mt-1.5 pr-12"
               />
               <button
@@ -110,8 +113,8 @@ function Restablecer() {
               </button>
             </div>
 
-            <div className="mt-2.5" aria-hidden="true">
-              <div className="flex gap-1.5">
+            <div className="mt-2.5">
+              <div className="flex gap-1.5" aria-hidden="true">
                 {[0, 1, 2, 3].map((i) => (
                   <span
                     key={i}
@@ -122,11 +125,18 @@ function Restablecer() {
                 ))}
               </div>
               <p
+                id="password-fuerza"
+                aria-live="polite"
                 className={`mt-1.5 text-[12px] ${
-                  fuerza.nivel >= 3 && password.length >= 8 ? "text-success" : password ? "text-text-secondary" : "text-text-muted"
+                  claveFuerte ? "text-success" : password ? "text-text-secondary" : "text-text-muted"
                 }`}
               >
                 {fuerza.mensaje}
+                {password && !claveFuerte && (
+                  <span className="block text-text-muted">
+                    Para guardarla, tiene que quedar «Fuerte» o «Excelente».
+                  </span>
+                )}
               </p>
             </div>
 
@@ -138,7 +148,7 @@ function Restablecer() {
 
             <BotonPrincipal
               type="submit"
-              disabled={password.length < 8 || restablecer.isPending}
+              disabled={!claveFuerte || restablecer.isPending}
               className="mt-4"
             >
               {restablecer.isPending ? (

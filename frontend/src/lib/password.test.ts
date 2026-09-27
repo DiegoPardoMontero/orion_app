@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fuerzaClave } from "@/lib/password";
+import { esFuerte, fuerzaClave } from "@/lib/password";
 
 describe("fuerzaClave", () => {
   it("una contraseña vacía es nivel 0 y pide el mínimo", () => {
@@ -30,7 +30,9 @@ describe("fuerzaClave", () => {
   });
 
   it("con el largo, pide la regla que de verdad falta", () => {
-    expect(fuerzaClave("abcdefgh").mensaje).toBe("Débil: súmale una mayúscula");
+    // Solo con el largo le faltan dos reglas para «Fuerte»: se nombran las dos.
+    expect(fuerzaClave("abcdefgh").mensaje).toBe("Débil: súmale una mayúscula y un número");
+    expect(fuerzaClave("ABCDEFGH").mensaje).toBe("Débil: súmale una minúscula y un número");
     // Ya tiene número: lo que falta es la mayúscula, no el número.
     expect(fuerzaClave("abcdefg1").mensaje).toBe("Vas bien: añade una mayúscula");
     expect(fuerzaClave("Abcdefgh").mensaje).toBe("Vas bien: añade un número");
@@ -38,5 +40,21 @@ describe("fuerzaClave", () => {
     expect(fuerzaClave("Abcdefg!").mensaje).toBe("Fuerte: un número la blinda");
     expect(fuerzaClave("Abcdefg1").mensaje).toBe("Fuerte: un símbolo la blinda");
     expect(fuerzaClave("Abcdefg1!").mensaje).toBe("Excelente contraseña");
+  });
+});
+
+describe("esFuerte", () => {
+  it("solo deja pasar «Fuerte» o «Excelente»", () => {
+    expect(esFuerte("Abcdefg1")).toBe(true); // Fuerte
+    expect(esFuerte("orion123*")).toBe(true); // Fuerte: largo, número y símbolo
+    expect(esFuerte("Abcdefg1!")).toBe(true); // Excelente
+    expect(esFuerte("Abcdefgh")).toBe(false); // Vas bien
+    expect(esFuerte("abcdefgh")).toBe(false); // Débil
+    expect(esFuerte("")).toBe(false);
+  });
+
+  it("una clave corta nunca pasa, aunque sume tres puntos", () => {
+    expect(fuerzaClave("Ab1!").nivel).toBe(3);
+    expect(esFuerte("Ab1!")).toBe(false);
   });
 });
