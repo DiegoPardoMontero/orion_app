@@ -23,11 +23,14 @@ type Proveedor = "google" | "microsoft" | "apple" | "facebook";
 export function BotonesSociales({
   desde,
   separador = "o con tu correo",
-  ensenar = false,
+  ensenar,
 }: {
   desde?: string;
   separador?: string;
-  /** Viene de «Quiero enseñar»: la cuenta nace como aspirante a profesor, no como estudiante. */
+  /**
+   * La pestaña que eligió en el registro: con `true` la cuenta nace como aspirante a profesor. Sin la
+   * prop (el login, el diagnóstico) no se toca lo guardado: /registro/completar deja elegir.
+   */
   ensenar?: boolean;
 }) {
   const { data } = useQuery({
@@ -54,8 +57,7 @@ export function BotonesSociales({
     const origen = desde ?? new URLSearchParams(window.location.search).get("desde");
     try {
       if (origen) window.sessionStorage.setItem(DESDE_KEY, origen);
-      if (ensenar) window.sessionStorage.setItem(INTENCION_KEY, "ensenar");
-      else window.sessionStorage.removeItem(INTENCION_KEY);
+      if (ensenar !== undefined) window.sessionStorage.setItem(INTENCION_KEY, ensenar ? "ensenar" : "aprender");
     } catch {
       // Sin almacenamiento: al volver entra al inicio de su rol. No es motivo para no dejarle entrar.
     }

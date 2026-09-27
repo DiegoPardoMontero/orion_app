@@ -1,5 +1,6 @@
 "use client";
 
+import { BookOpen, GraduationCap } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -12,10 +13,13 @@ import { AvisoError, Cargando } from "@/components/estados";
 import { Wordmark } from "@/components/marca";
 import { AyudaWhatsapp, PhoneInput } from "@/components/PhoneInput";
 import { Rigel } from "@/components/Rigel";
-import { Boton } from "@/components/ui";
+import { Boton, Segmento } from "@/components/ui";
 import { whatsappValido } from "@/lib/phone";
 
 type Pendiente = { name: string | null; email: string; provider: string };
+
+/** Lo mismo que eligen en /registro: no es un rol, es cómo nace la cuenta y a dónde aterriza. */
+type Intencion = "aprender" | "ensenar";
 
 const PROVEEDOR: Record<string, string> = {
   google: "Google",
@@ -30,6 +34,10 @@ const PROVEEDOR: Record<string, string> = {
  * suya, igual que en el registro con correo. El nombre llega del proveedor y se puede corregir; el
  * correo no, porque es el que el proveedor garantizó. El WhatsApp, que el proveedor no trae, es
  * obligatorio como en el registro con correo. Rigel recibe aquí, como en el registro.
+ *
+ * <p>Y la misma elección que el registro, «Quiero aprender / Quiero enseñar»: quien entraba con
+ * Google desde /login nacía estudiante sin forma de postularse con ese correo (27/09/2026). Arranca
+ * en lo que eligió antes de irse al proveedor, si venía de /registro.
  */
 export default function CompletarRegistroPage() {
   const router = useRouter();
@@ -46,6 +54,9 @@ export default function CompletarRegistroPage() {
   const [mayor, setMayor] = useState(false);
   const [terminos, setTerminos] = useState(false);
   const [datos, setDatos] = useState(false);
+  // Solo se pinta cuando llega `pendiente`, ya en el navegador: leer sessionStorage aquí no descuadra
+  // la hidratación.
+  const [intencion, setIntencion] = useState<Intencion>(() => (vieneAEnsenar() ? "ensenar" : "aprender"));
 
   const nombre = nombreEditado ?? pendiente.data?.name ?? "";
 
@@ -59,8 +70,8 @@ export default function CompletarRegistroPage() {
           adult: mayor,
           acceptsTerms: terminos,
           acceptsDataPolicy: datos,
-          // Se fue desde «Quiero enseñar»: nace como aspirante y aterriza en su postulación.
-          wantsToTeach: vieneAEnsenar(),
+          // «Quiero enseñar»: nace como aspirante y aterriza en su postulación.
+          wantsToTeach: intencion === "ensenar",
         },
         redirectOn401: false,
       }),
@@ -115,6 +126,29 @@ export default function CompletarRegistroPage() {
             </div>
           </div>
 
+          <div className="mt-6">
+            <Segmento<Intencion>
+              valor={intencion}
+              onCambio={setIntencion}
+              opciones={[
+                {
+                  valor: "aprender",
+                  etiqueta: (<><BookOpen size={15} strokeWidth={1.75} /> Quiero aprender</>),
+                },
+                {
+                  valor: "ensenar",
+                  etiqueta: (<><GraduationCap size={15} strokeWidth={1.75} /> Quiero enseñar</>),
+                },
+              ]}
+            />
+          </div>
+          {intencion === "ensenar" && (
+            <p className="mt-3 rounded-base bg-accent-lavender-soft px-4 py-3 text-[12.5px] leading-relaxed text-[#5e4a8a]">
+              Creamos tu cuenta y sigues con tu postulación: idiomas que enseñas, experiencia y
+              documentos. Cuando la aprobamos, publicas tu perfil y aparece en el buscador de Orión.
+            </p>
+          )}
+
           <label className="mt-6 block">
             <span className="text-[14px] font-bold text-text">Tu nombre</span>
             <input
@@ -168,7 +202,11 @@ export default function CompletarRegistroPage() {
             disabled={!listo || completar.isPending}
             onClick={() => completar.mutate()}
           >
-            {completar.isPending ? "Creando…" : "Crear mi cuenta"}
+            {completar.isPending
+              ? "Creando…"
+              : intencion === "ensenar"
+                ? "Crear mi cuenta y postularme"
+                : "Crear mi cuenta"}
           </Boton>
         </section>
       )}
