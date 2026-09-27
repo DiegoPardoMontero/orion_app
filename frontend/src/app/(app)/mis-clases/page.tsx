@@ -6,10 +6,12 @@ import {
   ArrowRight,
   Check,
   Clock,
+  Eye,
   MapPin,
   MessageCircle,
   NotebookPen,
   Star,
+  UserPlus,
   Video,
   X,
 } from "lucide-react";
@@ -26,6 +28,7 @@ import { Badge, Boton, BotonPrincipal, Segmento, Tarjeta } from "@/components/ui
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type { ConversationSummary, MyBookingResponse } from "@/lib/api/types";
 import type { EntradaDeActa, ResumenDeActas } from "@/lib/actas";
+import { useMiAplicacion } from "@/lib/aplicacion";
 import { useMe } from "@/lib/auth/session";
 import { momentosDeAsistencia, useAhoraHasta } from "@/components/aula/asistencia";
 import { esperaPago, etiquetaEstado } from "@/lib/estados-clase";
@@ -65,6 +68,8 @@ function Contenido() {
   });
 
   const esProfesor = me?.role === "PROFESSOR";
+  // La misma consulta que ya hace el armazón: no pide nada nuevo.
+  const { aprobado } = useMiAplicacion(esProfesor);
 
   return (
     <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-5xl lg:px-12 lg:py-8">
@@ -117,25 +122,50 @@ function Contenido() {
 
         {data?.length === 0 &&
           (scope === "upcoming" ? (
-            <Vacio
-              mascota
-              titulo="Aún no tienes clases"
-              texto={
-                esProfesor
-                  ? "En cuanto un estudiante reserve contigo, la verás aquí."
-                  : "Explora los profesores y reserva la primera. Cada proceso es diferente; lo importante es empezar."
-              }
-              accion={
-                esProfesor ? undefined : (
+            <>
+              <Vacio
+                mascota
+                titulo="Aún no tienes clases"
+                texto={
+                  esProfesor
+                    ? aprobado
+                      ? "En cuanto un estudiante reserve contigo, la verás aquí. Mientras tanto, esto ayuda a que llegue la primera."
+                      : "En cuanto un estudiante reserve contigo, la verás aquí."
+                    : "Explora los profesores y reserva la primera. Cada proceso es diferente; lo importante es empezar."
+                }
+                accion={
+                  esProfesor ? undefined : (
+                    <Link
+                      href="/profesores"
+                      className="inline-flex min-h-11 items-center rounded-pill bg-primary px-6 text-[15px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus"
+                    >
+                      Ver profesores
+                    </Link>
+                  )
+                }
+              />
+              {/* Pedido de Pardo (27/09): al profe sin clases, dos caminos abajo. El segundo invita a
+                  mirar su perfil con los ojos del estudiante, no a «arreglarlo»: nada en él suena a que
+                  algo esté mal. /invitar y /perfil piden la postulación aprobada. */}
+              {esProfesor && aprobado && (
+                <div className="mt-4 flex flex-col gap-2.5 sm:flex-row sm:justify-center">
                   <Link
-                    href="/profesores"
-                    className="inline-flex min-h-11 items-center rounded-pill bg-primary px-6 text-[15px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus"
+                    href="/invitar"
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-pill bg-primary px-5 text-center text-[14.5px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus sm:px-6"
                   >
-                    Ver profesores
+                    <UserPlus size={17} strokeWidth={2} className="shrink-0" />
+                    Invita a tus estudiantes
                   </Link>
-                )
-              }
-            />
+                  <Link
+                    href="/perfil"
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-pill border-[1.5px] border-border bg-surface-raised px-5 text-center text-[14.5px] font-bold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus sm:px-6"
+                  >
+                    <Eye size={17} strokeWidth={2} className="shrink-0" />
+                    Mira cómo te ven los estudiantes
+                  </Link>
+                </div>
+              )}
+            </>
           ) : (
             <Vacio
               mascota
