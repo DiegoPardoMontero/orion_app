@@ -180,9 +180,8 @@ class LessonLifecycleIT extends ApiIntegrationSupport {
     @Test
     void laCancelacionTardiaDelProfesorQuedaRegistradaYProponeSancion() {
         UUID id = bookAndPay(9);
-        jdbc.update("update bookings set starts_at = ?, ends_at = ? where id = ?",
-                java.sql.Timestamp.from(FROZEN_NOW.plusSeconds(6 * 3600)),
-                java.sql.Timestamp.from(FROZEN_NOW.plusSeconds(7 * 3600)), id);
+        // Reservada hace dos días: el profesor tuvo todo ese margen para cancelar sin falta.
+        moverClase(id, FROZEN_NOW.plusSeconds(6 * 3600), FROZEN_NOW.minus(Duration.ofDays(2)));
 
         post(BOOKINGS + "/" + id + "/cancel", mariaSession, null, Map.class);
 
@@ -206,6 +205,72 @@ class LessonLifecycleIT extends ApiIntegrationSupport {
 
         assertThat(absences.findAll()).isEmpty();
         assertThat(sanctions.findAll()).isEmpty();
+    }
+
+    /**
+     * Se puede reservar con menos antelación que la ventana del profesor: a quien le reservan 7 h
+     * y media antes con una ventana de 12, la ventana ya empezó cerrada. Durante la gracia
+     * ({@code professor_cancel_grace_minutes}, 60) puede cancelar sin falta.
+     */
+    @Test
+    void reservadaDentroDeLaVentanaElProfesorTieneLaGraciaParaCancelarSinFalta() {
+        UUID id = bookAndPay(9);
+        moverClase(id, FROZEN_NOW.plusSeconds(7 * 3600), FROZEN_NOW.minus(Duration.ofMinutes(30)));
+
+        assertThat(post(BOOKINGS + "/" + id + "/cancel", mariaSession, null, Map.class)
+                .getStatusCode().value()).isEqualTo(200);
+
+        assertThat(absences.findAll()).isEmpty();
+        assertThat(sanctions.findAll()).isEmpty();
+    }
+
+    /** Pasada la gracia, la reserva tardía vuelve a ser una clase como cualquier otra: falta. */
+    @Test
+    void reservadaDentroDeLaVentanaPeroPasadaLaGraciaSiCuenta() {
+        UUID id = bookAndPay(9);
+        moverClase(id, FROZEN_NOW.plusSeconds(7 * 3600), FROZEN_NOW.minus(Duration.ofMinutes(61)));
+
+        post(BOOKINGS + "/" + id + "/cancel", mariaSession, null, Map.class);
+
+        assertThat(absences.findAll()).singleElement()
+                .satisfies(falta -> assertThat(falta.getKind()).isEqualTo(AbsenceKind.LATE_CANCELLATION));
+    }
+
+    /** Una reserva sin pagar no era una clase: soltarla no le cuesta nada al profesor. */
+    @Test
+    void soltarUnaReservaSinPagarNoEsCancelacionTardia() {
+        OffsetDateTime at = ZonedDateTime.of(WEDNESDAY, LocalTime.of(9, 0), BusinessZone.BOGOTA)
+                .toOffsetDateTime();
+        UUID id = post(BOOKINGS, anaSession, new CreateBookingRequest(maria.getId(), at, "VIRTUAL",
+                null, null, null), BookingResponse.class).getBody().id();
+        moverClase(id, FROZEN_NOW.plusSeconds(6 * 3600), FROZEN_NOW.minus(Duration.ofDays(2)));
+
+        assertThat(post(BOOKINGS + "/" + id + "/cancel", mariaSession, null, Map.class)
+                .getStatusCode().value()).isEqualTo(200);
+
+        assertThat(absences.findAll()).isEmpty();
+    }
+
+    /** El ensayo del admin no es trabajo del profesor: cancelarlo tarde no le deja falta. */
+    @Test
+    void cancelarTardeUnEnsayoNoDejaFalta() {
+        var ensayo = co.orion.scheduling.TestBookings.confirmed(ana.getId(), maria.getId(),
+                FROZEN_NOW.plusSeconds(6 * 3600), co.orion.scheduling.domain.BookingModality.VIRTUAL,
+                null, ana.getId());
+        ensayo.markAsRehearsal();
+        UUID id = bookings.save(ensayo).getId();
+        moverClase(id, FROZEN_NOW.plusSeconds(6 * 3600), FROZEN_NOW.minus(Duration.ofDays(2)));
+
+        post(BOOKINGS + "/" + id + "/cancel", mariaSession, null, Map.class);
+
+        assertThat(absences.findAll()).isEmpty();
+    }
+
+    /** Pone la clase en {@code empieza} (una hora de duración) y la reserva como hecha en {@code reservada}. */
+    private void moverClase(UUID id, Instant empieza, Instant reservada) {
+        jdbc.update("update bookings set starts_at = ?, ends_at = ?, created_at = ? where id = ?",
+                java.sql.Timestamp.from(empieza), java.sql.Timestamp.from(empieza.plusSeconds(3600)),
+                java.sql.Timestamp.from(reservada), id);
     }
 
     /* ------------------------------------------------------------ no-show y reclamo */

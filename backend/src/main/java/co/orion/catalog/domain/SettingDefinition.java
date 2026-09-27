@@ -54,6 +54,11 @@ public enum SettingDefinition {
             "Horas para que el profesor cancele",
             "El mismo plazo del otro lado. Cambiar uno solo rompe la simetría que dicen los Términos.",
             0, 168, true),
+    PROFESSOR_CANCEL_GRACE_MINUTES("professor_cancel_grace_minutes", Grupo.PLAZOS, Tipo.ENTERO,
+            "Gracia del profesor al cancelar una reserva de último momento",
+            "Si le reservan una clase con la ventana de cancelación ya encima, el profesor tiene estos "
+                    + "minutos desde la reserva para cancelarla sin que cuente como cancelación tardía.",
+            0, 720, false),
     // --------------------------------------------------------------- diagnóstico de confianza
     ASSESSMENT_ENABLED("assessment_enabled", Grupo.POLITICAS, Tipo.BOOLEANO,
             "Diagnóstico de confianza activo",

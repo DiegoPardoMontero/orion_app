@@ -43,6 +43,7 @@ public class LateCancellationListener {
 
     private static final Logger log = LoggerFactory.getLogger(LateCancellationListener.class);
     private static final String PROFESSOR_WINDOW = "professor_cancel_hours";
+    private static final String PROFESSOR_GRACE = "professor_cancel_grace_minutes";
 
     private final BookingRepository bookings;
     private final ProfessorAbsenceRepository absences;
@@ -62,9 +63,18 @@ public class LateCancellationListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onCancelled(BookingCancelledEvent event) {
+        // Una reserva sin pagar no era una clase: al profesor ni se le anunció, así que soltarla no
+        // puede costarle nada.
+        if (event.wasAwaitingPayment()) {
+            return;
+        }
         try {
             Booking booking = bookings.findById(event.bookingId()).orElse(null);
             if (booking == null || booking.getStatus() != BookingStatus.CANCELLED_BY_PROFESSOR) {
+                return;
+            }
+            // El ensayo del admin no es trabajo del profesor: ni suma ni resta en su historial.
+            if (booking.isRehearsal()) {
                 return;
             }
             if (!fueTardia(booking)) {
@@ -89,13 +99,26 @@ public class LateCancellationListener {
         }
     }
 
-    /** Dentro de la ventana del profesor: la misma frontera que decide el dinero del estudiante. */
+    /**
+     * Tardía si llegó después de las dos fronteras a la vez: la ventana del profesor antes de la
+     * clase (la misma que decide el dinero del estudiante) y la gracia desde que se hizo la reserva.
+     *
+     * <p>La segunda existe porque se puede reservar con menos antelación que la ventana: a quien le
+     * reservan una clase 8 horas antes con una ventana de 12, la ventana ya empezó cerrada y nunca
+     * tuvo un momento para cancelar sin falta. Con la gracia, lo tiene durante un rato después de
+     * enterarse. Si la reserva se hizo con margen, la gracia vence mucho antes que la ventana y no
+     * cambia nada.
+     */
     private boolean fueTardia(Booking booking) {
         Instant cancelledAt = booking.getCancelledAt();
         if (cancelledAt == null) {
             return false;
         }
-        Duration ventana = Duration.ofHours(settings.getInt(PROFESSOR_WINDOW));
-        return booking.getStartsAt().minus(ventana).isBefore(cancelledAt);
+        Instant ventanaAbre = booking.getStartsAt()
+                .minus(Duration.ofHours(settings.getInt(PROFESSOR_WINDOW)));
+        Instant graciaVence = booking.getCreatedAt()
+                .plus(Duration.ofMinutes(settings.getInt(PROFESSOR_GRACE)));
+        Instant frontera = ventanaAbre.isAfter(graciaVence) ? ventanaAbre : graciaVence;
+        return cancelledAt.isAfter(frontera);
     }
 }

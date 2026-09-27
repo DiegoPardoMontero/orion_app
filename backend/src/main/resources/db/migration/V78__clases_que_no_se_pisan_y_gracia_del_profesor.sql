@@ -53,3 +53,18 @@ BEGIN
         RAISE WARNING 'V78: % par(es) de reservas activas del mismo profesor se pisan; NO se creó ex_bookings_professor_no_overlap (ver el comentario de la V78).', solapes;
     END IF;
 END $$;
+
+-- ---------------------------------------------------------------------------------------------
+-- La gracia del profesor para cancelar sin falta una clase que le reservaron tarde.
+-- ---------------------------------------------------------------------------------------------
+-- Cancelar dentro de la ventana (professor_cancel_hours, hoy 12 h) le deja al profesor una
+-- LATE_CANCELLATION, que baja su puntaje. Pero la antelación mínima para reservar es menor que la
+-- ventana (booking_min_lead_hours, hoy 6 h): un estudiante puede reservar 8 horas antes, y entonces
+-- el profesor nunca tuvo un momento para cancelar sin falta. No puede ser tardío quien se entera
+-- ya tarde.
+--
+-- Desde aquí la cancelación es tardía solo si llega después de las DOS fronteras: la ventana antes
+-- de la clase y estos minutos desde que se hizo la reserva. Sesenta minutos: tiempo para ver el
+-- aviso y decidir, sin convertirlo en una puerta para soltar clases al final del día.
+INSERT INTO platform_settings (key, value) VALUES ('professor_cancel_grace_minutes', '60')
+ON CONFLICT (key) DO NOTHING;
