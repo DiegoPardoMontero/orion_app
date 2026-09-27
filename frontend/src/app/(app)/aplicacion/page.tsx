@@ -2,13 +2,14 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  AlertCircle,
   ArrowLeft,
   ArrowRight,
   BadgeCheck,
   CheckCircle2,
   Circle,
   FileText,
-  GraduationCap,
+  MessageSquare,
   Pencil,
   Plus,
   Send,
@@ -24,10 +25,13 @@ import { Avatar } from "@/components/Avatar";
 import { CambiarFoto } from "@/components/CambiarFoto";
 import { bordeSegun, ContadorPalabras } from "@/components/ContadorPalabras";
 import { CuerpoLegal } from "@/components/DocumentoLegal";
+import { DiscoIdioma } from "@/components/DiscoIdioma";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
 import { Rigel } from "@/components/Rigel";
+import { SelectorDeCiudad } from "@/components/SelectorDeCiudad";
+import { SelectorDePais } from "@/components/SelectorDePais";
 import { Badge, Boton, Campo, Spinner, Toggle } from "@/components/ui";
-import { DiscoIdioma } from "@/components/DiscoIdioma";
+import { useAcuerdoDelProfesor } from "@/lib/acuerdo";
 import { ApiError, apiFetch, uploadFile } from "@/lib/api/fetch";
 import type {
   DocumentView,
@@ -36,28 +40,53 @@ import type {
   ProfileResponse,
   TeacherApplicationView,
 } from "@/lib/api/types";
-import { useAcuerdoDelProfesor } from "@/lib/acuerdo";
-import { DOC_TIPOS, etiquetaDocumento, etiquetaFaltante, MI_APLICACION_KEY } from "@/lib/aplicacion";
+import {
+  aniosDeExperiencia,
+  ANIOS_MAXIMO,
+  DOC_TIPOS,
+  enumerar,
+  etiquetaDocumento,
+  etiquetaFaltante,
+  faltasDelPaso,
+  MI_APLICACION_KEY,
+  PASO_REVISION,
+  PASOS_POSTULACION as PASOS,
+  primerPasoIncompleto,
+  type BorradorPostulacion,
+  type Falta,
+} from "@/lib/aplicacion";
 import { useMe } from "@/lib/auth/session";
 import { etiquetaNivel, etiquetaObjetivo, NIVELES } from "@/lib/i18n";
+import { paisConBandera } from "@/lib/paises";
 import { estadoBio, estadoTitular } from "@/lib/perfil-profesor";
-import { SelectorDePais } from "@/components/SelectorDePais";
-import { nombreDePais } from "@/lib/paises";
 
 type LangEdit = { code: string; isNative: boolean; levels: string[] };
 
-const PASOS = [
-  "Datos personales",
-  "Enseñanza",
-  "Experiencia",
-  "Documentos",
-  "Acuerdo",
-  "Revisar y enviar",
-] as const;
+/** Lo que el PUT de la postulación acepta. Un campo ausente es «no lo tocó» (el backend fusiona). */
+type Cuerpo = {
+  headline?: string;
+  bio?: string;
+  countryCode?: string;
+  city?: string;
+  nativeLanguage?: string;
+  yearsExperience?: number;
+  education?: string;
+  certified: boolean;
+  acceptsTrial: boolean;
+  languages?: { code: string; isNative: boolean; levels: string[] }[];
+  goals?: string[];
+  isPublished: false;
+};
+
+/**
+ * En escritorio la pantalla usa casi todo el ancho junto al menú (Pardo, 27/09/2026): el formulario
+ * en dos columnas y la revisión en rejilla. En el teléfono, una columna como siempre.
+ */
+const CONTENEDOR = "mx-auto w-full max-w-lg px-5 py-6 lg:max-w-[1600px] lg:px-10 lg:py-8 xl:px-14";
 
 /**
  * Wizard de postulación a profesor. Asegura un borrador editable (crea uno solo si hace falta),
- * guarda el avance del perfil al pasar de paso y termina con el envío a revisión. Un profesor ya
+ * guarda el avance al moverse entre pasos y termina con el envío a revisión. Un profesor ya
  * aprobado no debería estar aquí: se le redirige a su perfil; uno en revisión, a su estado.
  */
 export default function AplicacionPage() {
@@ -103,7 +132,7 @@ export default function AplicacionPage() {
 
   if (app.isError && !noAplico) {
     return (
-      <main className="mx-auto w-full max-w-lg px-5 py-6">
+      <main className={CONTENEDOR}>
         <ErrorCarga mensaje="No pudimos cargar tu postulación." onReintentar={() => void app.refetch()} />
       </main>
     );
@@ -111,7 +140,7 @@ export default function AplicacionPage() {
 
   if (app.isPending || debeRedirigir || !vista) {
     return (
-      <main className="mx-auto w-full max-w-lg px-5 py-6">
+      <main className={CONTENEDOR}>
         <Cargando filas={4} />
       </main>
     );
@@ -145,17 +174,12 @@ function Wizard({
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  // Quien vuelve porque le pidieron cambios no debería tener que recorrer los seis pasos otra
-  // vez: entra por el resumen, ve la nota de la revisión, y abre solo la sección que va a tocar.
-  const [resumen, setResumen] = useState(vista.status === "CHANGES_REQUESTED");
-  const [paso, setPaso] = useState(0);
-
   const [headline, setHeadline] = useState(seed?.headline ?? "");
   const [bio, setBio] = useState(seed?.bio ?? "");
   const estadoDelTitular = estadoTitular(headline);
   const estadoDeLaBio = estadoBio(bio);
   const [city, setCity] = useState(seed?.city ?? "");
-  const [countryCode, setCountryCode] = useState(seed?.countryCode ?? "CO");
+  const [countryCode, setCountryCode] = useState(seed?.countryCode?.toUpperCase() ?? "CO");
   const [yearsExperience, setYearsExperience] = useState(
     seed?.yearsExperience != null ? String(seed.yearsExperience) : "",
   );
@@ -170,6 +194,36 @@ function Wizard({
     })),
   );
   const [goals, setGoals] = useState<string[]>(seed?.goals ?? []);
+  // La foto se sube sola al elegirla; esto la cuenta en cuanto sube, sin esperar a la sesión.
+  const [fotoSubida, setFotoSubida] = useState<string | null>(null);
+  const fotoActual = fotoSubida ?? foto ?? null;
+
+  const documentos = vista.documents ?? [];
+  const borrador: BorradorPostulacion = {
+    tieneFoto: !!fotoActual,
+    titular: headline,
+    bio,
+    idiomas: langs,
+    objetivos: goals,
+    pais: countryCode,
+    ciudad: city,
+    anios: yearsExperience,
+    formacion: education,
+    tieneCv: documentos.some((d) => d.docType === "CV"),
+    aceptoAcuerdo: vista.agreementAccepted ?? false,
+  };
+  const faltas = PASOS.map((_, i) => faltasDelPaso(i, borrador));
+
+  // Se entra donde se quedó: el primer paso con algo por completar, o la revisión si ya está todo.
+  // Quien vuelve porque le pidieron cambios entra a la revisión, con la nota arriba.
+  const [paso, setPaso] = useState(() =>
+    vista.status === "CHANGES_REQUESTED" ? PASO_REVISION : primerPasoIncompleto(borrador),
+  );
+  // Llegó a un paso con «Editar» desde la revisión: su botón es «Guardar y volver a revisar».
+  const [revisando, setRevisando] = useState(false);
+  // Los pasos en los que ya intentó seguir: solo ahí se marcan en rojo los campos que faltan.
+  const [intentados, setIntentados] = useState<number[]>([]);
+  const [foco, setFoco] = useState<{ campo: string; vez: number } | null>(null);
 
   const languages = useQuery({
     queryKey: ["catalog", "languages"],
@@ -182,51 +236,121 @@ function Wizard({
     staleTime: 5 * 60_000,
   });
 
-  const guardar = useMutation({
-    mutationFn: () => {
-      const nativo = langs.find((l) => l.isNative)?.code;
-      return apiFetch<TeacherApplicationView>("/api/v1/me/teacher-application", {
-        method: "PUT",
-        body: {
-          headline: headline.trim() || undefined,
-          bio: bio.trim() || undefined,
-          countryCode: countryCode.trim() || undefined,
-          city: city.trim() || undefined,
-          nativeLanguage: nativo ?? seed?.nativeLanguage ?? undefined,
-          yearsExperience: yearsExperience ? Number(yearsExperience) : undefined,
-          education: education.trim() || undefined,
-          certified,
-          acceptsTrial,
-          languages: langs
-            .filter((l) => l.code)
-            .map((l) => ({ code: l.code, isNative: l.isNative, levels: l.levels })),
-          goals,
-          isPublished: false,
-        },
-      });
-    },
-    onSuccess: (actualizada) => queryClient.setQueryData(MI_APLICACION_KEY, actualizada),
-  });
+  /**
+   * Solo va lo que ya es válido. El backend fusiona (lo ausente no se toca) y rechaza un título o una
+   * presentación cortos: mandar el campo a medias de otro paso bloqueaba el guardado del que sí
+   * estaba listo.
+   */
+  function construirCuerpo(): Cuerpo {
+    const idiomasOk = langs.length > 0 && langs.every((l) => l.code && l.levels.length > 0);
+    const nativo = langs.find((l) => l.isNative)?.code;
+    return {
+      headline: estadoTitular(headline).estado === "ok" ? headline.trim() : undefined,
+      bio: estadoBio(bio).estado === "ok" ? bio.trim() : undefined,
+      countryCode: countryCode || undefined,
+      city: city.trim() || undefined,
+      nativeLanguage: idiomasOk ? (nativo ?? seed?.nativeLanguage ?? undefined) : undefined,
+      yearsExperience: aniosDeExperiencia(yearsExperience) ?? undefined,
+      education: education.trim() || undefined,
+      certified,
+      acceptsTrial,
+      languages: idiomasOk
+        ? langs.map((l) => ({ code: l.code, isNative: l.isNative, levels: l.levels }))
+        : undefined,
+      goals: goals.length > 0 ? goals : undefined,
+      isPublished: false,
+    };
+  }
 
+  // Lo último que quedó en el servidor, para no repetir un PUT idéntico en cada paso.
+  const guardado = useRef(JSON.stringify(construirCuerpo()));
+
+  const guardar = useMutation({
+    mutationFn: (cuerpo: Cuerpo) =>
+      apiFetch<TeacherApplicationView>("/api/v1/me/teacher-application", { method: "PUT", body: cuerpo }),
+    onSuccess: (actualizada, cuerpo) => {
+      guardado.current = JSON.stringify(cuerpo);
+      queryClient.setQueryData(MI_APLICACION_KEY, actualizada);
+    },
+  });
   const errorGuardar = guardar.error instanceof ApiError ? guardar.error.message : null;
 
-  // Los pasos 0–2 tocan el perfil: al avanzar se guarda el borrador. Los demás persisten solos.
-  async function avanzar() {
-    if (paso <= 2) {
-      try {
-        await guardar.mutateAsync();
-      } catch {
-        return; // el error queda visible; no avanzamos con un guardado fallido
-      }
+  async function sincronizar(): Promise<boolean> {
+    const cuerpo = construirCuerpo();
+    if (JSON.stringify(cuerpo) === guardado.current) return true;
+    try {
+      await guardar.mutateAsync(cuerpo);
+      return true;
+    } catch {
+      return false; // el error queda visible; quien llama decide si se queda
     }
-    setPaso((p) => Math.min(PASOS.length - 1, p + 1));
+  }
+
+  // Tras un intento fallido, el foco va al primer campo que falta (y la pantalla lo muestra).
+  useEffect(() => {
+    if (!foco) return;
+    const el = document.getElementById(foco.campo);
+    if (!el) return;
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    el.focus({ preventScroll: true });
+  }, [foco]);
+
+  function mostrarFaltas(p: number) {
+    setIntentados((antes) => (antes.includes(p) ? antes : [...antes, p]));
+    const primera = faltas[p][0];
+    if (primera) setFoco((antes) => ({ campo: primera.campo, vez: (antes?.vez ?? 0) + 1 }));
+  }
+
+  function mover(destino: number) {
+    setPaso(destino);
+    if (destino === PASO_REVISION) setRevisando(false);
     if (typeof window !== "undefined") window.scrollTo({ top: 0 });
   }
 
-  const nombreIdioma = (code: string) =>
-    languages.data?.find((l) => l.code === code)?.nameEs ?? code;
-  const banderaIdioma = (code: string) =>
-    languages.data?.find((l) => l.code === code)?.flagEmoji ?? "";
+  /** Un paso adelante solo si todos los anteriores están completos; atrás, siempre. */
+  const alcanzable = (destino: number) =>
+    destino <= paso || faltas.slice(0, destino).every((f) => f.length === 0);
+
+  async function irA(destino: number) {
+    if (destino === paso || guardar.isPending) return;
+    if (destino < paso) {
+      // Atrás no se bloquea: si el guardado falla, el aviso queda y lo escrito sigue en pantalla.
+      await sincronizar();
+      mover(destino);
+      return;
+    }
+    const bloqueo = faltas.slice(0, destino).findIndex((f) => f.length > 0);
+    if (bloqueo !== -1) {
+      // Se lleva a quien quería saltar al primer paso incompleto, con lo que le falta a la vista.
+      if (bloqueo !== paso) {
+        if (!(await sincronizar())) return;
+        mover(bloqueo);
+      }
+      mostrarFaltas(bloqueo);
+      return;
+    }
+    if (!(await sincronizar())) return;
+    mover(destino);
+  }
+
+  async function guardarYVolver() {
+    if (faltas[paso].length > 0) {
+      mostrarFaltas(paso);
+      return;
+    }
+    if (!(await sincronizar())) return;
+    mover(PASO_REVISION);
+  }
+
+  function editar(destino: number) {
+    setRevisando(true);
+    mover(destino);
+    if (faltas[destino].length > 0) mostrarFaltas(destino);
+  }
+
+  const catalogoIdioma = (code: string) => languages.data?.find((l) => l.code === code);
+  const nombreIdioma = (code: string) => catalogoIdioma(code)?.nameEs ?? code;
+  const banderaIdioma = (code: string) => catalogoIdioma(code)?.flagEmoji ?? "";
   const disponibles = useMemo(
     () => (languages.data ?? []).filter((l) => !langs.some((x) => x.code === l.code)),
     [languages.data, langs],
@@ -253,39 +377,21 @@ function Wizard({
   const alternarObjetivo = (code: string) =>
     setGoals((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]));
 
-  const progreso = Math.round(((paso + 1) / PASOS.length) * 100);
+  const cambiarPais = (code: string) => {
+    // La ciudad es del catálogo del país: con otro país, la de antes ya no corresponde.
+    if (code !== countryCode) setCity("");
+    setCountryCode(code);
+  };
 
-  async function volverAlResumen() {
-    if (paso <= 2) {
-      try {
-        await guardar.mutateAsync();
-      } catch {
-        return; // el error queda visible; no salimos con un guardado fallido
-      }
-    }
-    setResumen(true);
-    if (typeof window !== "undefined") window.scrollTo({ top: 0 });
-  }
+  // Lo que se dice junto a cada campo, solo después de intentar seguir.
+  const conErrores = intentados.includes(paso);
+  const errorDe = (campo: string) =>
+    conErrores ? (faltas[paso].find((f) => f.campo === campo)?.mensaje ?? null) : null;
 
-  if (resumen) {
-    return (
-      <Resumen
-        vista={vista}
-        respuestas={seed}
-        nombre={nombre}
-        foto={foto}
-        onEditar={(destino) => {
-          setPaso(destino);
-          setResumen(false);
-          if (typeof window !== "undefined") window.scrollTo({ top: 0 });
-        }}
-        onEnviado={() => router.replace("/aplicacion/estado")}
-      />
-    );
-  }
+  const faltasAqui = paso < PASO_REVISION ? faltas[paso] : [];
 
   return (
-    <main className="mx-auto w-full max-w-lg px-5 py-6 lg:max-w-2xl lg:py-8">
+    <main className={CONTENEDOR}>
       <header>
         <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-primary-strong">
           Postulación a profesor
@@ -296,16 +402,29 @@ function Wizard({
             Paso {paso + 1} de {PASOS.length}
           </span>
         </div>
-        <div className="mt-3 h-2 overflow-hidden rounded-pill bg-surface-sunken" role="progressbar" aria-valuenow={progreso} aria-valuemin={0} aria-valuemax={100}>
-          <div className="h-full rounded-pill bg-primary transition-[width] duration-300 ease-standard" style={{ width: `${progreso}%` }} />
-        </div>
+        <IndicadorPasos paso={paso} faltas={faltas} alcanzable={alcanzable} onIr={(p) => void irA(p)} />
       </header>
 
-      <div className="mt-6">
+      <div className="mt-6 lg:mt-8">
         {paso === 0 && (
-          <section className="space-y-5">
-            <PanelRigel pose="saludo" texto="Cuéntanos quién eres. Empieza por tu foto y un título que enganche a tus estudiantes." />
-            <CambiarFoto nombre={nombre} fotoUrl={foto} />
+          <section className="grid gap-6 lg:grid-cols-2 lg:gap-10">
+            <div className="space-y-5">
+              <PanelRigel pose="saludo" texto="Cuéntanos quién eres. Empieza por tu foto y un título que enganche a tus estudiantes." />
+              <div>
+                <p className="text-[12.5px] font-bold text-text-secondary">Foto de perfil</p>
+                <p className="mb-3 mt-0.5 text-[12px] text-text-muted">
+                  Una foto tuya, de frente y con buena luz: es lo primero que ven los estudiantes.
+                </p>
+                <CambiarFoto
+                  id="foto"
+                  nombre={nombre}
+                  fotoUrl={fotoActual}
+                  describedBy={errorDe("foto") ? "foto-error" : undefined}
+                  onSubida={setFotoSubida}
+                />
+                <MensajeCampo id="foto-error" mensaje={errorDe("foto")} />
+              </div>
+            </div>
             <div>
               <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="headline">
                 Título
@@ -321,9 +440,14 @@ function Wizard({
                 onChange={(e) => setHeadline(e.target.value)}
                 placeholder="Conversación en inglés para adultos que ya estudiaron"
                 aria-describedby="headline-contador"
-                className={`mt-1.5 ${bordeSegun(estadoDelTitular)}`}
+                aria-invalid={!!errorDe("headline") || undefined}
+                className={`mt-1.5 ${errorDe("headline") ? "border-error" : bordeSegun(estadoDelTitular)}`}
               />
-              <ContadorPalabras id="headline-contador" estado={estadoDelTitular} />
+              {errorDe("headline") && estadoDelTitular.estado === "vacio" ? (
+                <MensajeCampo id="headline-contador" mensaje={errorDe("headline")} />
+              ) : (
+                <ContadorPalabras id="headline-contador" estado={estadoDelTitular} />
+              )}
             </div>
           </section>
         )}
@@ -331,91 +455,128 @@ function Wizard({
         {paso === 1 && (
           <section className="space-y-6">
             <PanelRigel pose="guia" texto="Esto es lo que buscan los estudiantes: qué enseñas y para qué sirve." />
-            <div>
-              <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="bio">
-                Sobre ti
-              </label>
-              <textarea
-                id="bio"
-                rows={5}
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                placeholder="Cuéntales cómo son tus clases, tu experiencia y qué te hace especial."
-                aria-describedby="bio-contador"
-                className={`mt-1.5 w-full rounded-base border-[1.5px] bg-surface-raised px-4 py-3 text-sm placeholder:text-text-muted focus:shadow-focus focus:outline-none ${bordeSegun(estadoDeLaBio)}`}
-              />
-              <ContadorPalabras id="bio-contador" estado={estadoDeLaBio} />
-            </div>
+            <div className="grid gap-6 lg:grid-cols-2 lg:gap-10">
+              <div>
+                <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="bio">
+                  Sobre ti
+                </label>
+                <textarea
+                  id="bio"
+                  rows={6}
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="Cuéntales cómo son tus clases, tu experiencia y qué te hace especial."
+                  aria-describedby="bio-contador"
+                  aria-invalid={!!errorDe("bio") || undefined}
+                  className={`mt-1.5 w-full rounded-base border-[1.5px] bg-surface-raised px-4 py-3 text-sm leading-relaxed placeholder:text-text-muted focus:shadow-focus focus:outline-none lg:min-h-[260px] ${
+                    errorDe("bio") ? "border-error" : bordeSegun(estadoDeLaBio)
+                  }`}
+                />
+                {errorDe("bio") && estadoDeLaBio.estado === "vacio" ? (
+                  <MensajeCampo id="bio-contador" mensaje={errorDe("bio")} />
+                ) : (
+                  <ContadorPalabras id="bio-contador" estado={estadoDeLaBio} />
+                )}
+              </div>
 
-            <div>
-              <h2 className="text-[13.5px] font-bold text-text">Idiomas que enseñas</h2>
-              {langs.length === 0 && (
-                <p className="mt-1.5 text-[12.5px] text-text-muted">
-                  Agrega al menos un idioma y marca los niveles que enseñas.
+              <div id="idiomas" tabIndex={-1} className="rounded-base focus:outline-none">
+                <h2 className="text-[13.5px] font-bold text-text">Idiomas que enseñas</h2>
+                <p className="mt-0.5 text-[12px] text-text-muted">
+                  Agrega cada idioma y marca los niveles que enseñas en él.
                 </p>
-              )}
-              <div className="mt-3 space-y-3">
-                {langs.map((lang) => (
-                  <div key={lang.code} className="rounded-card bg-surface-raised p-4 shadow-sm">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="flex items-center gap-1.5 text-[14px] font-bold text-text">
-                        {banderaIdioma(lang.code) && <span aria-hidden="true">{banderaIdioma(lang.code)}</span>}
-                        {nombreIdioma(lang.code)}
-                      </p>
-                      <button
-                        type="button"
-                        aria-label={`Quitar ${nombreIdioma(lang.code)}`}
-                        onClick={() => quitarIdioma(lang.code)}
-                        className="grid h-8 w-8 place-items-center rounded-full text-text-muted transition-colors hover:bg-surface-sunken hover:text-text focus-visible:shadow-focus"
+                <MensajeCampo mensaje={errorDe("idiomas")} />
+                <div className="mt-3 space-y-3">
+                  {langs.map((lang) => {
+                    const errorNiveles = errorDe(`niveles-${lang.code}`);
+                    return (
+                      <div
+                        key={lang.code}
+                        id={`niveles-${lang.code}`}
+                        tabIndex={-1}
+                        className={`rounded-card bg-surface-raised p-4 shadow-sm focus:outline-none ${errorNiveles ? "ring-[1.5px] ring-error" : ""}`}
                       >
-                        <X size={16} strokeWidth={1.75} />
-                      </button>
-                    </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="flex items-center gap-1.5 text-[14px] font-bold text-text">
+                            {banderaIdioma(lang.code) && <span aria-hidden="true">{banderaIdioma(lang.code)}</span>}
+                            {nombreIdioma(lang.code)}
+                          </p>
+                          <button
+                            type="button"
+                            aria-label={`Quitar ${nombreIdioma(lang.code)}`}
+                            onClick={() => quitarIdioma(lang.code)}
+                            className="grid h-8 w-8 place-items-center rounded-full text-text-muted transition-colors hover:bg-surface-sunken hover:text-text focus-visible:shadow-focus"
+                          >
+                            <X size={16} strokeWidth={1.75} />
+                          </button>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={`Niveles de ${nombreIdioma(lang.code)}`}>
+                          {NIVELES.map((nivel) => (
+                            <button
+                              key={nivel}
+                              type="button"
+                              aria-pressed={lang.levels.includes(nivel)}
+                              onClick={() => alternarNivel(lang.code, nivel)}
+                              className={`min-h-9 rounded-pill px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors focus-visible:shadow-focus ${
+                                lang.levels.includes(nivel)
+                                  ? "bg-primary text-on-primary"
+                                  : "bg-surface-sunken text-text-secondary hover:bg-border/60 hover:text-text"
+                              }`}
+                            >
+                              {etiquetaNivel(nivel)}
+                            </button>
+                          ))}
+                        </div>
+                        <MensajeCampo mensaje={errorNiveles} />
+                        <label className="mt-3 flex items-center justify-between gap-3">
+                          <span className="text-[12.5px] font-semibold text-text-secondary">Es mi lengua materna</span>
+                          <Toggle activo={lang.isNative} onCambio={(v) => marcarNativo(lang.code, v)} etiqueta="Lengua materna" />
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
+                {languages.isError ? (
+                  <div className="mt-3">
+                    <ErrorCarga mensaje="No pudimos cargar los idiomas." onReintentar={() => void languages.refetch()} />
+                  </div>
+                ) : languages.isPending ? (
+                  <div className="mt-3">
+                    <Cargando filas={1} />
+                  </div>
+                ) : (
+                  disponibles.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {NIVELES.map((nivel) => (
+                      {disponibles.map((idioma) => (
                         <button
-                          key={nivel}
+                          key={idioma.code}
                           type="button"
-                          aria-pressed={lang.levels.includes(nivel)}
-                          onClick={() => alternarNivel(lang.code, nivel)}
-                          className={`min-h-9 rounded-pill px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors focus-visible:shadow-focus ${
-                            lang.levels.includes(nivel)
-                              ? "bg-primary text-on-primary"
-                              : "bg-surface-sunken text-text-secondary hover:bg-border/60 hover:text-text"
-                          }`}
+                          onClick={() => idioma.code && agregarIdioma(idioma.code)}
+                          className="inline-flex min-h-9 items-center gap-1.5 rounded-pill border-[1.5px] border-dashed border-border-strong px-3.5 py-1.5 text-[13px] font-semibold text-text-secondary transition-colors hover:border-primary hover:text-primary-strong focus-visible:shadow-focus"
                         >
-                          {etiquetaNivel(nivel)}
+                          <Plus size={14} strokeWidth={2} />
+                          <DiscoIdioma code={idioma.code ?? ""} size={18} />
+                          {idioma.nameEs}
                         </button>
                       ))}
                     </div>
-                    <label className="mt-3 flex items-center justify-between gap-3">
-                      <span className="text-[12.5px] font-semibold text-text-secondary">Es mi lengua materna</span>
-                      <Toggle activo={lang.isNative} onCambio={(v) => marcarNativo(lang.code, v)} etiqueta="Lengua materna" />
-                    </label>
-                  </div>
-                ))}
+                  )
+                )}
               </div>
-              {disponibles.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {disponibles.map((idioma) => (
-                    <button
-                      key={idioma.code}
-                      type="button"
-                      onClick={() => idioma.code && agregarIdioma(idioma.code)}
-                      className="inline-flex min-h-9 items-center gap-1.5 rounded-pill border-[1.5px] border-dashed border-border-strong px-3.5 py-1.5 text-[13px] font-semibold text-text-secondary transition-colors hover:border-primary hover:text-primary-strong focus-visible:shadow-focus"
-                    >
-                      <Plus size={14} strokeWidth={2} />
-                      <DiscoIdioma code={idioma.code ?? ""} size={18} />
-                      {idioma.nameEs}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
 
-            {(goalsCat.data ?? []).length > 0 && (
-              <div>
-                <h2 className="text-[13.5px] font-bold text-text">¿Para qué objetivos preparas?</h2>
+            <div id="objetivos" tabIndex={-1} className="rounded-base focus:outline-none">
+              <h2 className="text-[13.5px] font-bold text-text">¿Para qué objetivos preparas?</h2>
+              <p className="mt-0.5 text-[12px] text-text-muted">Elige todos los que apliquen.</p>
+              <MensajeCampo mensaje={errorDe("objetivos")} />
+              {goalsCat.isError ? (
+                <div className="mt-3">
+                  <ErrorCarga mensaje="No pudimos cargar los objetivos." onReintentar={() => void goalsCat.refetch()} />
+                </div>
+              ) : goalsCat.isPending ? (
+                <div className="mt-3">
+                  <Cargando filas={1} />
+                </div>
+              ) : (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {(goalsCat.data ?? []).map((goal) => (
                     <button
@@ -433,33 +594,63 @@ function Wizard({
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </section>
         )}
 
         {paso === 2 && (
-          <section className="space-y-5">
+          <section className="space-y-6">
             <PanelRigel pose="animo" texto="Tu trayectoria da confianza. Comparte de dónde eres y qué has estudiado." />
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2 sm:col-span-1">
-                <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="city">Ciudad</label>
-                <Campo id="city" type="text" maxLength={80} value={city} onChange={(e) => setCity(e.target.value)} placeholder="Bogotá" className="mt-1.5" />
+            <div className="grid gap-5 lg:grid-cols-2 lg:gap-x-10">
+              {/* Primero el país y, debajo, la ciudad de ese país (Pardo, 27/09/2026). */}
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="country">País</label>
+                  <SelectorDePais id="country" value={countryCode} onChange={cambiarPais} className="mt-1.5" />
+                  <MensajeCampo mensaje={errorDe("country")} />
+                </div>
+                <div>
+                  <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="city">Ciudad</label>
+                  <SelectorDeCiudad id="city" pais={countryCode} value={city} onChange={setCity} className="mt-1.5" />
+                  <MensajeCampo mensaje={errorDe("city")} />
+                </div>
               </div>
-              <div className="col-span-2 sm:col-span-1">
-                <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="country">País</label>
-                <SelectorDePais id="country" value={countryCode} onChange={setCountryCode} className="mt-1.5" />
-              </div>
-              <div className="col-span-2 sm:col-span-1">
-                <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="years">Años de experiencia</label>
-                <Campo id="years" type="number" min={0} max={80} value={yearsExperience} onChange={(e) => setYearsExperience(e.target.value)} placeholder="5" className="mt-1.5" />
-              </div>
-              <div className="col-span-2">
-                <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="education">Formación</label>
-                <Campo id="education" type="text" maxLength={160} value={education} onChange={(e) => setEducation(e.target.value)} placeholder="Licenciatura en Lenguas Modernas" className="mt-1.5" />
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="years">Años de experiencia</label>
+                  <Campo
+                    id="years"
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    max={ANIOS_MAXIMO}
+                    step={1}
+                    value={yearsExperience}
+                    onChange={(e) => setYearsExperience(e.target.value)}
+                    placeholder="5"
+                    aria-invalid={!!errorDe("years") || undefined}
+                    className={`mt-1.5 ${errorDe("years") ? "border-error" : ""}`}
+                  />
+                  <MensajeCampo mensaje={errorDe("years")} />
+                </div>
+                <div>
+                  <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="education">Formación</label>
+                  <Campo
+                    id="education"
+                    type="text"
+                    maxLength={160}
+                    value={education}
+                    onChange={(e) => setEducation(e.target.value)}
+                    placeholder="Licenciatura en Lenguas Modernas"
+                    aria-invalid={!!errorDe("education") || undefined}
+                    className={`mt-1.5 ${errorDe("education") ? "border-error" : ""}`}
+                  />
+                  <MensajeCampo mensaje={errorDe("education")} />
+                </div>
               </div>
             </div>
-            <div className="space-y-3">
+            <div className="grid gap-3 lg:grid-cols-2 lg:gap-x-10">
               <label className="flex items-center justify-between gap-3 rounded-card bg-surface-raised p-4 shadow-sm">
                 <span className="flex items-center gap-2 text-[13.5px] font-semibold text-text">
                   <BadgeCheck size={16} strokeWidth={2} className="text-success" />
@@ -478,62 +669,161 @@ function Wizard({
           </section>
         )}
 
-        {paso === 3 && <PasoDocumentos documentos={vista.documents ?? []} />}
+        {paso === 3 && <PasoDocumentos documentos={documentos} errorCv={errorDe("doc-CV")} />}
 
-        {paso === 4 && <PasoAcuerdo aceptado={vista.agreementAccepted ?? false} />}
+        {paso === 4 && <PasoAcuerdo aceptado={vista.agreementAccepted ?? false} error={errorDe("acuerdo")} />}
 
-        {paso === 5 && (
-          <PasoRevisar
-            faltantes={vista.missing ?? []}
+        {paso === PASO_REVISION && (
+          <Revision
+            vista={vista}
+            faltas={faltas}
+            nombre={nombre}
+            foto={fotoActual}
+            datos={{ headline, bio, langs, goals, countryCode, city, yearsExperience, education, certified, acceptsTrial }}
+            nombreIdioma={nombreIdioma}
+            goalsCat={goalsCat.data}
+            onEditar={editar}
+            sincronizar={sincronizar}
             onEnviado={() => router.replace("/aplicacion/estado")}
           />
         )}
       </div>
 
-      {errorGuardar && paso <= 2 && (
+      {errorGuardar && (
         <div className="mt-5">
           <AvisoError mensaje={errorGuardar} />
         </div>
       )}
 
-      {/* Navegación entre pasos. El último paso no lleva "Siguiente": su acción es enviar. */}
-      <nav className="mt-8 flex items-center justify-between gap-3">
+      {/* Navegación. Con algo por completar, el resumen dice qué falta antes y después de intentar
+          seguir; «Siguiente» no deja pasar y lleva el foco al primer campo pendiente. */}
+      <nav className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-surface-sunken pt-5">
         <Boton
           variante="contorno"
           disabled={paso === 0 || guardar.isPending}
-          onClick={() => setPaso((p) => Math.max(0, p - 1))}
+          onClick={() => void irA(paso - 1)}
           className="h-12"
         >
           <ArrowLeft size={16} strokeWidth={2} />
           Atrás
         </Boton>
-        {paso < PASOS.length - 1 ? (
-          <Boton variante="primario" disabled={guardar.isPending} onClick={() => void avanzar()} className="h-12">
-            {guardar.isPending ? (
-              <>
-                <Spinner />
-                Guardando…
-              </>
-            ) : (
-              <>
-                Siguiente
-                <ArrowRight size={16} strokeWidth={2} />
-              </>
-            )}
-          </Boton>
-        ) : (
-          <span className="text-[12px] text-text-muted">Revisa y envía abajo</span>
+        {faltasAqui.length > 0 && (
+          <p
+            aria-live="polite"
+            className={`order-first flex w-full items-start gap-1.5 text-[12.5px] sm:order-none sm:w-auto sm:flex-1 sm:justify-end sm:text-right ${
+              conErrores ? "font-semibold text-error" : "text-text-muted"
+            }`}
+          >
+            {conErrores && <AlertCircle size={15} strokeWidth={2} className="mt-px shrink-0" />}
+            Para seguir te falta {enumerar(faltasAqui.map((f) => f.nombre))}.
+          </p>
         )}
+        {paso < PASO_REVISION &&
+          (revisando ? (
+            <Boton variante="primario" disabled={guardar.isPending} onClick={() => void guardarYVolver()} className="h-12">
+              {guardar.isPending ? <Spinner /> : <CheckCircle2 size={16} strokeWidth={2} />}
+              {guardar.isPending ? "Guardando…" : "Guardar y volver a revisar"}
+            </Boton>
+          ) : (
+            <Boton variante="primario" disabled={guardar.isPending} onClick={() => void irA(paso + 1)} className="h-12">
+              {guardar.isPending ? (
+                <>
+                  <Spinner />
+                  Guardando…
+                </>
+              ) : (
+                <>
+                  Siguiente
+                  <ArrowRight size={16} strokeWidth={2} />
+                </>
+              )}
+            </Boton>
+          ))}
       </nav>
-
-      {vista.status === "CHANGES_REQUESTED" && (
-        <div className="mt-4 flex justify-center">
-          <Boton variante="fantasma" disabled={guardar.isPending} onClick={() => void volverAlResumen()}>
-            Guardar y volver al resumen
-          </Boton>
-        </div>
-      )}
     </main>
+  );
+}
+
+/**
+ * Los seis pasos, tocables: atrás siempre; adelante solo si los anteriores están completos (si no,
+ * lleva al primero que falta y dice qué). Completo en verde con su check; el actual en coral.
+ */
+function IndicadorPasos({
+  paso,
+  faltas,
+  alcanzable,
+  onIr,
+}: {
+  paso: number;
+  faltas: Falta[][];
+  alcanzable: (destino: number) => boolean;
+  onIr: (destino: number) => void;
+}) {
+  return (
+    <nav aria-label="Pasos de la postulación" className="mt-4">
+      <ol className="grid grid-cols-6 gap-1.5 lg:gap-3">
+        {PASOS.map((nombrePaso, i) => {
+          const actual = i === paso;
+          const completo = i < PASO_REVISION && faltas[i].length === 0;
+          const puede = alcanzable(i);
+          const estado = actual ? "paso actual" : completo ? "completo" : puede ? "por completar" : "completa antes los anteriores";
+          return (
+            <li key={nombrePaso}>
+              <button
+                type="button"
+                onClick={() => onIr(i)}
+                aria-current={actual ? "step" : undefined}
+                aria-disabled={!puede || undefined}
+                aria-label={`Paso ${i + 1}: ${nombrePaso}, ${estado}`}
+                title={puede ? undefined : "Completa antes los pasos anteriores"}
+                className={`group flex w-full flex-col gap-2 rounded-base py-2 text-left focus-visible:shadow-focus ${
+                  puede ? "cursor-pointer" : "cursor-not-allowed"
+                }`}
+              >
+                <span
+                  className={`h-1.5 w-full rounded-pill transition-colors duration-300 ${
+                    actual ? "bg-primary" : completo ? "bg-success" : "bg-surface-sunken"
+                  }`}
+                />
+                <span
+                  className={`hidden items-start gap-1.5 text-[12.5px] leading-tight lg:flex ${
+                    actual
+                      ? "font-bold text-text"
+                      : puede
+                        ? "font-semibold text-text-secondary group-hover:text-text"
+                        : "font-semibold text-text-muted"
+                  }`}
+                >
+                  {completo && !actual ? (
+                    <CheckCircle2 size={15} strokeWidth={2.2} className="shrink-0 text-success" />
+                  ) : (
+                    <span
+                      className={`grid h-[15px] w-[15px] shrink-0 place-items-center rounded-full text-[9.5px] font-bold ${
+                        actual ? "bg-primary text-on-primary" : "border border-border-strong"
+                      }`}
+                    >
+                      {i + 1}
+                    </span>
+                  )}
+                  {nombrePaso}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}
+
+/** Lo que falta en un campo, en rojo y debajo de él. Sin mensaje no pinta nada. */
+function MensajeCampo({ id, mensaje }: { id?: string; mensaje: string | null }) {
+  if (!mensaje) return null;
+  return (
+    <p id={id} className="mt-1.5 flex items-start gap-1.5 text-[12px] font-semibold text-error">
+      <AlertCircle size={14} strokeWidth={2} className="mt-px shrink-0" />
+      {mensaje}
+    </p>
   );
 }
 
@@ -549,19 +839,23 @@ function PanelRigel({ pose, texto }: { pose: "saludo" | "guia" | "animo"; texto:
 
 /* ---------------- Paso 4: documentos ---------------- */
 
-function PasoDocumentos({ documentos }: { documentos: DocumentView[] }) {
+function PasoDocumentos({ documentos, errorCv }: { documentos: DocumentView[]; errorCv: string | null }) {
   return (
     <section className="space-y-4">
-      <p className="text-[13.5px] leading-relaxed text-text-secondary">
-        Sube tu hoja de vida. Los certificados son opcionales. Aceptamos PDF e imágenes.
+      <p className="max-w-prose text-[13.5px] leading-relaxed text-text-secondary">
+        Sube tu hoja de vida: es obligatoria. Los certificados son opcionales y suman confianza.
+        Aceptamos PDF e imágenes.
       </p>
-      {DOC_TIPOS.map((tipo) => (
-        <SubidorDocumento
-          key={tipo.code}
-          tipo={tipo}
-          docs={documentos.filter((d) => d.docType === tipo.code)}
-        />
-      ))}
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {DOC_TIPOS.map((tipo) => (
+          <SubidorDocumento
+            key={tipo.code}
+            tipo={tipo}
+            docs={documentos.filter((d) => d.docType === tipo.code)}
+            error={tipo.code === "CV" ? errorCv : null}
+          />
+        ))}
+      </div>
     </section>
   );
 }
@@ -569,9 +863,11 @@ function PasoDocumentos({ documentos }: { documentos: DocumentView[] }) {
 function SubidorDocumento({
   tipo,
   docs,
+  error: errorObligatorio,
 }: {
   tipo: (typeof DOC_TIPOS)[number];
   docs: DocumentView[];
+  error: string | null;
 }) {
   const queryClient = useQueryClient();
   const input = useRef<HTMLInputElement>(null);
@@ -595,18 +891,19 @@ function SubidorDocumento({
   });
 
   return (
-    <div className="rounded-card bg-surface-raised p-4 shadow-sm">
+    <div className={`rounded-card bg-surface-raised p-4 shadow-sm ${errorObligatorio ? "ring-[1.5px] ring-error" : ""}`}>
       <div className="flex items-center justify-between gap-3">
-        <p className="flex items-center gap-2 text-[13.5px] font-bold text-text">
+        <p className="flex flex-wrap items-center gap-2 text-[13.5px] font-bold text-text">
           <FileText size={16} strokeWidth={1.9} className="text-text-secondary" />
           {tipo.label}
           {tipo.obligatorio && <Badge tono="coral">Obligatorio</Badge>}
         </p>
         <button
+          id={`doc-${tipo.code}`}
           type="button"
           onClick={() => input.current?.click()}
           disabled={subir.isPending}
-          className="inline-flex min-h-9 items-center gap-1.5 rounded-pill border-[1.5px] border-border px-3.5 text-[12.5px] font-bold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus disabled:opacity-60"
+          className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-pill border-[1.5px] border-border px-3.5 text-[12.5px] font-bold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus disabled:opacity-60"
         >
           {subir.isPending ? <Spinner /> : <Upload size={14} strokeWidth={2} />}
           Subir
@@ -627,7 +924,7 @@ function SubidorDocumento({
         <ul className="mt-3 space-y-2">
           {docs.map((doc) => (
             <li key={doc.id} className="flex items-center justify-between gap-3 rounded-base bg-surface-sunken px-3.5 py-2.5">
-              <span className="min-w-0 truncate text-[12.5px] font-semibold text-text">{doc.fileName}</span>
+              <span className="min-w-0 break-all text-[12.5px] font-semibold text-text">{doc.fileName}</span>
               <button
                 type="button"
                 aria-label={`Borrar ${doc.fileName}`}
@@ -643,13 +940,14 @@ function SubidorDocumento({
       )}
 
       {error && <p className="mt-2 text-[12px] font-semibold text-error">{error}</p>}
+      <MensajeCampo mensaje={docs.length === 0 ? errorObligatorio : null} />
     </div>
   );
 }
 
 /* ---------------- Paso 5: acuerdo ---------------- */
 
-function PasoAcuerdo({ aceptado }: { aceptado: boolean }) {
+function PasoAcuerdo({ aceptado, error: errorObligatorio }: { aceptado: boolean; error: string | null }) {
   const queryClient = useQueryClient();
   const acuerdo = useAcuerdoDelProfesor();
   const aceptar = useMutation({
@@ -661,252 +959,331 @@ function PasoAcuerdo({ aceptado }: { aceptado: boolean }) {
   const error = aceptar.error instanceof ApiError ? aceptar.error.message : null;
 
   return (
-    <section className="space-y-4">
-      <div className="flex items-center gap-2 text-[13.5px] font-bold text-text">
-        <ShieldCheck size={18} strokeWidth={2} className="text-primary-strong" />
-        Acuerdo del profesor
-        {acuerdo.data && <span className="font-semibold text-text-muted">· versión {acuerdo.data.version}</span>}
+    <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-10">
+      <div>
+        <div className="flex items-center gap-2 text-[13.5px] font-bold text-text">
+          <ShieldCheck size={18} strokeWidth={2} className="text-primary-strong" />
+          Acuerdo del profesor
+          {acuerdo.data && <span className="font-semibold text-text-muted">· versión {acuerdo.data.version}</span>}
+        </div>
+        {/* El texto viene de la base, con su versión: es lo que queda como constancia de lo aceptado. */}
+        <div className="mt-3 max-h-72 overflow-y-auto rounded-card bg-surface-raised p-4 shadow-sm lg:max-h-[60vh] lg:p-6">
+          <div className="max-w-[75ch]">
+            {acuerdo.data ? (
+              <CuerpoLegal body={acuerdo.data.body} />
+            ) : acuerdo.isError ? (
+              <ErrorCarga mensaje="No pudimos cargar el acuerdo." onReintentar={() => void acuerdo.refetch()} />
+            ) : (
+              <Cargando filas={3} />
+            )}
+          </div>
+        </div>
       </div>
-      {/* El texto viene de la base, con su versión: es lo que queda como constancia de lo aceptado. */}
-      <div className="max-h-72 overflow-y-auto rounded-card bg-surface-raised p-4 shadow-sm">
-        {acuerdo.data ? (
-          <CuerpoLegal body={acuerdo.data.body} />
-        ) : acuerdo.isError ? (
-          <ErrorCarga mensaje="No pudimos cargar el acuerdo." onReintentar={() => void acuerdo.refetch()} />
+
+      <div className="space-y-3 lg:sticky lg:top-6">
+        {aceptado ? (
+          <p className="flex items-center gap-2 rounded-card bg-success-bg px-4 py-3 text-[13px] font-semibold text-success">
+            <CheckCircle2 size={18} strokeWidth={2.2} />
+            Aceptaste el acuerdo. ¡Listo!
+          </p>
         ) : (
-          <Cargando filas={3} />
+          <label
+            className={`flex cursor-pointer items-start gap-3 rounded-card border-[1.5px] bg-surface-raised p-4 ${
+              errorObligatorio ? "border-error" : "border-border"
+            }`}
+          >
+            <input
+              id="acuerdo"
+              type="checkbox"
+              checked={false}
+              disabled={aceptar.isPending || !acuerdo.data}
+              onChange={() => aceptar.mutate()}
+              className="mt-0.5 h-5 w-5 accent-primary"
+            />
+            <span className="text-[13.5px] font-semibold text-text">
+              He leído y acepto el acuerdo del profesor de Orión.
+            </span>
+          </label>
         )}
+        <MensajeCampo mensaje={aceptado ? null : errorObligatorio} />
+        {error && <AvisoError mensaje={error} />}
       </div>
-
-      {aceptado ? (
-        <p className="flex items-center gap-2 rounded-card bg-success-bg px-4 py-3 text-[13px] font-semibold text-success">
-          <CheckCircle2 size={18} strokeWidth={2.2} />
-          Aceptaste el acuerdo. ¡Listo!
-        </p>
-      ) : (
-        <label className="flex cursor-pointer items-start gap-3 rounded-card border-[1.5px] border-border bg-surface-raised p-4">
-          <input
-            type="checkbox"
-            checked={false}
-            disabled={aceptar.isPending || !acuerdo.data}
-            onChange={() => aceptar.mutate()}
-            className="mt-0.5 h-5 w-5 accent-primary"
-          />
-          <span className="text-[13.5px] font-semibold text-text">
-            He leído y acepto el acuerdo del profesor de Orión.
-          </span>
-        </label>
-      )}
-
-      {error && <AvisoError mensaje={error} />}
     </section>
   );
 }
 
-/* ---------------- Resumen de la postulación ---------------- */
+/* ---------------- Paso 6: revisar y enviar ---------------- */
+
+type DatosLocales = {
+  headline: string;
+  bio: string;
+  langs: LangEdit[];
+  goals: string[];
+  countryCode: string;
+  city: string;
+  yearsExperience: string;
+  education: string;
+  certified: boolean;
+  acceptsTrial: boolean;
+};
 
 /**
- * Todo lo que el aspirante ya entregó, en una sola pantalla, con la nota de la revisión arriba.
- *
- * <p>Es la respuesta a lo que costaba más caro: cuando la revisión pedía un cambio, volver
- * significaba recorrer los seis pasos del wizard otra vez. Aquí ve lo que tiene, entra a la
- * sección que le señalaron, y vuelve.
+ * Todo lo que va a enviar, en una sola pantalla y con «Editar» en cada sección (Pardo, 27/09/2026).
+ * «Editar» abre ese paso, que en ese modo guarda y vuelve aquí: nada de recorrer seis pantallas.
+ * Si la revisión pidió cambios, su nota va arriba.
  */
-function Resumen({
+function Revision({
   vista,
-  respuestas,
+  faltas,
   nombre,
   foto,
+  datos: d,
+  nombreIdioma,
+  goalsCat,
   onEditar,
+  sincronizar,
   onEnviado,
 }: {
   vista: TeacherApplicationView;
-  respuestas: ProfileResponse | null;
+  faltas: Falta[][];
   nombre: string;
-  foto?: string | null;
+  foto: string | null;
+  datos: DatosLocales;
+  nombreIdioma: (code: string) => string;
+  goalsCat?: GoalResponse[];
   onEditar: (paso: number) => void;
+  sincronizar: () => Promise<boolean>;
   onEnviado: () => void;
 }) {
-  const goalsCat = useQuery({
-    queryKey: ["catalog", "goals"],
-    queryFn: () => apiFetch<GoalResponse[]>("/api/v1/catalog/goals"),
-    staleTime: 5 * 60_000,
-  });
-
-  const r = respuestas;
+  const acuerdo = useAcuerdoDelProfesor();
   const documentos = vista.documents ?? [];
-  const lugar = [r?.city, r?.countryCode && nombreDePais(r.countryCode.toUpperCase())].filter(Boolean).join(", ");
+  const anios = aniosDeExperiencia(d.yearsExperience);
+  const lugar = [d.city.trim(), paisConBandera(d.countryCode)].filter(Boolean).join(", ");
 
   return (
-    <main className="mx-auto w-full max-w-lg px-5 py-6 lg:max-w-2xl lg:py-8">
-      <header>
-        <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-primary-strong">
-          Postulación a profesor
-        </p>
-        <h1 className="mt-2 font-display text-h1 font-bold">Tu postulación</h1>
-        <p className="mt-1 text-[13.5px] leading-relaxed text-text-secondary">
-          Esto es lo que tienes guardado. Cambia solo lo que haga falta y vuelve a enviarla.
-        </p>
-      </header>
-
+    <div className="space-y-6">
       {vista.decisionNote && (
-        <section className="mt-5 rounded-card border-l-[3px] border-primary bg-primary-soft p-4">
-          <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-primary-strong">
+        <section className="rounded-card border-l-[3px] border-primary bg-primary-soft p-4 lg:p-5">
+          <p className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.08em] text-primary-strong">
+            <MessageSquare size={15} strokeWidth={2} />
             Lo que pide la revisión
           </p>
-          <p className="mt-1.5 whitespace-pre-line text-[13.5px] leading-relaxed text-text">
+          <p className="mt-1.5 max-w-[75ch] whitespace-pre-line text-[13.5px] leading-relaxed text-text">
             {vista.decisionNote}
           </p>
         </section>
       )}
 
-      <div className="mt-5 grid gap-3">
-        <BloqueResumen titulo="Datos personales" onEditar={() => onEditar(0)}>
-          <div className="flex items-center gap-3">
-            <Avatar nombre={nombre} fotoUrl={foto} size="md" />
-            <div className="min-w-0">
-              <p className="truncate text-[14px] font-bold text-text">{nombre}</p>
-              <p className="truncate text-[12.5px] text-text-muted">{lugar || "Sin ciudad"}</p>
-            </div>
-          </div>
-          <DatoResumen etiqueta="Título" valor={r?.headline} />
-        </BloqueResumen>
+      <p className="max-w-prose text-[13.5px] leading-relaxed text-text-secondary">
+        Esto es lo que vas a enviar. Toca «Editar» en lo que quieras cambiar: lo guardas y vuelves aquí.
+      </p>
 
-        <BloqueResumen titulo="Enseñanza" onEditar={() => onEditar(1)}>
-          <DatoResumen etiqueta="Sobre ti" valor={r?.bio} />
-          <div>
-            <p className="text-[12px] font-bold text-text-secondary">Idiomas</p>
-            {r?.languages?.length ? (
-              <ul className="mt-1.5 grid gap-1.5">
-                {r.languages.map((l) => (
-                  <li key={l.code} className="flex flex-wrap items-center gap-2">
-                    <DiscoIdioma code={l.code ?? ""} size={18} />
-                    <span className="text-[13px] font-semibold text-text">{l.nameEs ?? l.code}</span>
-                    {l.isNative && <Badge tono="menta">Nativo</Badge>}
-                    <span className="text-[12px] text-text-muted">
-                      {(l.levels ?? []).map(etiquetaNivel).join(" · ") || "Sin niveles"}
-                    </span>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+        <div className="grid gap-4 xl:grid-cols-2">
+          <SeccionRevision titulo="Datos personales" faltas={faltas[0]} onEditar={() => onEditar(0)}>
+            <div className="flex items-center gap-4">
+              <Avatar nombre={nombre} fotoUrl={foto} size="xl" />
+              <p className="min-w-0 break-words text-[15px] font-bold text-text">{nombre}</p>
+            </div>
+            <DatoRevision etiqueta="Título" valor={d.headline.trim()} />
+          </SeccionRevision>
+
+          <SeccionRevision titulo="Experiencia" faltas={faltas[2]} onEditar={() => onEditar(2)}>
+            <DatoRevision etiqueta="Lugar" valor={d.city.trim() ? lugar : ""} />
+            <DatoRevision
+              etiqueta="Años de experiencia"
+              valor={anios == null ? "" : anios === 0 ? "Estoy empezando" : `${anios} ${anios === 1 ? "año" : "años"}`}
+            />
+            <DatoRevision etiqueta="Formación" valor={d.education.trim()} />
+            <div className="flex flex-wrap gap-1.5">
+              <Badge tono={d.certified ? "menta" : "neutral"}>
+                {d.certified ? "Con certificación docente" : "Sin certificación docente"}
+              </Badge>
+              <Badge tono={d.acceptsTrial ? "melocoton" : "neutral"}>
+                {d.acceptsTrial ? "Primera clase gratis" : "Sin clase de prueba gratis"}
+              </Badge>
+            </div>
+          </SeccionRevision>
+
+          <SeccionRevision titulo="Enseñanza" faltas={faltas[1]} onEditar={() => onEditar(1)} ancha>
+            <DatoRevision etiqueta="Sobre ti" valor={d.bio.trim()} largo />
+            <div>
+              <p className="text-[12px] font-bold text-text-secondary">Idiomas y niveles</p>
+              {d.langs.length ? (
+                <ul className="mt-1.5 grid gap-2 sm:grid-cols-2">
+                  {d.langs.map((l) => (
+                    <li key={l.code} className="flex flex-wrap items-center gap-2 rounded-base bg-surface-sunken px-3 py-2">
+                      <DiscoIdioma code={l.code} size={18} />
+                      <span className="text-[13px] font-semibold text-text">{nombreIdioma(l.code)}</span>
+                      {l.isNative && <Badge tono="menta">Nativo</Badge>}
+                      <span className="text-[12px] text-text-muted">
+                        {l.levels.map(etiquetaNivel).join(" · ") || "Sin niveles"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-1 text-[13px] text-text-muted">Todavía no agregaste ninguno.</p>
+              )}
+            </div>
+            <div>
+              <p className="text-[12px] font-bold text-text-secondary">Objetivos</p>
+              {d.goals.length ? (
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {d.goals.map((code) => (
+                    <Badge key={code} tono="lavanda">
+                      {etiquetaObjetivo(code, goalsCat)}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-1 text-[13px] text-text-muted">Todavía no elegiste ninguno.</p>
+              )}
+            </div>
+          </SeccionRevision>
+
+          <SeccionRevision titulo="Documentos" faltas={faltas[3]} onEditar={() => onEditar(3)}>
+            {documentos.length ? (
+              <ul className="grid gap-1.5">
+                {documentos.map((doc) => (
+                  <li key={doc.id} className="flex items-start gap-2 text-[13px]">
+                    <FileText size={15} strokeWidth={1.9} className="mt-0.5 shrink-0 text-text-muted" />
+                    <span className="min-w-0 flex-1 break-all font-semibold text-text">{doc.fileName}</span>
+                    <span className="shrink-0 text-[11.5px] text-text-muted">{etiquetaDocumento(doc.docType)}</span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="mt-1 text-[13px] text-text-muted">Todavía no agregaste ninguno.</p>
+              <p className="text-[13px] text-text-muted">Todavía no subiste ninguno.</p>
             )}
-          </div>
-          <div>
-            <p className="text-[12px] font-bold text-text-secondary">Objetivos</p>
-            {r?.goals?.length ? (
-              <div className="mt-1.5 flex flex-wrap gap-1.5">
-                {r.goals.map((code) => (
-                  <Badge key={code} tono="lavanda">
-                    {etiquetaObjetivo(code, goalsCat.data)}
-                  </Badge>
-                ))}
-              </div>
+          </SeccionRevision>
+
+          <SeccionRevision titulo="Acuerdo del profesor" faltas={faltas[4]} onEditar={() => onEditar(4)}>
+            {vista.agreementAccepted ? (
+              <p className="flex items-center gap-2 text-[13px] font-semibold text-success">
+                <CheckCircle2 size={16} strokeWidth={2.2} />
+                Aceptado{acuerdo.data ? ` · versión ${acuerdo.data.version}` : ""}
+              </p>
             ) : (
-              <p className="mt-1 text-[13px] text-text-muted">Todavía no elegiste ninguno.</p>
+              <p className="flex items-center gap-2 text-[13px] font-semibold text-warning">
+                <Circle size={16} strokeWidth={2} />
+                Todavía sin aceptar
+              </p>
             )}
-          </div>
-        </BloqueResumen>
+          </SeccionRevision>
+        </div>
 
-        <BloqueResumen titulo="Experiencia" onEditar={() => onEditar(2)}>
-          <DatoResumen
-            etiqueta="Años de experiencia"
-            valor={r?.yearsExperience != null ? String(r.yearsExperience) : null}
+        <aside className="lg:sticky lg:top-6">
+          <PanelEnviar
+            faltas={faltas}
+            missing={vista.missing ?? []}
+            dias={vista.reviewBusinessDays ?? 3}
+            onEditar={onEditar}
+            sincronizar={sincronizar}
+            onEnviado={onEnviado}
           />
-          <DatoResumen etiqueta="Formación" valor={r?.education} />
-          <div className="flex flex-wrap gap-1.5">
-            {r?.certified && <Badge tono="menta">Certificado</Badge>}
-            {r?.acceptsTrial && <Badge tono="melocoton">Primera clase gratis</Badge>}
-          </div>
-        </BloqueResumen>
-
-        <BloqueResumen titulo="Documentos" onEditar={() => onEditar(3)}>
-          {documentos.length ? (
-            <ul className="grid gap-1.5">
-              {documentos.map((d) => (
-                <li key={d.id} className="flex items-center gap-2 text-[13px]">
-                  <FileText size={15} strokeWidth={1.9} className="shrink-0 text-text-muted" />
-                  <span className="min-w-0 flex-1 truncate font-semibold text-text">{d.fileName}</span>
-                  <span className="shrink-0 text-[11.5px] text-text-muted">
-                    {etiquetaDocumento(d.docType)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-[13px] text-text-muted">Todavía no subiste ninguno.</p>
-          )}
-        </BloqueResumen>
-
-        <BloqueResumen titulo="Acuerdo del profesor" onEditar={() => onEditar(4)}>
-          {vista.agreementAccepted ? (
-            <p className="flex items-center gap-2 text-[13px] font-semibold text-success">
-              <CheckCircle2 size={16} strokeWidth={2.2} />
-              Aceptado
-            </p>
-          ) : (
-            <p className="flex items-center gap-2 text-[13px] font-semibold text-warning">
-              <Circle size={16} strokeWidth={2} />
-              Todavía sin aceptar
-            </p>
-          )}
-        </BloqueResumen>
+        </aside>
       </div>
-
-      <div className="mt-6">
-        <PasoRevisar faltantes={vista.missing ?? []} onEnviado={onEnviado} />
-      </div>
-    </main>
+    </div>
   );
 }
 
-/** Una sección del resumen, con su acceso directo al paso que la edita. */
-function BloqueResumen({
+/** Una sección de la revisión, con su acceso directo al paso que la edita y lo que le falta. */
+function SeccionRevision({
   titulo,
+  faltas,
   onEditar,
+  ancha = false,
   children,
 }: {
   titulo: string;
+  faltas: Falta[];
   onEditar: () => void;
+  ancha?: boolean;
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-card bg-surface-raised p-4 shadow-sm">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="font-display text-[15px] font-bold text-text">{titulo}</h2>
-        <Boton variante="fantasma" onClick={onEditar} className="h-8 shrink-0 px-2.5 text-[12.5px]">
+    <section
+      className={`rounded-card bg-surface-raised p-4 shadow-sm lg:p-5 ${ancha ? "xl:col-span-2" : ""} ${
+        faltas.length ? "ring-[1.5px] ring-warning/60" : ""
+      }`}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 font-display text-[15px] font-bold text-text">
+          {faltas.length ? (
+            <Circle size={16} strokeWidth={2} className="text-warning" />
+          ) : (
+            <CheckCircle2 size={16} strokeWidth={2.2} className="text-success" />
+          )}
+          {titulo}
+        </h2>
+        <Boton
+          variante="fantasma"
+          onClick={onEditar}
+          aria-label={`Editar ${titulo.toLowerCase()}`}
+          className="h-9 shrink-0 px-3 text-[12.5px]"
+        >
           <Pencil size={13} strokeWidth={2} />
           Editar
         </Boton>
       </div>
+      {faltas.length > 0 && (
+        <ul className="mt-2 grid gap-1 rounded-base bg-warning-bg px-3 py-2">
+          {faltas.map((f) => (
+            <li key={f.campo} className="flex items-start gap-1.5 text-[12.5px] font-semibold text-warning">
+              <AlertCircle size={14} strokeWidth={2} className="mt-px shrink-0" />
+              {f.mensaje}
+            </li>
+          ))}
+        </ul>
+      )}
       <div className="mt-3 grid gap-3">{children}</div>
     </section>
   );
 }
 
-function DatoResumen({ etiqueta, valor }: { etiqueta: string; valor?: string | null }) {
+function DatoRevision({ etiqueta, valor, largo = false }: { etiqueta: string; valor: string; largo?: boolean }) {
   return (
     <div>
       <p className="text-[12px] font-bold text-text-secondary">{etiqueta}</p>
-      <p className={`mt-0.5 text-[13px] leading-relaxed ${valor ? "text-text" : "text-text-muted"}`}>
+      <p
+        className={`mt-0.5 text-[13.5px] leading-relaxed ${valor ? "text-text" : "text-text-muted"} ${
+          largo ? "max-w-[75ch] whitespace-pre-line" : ""
+        }`}
+      >
         {valor || "Sin completar"}
       </p>
     </div>
   );
 }
 
-/* ---------------- Paso 6: revisar y enviar ---------------- */
-
-function PasoRevisar({
-  faltantes,
+/**
+ * Enviar a revisión. Se enciende cuando no falta nada aquí ni en el servidor (su lista, `missing`,
+ * es la que manda al enviar). Lo que falte se toca y lleva directo a ese paso.
+ */
+function PanelEnviar({
+  faltas,
+  missing,
+  dias,
+  onEditar,
+  sincronizar,
   onEnviado,
 }: {
-  faltantes: string[];
+  faltas: Falta[][];
+  missing: string[];
+  dias: number;
+  onEditar: (paso: number) => void;
+  sincronizar: () => Promise<boolean>;
   onEnviado: () => void;
 }) {
   const queryClient = useQueryClient();
-  const completo = faltantes.length === 0;
+  const pendientes = faltas
+    .slice(0, PASO_REVISION)
+    .map((f, paso) => ({ paso, f }))
+    .filter((p) => p.f.length > 0);
+  // Si aquí está todo pero el servidor aún ve algo (una foto que acaba de subir), se dice lo suyo.
+  const delServidor = pendientes.length === 0 ? missing : [];
+  const listo = pendientes.length === 0 && missing.length === 0;
 
   const enviar = useMutation({
     mutationFn: () =>
@@ -923,10 +1300,11 @@ function PasoRevisar({
   });
 
   const error = enviar.error instanceof ApiError ? enviar.error.message : null;
+  const plazo = `${dias} ${dias === 1 ? "día hábil" : "días hábiles"}`;
 
   return (
-    <section className="space-y-4">
-      {completo ? (
+    <section className="space-y-4 rounded-card bg-surface-raised p-5 shadow-sm">
+      {listo ? (
         <div className="flex items-center gap-3 rounded-card bg-success-bg p-4">
           <Rigel pose="celebracion" tono="dorado" decorativo className="h-16 w-auto shrink-0" />
           <p className="text-[13.5px] font-semibold text-success">
@@ -936,35 +1314,45 @@ function PasoRevisar({
       ) : (
         <div className="rounded-card bg-warning-bg p-4">
           <p className="text-[13.5px] font-bold text-warning">Te falta poco para enviar</p>
-          <p className="mt-0.5 text-[12.5px] text-warning/90">Completa estos requisitos para poder enviar:</p>
+          <p className="mt-0.5 text-[12.5px] text-warning/90">Completa esto y vuelve aquí:</p>
         </div>
       )}
 
-      <ul className="space-y-2">
-        {(completo
-          ? ["Foto de perfil", "Presentación", "Idiomas y niveles", "Objetivos", "Hoja de vida (CV)", "Acuerdo aceptado"]
-          : faltantes.map(etiquetaFaltante)
-        ).map((texto, i) => (
-          <li
-            key={i}
-            className="flex items-center gap-2.5 rounded-base bg-surface-raised px-4 py-3 text-[13px] shadow-sm"
-          >
-            {completo ? (
-              <CheckCircle2 size={18} strokeWidth={2.2} className="shrink-0 text-success" />
-            ) : (
+      {!listo && (
+        <ul className="space-y-2">
+          {pendientes.map(({ paso, f }) => (
+            <li key={paso}>
+              <button
+                type="button"
+                onClick={() => onEditar(paso)}
+                className="flex w-full items-start gap-2.5 rounded-base bg-surface-sunken px-4 py-3 text-left text-[13px] transition-colors hover:bg-border/60 focus-visible:shadow-focus"
+              >
+                <Circle size={18} strokeWidth={2} className="shrink-0 text-warning" />
+                <span className="min-w-0 flex-1">
+                  <span className="block font-bold text-text">{PASOS[paso]}</span>
+                  <span className="block text-text-secondary">Falta {enumerar(f.map((x) => x.nombre))}.</span>
+                </span>
+                <ArrowRight size={16} strokeWidth={2} className="mt-0.5 shrink-0 text-text-muted" />
+              </button>
+            </li>
+          ))}
+          {delServidor.map((code) => (
+            <li key={code} className="flex items-center gap-2.5 rounded-base bg-surface-sunken px-4 py-3 text-[13px] font-semibold text-text">
               <Circle size={18} strokeWidth={2} className="shrink-0 text-warning" />
-            )}
-            <span className={completo ? "font-semibold text-text" : "font-semibold text-text"}>{texto}</span>
-          </li>
-        ))}
-      </ul>
+              {etiquetaFaltante(code)}
+            </li>
+          ))}
+        </ul>
+      )}
 
       {error && <AvisoError mensaje={error} />}
 
       <Boton
         variante="primario"
-        disabled={!completo || enviar.isPending}
-        onClick={() => enviar.mutate()}
+        disabled={!listo || enviar.isPending}
+        onClick={async () => {
+          if (await sincronizar()) enviar.mutate();
+        }}
         className="h-[52px] w-full"
       >
         {enviar.isPending ? (
@@ -979,13 +1367,9 @@ function PasoRevisar({
           </>
         )}
       </Boton>
-
-      {!completo && (
-        <p className="flex items-center justify-center gap-1.5 text-[12px] text-text-muted">
-          <GraduationCap size={14} strokeWidth={1.9} />
-          Completa lo que falta y vuelve aquí para enviar.
-        </p>
-      )}
+      <p className="text-center text-[12px] leading-relaxed text-text-muted">
+        La revisamos en un plazo de {plazo} y te avisamos por correo.
+      </p>
     </section>
   );
 }

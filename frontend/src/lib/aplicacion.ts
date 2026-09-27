@@ -10,6 +10,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch, ApiError } from "@/lib/api/fetch";
 import type { TeacherApplicationView } from "@/lib/api/types";
+import { estadoBio, estadoTitular, MAX_PALABRAS_BIO, MIN_PALABRAS_BIO, MIN_PALABRAS_TITULAR } from "@/lib/perfil-profesor";
 
 /** Tono de badge del sistema (ver `Badge` en ui.tsx). */
 type TonoBadge = "menta" | "melocoton" | "lavanda" | "coral" | "error" | "neutral";
@@ -69,6 +70,151 @@ export const FALTANTE_LABEL: Record<string, string> = {
 
 export function etiquetaFaltante(code: string): string {
   return FALTANTE_LABEL[code] ?? code;
+}
+
+/* ---------------- Lo obligatorio de cada paso del wizard ---------------- */
+
+/** Los pasos del wizard, en orden. El último no se completa: se envía. */
+export const PASOS_POSTULACION = [
+  "Datos personales",
+  "Enseñanza",
+  "Experiencia",
+  "Documentos",
+  "Acuerdo",
+  "Revisar y enviar",
+] as const;
+
+export const PASO_REVISION = PASOS_POSTULACION.length - 1;
+
+/** Lo que el aspirante lleva escrito, tal como lo tiene el wizard (aún sin guardar). */
+export type BorradorPostulacion = {
+  tieneFoto: boolean;
+  titular: string;
+  bio: string;
+  idiomas: { code: string; levels: string[] }[];
+  objetivos: string[];
+  pais: string;
+  ciudad: string;
+  /** Tal cual está en el campo: vacío es «no lo ha escrito», no cero. */
+  anios: string;
+  formacion: string;
+  tieneCv: boolean;
+  aceptoAcuerdo: boolean;
+};
+
+/**
+ * Un campo por completar. `campo` es el id del control en la pantalla (para llevar el foco ahí),
+ * `mensaje` lo que se dice junto a él y `nombre` cómo se cuenta en el resumen («tu foto»).
+ */
+export type Falta = { campo: string; mensaje: string; nombre: string };
+
+export const ANIOS_MAXIMO = 80;
+
+/** Los años de experiencia como número entero entre 0 y 80, o null si no lo son. */
+export function aniosDeExperiencia(texto: string): number | null {
+  const limpio = texto.trim();
+  if (!/^\d{1,2}$/.test(limpio)) return null;
+  const n = Number(limpio);
+  return n <= ANIOS_MAXIMO ? n : null;
+}
+
+/**
+ * Lo que le falta a un paso para poder seguir (Pardo, 27/09/2026: «todos los campos son
+ * obligatorios»; enterarse al final de que faltaba la foto obligaba a devolverse seis pantallas).
+ *
+ * <p>Va más allá de lo que exige el backend al enviar (`missingRequirements`: foto, presentación, un
+ * idioma con algún nivel, un objetivo, CV y acuerdo): aquí también son obligatorios el título, el
+ * mínimo de palabras, un nivel por cada idioma, país, ciudad, años de experiencia y formación.
+ */
+export function faltasDelPaso(paso: number, b: BorradorPostulacion): Falta[] {
+  const faltas: Falta[] = [];
+  if (paso === 0) {
+    if (!b.tieneFoto) {
+      faltas.push({ campo: "foto", nombre: "tu foto", mensaje: "Sube una foto de perfil: es lo primero que ven los estudiantes." });
+    }
+    const titular = estadoTitular(b.titular);
+    if (titular.estado !== "ok") {
+      faltas.push({
+        campo: "headline",
+        nombre: "el título",
+        mensaje: titular.estado === "vacio" ? `Escribe tu título: mínimo ${MIN_PALABRAS_TITULAR} palabras.` : titular.mensaje,
+      });
+    }
+  } else if (paso === 1) {
+    const bio = estadoBio(b.bio);
+    if (bio.estado !== "ok") {
+      faltas.push({
+        campo: "bio",
+        nombre: "tu presentación",
+        mensaje:
+          bio.estado === "vacio"
+            ? `Escribe tu presentación: entre ${MIN_PALABRAS_BIO} y ${MAX_PALABRAS_BIO} palabras.`
+            : bio.mensaje,
+      });
+    }
+    if (b.idiomas.length === 0) {
+      faltas.push({ campo: "idiomas", nombre: "un idioma", mensaje: "Agrega al menos un idioma que enseñes." });
+    }
+    for (const idioma of b.idiomas) {
+      if (idioma.levels.length === 0) {
+        faltas.push({
+          campo: `niveles-${idioma.code}`,
+          nombre: "los niveles de cada idioma",
+          mensaje: "Marca al menos un nivel que enseñes en este idioma.",
+        });
+      }
+    }
+    if (b.objetivos.length === 0) {
+      faltas.push({ campo: "objetivos", nombre: "un objetivo", mensaje: "Elige al menos un objetivo para el que preparas." });
+    }
+  } else if (paso === 2) {
+    if (!b.pais) faltas.push({ campo: "country", nombre: "tu país", mensaje: "Elige tu país." });
+    if (!b.ciudad.trim()) {
+      faltas.push({
+        campo: "city",
+        nombre: "tu ciudad",
+        mensaje: b.pais ? "Escribe o elige tu ciudad." : "Elige primero tu país y después tu ciudad.",
+      });
+    }
+    if (aniosDeExperiencia(b.anios) === null) {
+      faltas.push({
+        campo: "years",
+        nombre: "tus años de experiencia",
+        mensaje: b.anios.trim()
+          ? `Escribe un número entero entre 0 y ${ANIOS_MAXIMO}.`
+          : "¿Cuántos años llevas enseñando? Si estás empezando, escribe 0.",
+      });
+    }
+    if (!b.formacion.trim()) {
+      faltas.push({
+        campo: "education",
+        nombre: "tu formación",
+        mensaje: "Cuéntanos tu formación: un título, un curso o cómo aprendiste el idioma.",
+      });
+    }
+  } else if (paso === 3) {
+    if (!b.tieneCv) faltas.push({ campo: "doc-CV", nombre: "tu hoja de vida", mensaje: "Sube tu hoja de vida (CV), en PDF o imagen." });
+  } else if (paso === 4) {
+    if (!b.aceptoAcuerdo) {
+      faltas.push({ campo: "acuerdo", nombre: "aceptar el acuerdo", mensaje: "Lee el acuerdo y márcalo como aceptado para seguir." });
+    }
+  }
+  return faltas;
+}
+
+/** El primer paso con algo por completar; la revisión si no falta nada. */
+export function primerPasoIncompleto(b: BorradorPostulacion): number {
+  for (let paso = 0; paso < PASO_REVISION; paso++) {
+    if (faltasDelPaso(paso, b).length > 0) return paso;
+  }
+  return PASO_REVISION;
+}
+
+/** «tu foto», «tu foto y el título», «tu país, tu ciudad y tu formación». Sin repetidos. */
+export function enumerar(nombres: string[]): string {
+  const unicos = [...new Set(nombres)];
+  if (unicos.length <= 1) return unicos[0] ?? "";
+  return `${unicos.slice(0, -1).join(", ")} y ${unicos[unicos.length - 1]}`;
 }
 
 /** Eventos de la bitácora de la postulación, en pasado y en español. */
