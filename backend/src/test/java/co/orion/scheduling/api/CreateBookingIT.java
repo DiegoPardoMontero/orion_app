@@ -1,6 +1,8 @@
 package co.orion.scheduling.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -29,8 +31,14 @@ import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import co.orion.TestcontainersConfiguration;
+import co.orion.scheduling.TestBookings;
+import co.orion.scheduling.application.SlotQueryService;
 import co.orion.scheduling.domain.BookingModality;
 import co.orion.identity.domain.ProfessorProfile;
 import co.orion.identity.domain.User;
@@ -78,6 +86,13 @@ class CreateBookingIT extends ApiIntegrationSupport {
 
     @Autowired
     private PaymentRepository payments;
+
+    /** Espía real: solo la prueba de la carrera le cambia el comportamiento, y solo en esa llamada. */
+    @MockitoSpyBean
+    private SlotQueryService slotQueries;
+
+    @Autowired
+    private PlatformTransactionManager transactions;
 
     private User ana;
     private User carlos;
@@ -365,6 +380,40 @@ class CreateBookingIT extends ApiIntegrationSupport {
         assertThat(bookings.findAll().stream()
                 .filter(booking -> booking.getStatus().occupiesSlot())
                 .toList()).hasSize(1);
+    }
+
+    /**
+     * La carrera que el índice único de la V16 dejaba pasar: con cupos cada media hora, Carlos toma
+     * las 9:30 mientras Ana ya pasó el chequeo amable para las 9:00. Las dos empiezan a horas
+     * distintas, así que el índice (professor_id, starts_at) no las ve chocar; pero la de Ana dura
+     * hasta las 9:55 y pisa la de Carlos. La EXCLUDE de la V78 la rechaza y el servicio lo traduce
+     * a un 409 con el mensaje del cupo tomado.
+     *
+     * <p>El espía reproduce la ventana de verdad: deja que el chequeo amable calcule los cupos
+     * (las 9:00 están libres) y justo después confirma la reserva de Carlos en su propia
+     * transacción, como lo haría la otra petición.
+     */
+    @SuppressWarnings("rawtypes")
+    @Test
+    void anOverlappingBookingThatSlipsPastTheFriendlyCheckLosesWithA409() {
+        Instant nineThirty = wednesdayAt(9).toInstant().plusSeconds(30 * 60);
+        TransactionTemplate otherRequest = new TransactionTemplate(transactions);
+        otherRequest.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        doAnswer(invocation -> {
+            Object slotsBeforeTheRace = invocation.callRealMethod();
+            otherRequest.executeWithoutResult(status -> bookings.saveAndFlush(TestBookings.confirmed(
+                    carlos.getId(), maria.getId(), nineThirty, nineThirty.plusSeconds(55 * 60),
+                    BookingModality.VIRTUAL, null, carlos.getId())));
+            return slotsBeforeTheRace;
+        }).when(slotQueries).availableSlots(any(), any(), any());
+
+        ResponseEntity<Map> response = post(BOOKINGS, anaSession, request(maria.getId(), 9, null), Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody().get("error").toString()).contains("Alguien acaba de tomar este cupo");
+        assertThat(bookings.findAll().stream().filter(b -> b.getStatus().occupiesSlot()).toList())
+                .singleElement()
+                .satisfies(b -> assertThat(b.getStudentId()).isEqualTo(carlos.getId()));
     }
 
     private Callable<ResponseEntity<Map>> racer(CyclicBarrier startLine, Session session) {

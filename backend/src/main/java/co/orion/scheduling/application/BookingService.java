@@ -96,7 +96,7 @@ public class BookingService {
     }
 
     /**
-     * Crea la reserva en PENDING_PAYMENT: el cupo queda bloqueado por el índice único mientras el
+     * Crea la reserva en PENDING_PAYMENT: el cupo queda bloqueado por la base (V78) mientras el
      * estudiante paga, y vence solo si no paga a tiempo. Nada de correos de confirmación todavía
      * — una reserva sin pagar no es una clase, y anunciarla sería mentirle a los dos lados.
      *
@@ -395,7 +395,13 @@ public class BookingService {
      * Chequeo amable + constraint como árbitro final. requireSlotIsAvailable ya rechazó los cupos
      * ocupados con un 422 claro, pero entre ese chequeo y este INSERT hay una ventana en la que
      * otra petición puede colarse: ningún if de Java la cierra, solo la base, que serializa las
-     * escrituras. El índice único parcial es quien decide, y quien pierde recibe un 409.
+     * escrituras.
+     *
+     * <p>Quien decide es la restricción EXCLUDE de la V78 ({@code ex_bookings_professor_no_overlap}):
+     * dos reservas activas del mismo profesor no pueden tener intervalos que se crucen. El índice
+     * único de la V16 (misma hora de inicio) ya no alcanzaba: con cupos cada media hora, la de las
+     * 17:00 y la de las 17:30 se pisan con distinto starts_at. Las dos violaciones —y la del índice
+     * viejo, que sigue ahí de red— son la misma noticia para quien pierde: un 409.
      */
     private Booking saveOrLoseTheRace(Booking booking) {
         try {

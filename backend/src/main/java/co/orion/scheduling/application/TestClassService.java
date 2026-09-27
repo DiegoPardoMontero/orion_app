@@ -31,8 +31,8 @@ import co.orion.shared.time.ClassLength;
  * «Mis ganancias»: una prueba no puede contaminar la contabilidad.
  *
  * <p><strong>Qué sí respeta.</strong> Las mismas invariantes que una clase real. Si el profesor ya
- * tiene algo a esa hora, el índice único lo rechaza igual — una clase de prueba que pisa una clase
- * de verdad sería peor que no poder probar.
+ * tiene algo que se cruce con esa hora, la restricción EXCLUDE de la V78 lo rechaza igual — una clase
+ * de prueba que pisa una clase de verdad sería peor que no poder probar.
  */
 @Service
 public class TestClassService {

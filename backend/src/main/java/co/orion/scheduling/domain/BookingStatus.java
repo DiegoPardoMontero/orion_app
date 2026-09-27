@@ -34,7 +34,10 @@ public enum BookingStatus {
         return this != CONFIRMED && this != PENDING_PAYMENT && this != UNDER_REVIEW;
     }
 
-    /** Los estados que bloquean el horario del profesor: el mismo par que el índice único parcial. */
+    /**
+     * Los estados que bloquean el horario del profesor: el mismo par que filtran el índice único
+     * parcial de la V16 y la restricción EXCLUDE de la V78.
+     */
     public boolean occupiesSlot() {
         return this == CONFIRMED || this == PENDING_PAYMENT;
     }

@@ -107,7 +107,8 @@ public class SlotQueryService {
 
     /**
      * Ocupan cupo las CONFIRMED y las PENDING_PAYMENT: una reserva cancelada o vencida libera su
-     * horario, y por eso el índice único de bookings es parcial sobre ese mismo par de estados.
+     * horario, y por eso el índice único de bookings y la restricción EXCLUDE de la V78 son
+     * parciales sobre ese mismo par de estados.
      * Mostrar como libre un cupo que alguien está pagando llevaría a dos estudiantes al checkout
      * por la misma hora, y el segundo pagaría una clase que ya no existe.
      */

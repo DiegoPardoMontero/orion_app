@@ -25,7 +25,8 @@ public interface BookingRepository extends JpaRepository<Booking, UUID>,
     /**
      * Las reservas que ocupan cupos del profesor en un rango: la entrada del SlotCalculator.
      * Recibe una colección de estados porque desde el Bloque 4 ocupan cupo dos: CONFIRMED y
-     * PENDING_PAYMENT. Es el mismo par que filtra el índice único parcial de la tabla.
+     * PENDING_PAYMENT. Es el mismo par que filtran el índice único parcial de la tabla y la
+     * restricción EXCLUDE de la V78.
      */
     List<Booking> findByProfessorIdAndStatusInAndStartsAtBetween(UUID professorId,
                                                                  Collection<BookingStatus> statuses,

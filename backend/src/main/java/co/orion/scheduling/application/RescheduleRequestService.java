@@ -120,7 +120,7 @@ public class RescheduleRequestService {
         RescheduleRequest request = requireResponder(actor, requestId);
 
         // El cupo pudo volar entre la propuesta y la aceptación. moveTo revalida contra la agenda
-        // real y el índice único arbitra; aquí solo se traduce a un mensaje que se entiende.
+        // real y la base (V78) arbitra; aquí solo se traduce a un mensaje que se entiende.
         Booking moved;
         try {
             moved = bookingService.moveTo(request.getBookingId(), request.getProposedStartsAt());
