@@ -45,6 +45,9 @@
 - 28/09, al cierre: «¿Qué son las claves VAPID? ¿Cómo las configuro?» → Respondida en el chat: qué
   son, en palabras simples, y el paso a paso para generarlas y ponerlas en Railway (el mismo de
   «5. Los avisos», abajo, con más detalle).
+- 28/09: «Sí, ya está prendido, ¿cómo lo pruebo?» → Pardo puso las claves VAPID en Railway y los
+  avisos quedaron activos. Respondida en el chat: la prueba con «Probar» en la campana y una prueba
+  real con un mensaje entre dos cuentas, en computador, Android y iPhone.
 
 ## Estado (28/09/2026): hecho
 
