@@ -145,22 +145,15 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
 
       {/* La ficha y los datos se editan directo, y una sola barra guarda los dos (24/09/2026). */}
       <EdicionEnPagina>
-        {/* En el computador, la ficha y los datos lado a lado: usan el ancho (27/09/2026). */}
-        <div className={seccion === "ficha" ? "lg:grid lg:grid-cols-2 lg:items-start lg:gap-10 xl:gap-14" : ""}>
-          {seccion === "ficha" && (
-            <div>
-              <MiFicha />
-            </div>
-          )}
+        {seccion === "ficha" && <MiFicha />}
 
-          <div className={seccion === "ficha" ? "lg:sticky lg:top-6" : "hidden"}>
-            <QuienLoVe
-              icono={<Lock size={15} strokeWidth={2} />}
-              titulo="Solo para ti"
-              texto="Tu correo, tu WhatsApp y tu contraseña. No los ve ningún profesor ni otro estudiante."
-            />
-            <MisDatos inicial={inicial} onCambiarClave={() => setCambiandoClave(true)} />
-          </div>
+        <div className={seccion === "ficha" ? "" : "hidden"}>
+          <QuienLoVe
+            icono={<Lock size={15} strokeWidth={2} />}
+            titulo="Solo para ti"
+            texto="Tu correo, tu WhatsApp y tu contraseña. No los ve ningún profesor ni otro estudiante."
+          />
+          <MisDatos inicial={inicial} onCambiarClave={() => setCambiandoClave(true)} />
         </div>
       </EdicionEnPagina>
 
@@ -202,40 +195,50 @@ function MisDatos({ inicial, onCambiarClave }: { inicial: Cuenta; onCambiarClave
 
   return (
     <div className="mt-3 rounded-card border border-border bg-surface-raised p-5">
-      <label className="block text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary" htmlFor="nombre">
-        Nombre completo
-      </label>
-      <Campo
-        id="nombre"
-        type="text"
-        maxLength={150}
-        value={nombre}
-        onChange={(event) => setNombre(event.target.value)}
-        icono={<User size={18} strokeWidth={1.75} />}
-        className="mt-1.5"
-      />
-      <p className="mt-1.5 text-[12px] text-text-muted">Tu nombre sí lo ven tus profesores.</p>
+      {/* En el computador, los campos van de a dos dentro de la tarjeta: a todo el ancho, un nombre
+          quedaba en un campo de 1.400 px. */}
+      <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
+        <div>
+          <label className="block text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary" htmlFor="nombre">
+            Nombre completo
+          </label>
+          <Campo
+            id="nombre"
+            type="text"
+            maxLength={150}
+            value={nombre}
+            onChange={(event) => setNombre(event.target.value)}
+            icono={<User size={18} strokeWidth={1.75} />}
+            className="mt-1.5"
+          />
+          <p className="mt-1.5 text-[12px] text-text-muted">Tu nombre sí lo ven tus profesores.</p>
+        </div>
 
-      <label className="mt-4 block text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary" htmlFor="telefono">
-        WhatsApp
-      </label>
-      <PhoneInput id="telefono" value={telefono} onChange={setTelefono} className="mt-1.5" />
-      <AyudaWhatsapp numero={telefono} ayuda="Solo lo usa el equipo de Orión si necesita avisarte algo de una clase." />
-
-      {/* Correo y rol se muestran, no se editan. */}
-      <div className="mt-5 flex items-center gap-2.5 rounded-base bg-surface-sunken px-4 py-3">
-        <Mail size={16} strokeWidth={1.75} className="shrink-0 text-text-muted" />
-        <span className="truncate text-[13px] text-text-secondary">{inicial.email}</span>
+        <div>
+          <label className="block text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary" htmlFor="telefono">
+            WhatsApp
+          </label>
+          <PhoneInput id="telefono" value={telefono} onChange={setTelefono} className="mt-1.5" />
+          <AyudaWhatsapp numero={telefono} ayuda="Solo lo usa el equipo de Orión si necesita avisarte algo de una clase." />
+        </div>
       </div>
 
-      <button
-        type="button"
-        onClick={onCambiarClave}
-        className="mt-3 flex w-full items-center gap-2.5 rounded-base border-[1.5px] border-border px-4 py-3 text-left text-[13.5px] font-semibold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
-      >
-        <KeyRound size={16} strokeWidth={1.75} className="text-text-secondary" />
-        {etiquetaDeClave}
-      </button>
+      <div className="mt-5 grid gap-3 lg:grid-cols-2 lg:gap-6">
+        {/* Correo y rol se muestran, no se editan. */}
+        <div className="flex items-center gap-2.5 rounded-base bg-surface-sunken px-4 py-3">
+          <Mail size={16} strokeWidth={1.75} className="shrink-0 text-text-muted" />
+          <span className="truncate text-[13px] text-text-secondary">{inicial.email}</span>
+        </div>
+
+        <button
+          type="button"
+          onClick={onCambiarClave}
+          className="flex w-full items-center gap-2.5 rounded-base border-[1.5px] border-border px-4 py-3 text-left text-[13.5px] font-semibold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
+        >
+          <KeyRound size={16} strokeWidth={1.75} className="text-text-secondary" />
+          {etiquetaDeClave}
+        </button>
+      </div>
     </div>
   );
 }
