@@ -43,8 +43,9 @@ test("[p-perfil.1 p-perfil.2 p-perfil.5 e-cambios.4] el perfil se edita directo,
   await barra.getByRole("button", { name: "Descartar" }).click();
   await expect(titular).toHaveValue(titularOriginal);
 
-  // Cambiar de pestaña con cambios pregunta.
+  // Cambiar de pestaña con cambios pregunta. La ciudad sale del catálogo del país: se escribe y se elige.
   await page.locator("#city").fill("Medellín");
+  await page.locator("#city").press("Enter");
   await page.getByRole("link", { name: "Mis horarios" }).click();
   await expect(page.getByRole("dialog", { name: "¿Salir sin guardar?" })).toBeVisible();
   await page.getByRole("button", { name: "Salir sin guardar" }).click();
@@ -263,26 +264,50 @@ test("[ad-ajustes.2 ad-sistema.1 ad-sistema.2] el historial de ajustes y el corr
 
 // ------------------------------------------------------------------ aspirante, invitación y más del admin
 
-test("[a-postulacion.2 a-postulacion.4 a-estado.1] la postulación: país con bandera, prueba gratis y lo que falta", async ({ page }) => {
+test("[a-postulacion.1 a-postulacion.2 a-postulacion.4 a-estado.1] la postulación: no deja seguir sin lo obligatorio, país y ciudad con buscador, prueba gratis y lo que falta", async ({ page }) => {
+  const correo = `wf.aspirante.${Date.now()}@orion.local`;
   await page.goto("/registro");
   await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: /Quiero enseñar/ }).click();
   await page.locator("#nombre").fill("Aspirante Prueba");
-  await page.locator("#email").fill(`wf.aspirante.${Date.now()}@orion.local`);
+  await page.locator("#email").fill(correo);
   await page.locator("#password").fill("orion123*");
   await page.locator("#whatsapp").fill("3001234567");
   for (const id of ["#mayor-de-edad", "#acepta-terminos", "#acepta-datos"]) await page.locator(id).check();
-  await page.getByRole("button", { name: "Crear cuenta" }).click();
+  await page.getByRole("button", { name: /Crear cuenta/ }).click();
   await page.waitForURL(/\/aplicacion/);
-  // El país y la prueba gratis están en el tercer paso; cada «Siguiente» guarda.
-  for (let i = 0; i < 3 && !(await page.locator("#country").isVisible()); i++) {
-    await page.getByRole("button", { name: /Siguiente/ }).click();
-    await page.waitForTimeout(700);
-  }
-  const pais = page.locator("#country");
-  await expect(pais.locator('option[value="CO"]').first()).toHaveText(/Colombia/);
-  // Colombia y los frecuentes van arriba.
-  expect(await pais.locator("option:not([value=''])").first().getAttribute("value")).toBe("CO");
+  await expect(page.getByRole("heading", { name: "Datos personales" })).toBeVisible({ timeout: 20_000 });
+
+  // Sin foto ni título, «Siguiente» no avanza y dice qué falta (Pardo, 27/09/2026: nada de enterarse al final).
+  await page.getByRole("button", { name: /Siguiente/ }).click();
+  await expect(page.getByText("Paso 1 de 6")).toBeVisible();
+  await expect(page.getByText(/Sube una foto de perfil/).first()).toBeVisible();
+
+  // La foto, por SQL: en local no hay Cloudinary. Lo demás, por la pantalla.
+  sqlLocal(`update users set photo_url = 'http://localhost:3000/icon-192.png' where email = '${correo}'`);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Datos personales" })).toBeVisible({ timeout: 20_000 });
+  await page.locator("#headline").fill("Inglés conversacional para profesionales que necesitan presentar, negociar y viajar con confianza");
+  await page.getByRole("button", { name: /Siguiente/ }).click();
+  await expect(page.getByRole("heading", { name: "Enseñanza" })).toBeVisible();
+  await page.locator("#bio").fill(
+    "Soy profesor de inglés desde hace seis años. Trabajo con adultos que ya estudiaron el idioma pero se " +
+      "bloquean al hablar. Mis clases son conversaciones reales sobre tu trabajo y tus planes, con corrección " +
+      "amable y tareas cortas para practicar entre una clase y la siguiente.",
+  );
+  await page.locator("button", { hasText: "Inglés" }).click();
+  await page.getByRole("button", { name: "Intermedio", exact: true }).click();
+  await page.getByRole("button", { name: "Conversación", exact: true }).click();
+  await page.getByRole("button", { name: /Siguiente/ }).click();
+  await expect(page.getByRole("heading", { name: "Experiencia" })).toBeVisible();
+
+  // El país se escribe y se busca, con su bandera; la ciudad sale del catálogo de ese país.
+  await page.locator("#country").fill("colom");
+  const colombia = page.getByRole("option", { name: /Colombia/ }).first();
+  await expect(colombia).toBeVisible();
+  await colombia.click();
+  await page.locator("#city").fill("medell");
+  await expect(page.getByRole("option", { name: /Medellín/ }).first()).toBeVisible();
   await expect(page.getByRole("switch", { name: "Primera clase gratis" })).toBeVisible();
   await page.goto("/aplicacion/estado");
   await expect(page.getByText("Te falta por completar")).toBeVisible();
@@ -459,9 +484,9 @@ test("[p-perfil.4] publicar sin tarifa pide fijarla primero", async ({ page }) =
     await r.fulfill({ response: real, json: { ...perfil, isPublished: false, hourlyRateCop: null, rate: null, canPublish: false } });
   });
   await page.goto("/perfil");
-  await expect(page.getByText(/Mientras esté oculto, los estudiantes no te ven/)).toBeVisible();
+  await expect(page.getByText("Tu perfil está oculto")).toBeVisible();
   await page.getByRole("switch", { name: "Perfil visible" }).click();
-  await expect(page.getByText("Fija tu tarifa antes de publicar: escribe un precio por hora más arriba y guarda.")).toBeVisible();
+  await expect(page.getByText("Fija tu tarifa antes de publicar: escribe un precio por hora aquí arriba y guarda.")).toBeVisible();
 });
 
 test("[ad-usuarios.3] el admin crea un usuario", async ({ page }) => {
