@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 import co.orion.shared.security.CabeEnBcrypt;
+import co.orion.shared.security.ClaveFuerte;
 
 public record ChangePasswordRequest(
         // Obligatoria para quien ya tiene contraseña; quien entró con Google crea la primera sin ella
@@ -12,5 +13,5 @@ public record ChangePasswordRequest(
 
         @NotBlank
         @Size(min = 8, message = "La contraseña nueva debe tener al menos 8 caracteres")
-        @CabeEnBcrypt String newPassword) {
+        @CabeEnBcrypt @ClaveFuerte String newPassword) {
 }

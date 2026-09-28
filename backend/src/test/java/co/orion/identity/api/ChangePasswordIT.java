@@ -116,6 +116,16 @@ class ChangePasswordIT extends ApiIntegrationSupport {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
+    /** Larga pero débil: solo minúsculas y un número. La nueva tiene que ser Fuerte o Excelente. */
+    @Test
+    void aWeakNewPasswordIsRejected() {
+        ResponseEntity<Map> response = post(
+                PASSWORD_URL, anaSession, new ChangePasswordRequest(PASSWORD, "clavenueva1"), Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat((String) response.getBody().get("error")).startsWith("Tu contraseña es débil");
+    }
+
     @Test
     void anAnonymousUserCannotChangeAPassword() {
         ResponseEntity<Map> response = rest.postForEntity(

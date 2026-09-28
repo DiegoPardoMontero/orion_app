@@ -159,4 +159,12 @@ class PasswordResetIT extends ApiIntegrationSupport {
 
         assertThat(reset(token, "corta", Map.class).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
+
+    @Test
+    void resettingWithAWeakPasswordIsRejected() {
+        forgot(EMAIL);
+        String token = tokenFromLastLink();
+
+        assertThat(reset(token, "clavenueva1", Map.class).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
 }

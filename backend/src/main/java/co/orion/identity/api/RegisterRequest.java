@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Size;
 
 import co.orion.shared.WhatsappValido;
 import co.orion.shared.security.CabeEnBcrypt;
+import co.orion.shared.security.ClaveFuerte;
 
 /**
  * Alta que hace la propia persona desde la pantalla de registro. No lleva rol: el auto-registro
@@ -26,7 +27,7 @@ public record RegisterRequest(
         @NotBlank @Size(max = 150) String fullName,
         @NotBlank @Email String email,
         @NotBlank @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
-        @CabeEnBcrypt String password,
+        @CabeEnBcrypt @ClaveFuerte String password,
         @NotBlank(message = "Tu WhatsApp es obligatorio.") @Size(max = 20) @WhatsappValido String whatsappPhone,
         boolean wantsToTeach,
         @AssertTrue(message = "Orión está disponible solo para mayores de 18 años.")

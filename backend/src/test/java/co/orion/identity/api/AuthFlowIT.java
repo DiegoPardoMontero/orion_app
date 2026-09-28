@@ -269,6 +269,19 @@ class AuthFlowIT {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
+    /** Pardo, 27/09/2026: la contraseña tiene que ser «Fuerte» o «Excelente», también en el servidor. */
+    @SuppressWarnings("rawtypes")
+    @Test
+    void registeringWithAWeakPasswordIsRejected() {
+        RegisterRequest body = new RegisterRequest("Clave Debil", "debil@orion.test", "orionorion", "+573001112244", false, true, true, true);
+
+        ResponseEntity<Map> response = rest.postForEntity("/api/v1/auth/register", body, Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat((String) response.getBody().get("error")).startsWith("Tu contraseña es débil");
+        assertThat(users.existsByEmailIgnoreCase("debil@orion.test")).isFalse();
+    }
+
     private <T> ResponseEntity<T> login(String email, String password, Class<T> responseType) {
         return rest.postForEntity("/api/v1/auth/login", new LoginRequest(email, password), responseType);
     }
