@@ -3,7 +3,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BadgeCheck, Eye, Globe, Plus, Sparkles, UserPlus, X } from "lucide-react";
 import Link from "next/link";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { CambiarFoto } from "@/components/CambiarFoto";
 import { DatosDePago } from "@/components/profesor/DatosDePago";
@@ -25,6 +25,7 @@ import { ayudaDeTarifa, type Fundador } from "@/lib/fundador";
 import { etiquetaNivel, NIVELES } from "@/lib/i18n";
 import { estadoBio, estadoTitular } from "@/lib/perfil-profesor";
 import { minutos, useCifras } from "@/lib/cifras";
+import { conMiles, posicionTrasCifras, soloDigitos } from "@/lib/tarifa";
 import { SelectorDePais } from "@/components/SelectorDePais";
 
 /** El idioma tal como lo edita el profesor: código + si es nativo + niveles que enseña. */
@@ -344,6 +345,7 @@ function CamposDelPerfil({ inicial }: { inicial: ProfileResponse }) {
         valor={tarifa}
         onValor={setTarifa}
         guardada={inicial.rate ?? undefined}
+        gratisPorOrion={tarifaInicial === 0}
         baseBps={inicial.baseRateBps}
         fundador={inicial.founder}
       />
@@ -596,19 +598,35 @@ function WidgetTarifa({
   valor,
   onValor,
   guardada,
+  gratisPorOrion,
   baseBps,
   fundador,
 }: {
+  /** Solo las cifras, sin puntos: «50000». */
   valor: string;
   onValor: (valor: string) => void;
   guardada?: RateBreakdownResponse;
+  /** La tarifa guardada es 0: el admin dejó sus clases gratis. */
+  gratisPorOrion: boolean;
   /** La comisión de Orión, para decir qué recibirá cuando termine su beneficio de fundador. */
   baseBps?: number;
   fundador?: Fundador | null;
 }) {
   const numero = Number(valor);
-  const valido = Number.isFinite(numero) && numero >= 20000 && numero <= 500000;
+  const valido = valor !== "" && numero >= 20000 && numero <= 500000;
+  // El 0 lo pone el admin, no el profe: no es un error que tenga que corregir.
+  const sigueGratis = gratisPorOrion && valor === "0";
   const [debounced, setDebounced] = useState(numero);
+
+  // Al reformatear con puntos, el cursor vuelve detrás de las mismas cifras en vez de saltar al final.
+  const campo = useRef<HTMLInputElement>(null);
+  const cifrasAntesDelCursor = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    if (cifrasAntesDelCursor.current === null || !campo.current) return;
+    const posicion = posicionTrasCifras(campo.current.value, cifrasAntesDelCursor.current);
+    campo.current.setSelectionRange(posicion, posicion);
+    cifrasAntesDelCursor.current = null;
+  });
 
   useEffect(() => {
     const id = setTimeout(() => setDebounced(numero), 350);
@@ -640,24 +658,34 @@ function WidgetTarifa({
         <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[15px] font-bold text-text-muted">
           $
         </span>
+        {/* Texto y no número: «50.000» en un campo numérico se leía 50. */}
         <input
+          ref={campo}
           id="tarifa"
-          type="number"
+          type="text"
           inputMode="numeric"
-          min={20000}
-          max={500000}
-          step={1000}
-          value={valor}
-          onChange={(e) => onValor(e.target.value)}
+          autoComplete="off"
+          placeholder="50.000"
+          value={conMiles(valor)}
+          onChange={(e) => {
+            const escrito = e.target.value;
+            cifrasAntesDelCursor.current = soloDigitos(escrito.slice(0, e.target.selectionStart ?? escrito.length)).length;
+            onValor(soloDigitos(escrito));
+          }}
           aria-label="Tarifa por hora en pesos"
           className="h-[52px] w-full rounded-base border-[1.5px] border-border bg-surface-raised pl-8 pr-4 text-[15px] font-semibold text-text focus:border-primary focus:shadow-focus focus:outline-none"
         />
       </div>
 
-      {valor && !valido && (
-        <p className="mt-2 text-[12px] font-semibold text-error">
-          La tarifa debe estar entre $20.000 y $500.000.
-        </p>
+      {sigueGratis ? (
+        <p className="mt-2 text-[12.5px] font-semibold text-[#8a5a33]">Orión dejó tus clases gratis por ahora.</p>
+      ) : (
+        valor &&
+        !valido && (
+          <p className="mt-2 text-[12px] font-semibold text-error">
+            La tarifa debe estar entre $20.000 y $500.000.
+          </p>
+        )
       )}
 
       {/* El profe fundador ve su 15 % y lo que recibirá después (brief del profe fundador, paso 3);
@@ -666,7 +694,7 @@ function WidgetTarifa({
         <p className="mt-3 text-[12.5px] leading-relaxed text-[#8a5a33]">{ayudaDeTarifa(numero, baseBps, fundador)}</p>
       )}
 
-      {desglose && (
+      {desglose && !sigueGratis && (
         <div className="mt-3 rounded-base bg-surface-raised px-4 py-3 text-[13px]">
           <p className="flex items-center justify-between">
             <span className="text-text-secondary">Tú recibes</span>
