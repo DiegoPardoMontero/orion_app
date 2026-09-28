@@ -433,7 +433,10 @@ test("un profesor nuevo: de «Enseña con Orión» a su primera clase dictada, c
 
       // 3 · Experiencia (sin clase gratis: la reserva de la estudiante tiene que cobrar comisión)
       await expect(p.getByRole("heading", { name: "Experiencia" })).toBeVisible();
+      // La ciudad sale del catálogo del país (Colombia ya viene elegida): se escribe y se elige.
       await p.locator("#city").fill("Medellín");
+      await p.locator("#city").press("Enter");
+      await expect.soft(p.locator("#city")).toHaveValue("Medellín");
       await p.locator("#years").fill("6");
       await p.locator("#education").fill("Licenciatura en Lenguas Modernas");
       await p.getByRole("switch", { name: "Certificado" }).click();
@@ -516,18 +519,19 @@ test("un profesor nuevo: de «Enseña con Orión» a su primera clase dictada, c
       await revisarPantalla(p, "profe", "aplicacion-estado-cambios");
       await p.getByRole("link", { name: /Editar y reenviar/ }).click();
       await p.waitForURL(/\/aplicacion$/);
-      await expect(p.getByRole("heading", { name: "Tu postulación" })).toBeVisible();
+      // Con todo completo, vuelve a «Revisar y enviar»: el resumen con «Editar» por sección.
+      await expect(p.getByRole("heading", { name: "Revisar y enviar", level: 1 })).toBeVisible();
       await expect(p.getByText("Lo que pide la revisión")).toBeVisible();
       await revisarPantalla(p, "profe", "aplicacion-resumen");
 
-      // Corrige solo la sección de enseñanza y vuelve al resumen.
-      await p.locator("section", { has: p.getByRole("heading", { name: "Enseñanza", exact: true }) }).getByRole("button", { name: "Editar" }).click();
+      // Corrige solo la sección de enseñanza y vuelve a la revisión.
+      await p.getByRole("button", { name: "Editar enseñanza" }).click();
       await expect(p.locator("#bio")).toHaveValue(profe.bio);
       profe.bio += " También preparo entrevistas de trabajo en inglés, con simulacros como los de verdad.";
       await p.locator("#bio").fill(profe.bio);
       await p.getByRole("button", { name: "Entrevistas", exact: true }).click();
-      await p.getByRole("button", { name: "Guardar y volver al resumen" }).click();
-      await expect(p.getByRole("heading", { name: "Tu postulación" })).toBeVisible();
+      await p.getByRole("button", { name: "Guardar y volver a revisar" }).click();
+      await expect(p.getByRole("heading", { name: "Revisar y enviar", level: 1 })).toBeVisible();
       await expect.soft(p.getByText(/También preparo entrevistas de trabajo/)).toBeVisible();
       await p.getByRole("button", { name: "Enviar a revisión" }).click();
       await p.waitForURL(/\/aplicacion\/estado$/);
@@ -620,7 +624,8 @@ test("un profesor nuevo: de «Enseña con Orión» a su primera clase dictada, c
       await barra.getByRole("button", { name: "Guardar cambios" }).click();
       await expect(p.getByText("Cambios guardados")).toBeVisible();
       await p.reload();
-      await expect(p.locator("#tarifa")).toHaveValue(String(profe.tarifa));
+      // Se lee como la escribe un colombiano: «60.000».
+      await expect(p.locator("#tarifa")).toHaveValue(profe.tarifa.toLocaleString("es-CO"));
       await expect(p.getByRole("switch", { name: "Perfil visible" })).toHaveAttribute("aria-checked", "true");
 
       // Mis horarios: mañana de 5:30 a 7:30 PM (arranca a la media hora) y pasado mañana de 8 a 10 AM.
@@ -656,7 +661,8 @@ test("un profesor nuevo: de «Enseña con Orión» a su primera clase dictada, c
         expect.soft(errorMediaHora, "BUG: el formulario ofrece la franja de 5:30 PM y el servidor la rechaza").toBeNull();
         expect(await agregarFranja(manana, "17:00", "19:00"), "la franja en punto se guarda").toBeNull();
       } else {
-        await expect.soft(p.getByText(/5:30/).first(), "la franja de la media hora se ve en la semana").toBeVisible();
+        // En el celular la semana es una lista por día; la rejilla de escritorio está en la página, oculta.
+        await expect.soft(p.getByText(/5:30/).filter({ visible: true }).first(), "la franja de la media hora se ve en la semana").toBeVisible();
       }
       expect(await agregarFranja(pasado, "08:00", "10:00"), "la franja de pasado mañana se guarda").toBeNull();
       await revisarPantalla(p, "profe", "perfil-horarios-con-franjas");
