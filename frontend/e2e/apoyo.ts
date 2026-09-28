@@ -81,11 +81,12 @@ export async function hacerElRecorrido(page: Page) {
   await expect(sinSalida).toHaveCount(0);
   await dialogo.getByRole("button", { name: /^(Empezar|Seguir)$/ }).click();
 
-  const contador = dialogo.getByText(/^\d+ de \d+$/);
+  // «3 de 8», o «6 de 8 · Meissa» en el paso que guía ella.
+  const contador = dialogo.getByText(/^\d+ de \d+/);
   await expect(contador).toBeVisible({ timeout: 15_000 });
-  const [, desde, total] = (await contador.innerText()).match(/^(\d+) de (\d+)$/) ?? [];
+  const [, desde, total] = (await contador.innerText()).match(/^(\d+) de (\d+)/) ?? [];
   for (let n = Number(desde); n <= Number(total); n++) {
-    await expect(dialogo.getByText(new RegExp(`^${n} de ${total}$`))).toBeVisible({ timeout: 15_000 });
+    await expect(dialogo.getByText(new RegExp(`^${n} de ${total}\\b`))).toBeVisible({ timeout: 15_000 });
     await expect(sinSalida).toHaveCount(0);
     await dialogo.getByRole("button", { name: n === Number(total) ? "Terminar" : "Siguiente" }).click();
   }

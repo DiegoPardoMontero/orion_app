@@ -34,9 +34,9 @@ import {
  * sin píldora. La pantalla del paso siguiente se precarga mientras se lee el actual.
  *
  * <p>Mientras está abierto, lo de atrás es `inert`: un clic en el velo no hace nada y el elemento
- * iluminado no recibe clics. Esc es «Saltar» y devuelve el foco a donde estaba; ← → navegan; el
- * foco arranca en «Siguiente» y no sale de la tarjeta. El paso se guarda: si se cierra la pestaña,
- * al volver Rigel pregunta «¿Seguimos donde íbamos?».
+ * iluminado no recibe clics. Esc es «Saltar» —salvo en el obligatorio, que no se salta— y devuelve el
+ * foco a donde estaba; ← → navegan; el foco arranca en «Siguiente» y no sale de la tarjeta. El paso
+ * se guarda: si se cierra la pestaña, al volver Rigel pregunta «¿Seguimos donde íbamos?».
  */
 
 export type Arranque = "inicio" | "paso1" | { reanudar: number };
