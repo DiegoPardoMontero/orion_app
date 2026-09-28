@@ -146,7 +146,8 @@ function Contenido() {
               />
               {/* Pedido de Pardo (27/09): al profe sin clases, dos caminos abajo. El segundo invita a
                   mirar su perfil con los ojos del estudiante, no a «arreglarlo»: nada en él suena a que
-                  algo esté mal. /invitar y /perfil piden la postulación aprobada. */}
+                  algo esté mal, y abre su perfil público tal como lo ve un estudiante. /invitar y el
+                  perfil piden la postulación aprobada. */}
               {esProfesor && aprobado && (
                 <div className="mt-4 flex flex-col gap-2.5 sm:flex-row sm:justify-center">
                   <Link
@@ -157,7 +158,7 @@ function Contenido() {
                     Invita a tus estudiantes
                   </Link>
                   <Link
-                    href="/perfil"
+                    href={me?.id ? `/profesores/${me.id}` : "/perfil"}
                     className="inline-flex min-h-12 items-center justify-center gap-2 rounded-pill border-[1.5px] border-border bg-surface-raised px-5 text-center text-[14.5px] font-bold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus sm:px-6"
                   >
                     <Eye size={17} strokeWidth={2} className="shrink-0" />
