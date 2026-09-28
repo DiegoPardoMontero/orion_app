@@ -203,6 +203,88 @@ class CancelBookingIT extends ApiIntegrationSupport {
         assertThat(response.getBody().status()).isEqualTo("CANCELLED_BY_ADMIN");
     }
 
+    /**
+     * Una clase que ya empezó no se cancela: lo que pasó en ella tiene su propio camino (el reporte
+     * del estudiante, la asistencia del profesor), y cancelarla lo saltaría. La hora justa de inicio
+     * ya cuenta como empezada.
+     */
+    @SuppressWarnings("rawtypes")
+    @Test
+    void aStudentCannotCancelAClassThatAlreadyStarted() {
+        Booking booking = bookingAt(FROZEN_NOW);
+
+        ResponseEntity<Map> response = post(
+                cancelUrl(booking), anaSession, new CancelBookingRequest(null), Map.class);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(422);
+        assertThat(response.getBody().get("error").toString())
+                .isEqualTo("La clase ya empezó: si hubo un problema, repórtalo desde Mis clases.");
+        assertThat(bookings.findById(booking.getId()).orElseThrow().isConfirmed()).isTrue();
+    }
+
+    /** El profesor no puede reportar un problema: a él se le señala la asistencia. */
+    @SuppressWarnings("rawtypes")
+    @Test
+    void aProfessorCannotCancelAClassThatAlreadyEnded() {
+        Booking booking = bookingAt(FROZEN_NOW.minus(Duration.ofHours(3)));
+
+        ResponseEntity<Map> response = post(
+                cancelUrl(booking), mariaSession, new CancelBookingRequest(null), Map.class);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(422);
+        assertThat(response.getBody().get("error").toString()).startsWith("La clase ya empezó")
+                .contains("asistencia");
+        assertThat(bookings.findById(booking.getId()).orElseThrow().isConfirmed()).isTrue();
+    }
+
+    /** El admin sigue siendo la válvula de fuerza mayor, también con la clase en curso. */
+    @Test
+    void anAdminCanStillCancelAClassInProgress() {
+        Booking booking = bookingAt(FROZEN_NOW.minus(Duration.ofMinutes(10)));
+
+        ResponseEntity<BookingResponse> response = post(
+                cancelUrl(booking), adminSession, new CancelBookingRequest("Se cayó la plataforma"),
+                BookingResponse.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().status()).isEqualTo("CANCELLED_BY_ADMIN");
+    }
+
+    /** Con un reclamo abierto no cancela nadie, ni el admin: se resuelve desde el reclamo. */
+    @SuppressWarnings("rawtypes")
+    @Test
+    void aClassUnderReviewCannotBeCancelledByAnyone() {
+        Booking booking = TestBookings.confirmed(ana.getId(), maria.getId(),
+                FROZEN_NOW.minus(Duration.ofHours(3)), BookingModality.VIRTUAL, null, ana.getId());
+        booking.putUnderReview();
+        booking = bookings.save(booking);
+
+        ResponseEntity<Map> asStudent = post(
+                cancelUrl(booking), anaSession, new CancelBookingRequest(null), Map.class);
+        ResponseEntity<Map> asAdmin = post(
+                cancelUrl(booking), adminSession, new CancelBookingRequest(null), Map.class);
+
+        assertThat(asStudent.getStatusCode().value()).isEqualTo(422);
+        assertThat(asAdmin.getStatusCode().value()).isEqualTo(422);
+        assertThat(asAdmin.getBody().get("error").toString()).contains("Reclamos");
+        assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus())
+                .isEqualTo(co.orion.scheduling.domain.BookingStatus.UNDER_REVIEW);
+    }
+
+    /** Una reserva sin pagar no es una clase: se suelta aunque ya haya pasado su hora. */
+    @Test
+    void anUnpaidBookingCanBeReleasedEvenAfterItsStartTime() {
+        Booking booking = bookings.save(TestBookings.awaitingPayment(ana.getId(), maria.getId(),
+                FROZEN_NOW.minus(Duration.ofMinutes(5)), FROZEN_NOW.plus(Duration.ofMinutes(50)),
+                BookingModality.VIRTUAL, null, ana.getId()));
+
+        ResponseEntity<BookingResponse> response = post(
+                cancelUrl(booking), anaSession, new CancelBookingRequest(null), BookingResponse.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().status()).isEqualTo("CANCELLED_BY_STUDENT");
+    }
+
     @Test
     void cancellingTwiceIsAConflict() {
         Booking booking = bookingAt(wednesdayAt(9));

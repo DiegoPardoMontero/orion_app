@@ -37,6 +37,12 @@ public class AvailabilityExceptionService {
     @Transactional
     public AvailabilityException create(UUID professorId, LocalDate date,
                                         LocalTime startTime, LocalTime endTime, String reason) {
+        // Un bloqueo de ayer se guardaba y desaparecía del listado (que solo muestra de hoy en
+        // adelante): el profesor creía haber bloqueado algo y no veía dónde quedó. Hoy sí vale.
+        if (date.isBefore(today())) {
+            throw new BusinessRuleViolationException(
+                    "Esa fecha ya pasó: solo puedes bloquear desde hoy en adelante.");
+        }
         boolean wholeDay = startTime == null && endTime == null;
         if (!wholeDay) {
             if (startTime == null || endTime == null) {

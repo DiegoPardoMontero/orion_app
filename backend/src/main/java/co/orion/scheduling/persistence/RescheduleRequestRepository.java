@@ -33,7 +33,8 @@ public interface RescheduleRequestRepository extends JpaRepository<RescheduleReq
 
     /**
      * Cuántas reprogramaciones pidió el PROFESOR en la ventana. Solo las suyas: que un estudiante
-     * mueva sus clases no dice nada del profesor.
+     * mueva sus clases no dice nada del profesor. Tampoco las de un ensayo del admin, que el
+     * denominador de la tasa ya no cuenta.
      */
     @Query("""
             select count(r) from RescheduleRequest r, Booking b
@@ -41,6 +42,7 @@ public interface RescheduleRequestRepository extends JpaRepository<RescheduleReq
               and b.professorId = :professorId
               and r.requestedBy = :professorId
               and r.createdAt > :since
+              and b.rehearsal = false
             """)
     long countRequestedByProfessorSince(@Param("professorId") UUID professorId,
                                         @Param("since") Instant since);

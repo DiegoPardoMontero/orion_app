@@ -134,7 +134,31 @@ class AttendanceIT extends ApiIntegrationSupport {
                 attendanceUrl(booking), mariaSession, new RecordAttendanceRequest(true, null), Map.class);
 
         assertThat(response.getStatusCode().value()).isEqualTo(422);
-        assertThat(response.getBody().get("error").toString()).contains("aún no termina");
+        assertThat(response.getBody().get("error").toString())
+                .isEqualTo("Podrás registrar la asistencia cuando termine la clase.");
+        assertThat(bookings.findById(booking.getId()).orElseThrow().isConfirmed()).isTrue();
+    }
+
+    /**
+     * Con la clase en curso, «asistió» todavía no; «no llegó», a partir de los minutos de
+     * {@code no_show_report_minutes} (15). Los dos rechazos dicen desde cuándo sí se puede.
+     */
+    @SuppressWarnings("rawtypes")
+    @Test
+    void aClassInProgressSaysFromWhenEachAnswerIsPossible() {
+        Booking booking = bookingOf(maria, FROZEN_NOW.minus(Duration.ofMinutes(10)));
+
+        ResponseEntity<Map> present = post(
+                attendanceUrl(booking), mariaSession, new RecordAttendanceRequest(true, null), Map.class);
+        ResponseEntity<Map> absent = post(
+                attendanceUrl(booking), mariaSession, new RecordAttendanceRequest(false, null), Map.class);
+
+        assertThat(present.getStatusCode().value()).isEqualTo(422);
+        assertThat(present.getBody().get("error").toString())
+                .isEqualTo("Podrás registrar la asistencia cuando termine la clase.");
+        assertThat(absent.getStatusCode().value()).isEqualTo(422);
+        assertThat(absent.getBody().get("error").toString())
+                .isEqualTo("Podrás marcar que no llegó a partir de los 15 minutos del inicio.");
         assertThat(bookings.findById(booking.getId()).orElseThrow().isConfirmed()).isTrue();
     }
 

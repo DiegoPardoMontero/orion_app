@@ -119,6 +119,37 @@ class MiDesempenoIT extends ApiIntegrationSupport {
         assertThat(yo.activeStudents()).isEqualTo(1);
     }
 
+    /** Un ensayo del admin con la profesora, hace unos días, en el estado que se le pida. */
+    private void ensayo(int diasAtras, User estudiante, String estado) {
+        Instant empezo = Instant.now().truncatedTo(ChronoUnit.HOURS).minus(Duration.ofDays(diasAtras));
+        var ensayo = TestBookings.confirmed(estudiante.getId(), maria.getId(), empezo,
+                BookingModality.VIRTUAL, null, admin.getId());
+        ensayo.markAsRehearsal();
+        UUID id = bookings.save(ensayo).getId();
+        jdbc.update("update bookings set status = ? where id = ?", estado, id);
+    }
+
+    /**
+     * Los ensayos del admin (aula o acta) no son trabajo del profesor: ni suman clases dictadas ni
+     * estudiantes, y cancelar uno no le sube la tasa de cancelación.
+     */
+    @Test
+    @DisplayName("Los ensayos del admin no cuentan en el desempeño del profesor")
+    void losEnsayosNoCuentan() {
+        User otro = createUser("otro." + UUID.randomUUID().toString().substring(0, 8) + "@orion.test",
+                "Otro Estudiante", UserRole.STUDENT);
+        claseDictada(2);
+        ensayo(3, otro, "COMPLETED");
+        ensayo(4, otro, "CANCELLED_BY_PROFESSOR");
+
+        recalculo.nightly();
+
+        PerformanceResponse yo = get(RUTA, sesionMaria, PerformanceResponse.class).getBody();
+        assertThat(yo.lessonsCompleted()).isEqualTo(1);
+        assertThat(yo.activeStudents()).isEqualTo(1);
+        assertThat(yo.cancellationRate()).isEqualByComparingTo("0");
+    }
+
     @Test
     @DisplayName("Sus sanciones, con el motivo, las ve él mismo: una sanción invisible no se entiende")
     void veSusSanciones() {

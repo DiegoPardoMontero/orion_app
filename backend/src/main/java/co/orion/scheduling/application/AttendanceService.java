@@ -60,17 +60,19 @@ public class AttendanceService {
         // no poder decirlo, es pedirle al profesor que se quede mirando una sala vacía. Marcar que
         // SÍ asistió sigue exigiendo que la clase termine: darla por dictada a mitad de camino
         // liberaría el dinero antes de que ocurriera lo que se pagó.
+        //
+        // Los dos rechazos dicen desde cuándo sí se puede: un «todavía no» sin fecha deja al
+        // profesor probando el botón cada cinco minutos.
         if (present) {
             if (!booking.hasEndedAt(now)) {
-                throw new UnprocessableException("La clase aún no termina");
+                throw new UnprocessableException("Podrás registrar la asistencia cuando termine la clase.");
             }
         } else {
             Duration espera = Duration.ofMinutes(settings.getInt(NO_SHOW_AFTER_MINUTES));
             Instant sePuedeDesde = booking.getStartsAt().plus(espera);
             if (now.isBefore(sePuedeDesde)) {
-                throw new UnprocessableException(
-                        "Espera " + espera.toMinutes() + " minutos desde la hora de inicio antes de "
-                                + "marcar que tu estudiante no asistió.");
+                throw new UnprocessableException("Podrás marcar que no llegó a partir de los "
+                        + espera.toMinutes() + " minutos del inicio.");
             }
         }
         // Una clase cancelada, ya registrada o en revisión no admite registro de asistencia.

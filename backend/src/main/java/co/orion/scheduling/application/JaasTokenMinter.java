@@ -34,6 +34,14 @@ public class JaasTokenMinter {
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final Base64.Encoder B64 = Base64.getUrlEncoder().withoutPadding();
 
+    /**
+     * Cuánto antes de «ahora» empieza a valer el token. Con nbf igual a ahora exacto, si el reloj
+     * de 8x8 va unos segundos por detrás del nuestro, el token todavía «no vale» cuando llega y el
+     * primer intento de entrar a la sala se rechaza. Treinta segundos cubren ese desfase sin
+     * alargar de verdad la vida de la llave, que la marca {@code exp}.
+     */
+    static final long CLOCK_SKEW_SECONDS = 30;
+
     private final JaasProperties props;
     private final PrivateKey privateKey;
 
@@ -92,7 +100,7 @@ public class JaasTokenMinter {
         payload.put("sub", props.appId());
         payload.put("room", room);
         payload.put("exp", expiresAt.getEpochSecond());
-        payload.put("nbf", now.getEpochSecond());
+        payload.put("nbf", now.minusSeconds(CLOCK_SKEW_SECONDS).getEpochSecond());
         payload.put("context", context);
 
         String firmable = b64(header) + "." + b64(payload);

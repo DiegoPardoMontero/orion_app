@@ -13,7 +13,8 @@ import co.orion.shared.time.BusinessZone;
  * Lo que ve cada parte de su propia clase.
  *
  * <p>{@code canCancel} y {@code lateCancel} son dos cosas distintas y hay que leerlas juntas.
- * <strong>Cancelar siempre se puede</strong> mientras la clase siga activa; lo que decide la
+ * <strong>Cancelar siempre se puede</strong> mientras la clase no haya empezado (y no tenga un
+ * reclamo abierto); lo que decide la
  * ventana de anticipación —la que corresponde a QUIEN mira, configurable en platform_settings— es
  * si la cancelación es «tardía», y con eso, qué pasa con el dinero.
  *
@@ -72,7 +73,10 @@ public record MyBookingResponse(UUID id,
                 booking.getStatus().name(),
                 booking.getLocationNote(),
                 booking.getMeetingLink(),
-                !booking.getStatus().isTerminal(),
+                // Las mismas puertas que BookingService.cancel para quien mira su propia clase: la
+                // reserva sin pagar se suelta siempre; la confirmada, hasta que empieza.
+                booking.isAwaitingPayment()
+                        || (booking.isConfirmed() && now.isBefore(booking.getStartsAt())),
                 booking.isConfirmed() && !booking.isCancellableAt(now, cancellationWindow),
                 Counterpart.of(counterpart, counterpartPhotoUrl, counterpartHeadline),
                 booking.isRehearsal(),

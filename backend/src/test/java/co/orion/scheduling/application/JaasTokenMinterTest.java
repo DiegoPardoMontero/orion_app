@@ -86,6 +86,19 @@ class JaasTokenMinterTest {
         assertThat(p.get("nbf").asLong()).isLessThan(p.get("exp").asLong());
     }
 
+    /**
+     * Si el reloj de 8x8 va unos segundos por detrás, un nbf igual a «ahora» hace que el primer
+     * token se rechace por prematuro. Vale desde treinta segundos antes.
+     */
+    @Test
+    @DisplayName("El token vale desde 30 s antes de emitirse, por si el reloj de JaaS va atrasado")
+    void elTokenToleraUnRelojAtrasado() throws Exception {
+        JsonNode p = parte(token(true), 1);
+        long ahora = Instant.parse("2026-09-15T14:00:00Z").getEpochSecond();
+        assertThat(p.get("nbf").asLong()).isEqualTo(ahora - 30);
+        assertThat(p.get("exp").asLong()).isEqualTo(ahora + 3600);
+    }
+
     @Test
     @DisplayName("El profesor manda en la sala y el estudiante no")
     void soloElProfesorEsModerador() throws Exception {

@@ -169,7 +169,10 @@ class MyBookingsIT extends ApiIntegrationSupport {
         Instant hace49 = FROZEN_NOW.minus(java.time.Duration.ofMinutes(49));
         Instant hace50 = FROZEN_NOW.minus(java.time.Duration.ofMinutes(50));
         clase(hace49);
-        clase(hace50);
+        // Con otro profesor: dos clases de María que se pisan ya no caben en la base (V78).
+        User juan = createUser("juan@orion.test", "Juan Torres", UserRole.PROFESSOR);
+        bookings.save(TestBookings.confirmed(ana.getId(), juan.getId(), hace50,
+                hace50.plus(ClassLength.DURATION), BookingModality.VIRTUAL, "Meet", ana.getId()));
 
         MyBookingResponse[] proximas = get(MY_BOOKINGS, anaSession, MyBookingResponse[].class).getBody();
         MyBookingResponse[] pasadas = get(MY_BOOKINGS + "?scope=past", anaSession, MyBookingResponse[].class).getBody();

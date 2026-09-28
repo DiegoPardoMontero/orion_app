@@ -121,12 +121,33 @@ public interface BookingRepository extends JpaRepository<Booking, UUID>,
                                       @Param("activeStatuses") Collection<BookingStatus> activeStatuses,
                                       @Param("now") Instant now);
 
-    /* --- Insumos de las métricas de desempeño (ventana móvil, por fecha de la CLASE) --- */
+    /*
+     * --- Insumos de las métricas de desempeño (ventana móvil, por fecha de la CLASE) ---
+     *
+     * Ninguno cuenta los ensayos del admin (is_rehearsal): no son trabajo del profesor, y contarlos
+     * le inflaba las clases dictadas y los estudiantes —o, si cancelaba uno, la tasa de
+     * cancelación—. Por eso son @Query y no consultas derivadas del nombre.
+     */
 
-    long countByProfessorIdAndStatusInAndStartsAtAfter(
-            UUID professorId, Collection<BookingStatus> statuses, Instant since);
+    @Query("""
+            select count(b) from Booking b
+            where b.professorId = :professorId
+              and b.status in :statuses
+              and b.startsAt > :since
+              and b.rehearsal = false
+            """)
+    long countByProfessorIdAndStatusInAndStartsAtAfter(@Param("professorId") UUID professorId,
+                                                       @Param("statuses") Collection<BookingStatus> statuses,
+                                                       @Param("since") Instant since);
 
-    long countByProfessorIdAndStartsAtAfter(UUID professorId, Instant since);
+    @Query("""
+            select count(b) from Booking b
+            where b.professorId = :professorId
+              and b.startsAt > :since
+              and b.rehearsal = false
+            """)
+    long countByProfessorIdAndStartsAtAfter(@Param("professorId") UUID professorId,
+                                            @Param("since") Instant since);
 
     /** Estudiantes DISTINTOS con clase cerrada en la ventana: la retención real, no el volumen. */
     @Query("""
@@ -135,6 +156,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID>,
               and b.startsAt > :since
               and b.status in (co.orion.scheduling.domain.BookingStatus.COMPLETED,
                                co.orion.scheduling.domain.BookingStatus.NO_SHOW_STUDENT)
+              and b.rehearsal = false
             """)
     long countDistinctStudentsOfProfessorSince(@Param("professorId") UUID professorId,
                                                @Param("since") Instant since);

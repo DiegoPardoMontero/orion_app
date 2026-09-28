@@ -255,9 +255,10 @@ public class BookingService {
     }
 
     /**
-     * Cancela una reserva. Quién puede y bajo qué condiciones depende del rol:
-     * el estudiante y el profesor solo las suyas y con 24 h de margen; el admin, cualquiera
-     * confirmada y a cualquier hora — es la válvula de "fuerza mayor" del manual corporativo.
+     * Cancela una reserva. Quién puede y bajo qué condiciones depende del rol: el estudiante y el
+     * profesor, solo las suyas y mientras la clase no haya empezado; el admin, cualquiera activa y a
+     * cualquier hora — es la válvula de "fuerza mayor" del manual corporativo. Una clase con un
+     * reclamo abierto no la cancela nadie: se resuelve desde el reclamo.
      */
     @Transactional
     public Booking cancel(User actor, UUID bookingId, String reason) {
@@ -273,8 +274,24 @@ public class BookingService {
         boolean isAdmin = actor.getRole() == UserRole.ADMIN;
         Duration window = cancellationWindowFor(actor.getRole());
 
-        // Cancelar SIEMPRE se puede. La ventana ya no bloquea: decide qué pasa con el dinero, y
-        // eso lo resuelve billing al recibir el evento.
+        // En revisión, ni el admin: DisputeService la cierra desde UNDER_REVIEW, y cancelarla por
+        // aquí dejaría el reclamo abierto sobre una clase que ya no está.
+        if (booking.getStatus() == BookingStatus.UNDER_REVIEW) {
+            throw new UnprocessableException(isAdmin
+                    ? "Esta clase tiene un reclamo abierto: se resuelve desde Reclamos, no cancelándola."
+                    : "Esta clase tiene un reclamo abierto y la estamos revisando: no se puede cancelar.");
+        }
+        // Una clase que ya empezó no se cancela: lo que pasó en ella —que alguien no llegó, que no
+        // se pudo dar— tiene su propio camino, y cancelar lo saltaría. Una reserva sin pagar sí se
+        // suelta siempre: no es una clase y nadie contaba con esa hora.
+        if (!isAdmin && !booking.isAwaitingPayment() && !now.isBefore(booking.getStartsAt())) {
+            throw new UnprocessableException(actor.getRole() == UserRole.PROFESSOR
+                    ? "La clase ya empezó: si tu estudiante no llegó, márcalo en la asistencia desde Mis clases."
+                    : "La clase ya empezó: si hubo un problema, repórtalo desde Mis clases.");
+        }
+
+        // Antes de que empiece, cancelar SIEMPRE se puede. La ventana ya no bloquea: decide qué
+        // pasa con el dinero, y eso lo resuelve billing al recibir el evento.
         //
         // Antes se bloqueaba dentro de las 12 h, y era peor para todos. Al estudiante que ya sabe
         // que no va a ir se le obligaba a dejar la clase en pie, así que el profesor se enteraba

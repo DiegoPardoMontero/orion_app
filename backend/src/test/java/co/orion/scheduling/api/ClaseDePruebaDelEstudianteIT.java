@@ -220,23 +220,30 @@ class ClaseDePruebaDelEstudianteIT extends ApiIntegrationSupport {
 
     /**
      * El hueco que abrió la prueba gratis: tomarla entera, cancelarla antes de que se cerrara y pedir
-     * otra. Cancelarla cuando ya empezó la gasta, y la base lo sostiene aunque el servicio no mire.
+     * otra. Hoy una clase empezada ya no se cancela (422), así que la prueba sigue contando; y las
+     * que se cancelaron así antes de ese cambio las sigue gastando el índice de la V67.
      */
     @SuppressWarnings("rawtypes")
     @Test
-    @DisplayName("Cancelarla cuando ya empezó la gasta: no hay una segunda prueba gratis")
+    @DisplayName("Una prueba empezada no se cancela y sigue gastada: no hay una segunda prueba gratis")
     void laCanceladaYaEmpezadaCuenta() {
         ofrecer(true);
         UUID id = post("/api/v1/bookings", anaSession, reserva(9, true), BookingResponse.class).getBody().id();
         jdbc.update("update bookings set starts_at = ?, ends_at = ? where id = ?",
                 Timestamp.from(FROZEN_NOW.minusSeconds(3600)), Timestamp.from(FROZEN_NOW), id);
-        assertThat(post("/api/v1/bookings/" + id + "/cancel", anaSession, Map.of(), Map.class).getStatusCode()
-                .is2xxSuccessful()).isTrue();
+        assertThat(post("/api/v1/bookings/" + id + "/cancel", anaSession, Map.of(), Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
 
         assertThat(get("/api/v1/professors/" + maria.getId() + "/trial", anaSession, Map.class).getBody())
                 .containsEntry("available", false);
         assertThat(post("/api/v1/bookings", anaSession, reserva(10, true), Map.class).getStatusCode())
                 .isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+
+        // La fila que dejó una cancelación ya empezada de antes de este cambio: la V67 la sigue contando.
+        jdbc.update("update bookings set status = 'CANCELLED_BY_STUDENT', cancelled_by = student_id, "
+                + "cancelled_at = ? where id = ?", Timestamp.from(FROZEN_NOW), id);
+        assertThat(get("/api/v1/professors/" + maria.getId() + "/trial", anaSession, Map.class).getBody())
+                .containsEntry("available", false);
 
         var usada = bookings.findById(id).orElseThrow();
         Booking otra = TestBookings.confirmed(usada.getStudentId(), usada.getProfessorId(),

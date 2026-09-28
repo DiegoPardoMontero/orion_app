@@ -92,6 +92,28 @@ class AvailabilityExceptionIT extends ApiIntegrationSupport {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
 
+    /**
+     * Un bloqueo de ayer se guardaba y desaparecía del listado, que solo muestra de hoy en adelante:
+     * el profesor creía haber bloqueado algo y no lo encontraba. Hoy (en Bogotá) sí se admite.
+     */
+    @SuppressWarnings("rawtypes")
+    @Test
+    void rejectsABlockOnADateThatAlreadyPassedButAcceptsToday() {
+        ResponseEntity<Map> yesterday = post(
+                EXCEPTIONS, mariaSession, new CreateExceptionRequest(today.minusDays(1), null, null, null),
+                Map.class);
+        ResponseEntity<ExceptionResponse> todayBlock = post(
+                EXCEPTIONS, mariaSession, new CreateExceptionRequest(today, null, null, "Hoy no"),
+                ExceptionResponse.class);
+
+        assertThat(yesterday.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(yesterday.getBody().get("error").toString())
+                .isEqualTo("Esa fecha ya pasó: solo puedes bloquear desde hoy en adelante.");
+        assertThat(todayBlock.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(exceptions.findAll()).singleElement()
+                .satisfies(e -> assertThat(e.getExceptionDate()).isEqualTo(today));
+    }
+
     @Test
     void rejectsABlockWithOnlyOneOfTheTwoTimes() {
         ResponseEntity<Map> response = post(
