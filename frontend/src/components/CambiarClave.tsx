@@ -7,6 +7,7 @@ import { Modal } from "@/components/Modal";
 import { Boton, Campo } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import { meQueryKey, useMe } from "@/lib/auth/session";
+import { esFuerte, fuerzaClave } from "@/lib/password";
 
 /** El texto del botón que abre esto: «Crear una contraseña» para quien entró con Google. */
 export function useEtiquetaDeClave(): string {
@@ -40,8 +41,10 @@ export function CambiarClave({ onCerrar }: { onCerrar: () => void }) {
   });
 
   const error = cambiar.error instanceof ApiError ? cambiar.error.message : null;
-  // La regla de longitud vive en el backend; aquí solo se refleja para no dejar pulsar en vano.
-  const corta = nueva.length > 0 && nueva.length < 8;
+  // Como al crear la cuenta: «Fuerte» o «Excelente» (Pardo, 27/09/2026). El servidor aplica la misma
+  // regla; aquí se refleja para no dejar pulsar en vano y para decir qué le falta.
+  const fuerza = fuerzaClave(nueva);
+  const claveFuerte = esFuerte(nueva);
 
   return (
     <Modal titulo={crear ? "Crear una contraseña" : "Cambiar contraseña"} onCerrar={onCerrar}>
@@ -89,9 +92,35 @@ export function CambiarClave({ onCerrar }: { onCerrar: () => void }) {
             autoComplete="new-password"
             value={nueva}
             onChange={(event) => setNueva(event.target.value)}
+            aria-describedby="nueva-fuerza"
             className="mt-1.5"
           />
-          <p className="mt-1.5 text-[11.5px] text-text-muted">Mínimo 8 caracteres.</p>
+          <div className="mt-2.5">
+            <div className="flex gap-1.5" aria-hidden="true">
+              {[0, 1, 2, 3].map((i) => (
+                <span
+                  key={i}
+                  className={`h-[5px] flex-1 rounded-pill transition-colors ${
+                    i < fuerza.nivel ? "bg-success" : "bg-border"
+                  }`}
+                />
+              ))}
+            </div>
+            <p
+              id="nueva-fuerza"
+              aria-live="polite"
+              className={`mt-1.5 text-[12px] ${
+                claveFuerte ? "text-success" : nueva ? "text-text-secondary" : "text-text-muted"
+              }`}
+            >
+              {fuerza.mensaje}
+              {nueva && !claveFuerte && (
+                <span className="block text-text-muted">
+                  Para guardarla, tiene que quedar «Fuerte» o «Excelente».
+                </span>
+              )}
+            </p>
+          </div>
 
           {error && (
             <div className="mt-3">
@@ -105,7 +134,7 @@ export function CambiarClave({ onCerrar }: { onCerrar: () => void }) {
             </Boton>
             <Boton
               variante="primario"
-              disabled={(!crear && !actual) || nueva.length < 8 || corta || cambiar.isPending}
+              disabled={(!crear && !actual) || !claveFuerte || cambiar.isPending}
               onClick={() => cambiar.mutate()}
               className="h-11 flex-1"
             >
