@@ -6,7 +6,7 @@
 | **Canal** | Chat de Claude Code, mientras seguía la megarrevisión del flujo del profesor |
 | **Quién** | Pardo |
 | **Relacionado** | `2026-09-27-1002-abogado-terminos-y-megareview-del-profesor.md` (los arreglos de esa revisión van juntos) |
-| **Estado** | En curso |
+| **Estado** | Hecho (28/09/2026) |
 
 ## El pedido, tal cual
 
@@ -67,35 +67,31 @@
   El A5 (asistencia registrada al terminar la clase ⇒ el estudiante ya no abre reclamo formal) **se
   queda como está**; en el cierre va explicado en palabras simples por si quiere volver a él.
 
-## Estado (27/09, 21:55: pausa por el reinicio de Pardo)
+## Estado (28/09/2026): hecho
 
-**Por qué se cortó la mañana:** siete agentes en paralelo, cada uno con su `next dev`, más Maven,
-llenaron la memoria del equipo (7,7 GB, swap al 100 %, carga 50–60) y WSL se cayó a las 11:27.
-**Retomar en serie**, con uno o dos procesos pesados a la vez como mucho.
+Las siete ramas de la mañana del 27/09 están en `master`, junto con lo que faltaba. Por punto del
+resumen:
 
-Nada de esto está en `master` todavía. Cada rama es `worktree-agent-<id>`, en `.claude/worktrees/agent-<id>`:
-
-| Rama (id) | Qué trae | Estado |
+| # | Qué | Quedó |
 |---|---|---|
-| `a46d165bc45e49525` | Backend de clases: V78 (sin clases solapadas + gracia del profe), franjas a la media hora, cupos entre franjas contiguas, cancelación tardía justa, no cancelar clase empezada ni en reclamo, no bloquear fechas pasadas, mensajes de asistencia, token JaaS −30 s, ensayos fuera de métricas | En commit; **falta correr sus pruebas** |
-| `abbd34f07d8bb98e3` | Backend de pagos y perfil: saldo que vuelve al soltar reserva sin pagar, Ganancias solo con dinero real y por fecha de clase, profe sancionado puede editar, perfil oculto no se ve por enlace, años ≥ 0, buscador por puntaje, retenciones al día, corte que no se frena | En commit; **falta correr sus pruebas** |
-| `ad8bce13ed6dcd573` | Postulación obligatoria paso a paso + «Revisar y enviar» con «Editar», contraseña Fuerte/Excelente (frontend), «Quiero enseñar» con Google, foto achicada, WhatsApp con +57, decisión sin recargar | Terminado |
-| `a1b15272139c41068` | Aula (hoja de cierre con salida), Mis clases (asistencia, aviso de cancelación tardía, acta), los dos botones del profe sin clases, ancho | Terminado |
-| `ac200fd483a2774a3` | Recorrido: pasos 4–6 al instante, «Te llevo hasta allá» siempre desliza | Terminado (tsc, lint, 16 pruebas) |
-| `ade987189cb5b3039` | Mis horarios: franjas arrastrando + Rigel a la derecha | En commit; **falta la revisión visual** |
-| `ab96a69f731230f23` | Profe ve su perfil público; tarifa «50.000» | **Faltan:** «Perfil visible» debajo de la tarifa, vista previa, buscador de ciudad en /perfil |
+| 1 | Postulación obligatoria paso a paso | «Siguiente» no avanza y dice qué falta |
+| 2 | País y ciudad con buscador | País con bandera; ciudad del catálogo del país (GeoNames). También en /perfil |
+| 3 | «Revisar y enviar» con «Editar» | Todo a la vista, «Editar» por sección, «Guardar y volver a revisar» |
+| 4 | «Perfil visible» debajo de la tarifa | «Tu perfil está visible / oculto», en verde o ámbar, justo debajo de la tarifa |
+| 5 | Ver cómo lo ven | «Vista previa: así te ven» (tarjeta del buscador + «Sobre ti», con lo escrito sin guardar) y su perfil público completo |
+| 6 | Horarios arrastrando, con Rigel | Arrastrar abre una franja (media hora), clic abre una hora, se mueve y se estira, «Deshacer»; Rigel a la derecha con los cupos. Probado arrastrando en el navegador |
+| 7 | Mis clases sin clases | «Invita a tus estudiantes» y «Mira cómo te ven los estudiantes» (abre su perfil público) |
+| 8 | Contraseña Fuerte o Excelente | En registro, restablecer y cambiar contraseña, en la pantalla y en el servidor |
+| 9 | Recorrido | Pasos 4–6 al instante; «Te llevo hasta allá» siempre desliza |
+| 10 | Usar el ancho | Hasta 1600 px; Ayuda, Mi perfil, Cuenta, Invitar y Saldo en dos columnas |
 
-**Lo que falta, en orden:**
-1. Correr las pruebas de las dos ramas de backend, integrarlas a `master`.
-2. Backend: contraseña Fuerte/Excelente también en el servidor (registro, restablecer, cambio) —
-   nunca se hizo—.
-3. Integrar las ramas de frontend; terminar /perfil (punto 4–5 del resumen) y cambiar «Mira cómo te
-   ven los estudiantes» de Mis clases para que abra su perfil público.
-4. Revisión visual de Mis horarios.
-5. Ancho completo en Ayuda y las demás pantallas (punto 10): sin empezar.
-6. Ajustar la prueba e2e `flujo-profesor-completo.spec.ts` y las existentes a la postulación nueva y
-   a los horarios nuevos; suite completa sobre base recreada; `./mvnw verify` completo.
-7. ESTADO.md, registros, push, correo con resumen ejecutivo.
+**Verificación:** `./mvnw verify` con 450 unitarias y 674 de integración en verde; `tsc`, `lint` y
+190 pruebas de Vitest en verde; e2e sobre la base recreada y sin la prueba de Wompi, 104 en verde y 1 saltada (la del reclamo, que necesita una clase dentro del plazo); `next build` de producción en verde. Revisión visual con capturas a 390, 1440 y 1920 px.
 
-**Para decidir Pardo (no se toca):** si el profe registra la asistencia apenas termina la clase, el
+**Commits:** las ramas integradas (`43e3f43`…`5c3248f` de backend; `e718b35`…`b7849f8` de
+frontend) y lo de hoy: `99a3067` (contraseña en el servidor), `bd9a32b` (perfil: visibilidad, vista
+previa y ciudad), `97af1d1` (Mis clases → perfil público), `ba9a83f` (cambiar contraseña),
+`22f34fd` y `ff55b76` (el ancho), `caa958a` y `025c70b` (e2e).
+
+**Queda como está (Pardo, 28/09):** si el profe registra la asistencia apenas termina la clase, el
 estudiante ya no puede abrir un reclamo formal (A5 de la revisión).

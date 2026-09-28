@@ -6,7 +6,7 @@ Resumen vivo de qué hay construido y desplegado. Se actualiza al cerrar cada pa
 
 **Backend** (Spring Boot 4.1, `co.orion`): identidad + sesión, disponibilidad + `SlotCalculator`,
 reservas, asistencia, notificaciones por correo (con `.ics` + link a Google Calendar), panel admin
-(usuarios, reservas, métricas). **Migraciones Flyway V1–V76.**
+(usuarios, reservas, métricas). **Migraciones Flyway V1–V78.**
 
 Módulos: `identity`, `scheduling`, `catalog`, `billing`, `messaging`, `notifications`, `reputation`,
 `lifecycle`, `admin`, `engagement`, `legal`, `support`, `assessment`, `teaching`, `practice`,
@@ -30,6 +30,20 @@ dentro de `/cuenta`).
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots), con Rigel de protagonista.
 
 ## Verificación
+Al 28/09/2026, con la megarrevisión del profe y la postulación obligatoria integradas (V78):
+- **Backend: `./mvnw verify`, 450 unitarias y 674 de integración, en verde.**
+  - Nuevas: `ClaveFuerteTest` y los casos de contraseña débil en `AuthFlowIT`, `PasswordResetIT` y
+    `ChangePasswordIT`. Las de las ramas: `SlotCalculatorTest` (media hora, franjas contiguas),
+    `BookingRepositoryTest` (solapes), `CancelBookingIT`, `LessonLifecycleIT`, `MiDesempenoIT`,
+    `ProfessorDirectoryIT` y más.
+- **Frontend:** `tsc` y `lint` en verde; **190 pruebas de Vitest**; `next build` de producción en
+  verde.
+- **E2E Playwright, sobre la base recreada y sin la prueba de Wompi: 104 pasaron y 1 se saltó** (la
+  del reclamo, que necesita una clase dentro del plazo). Incluye `flujo-profesor-completo.spec.ts`:
+  el camino entero de un profe nuevo y el del fundador invitado.
+- **Revisión visual** a 390, 1440 y 1920 px de las pantallas tocadas, y un arrastre de verdad en Mis
+  horarios: abrió la franja del jueves de 2 a 5 PM, que quedó guardada en el servidor.
+
 Al 26/09/2026, con la sexta tanda del Bloque 11 (textos legales 1.1 sin el nombre de Pardo, un solo
 «Aceptar los nuevos acuerdos» y datos de pago obligatorios):
 - **Backend: `./mvnw verify`, 428 unitarias y 640 de integración, en verde.**
@@ -879,6 +893,74 @@ Pendiente para Pardo:
 - Que el abogado lea la versión 2.0 del acuerdo del profesor. Su texto dice «liquidamos las clases
   que dictaste», y desde la decisión 4 también entran las cancelaciones tardías.
 - El manual técnico necesita esta sección.
+
+## Megarrevisión del profe y postulación obligatoria (27 y 28/09/2026)
+
+Pedidos de Pardo del 27/09 (`docs/pedidos/2026-09-27-1002-…` y `docs/pedidos/2026-09-27-1035-…`). La
+sesión de ese día se cortó a las 11:27: siete agentes en paralelo, cada uno con su `next dev`,
+dejaron al equipo sin memoria. El 28/09 se integraron sus siete ramas y se terminó lo que faltaba.
+
+**Lo legal (el abogado, 27/09).** Los Términos y la Política 1.1 se corrigieron en su sitio: todas
+las clases son virtuales y el WhatsApp es un dato obligatorio. La app nombra el corte de las
+liquidaciones como el acuerdo: el 15 y el último día del mes.
+
+**Clases y horarios (backend):**
+- **V78**: dos clases del mismo profe no se pueden pisar. Es una restricción `EXCLUDE` con
+  `btree_gist` sobre `[inicio, fin)`: desde que los cupos salen cada media hora, el índice único de
+  la V16 ya no bastaba. Si producción ya tuviera solapes, la migración no crea la restricción: lo
+  avisa en el log de Flyway y el despliegue sigue.
+- Las franjas empiezan y terminan a la media hora. Dos franjas contiguas conservan el cupo de la
+  media hora en su borde.
+- Cancelación tardía justa: al profe no le cuenta como tardía soltar una clase que le reservaron ya
+  dentro de la ventana, si lo hace en los 60 minutos siguientes (`professor_cancel_grace_minutes`).
+- No se cancela una clase ya empezada ni una en reclamo, y no se bloquean fechas pasadas.
+- Los ensayos quedan fuera de las métricas, y el token de JaaS se emite con 30 s de margen.
+
+**Pagos, perfil y cuenta (backend):**
+- Soltar dentro de la ventana una reserva sin pagar anula el cobro y devuelve el saldo que usó.
+- Ganancias cuenta solo dinero real y filtra por la fecha de la clase.
+- Un profe sancionado puede editar su perfil, y uno oculto por sanción no se abre por enlace.
+- El buscador ordena por el puntaje del ranking, y «mejor calificados» ordena la lista entera.
+- Las retenciones de la liquidación se refrescan cuando el profe registra sus datos de pago. Un profe
+  con error ya no frena el corte de los demás.
+- El profe invitado conserva el beneficio de fundador entre por la puerta que entre.
+- **Contraseña «Fuerte» o «Excelente» también en el servidor** (`@ClaveFuerte`, la misma regla de
+  `lib/password.ts`): registro, restablecer y cambiar. Las contraseñas que ya existen siguen
+  sirviendo para entrar, y las que genera el admin ya son «Fuertes».
+
+**La postulación:**
+- Todo es obligatorio y se valida paso a paso: «Siguiente» no avanza y dice qué falta.
+- El país se elige con buscador, y la ciudad sale del catálogo de ese país (GeoNames, CC BY 4.0),
+  tanto en la postulación como en el perfil.
+- «Revisar y enviar» muestra todo, con «Editar» por sección y «Guardar y volver a revisar».
+- «Quiero enseñar» también se elige al entrar con Google.
+- La foto grande del celular se achica en el navegador antes de subirla.
+- Pegar un WhatsApp con +57 ya no duplica el código.
+- La decisión del equipo se ve sin recargar.
+
+**Lo del profe:**
+- **Mi perfil**: «Tu perfil está visible» (o «oculto») va justo debajo de la tarifa, con «Vista
+  previa: así te ven». La vista previa muestra la tarjeta del buscador y el «Sobre ti» con lo que
+  está escrito, aunque no esté guardado. La tarifa se escribe «50.000».
+- El profe abre su perfil público como lo ve un estudiante, sin poder reservarse a sí mismo.
+- **Mis horarios**: las franjas se crean arrastrando sobre la semana:
+  - resolución de media hora, y un clic abre una hora;
+  - las franjas se mueven y se estiran, y en el celular funciona con pulsación larga;
+  - «Deshacer» después de cada cambio;
+  - Rigel a la derecha, con los cupos que abre la semana.
+- **Mis clases**:
+  - sin clases, dos botones: «Invita a tus estudiantes» y «Mira cómo te ven los estudiantes», que
+    abre su perfil público;
+  - la asistencia se ofrece solo cuando el servidor la acepta;
+  - un aviso antes de confirmar una cancelación tardía;
+  - la hoja de cierre del aula tiene salida.
+- **Recorrido**: los pasos 4 a 6 salen al instante y «Te llevo hasta allá» siempre desliza.
+- **El ancho**: en el computador las pantallas llegan a 1600 px. Ayuda, Mi perfil, la ficha del
+  estudiante, Invitar y Saldo se reparten en dos columnas en lugar de estirar las líneas.
+
+**Queda como está (Pardo, 28/09).** Si el profe registra la asistencia apenas termina la clase, la
+clase se cierra y el estudiante ya no puede abrir un reclamo formal, aunque le queden horas de las
+24 del plazo.
 
 ## Revisión de textos de toda la plataforma (26/09/2026, tarde)
 

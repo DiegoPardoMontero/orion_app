@@ -6,7 +6,7 @@
 | **Canal** | Chat de Claude Code |
 | **Quién** | Pardo, con instrucciones de su abogado entre `<AB>` y `</AB>` |
 | **Relacionado** | `2026-09-26-1649-con-fluidez-y-revision-de-textos.md` (de ahí salieron las preguntas al abogado) |
-| **Estado** | En curso |
+| **Estado** | Hecho (28/09/2026) |
 
 ## El pedido, tal cual
 
@@ -51,3 +51,24 @@ aplica tal cual y se cita en el commit y en el registro.
   megarrevisión sin integrar: «Eso, sigue trabajando en TODO por favor. Hasta que termines.» → Se
   retoma: integrar los arreglos de backend y frontend, terminar la prueba e2e del camino completo y
   cerrar con `./mvnw verify` en verde.
+- 28/09, 10:59: «Continúa entonces y termina. Y lo del reclamo no lo entiendo, sí, déjalo así, no lo
+  cambies.» → El A5 queda como está (ver abajo).
+
+## Estado (28/09/2026): hecho
+
+- **Lo del abogado** (27/09, `2ef00f9` y `6dbb924`): Términos y Política 1.1 corregidos en su sitio
+  (todo virtual, WhatsApp obligatorio); la app nombra el corte como el acuerdo, el 15 y el último día.
+- **Cambiar el horario de una clase**: no se tocó.
+- **La megarrevisión**: sus arreglos entraron a `master` el 28/09, después de la caída del equipo
+  del 27/09. Son los de clases y horarios (V78: dos clases del mismo profe no se pisan), los de pagos
+  y perfil, la postulación y lo del profe; el detalle está en `docs/ESTADO.md`, «Megarrevisión del
+  profe y postulación obligatoria».
+- **La prueba e2e del camino completo** (`frontend/e2e/flujo-profesor-completo.spec.ts`) pasa de
+  punta a punta en los dos caminos, en celular y con las pantallas a 1280 px. El primero va de
+  «Enseña con Orión» a la clase dictada, con acta y ganancias. El segundo es el del profe fundador
+  invitado por el admin.
+- **Verificación:** `./mvnw verify` 450 + 674 en verde; e2e sobre la base recreada y sin la prueba de Wompi, 104 en verde y 1 saltada (la del reclamo, que necesita una clase dentro del plazo); `next build` de producción en verde.
+- **A5, queda como está:** el estudiante tiene desde 15 minutos después del inicio hasta 24 horas
+  después del final para reportar un problema con la clase. Pero si el profe registra la asistencia
+  al terminar, la clase se cierra y el botón de reportar deja de funcionar.
+
