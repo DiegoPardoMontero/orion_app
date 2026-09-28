@@ -56,3 +56,38 @@
 - 27/09, 21:44, al ver que la sesión de la mañana se había cortado a las 11:27 con el trabajo de los
   agentes sin integrar: «Eso, sigue trabajando en TODO por favor. Hasta que termines.» → Se retoma
   todo: integrar lo que dejaron los agentes, terminar lo que quedó a medias y hacer lo que faltaba.
+- 27/09, 21:55: «Espera, voy a reiniciar mi computador, guarda tareas y te diré cuando continuar.»
+  → Todo quedó en commit en las ramas de los agentes (ver «Estado»).
+
+## Estado (27/09, 21:55: pausa por el reinicio de Pardo)
+
+**Por qué se cortó la mañana:** siete agentes en paralelo, cada uno con su `next dev`, más Maven,
+llenaron la memoria del equipo (7,7 GB, swap al 100 %, carga 50–60) y WSL se cayó a las 11:27.
+**Retomar en serie**, con uno o dos procesos pesados a la vez como mucho.
+
+Nada de esto está en `master` todavía. Cada rama es `worktree-agent-<id>`, en `.claude/worktrees/agent-<id>`:
+
+| Rama (id) | Qué trae | Estado |
+|---|---|---|
+| `a46d165bc45e49525` | Backend de clases: V78 (sin clases solapadas + gracia del profe), franjas a la media hora, cupos entre franjas contiguas, cancelación tardía justa, no cancelar clase empezada ni en reclamo, no bloquear fechas pasadas, mensajes de asistencia, token JaaS −30 s, ensayos fuera de métricas | En commit; **falta correr sus pruebas** |
+| `abbd34f07d8bb98e3` | Backend de pagos y perfil: saldo que vuelve al soltar reserva sin pagar, Ganancias solo con dinero real y por fecha de clase, profe sancionado puede editar, perfil oculto no se ve por enlace, años ≥ 0, buscador por puntaje, retenciones al día, corte que no se frena | En commit; **falta correr sus pruebas** |
+| `ad8bce13ed6dcd573` | Postulación obligatoria paso a paso + «Revisar y enviar» con «Editar», contraseña Fuerte/Excelente (frontend), «Quiero enseñar» con Google, foto achicada, WhatsApp con +57, decisión sin recargar | Terminado |
+| `a1b15272139c41068` | Aula (hoja de cierre con salida), Mis clases (asistencia, aviso de cancelación tardía, acta), los dos botones del profe sin clases, ancho | Terminado |
+| `ac200fd483a2774a3` | Recorrido: pasos 4–6 al instante, «Te llevo hasta allá» siempre desliza | Terminado (tsc, lint, 16 pruebas) |
+| `ade987189cb5b3039` | Mis horarios: franjas arrastrando + Rigel a la derecha | En commit; **falta la revisión visual** |
+| `ab96a69f731230f23` | Profe ve su perfil público; tarifa «50.000» | **Faltan:** «Perfil visible» debajo de la tarifa, vista previa, buscador de ciudad en /perfil |
+
+**Lo que falta, en orden:**
+1. Correr las pruebas de las dos ramas de backend, integrarlas a `master`.
+2. Backend: contraseña Fuerte/Excelente también en el servidor (registro, restablecer, cambio) —
+   nunca se hizo—.
+3. Integrar las ramas de frontend; terminar /perfil (punto 4–5 del resumen) y cambiar «Mira cómo te
+   ven los estudiantes» de Mis clases para que abra su perfil público.
+4. Revisión visual de Mis horarios.
+5. Ancho completo en Ayuda y las demás pantallas (punto 10): sin empezar.
+6. Ajustar la prueba e2e `flujo-profesor-completo.spec.ts` y las existentes a la postulación nueva y
+   a los horarios nuevos; suite completa sobre base recreada; `./mvnw verify` completo.
+7. ESTADO.md, registros, push, correo con resumen ejecutivo.
+
+**Para decidir Pardo (no se toca):** si el profe registra la asistencia apenas termina la clase, el
+estudiante ya no puede abrir un reclamo formal (A5 de la revisión).
