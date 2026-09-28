@@ -58,6 +58,10 @@
   todo: integrar lo que dejaron los agentes, terminar lo que quedó a medias y hacer lo que faltaba.
 - 27/09, 21:55: «Espera, voy a reiniciar mi computador, guarda tareas y te diré cuando continuar.»
   → Todo quedó en commit en las ramas de los agentes (ver «Estado»).
+- 28/09, 10:53, después del reinicio: «¿Cuál es el estado actual? Tuve que apagarlo y no sé cómo
+  quedó» → Revisado: las siete ramas siguen intactas y en commit (solo `ade98…` tiene sin versionar
+  su carpeta `capturas/`), ninguna toca un archivo de otra y la única migración nueva es la V78. No
+  quedó nada corriendo. Se retoma cuando Pardo diga.
 
 ## Estado (27/09, 21:55: pausa por el reinicio de Pardo)
 
