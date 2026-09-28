@@ -85,6 +85,7 @@ async function prepararFoto(file: File): Promise<File> {
  *
  * @param id el del botón, para que un formulario pueda llevar el foco aquí y describirlo.
  * @param onSubida avisa en cuanto la foto quedó arriba, sin esperar a que la sesión se refresque.
+ * @param enPortada la foto grande con la cámara encima, para la portada de «Mi perfil» del profe.
  */
 export function CambiarFoto({
   nombre,
@@ -92,12 +93,14 @@ export function CambiarFoto({
   id,
   describedBy,
   onSubida,
+  enPortada = false,
 }: {
   nombre: string;
   fotoUrl?: string | null;
   id?: string;
   describedBy?: string;
   onSubida?: (url: string) => void;
+  enPortada?: boolean;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
@@ -137,6 +140,36 @@ export function CambiarFoto({
     }
   }
 
+  const selector = (
+    <input ref={input} type="file" accept="image/jpeg,image/png,image/webp" onChange={onFile} className="hidden" />
+  );
+
+  if (enPortada) {
+    const etiqueta = subiendo ? "Subiendo…" : foto ? "Cambiar foto" : "Subir foto";
+    return (
+      <div className="flex flex-col items-start">
+        <div className="relative">
+          <Avatar nombre={nombre} fotoUrl={foto} size="xl" className="ring-4 ring-surface-raised" />
+          <button
+            id={id}
+            type="button"
+            onClick={() => input.current?.click()}
+            disabled={subiendo}
+            aria-label={etiqueta}
+            title={`${etiqueta} (JPEG, PNG o WEBP)`}
+            aria-describedby={describedBy}
+            className="absolute -bottom-0.5 -right-0.5 grid h-9 w-9 place-items-center rounded-full bg-primary text-on-primary shadow-primary ring-4 ring-surface-raised transition-colors hover:bg-primary-strong focus-visible:shadow-focus disabled:opacity-60"
+          >
+            <Camera size={16} strokeWidth={2} />
+          </button>
+        </div>
+        {subiendo && <p className="mt-2 text-[12px] font-semibold text-text-muted">Subiendo tu foto…</p>}
+        {error && <p className="mt-2 max-w-[260px] text-[12px] font-semibold text-error">{error}</p>}
+        {selector}
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center gap-4">
       <Avatar nombre={nombre} fotoUrl={foto} size="xl" />
@@ -154,13 +187,7 @@ export function CambiarFoto({
         </button>
         <p className="mt-1.5 text-[12px] text-text-muted">JPEG, PNG o WEBP</p>
         {error && <p className="mt-1 text-[12px] font-semibold text-error">{error}</p>}
-        <input
-          ref={input}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          onChange={onFile}
-          className="hidden"
-        />
+        {selector}
       </div>
     </div>
   );

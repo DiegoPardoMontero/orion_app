@@ -1,9 +1,24 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BadgeCheck, Eye, EyeOff, Globe, Plus, Sparkles, UserPlus, X } from "lucide-react";
+import {
+  BadgeCheck,
+  Eye,
+  EyeOff,
+  Globe,
+  GraduationCap,
+  Languages,
+  MapPin,
+  PenLine,
+  Plus,
+  Sparkles,
+  Target,
+  UserPlus,
+  Wallet,
+  X,
+} from "lucide-react";
 import Link from "next/link";
-import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { CambiarFoto } from "@/components/CambiarFoto";
 import { DatosDePago } from "@/components/profesor/DatosDePago";
@@ -27,6 +42,7 @@ import { etiquetaNivel, NIVELES } from "@/lib/i18n";
 import { estadoBio, estadoTitular } from "@/lib/perfil-profesor";
 import { minutos, useCifras } from "@/lib/cifras";
 import { conMiles, posicionTrasCifras, soloDigitos } from "@/lib/tarifa";
+import { paisConBandera } from "@/lib/paises";
 import { SelectorDePais } from "@/components/SelectorDePais";
 import { SelectorDeCiudad } from "@/components/SelectorDeCiudad";
 import { Modal } from "@/components/Modal";
@@ -139,36 +155,18 @@ function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
   return (
     <main className="mx-auto w-full max-w-md px-5 py-5 lg:max-w-[1600px] lg:px-10 xl:px-14 lg:py-8">
       <Cabecera seccion="perfil" />
-      <p className="mt-4 text-[12.5px] text-text-secondary">
-        Esto es lo que ven los estudiantes. Cambia lo que quieras y guarda con la barra que aparece abajo.
-      </p>
-      <Link
-        href="/invitar"
-        className="mt-4 flex min-h-11 items-center justify-between gap-3 rounded-card bg-accent-lavender-soft px-4 py-3 text-[13.5px] transition-colors hover:bg-info-bg focus-visible:shadow-focus"
-      >
-        <span className="flex items-center gap-2 font-semibold text-text">
-          <UserPlus size={16} strokeWidth={2} className="shrink-0 text-[#5e4a8a]" />
-          Invita a tus estudiantes con tu enlace
-        </span>
-        <span className="shrink-0 text-[12.5px] font-bold text-primary-strong">Compartir</span>
-      </Link>
-      <Link
-        href={`/profesores/${inicial.id}`}
-        className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-pill border-[1.5px] border-border px-4 text-[13.5px] font-bold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
-      >
-        <Globe size={15} strokeWidth={2} aria-hidden />
-        Ver mi perfil público
-      </Link>
-
-      {/* Las reglas de cancelación y las preguntas frecuentes viven en Ayuda (24/09/2026): son
-          documentación, y en el perfil obligaban a pasar por ellas para cambiar la tarifa. */}
-      <div className="mt-5">
-        <CambiarFoto nombre={inicial.fullName ?? ""} fotoUrl={inicial.photoUrl} />
+      {/* Una sola columna (Pardo, 28/09/2026: «no uses dobles columnas»), con un tope para que en un
+          monitor grande los campos no se estiren de lado a lado. */}
+      <div className="lg:max-w-[1200px]">
+        <p className="mt-4 text-[13px] text-text-secondary">
+          Esto es lo que ven los estudiantes. Cambia lo que quieras y guarda con la barra que aparece abajo.
+        </p>
+        {/* Las reglas de cancelación y las preguntas frecuentes viven en Ayuda (24/09/2026): son
+            documentación, y en el perfil obligaban a pasar por ellas para cambiar la tarifa. */}
+        <EdicionEnPagina>
+          <CamposDelPerfil inicial={inicial} />
+        </EdicionEnPagina>
       </div>
-
-      <EdicionEnPagina>
-        <CamposDelPerfil inicial={inicial} />
-      </EdicionEnPagina>
     </main>
   );
 }
@@ -325,8 +323,6 @@ function CamposDelPerfil({ inicial }: { inicial: ProfileResponse }) {
 
   const nombreIdioma = (code: string) =>
     languages.data?.find((l) => l.code === code)?.nameEs ?? code;
-  const banderaIdioma = (code: string) =>
-    languages.data?.find((l) => l.code === code)?.flagEmoji ?? "";
 
   const agregarIdioma = (code: string) =>
     setLangs((prev) => (prev.some((l) => l.code === code) ? prev : [...prev, { code, isNative: false, levels: [] }]));
@@ -367,170 +363,167 @@ function CamposDelPerfil({ inicial }: { inicial: ProfileResponse }) {
     goals,
   };
 
+  const ubicacion = [city.trim(), paisConBandera(countryCode)].filter(Boolean).join(", ");
+
   return (
-    <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-10 xl:gap-14">
-      {/* En el computador, dos columnas para usar el ancho (Pardo, 27/09/2026): a la izquierda lo que
-          decide si te reservan —tarifa, visibilidad, presentación—, a la derecha lo que la completa. */}
-      <div>
-        {/* — Tarifa — */}
-        <WidgetTarifa
-          valor={tarifa}
-          onValor={setTarifa}
-          guardada={inicial.rate ?? undefined}
-          gratisPorOrion={tarifaInicial === 0}
-          baseBps={inicial.baseRateBps}
-          fundador={inicial.founder}
-        />
+    <>
+      <Portada
+        inicial={inicial}
+        titular={headline.trim()}
+        ubicacion={ubicacion}
+        idiomas={langs.filter((l) => l.code).map((l) => ({ code: l.code, nombre: nombreIdioma(l.code) }))}
+        onVistaPrevia={() => setViendoVistaPrevia(true)}
+      />
 
-        {/* — Visible u oculto: justo debajo de la tarifa, para saberlo de un vistazo (27/09/2026) — */}
-        <section
-          className={`mt-4 rounded-card p-4 ${publicado ? "bg-success-bg" : "bg-warning-bg"}`}
-          aria-label="Visibilidad de tu perfil"
-        >
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p
-                className={`flex items-center gap-1.5 text-[13.5px] font-bold ${publicado ? "text-success" : "text-warning"}`}
-              >
-                {publicado ? <Eye size={15} strokeWidth={2.2} /> : <EyeOff size={15} strokeWidth={2.2} />}
-                {publicado ? "Tu perfil está visible" : "Tu perfil está oculto"}
-              </p>
-              <p className="mt-0.5 text-[11.5px] text-text-secondary">
-                {publicado
-                  ? "Los estudiantes pueden verte y reservar"
-                  : "Los estudiantes no te ven ni pueden reservar contigo. Tus clases ya agendadas siguen en pie."}
-              </p>
-            </div>
-            <Toggle activo={publicado} onCambio={setPublicado} etiqueta="Perfil visible" />
-          </div>
+      {/* — Tarifa — */}
+      <WidgetTarifa
+        valor={tarifa}
+        onValor={setTarifa}
+        guardada={inicial.rate ?? undefined}
+        gratisPorOrion={tarifaInicial === 0}
+        baseBps={inicial.baseRateBps}
+        fundador={inicial.founder}
+      />
 
-          {publicado !== (inicial.isPublished ?? false) && (
-            <p className="mt-3 text-[12px] font-semibold text-text-secondary">
-              Guarda con la barra de abajo para que el cambio se aplique.
-            </p>
-          )}
-
-          {publicado && !tieneTarifa && (
-            <p className="mt-3 rounded-base bg-warning-bg px-3.5 py-2.5 text-[12px] text-warning">
-              Fija tu tarifa antes de publicar: escribe un precio por hora aquí arriba y guarda.
-            </p>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setViendoVistaPrevia(true)}
-            className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-pill border-[1.5px] border-border bg-surface-raised px-4 text-[13px] font-bold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
+      {/* — Visible u oculto: justo debajo de la tarifa, para saberlo de un vistazo (27/09/2026) — */}
+      <section
+        className={`mt-4 rounded-card p-5 lg:px-7 ${publicado ? "bg-success-bg" : "bg-warning-bg"}`}
+        aria-label="Visibilidad de tu perfil"
+      >
+        <div className="flex items-center gap-3.5">
+          <span
+            className={`grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface-raised ${publicado ? "text-success" : "text-warning"}`}
           >
-            <Eye size={15} strokeWidth={2} aria-hidden />
-            Vista previa: así te ven
-          </button>
-        </section>
+            {publicado ? <Eye size={18} strokeWidth={2} /> : <EyeOff size={18} strokeWidth={2} />}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className={`font-display text-[16px] font-bold leading-tight ${publicado ? "text-success" : "text-warning"}`}>
+              {publicado ? "Tu perfil está visible" : "Tu perfil está oculto"}
+            </p>
+            <p className="mt-0.5 text-[12.5px] text-text-secondary">
+              {publicado
+                ? "Los estudiantes pueden verte y reservar"
+                : "Los estudiantes no te ven ni pueden reservar contigo. Tus clases ya agendadas siguen en pie."}
+            </p>
+          </div>
+          <Toggle activo={publicado} onCambio={setPublicado} etiqueta="Perfil visible" />
+        </div>
 
-        {viendoVistaPrevia && (
-          <Modal titulo="Así te ven los estudiantes" onCerrar={() => setViendoVistaPrevia(false)}>
-            <VistaPrevia
-              tarjeta={tarjetaBorrador}
-              bio={bio.trim()}
-              visible={publicado}
-              profesorId={inicial.id}
-            />
-          </Modal>
+        {publicado !== (inicial.isPublished ?? false) && (
+          <p className="mt-3 text-[12px] font-semibold text-text-secondary">
+            Guarda con la barra de abajo para que el cambio se aplique.
+          </p>
         )}
 
-        {/* — Presentación — */}
-        <label className="mt-6 block text-[12.5px] font-bold text-text-secondary" htmlFor="headline">
-          Título
-        </label>
-        <p className="mt-0.5 text-[12px] text-text-muted">
-          Atrae estudiantes con una frase que muestre tu experiencia.
-        </p>
-        <Campo
-          id="headline"
-          type="text"
-          maxLength={120}
-          value={headline}
-          onChange={(event) => setHeadline(event.target.value)}
-          placeholder="Conversación en inglés para adultos que ya estudiaron"
-          aria-describedby="headline-contador"
-          className={`mt-1.5 ${bordeSegun(estadoDelTitular)}`}
-        />
-        <ContadorPalabras id="headline-contador" estado={estadoDelTitular} />
+        {publicado && !tieneTarifa && (
+          <p className="mt-3 rounded-base bg-warning-bg px-3.5 py-2.5 text-[12px] text-warning">
+            Fija tu tarifa antes de publicar: escribe un precio por hora aquí arriba y guarda.
+          </p>
+        )}
+      </section>
 
-        <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="bio">
-          Sobre ti
-        </label>
-        <textarea
-          id="bio"
-          rows={4}
-          value={bio}
-          onChange={(event) => setBio(event.target.value)}
-          placeholder="Cuéntales cómo son tus clases."
-          aria-describedby="bio-contador"
-          className={`mt-1.5 w-full rounded-base border-[1.5px] bg-surface-raised px-4 py-3 text-sm placeholder:text-text-muted focus:shadow-focus focus:outline-none ${bordeSegun(estadoDeLaBio)}`}
-        />
-        <ContadorPalabras id="bio-contador" estado={estadoDeLaBio} />
-      </div>
+      {viendoVistaPrevia && (
+        <Modal titulo="Así te ven los estudiantes" onCerrar={() => setViendoVistaPrevia(false)}>
+          <VistaPrevia tarjeta={tarjetaBorrador} bio={bio.trim()} visible={publicado} profesorId={inicial.id} />
+        </Modal>
+      )}
 
-      <div>
-        {/* — Idiomas — */}
-        <section className="mt-6">
-          <h2 className="text-[13.5px] font-bold text-text">Idiomas que enseñas</h2>
-          {langs.length === 0 && (
-            <p className="mt-1.5 text-[12.5px] text-text-muted">
-              Agrega al menos un idioma y marca los niveles que enseñas.
-            </p>
-          )}
+      {/* — Presentación — */}
+      <Seccion
+        icono={<PenLine size={18} strokeWidth={2} />}
+        tono="coral"
+        titulo="Tu presentación"
+        descripcion="Lo primero que leen en tu tarjeta y en tu perfil."
+      >
+        <div className="max-w-4xl">
+          <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="headline">
+            Título
+          </label>
+          <p className="mt-0.5 text-[12px] text-text-muted">Atrae estudiantes con una frase que muestre tu experiencia.</p>
+          <Campo
+            id="headline"
+            type="text"
+            maxLength={120}
+            value={headline}
+            onChange={(event) => setHeadline(event.target.value)}
+            placeholder="Conversación en inglés para adultos que ya estudiaron"
+            aria-describedby="headline-contador"
+            className={`mt-1.5 ${bordeSegun(estadoDelTitular)}`}
+          />
+          <ContadorPalabras id="headline-contador" estado={estadoDelTitular} />
 
-          <div className="mt-3 space-y-3">
+          <label className="mt-5 block text-[12.5px] font-bold text-text-secondary" htmlFor="bio">
+            Sobre ti
+          </label>
+          <p className="mt-0.5 text-[12px] text-text-muted">Cuéntales cómo son tus clases y con quién trabajas mejor.</p>
+          <textarea
+            id="bio"
+            rows={5}
+            value={bio}
+            onChange={(event) => setBio(event.target.value)}
+            placeholder="Cuéntales cómo son tus clases."
+            aria-describedby="bio-contador"
+            className={`mt-1.5 w-full rounded-base border-[1.5px] bg-surface-raised px-4 py-3 text-[15px] leading-relaxed placeholder:text-text-muted focus:shadow-focus focus:outline-none ${bordeSegun(estadoDeLaBio)}`}
+          />
+          <ContadorPalabras id="bio-contador" estado={estadoDeLaBio} />
+        </div>
+      </Seccion>
+
+      {/* — Idiomas — */}
+      <Seccion
+        icono={<Languages size={18} strokeWidth={2} />}
+        tono="lavanda"
+        titulo="Idiomas que enseñas"
+        descripcion={langs.length === 0 ? "Agrega al menos un idioma y marca los niveles que enseñas." : "Marca los niveles que enseñas en cada uno."}
+      >
+        {langs.length > 0 && (
+          <ul className="space-y-2.5">
             {langs.map((lang) => (
-              <div key={lang.code} className="rounded-card bg-surface-raised p-4 shadow-sm">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="flex items-center gap-1.5 text-[14px] font-bold text-text">
-                    {banderaIdioma(lang.code) && <span aria-hidden="true">{banderaIdioma(lang.code)}</span>}
+              <li key={lang.code} className="rounded-base border border-border bg-surface px-4 py-3.5">
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+                  <p className="flex w-full items-center gap-2 text-[14.5px] font-bold text-text sm:w-auto sm:min-w-[130px]">
+                    <DiscoIdioma code={lang.code} size={22} />
                     {nombreIdioma(lang.code)}
                   </p>
+                  <div className="flex flex-1 flex-wrap gap-2">
+                    {NIVELES.map((nivel) => (
+                      <button
+                        key={nivel}
+                        type="button"
+                        aria-pressed={lang.levels.includes(nivel)}
+                        onClick={() => alternarNivel(lang.code, nivel)}
+                        className={`min-h-9 rounded-pill px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors focus-visible:shadow-focus ${
+                          lang.levels.includes(nivel)
+                            ? "bg-primary text-on-primary"
+                            : "bg-surface-raised text-text-secondary ring-1 ring-border hover:ring-border-strong hover:text-text"
+                        }`}
+                      >
+                        {etiquetaNivel(nivel)}
+                      </button>
+                    ))}
+                  </div>
+                  <label className="flex items-center gap-2.5">
+                    <span className="text-[12.5px] font-semibold text-text-secondary">Es mi lengua materna</span>
+                    <Toggle activo={lang.isNative} onCambio={(v) => marcarNativo(lang.code, v)} etiqueta="Lengua materna" />
+                  </label>
                   <button
                     type="button"
                     aria-label={`Quitar ${nombreIdioma(lang.code)}`}
                     onClick={() => quitarIdioma(lang.code)}
-                    className="grid h-8 w-8 place-items-center rounded-full text-text-muted transition-colors hover:bg-surface-sunken hover:text-text focus-visible:shadow-focus"
+                    className="grid h-9 w-9 place-items-center rounded-full text-text-muted transition-colors hover:bg-surface-sunken hover:text-text focus-visible:shadow-focus"
                   >
                     <X size={16} strokeWidth={1.75} />
                   </button>
                 </div>
-
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {NIVELES.map((nivel) => (
-                    <button
-                      key={nivel}
-                      type="button"
-                      aria-pressed={lang.levels.includes(nivel)}
-                      onClick={() => alternarNivel(lang.code, nivel)}
-                      className={`min-h-9 rounded-pill px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors focus-visible:shadow-focus ${
-                        lang.levels.includes(nivel)
-                          ? "bg-primary text-on-primary"
-                          : "bg-surface-sunken text-text-secondary hover:bg-border/60 hover:text-text"
-                      }`}
-                    >
-                      {etiquetaNivel(nivel)}
-                    </button>
-                  ))}
-                </div>
-
-                <label className="mt-3 flex items-center justify-between gap-3">
-                  <span className="text-[12.5px] font-semibold text-text-secondary">Es mi lengua materna</span>
-                  <Toggle
-                    activo={lang.isNative}
-                    onCambio={(v) => marcarNativo(lang.code, v)}
-                    etiqueta="Lengua materna"
-                  />
-                </label>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
+        )}
 
-          {disponibles.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
+        {disponibles.length > 0 && (
+          <div className={langs.length > 0 ? "mt-4" : ""}>
+            <p className="text-[12px] font-bold text-text-muted">Agregar otro idioma</p>
+            <div className="mt-2 flex flex-wrap gap-2">
               {disponibles.map((idioma) => (
                 <button
                   key={idioma.code}
@@ -544,48 +537,59 @@ function CamposDelPerfil({ inicial }: { inicial: ProfileResponse }) {
                 </button>
               ))}
             </div>
-          )}
-        </section>
-
-        {/* — Objetivos — */}
-        {(goalsCat.data ?? []).length > 0 && (
-          <section className="mt-6">
-            <h2 className="text-[13.5px] font-bold text-text">¿Para qué objetivos preparas?</h2>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {(goalsCat.data ?? []).map((goal) => (
-                <button
-                  key={goal.code}
-                  type="button"
-                  aria-pressed={!!goal.code && goals.includes(goal.code)}
-                  onClick={() => goal.code && alternarObjetivo(goal.code)}
-                  className={`min-h-9 rounded-pill px-3.5 py-1.5 text-[13px] font-semibold transition-colors focus-visible:shadow-focus ${
-                    goal.code && goals.includes(goal.code)
-                      ? "bg-primary text-on-primary"
-                      : "bg-surface-sunken text-text-secondary hover:bg-border/60 hover:text-text"
-                  }`}
-                >
-                  {goal.nameEs}
-                </button>
-              ))}
-            </div>
-          </section>
+          </div>
         )}
+      </Seccion>
 
-        {/* — Datos — */}
-        <section className="mt-6 grid grid-cols-2 gap-3">
-          <div className="col-span-2 sm:col-span-1">
+      {/* — Objetivos — */}
+      {(goalsCat.data ?? []).length > 0 && (
+        <Seccion
+          icono={<Target size={18} strokeWidth={2} />}
+          tono="durazno"
+          titulo="¿Para qué objetivos preparas?"
+          descripcion="Los estudiantes filtran por objetivo en el buscador."
+        >
+          <div className="flex flex-wrap gap-2">
+            {(goalsCat.data ?? []).map((goal) => (
+              <button
+                key={goal.code}
+                type="button"
+                aria-pressed={!!goal.code && goals.includes(goal.code)}
+                onClick={() => goal.code && alternarObjetivo(goal.code)}
+                className={`min-h-10 rounded-pill px-4 py-2 text-[13.5px] font-semibold transition-colors focus-visible:shadow-focus ${
+                  goal.code && goals.includes(goal.code)
+                    ? "bg-primary text-on-primary"
+                    : "bg-surface-sunken text-text-secondary hover:bg-border/60 hover:text-text"
+                }`}
+              >
+                {goal.nameEs}
+              </button>
+            ))}
+          </div>
+        </Seccion>
+      )}
+
+      {/* — Experiencia — */}
+      <Seccion
+        icono={<GraduationCap size={18} strokeWidth={2} />}
+        tono="menta"
+        titulo="Dónde estás y tu experiencia"
+        descripcion="Tu ciudad aparece en tu tarjeta; los años y la formación, en tu perfil."
+      >
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div>
             <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="country">
               País
             </label>
             <SelectorDePais id="country" value={countryCode} onChange={cambiarPais} className="mt-1.5" />
           </div>
-          <div className="col-span-2 sm:col-span-1">
+          <div>
             <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="city">
               Ciudad
             </label>
             <SelectorDeCiudad id="city" pais={countryCode} value={city} onChange={setCity} className="mt-1.5" />
           </div>
-          <div className="col-span-2 sm:col-span-1">
+          <div>
             <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="years">
               Años de experiencia
             </label>
@@ -600,7 +604,7 @@ function CamposDelPerfil({ inicial }: { inicial: ProfileResponse }) {
               className="mt-1.5"
             />
           </div>
-          <div className="col-span-2">
+          <div className="sm:col-span-2 lg:col-span-3">
             <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="education">
               Formación
             </label>
@@ -614,32 +618,167 @@ function CamposDelPerfil({ inicial }: { inicial: ProfileResponse }) {
               className="mt-1.5"
             />
           </div>
-        </section>
+        </div>
+      </Seccion>
 
-        <section className="mt-4 space-y-3">
-          <label className="flex items-center justify-between gap-3 rounded-card bg-surface-raised p-4 shadow-sm">
-            <span className="flex items-center gap-2 text-[13.5px] font-semibold text-text">
-              <BadgeCheck size={16} strokeWidth={2} className="text-success" />
-              Tengo certificación docente
+      {/* — Lo que ofreces — */}
+      <Seccion
+        icono={<Sparkles size={18} strokeWidth={2} />}
+        tono="coral"
+        titulo="Lo que ofreces"
+        descripcion="Dos detalles que ayudan a que te elijan."
+      >
+        <div className="divide-y divide-border">
+          <label className="flex items-center justify-between gap-4 pb-4">
+            <span className="min-w-0">
+              <span className="flex items-center gap-2 text-[14px] font-bold text-text">
+                <BadgeCheck size={16} strokeWidth={2} className="shrink-0 text-success" />
+                Tengo certificación docente
+              </span>
+              <span className="mt-0.5 block text-[12.5px] text-text-muted">Tu tarjeta lo muestra con la insignia «Certificado».</span>
             </span>
             <Toggle activo={certified} onCambio={setCertified} etiqueta="Certificado" />
           </label>
-          <div className="rounded-card bg-surface-raised p-4 shadow-sm">
-            <label className="flex items-center justify-between gap-3">
-              <span className="flex items-center gap-2 text-[13.5px] font-semibold text-text">
-                <Sparkles size={16} strokeWidth={2} className="text-primary-strong" />
+          <div className="pt-4">
+            <label className="flex items-center justify-between gap-4">
+              <span className="flex items-center gap-2 text-[14px] font-bold text-text">
+                <Sparkles size={16} strokeWidth={2} className="shrink-0 text-primary-strong" />
                 Ofrezco la primera clase gratis
               </span>
               <Toggle activo={acceptsTrial} onCambio={setAcceptsTrial} etiqueta="Primera clase gratis" />
             </label>
-            <p className="mt-1.5 text-[12.5px] leading-relaxed text-text-muted">
+            <p className="mt-0.5 max-w-3xl text-[12.5px] leading-relaxed text-text-muted">
               Una clase de prueba sin costo para cada estudiante que todavía no ha tomado clases contigo: sirve para
               conocerse. No se cobra ni tiene comisión.
             </p>
           </div>
-        </section>
+        </div>
+      </Seccion>
+    </>
+  );
+}
+
+/**
+ * La portada de «Mi perfil»: la foto, el nombre y el título tal como encabezan el perfil —con lo que
+ * está escrito, aunque no esté guardado—, y los tres caminos para verse como lo ven: la vista previa,
+ * el perfil público y el enlace para compartir.
+ */
+function Portada({
+  inicial,
+  titular,
+  ubicacion,
+  idiomas,
+  onVistaPrevia,
+}: {
+  inicial: ProfileResponse;
+  titular: string;
+  ubicacion: string;
+  idiomas: { code: string; nombre: string }[];
+  onVistaPrevia: () => void;
+}) {
+  const secundario =
+    "inline-flex min-h-11 items-center justify-center gap-2 rounded-pill border-[1.5px] border-border bg-surface-raised px-4 text-[13px] font-bold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus sm:min-h-10";
+  return (
+    <section aria-label="Tu perfil" className="mt-5 overflow-hidden rounded-card bg-surface-raised shadow-sm">
+      <div aria-hidden className="gradient-dawn relative h-24 lg:h-32">
+        {/* Unas estrellas en el cielo del amanecer, como las de la marca. */}
+        <span className="absolute left-[18%] top-[22%] text-[11px] text-on-primary/70">✦</span>
+        <span className="absolute left-[46%] top-[14%] text-[8px] text-on-primary/50">✦</span>
+        <span className="absolute left-[63%] top-[38%] text-[13px] text-on-primary/60">✦</span>
+        <span className="absolute left-[84%] top-[18%] text-[9px] text-on-primary/55">✦</span>
       </div>
-    </div>
+      <div className="px-5 pb-6 lg:px-8 lg:pb-7">
+        <div className="-mt-12 lg:-mt-14">
+          <CambiarFoto enPortada nombre={inicial.fullName ?? ""} fotoUrl={inicial.photoUrl} />
+        </div>
+        <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between lg:gap-8">
+          <div className="min-w-0">
+            <p className="font-display text-[24px] font-bold leading-tight text-balance text-text lg:text-[28px]">
+              {inicial.fullName}
+            </p>
+            {titular ? (
+              <p className="mt-1 max-w-3xl text-[15px] leading-snug text-pretty text-text-secondary">{titular}</p>
+            ) : (
+              <p className="mt-1 text-[14px] text-text-muted">Todavía no tienes título: escríbelo abajo, en «Tu presentación».</p>
+            )}
+            {(ubicacion || idiomas.length > 0) && (
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-text-muted">
+                {ubicacion && (
+                  <span className="flex items-center gap-1">
+                    <MapPin size={14} strokeWidth={1.75} aria-hidden />
+                    {ubicacion}
+                  </span>
+                )}
+                {idiomas.map((idioma) => (
+                  <span key={idioma.code} className="flex items-center gap-1.5 font-semibold text-text-secondary">
+                    <DiscoIdioma code={idioma.code} size={16} />
+                    {idioma.nombre}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:shrink-0 lg:justify-end">
+            <button
+              type="button"
+              onClick={onVistaPrevia}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-pill bg-primary px-4 text-[13px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus sm:min-h-10"
+            >
+              <Eye size={15} strokeWidth={2} aria-hidden />
+              Vista previa: así te ven
+            </button>
+            {inicial.id && (
+              <Link href={`/profesores/${inicial.id}`} className={secundario}>
+                <Globe size={15} strokeWidth={2} aria-hidden />
+                Ver mi perfil público
+              </Link>
+            )}
+            <Link href="/invitar" className={secundario}>
+              <UserPlus size={15} strokeWidth={2} aria-hidden />
+              Compartir mi enlace
+            </Link>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const TONOS_DE_SECCION = {
+  coral: "bg-primary-soft text-primary-strong",
+  lavanda: "bg-accent-lavender-soft text-info",
+  durazno: "bg-accent-peach-soft text-warning",
+  menta: "bg-success-bg text-success",
+} as const;
+
+/** Una sección de «Mi perfil»: su ícono, su título, una línea que dice para qué sirve, y lo suyo. */
+function Seccion({
+  icono,
+  tono,
+  titulo,
+  descripcion,
+  children,
+}: {
+  icono: ReactNode;
+  tono: keyof typeof TONOS_DE_SECCION;
+  titulo: string;
+  descripcion?: string;
+  children: ReactNode;
+}) {
+  const tituloId = useId();
+  return (
+    <section aria-labelledby={tituloId} className="mt-5 rounded-card bg-surface-raised p-5 shadow-sm lg:p-7">
+      <div className="flex items-start gap-3.5">
+        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${TONOS_DE_SECCION[tono]}`}>{icono}</span>
+        <div className="min-w-0 pt-0.5">
+          <h2 id={tituloId} className="font-display text-[18px] font-bold leading-tight text-text">
+            {titulo}
+          </h2>
+          {descripcion && <p className="mt-0.5 text-[13px] leading-snug text-text-muted">{descripcion}</p>}
+        </div>
+      </div>
+      <div className="mt-5">{children}</div>
+    </section>
   );
 }
 
@@ -748,43 +887,65 @@ function WidgetTarifa({
   const desglose: RateBreakdownResponse | undefined = valido && preview.data ? preview.data : guardada;
 
   return (
-    <section className="mt-6 rounded-card bg-accent-peach-soft p-4">
-      <label htmlFor="tarifa" className="block text-[13.5px] font-bold text-[#8a5a33]">
-        Tu tarifa por hora
-      </label>
-      <p className="mt-0.5 text-[11.5px] text-[#8a5a33]/85">
-        Entre $20.000 y $500.000 por clase de {minutos(cifras.classMinutes)}.
-      </p>
-
-      <div className="relative mt-3">
-        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[15px] font-bold text-text-muted">
-          $
+    <section className="mt-4 rounded-card bg-accent-peach-soft p-5 lg:p-7">
+      <div className="flex items-start gap-3.5">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface-raised text-warning">
+          <Wallet size={18} strokeWidth={2} />
         </span>
-        {/* Texto y no número: «50.000» en un campo numérico se leía 50. */}
-        <input
-          ref={campo}
-          id="tarifa"
-          type="text"
-          inputMode="numeric"
-          autoComplete="off"
-          placeholder="50.000"
-          value={conMiles(valor)}
-          onChange={(e) => {
-            const escrito = e.target.value;
-            cifrasAntesDelCursor.current = soloDigitos(escrito.slice(0, e.target.selectionStart ?? escrito.length)).length;
-            onValor(soloDigitos(escrito));
-          }}
-          aria-label="Tarifa por hora en pesos"
-          className="h-[52px] w-full rounded-base border-[1.5px] border-border bg-surface-raised pl-8 pr-4 text-[15px] font-semibold text-text focus:border-primary focus:shadow-focus focus:outline-none"
-        />
+        <div className="min-w-0 pt-0.5">
+          <label htmlFor="tarifa" className="block font-display text-[18px] font-bold leading-tight text-warning">
+            Tu tarifa por hora
+          </label>
+          <p className="mt-0.5 text-[13px] text-warning/85">
+            Entre $20.000 y $500.000 por clase de {minutos(cifras.classMinutes)}.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-stretch">
+        <div className="relative sm:w-[300px] sm:shrink-0">
+          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[17px] font-bold text-text-muted">
+            $
+          </span>
+          {/* Texto y no número: «50.000» en un campo numérico se leía 50. */}
+          <input
+            ref={campo}
+            id="tarifa"
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder="50.000"
+            value={conMiles(valor)}
+            onChange={(e) => {
+              const escrito = e.target.value;
+              cifrasAntesDelCursor.current = soloDigitos(escrito.slice(0, e.target.selectionStart ?? escrito.length)).length;
+              onValor(soloDigitos(escrito));
+            }}
+            aria-label="Tarifa por hora en pesos"
+            className="h-full min-h-[56px] w-full rounded-base border-[1.5px] border-border bg-surface-raised pl-9 pr-4 font-display text-[20px] font-bold text-text focus:border-primary focus:shadow-focus focus:outline-none"
+          />
+        </div>
+
+        {desglose && !sigueGratis && (
+          <div className="grid flex-1 grid-cols-2 gap-3">
+            <div className="rounded-base bg-surface-raised px-4 py-3">
+              <p className="text-[12px] font-semibold text-text-secondary">Tú recibes</p>
+              <p className="font-display text-[20px] font-bold text-success">{precioCop(desglose.earningsCop ?? 0)}</p>
+            </div>
+            <div className="rounded-base bg-surface-raised px-4 py-3">
+              <p className="text-[12px] font-semibold text-text-secondary">Comisión de Orión</p>
+              <p className="font-display text-[20px] font-bold text-text-muted">{precioCop(desglose.commissionCop ?? 0)}</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {sigueGratis ? (
-        <p className="mt-2 text-[12.5px] font-semibold text-[#8a5a33]">Orión dejó tus clases gratis por ahora.</p>
+        <p className="mt-3 text-[12.5px] font-semibold text-warning">Orión dejó tus clases gratis por ahora.</p>
       ) : (
         valor &&
         !valido && (
-          <p className="mt-2 text-[12px] font-semibold text-error">
+          <p className="mt-3 text-[12px] font-semibold text-error">
             La tarifa debe estar entre $20.000 y $500.000.
           </p>
         )
@@ -793,22 +954,7 @@ function WidgetTarifa({
       {/* El profe fundador ve su 15 % y lo que recibirá después (brief del profe fundador, paso 3);
           se recalcula mientras escribe, con el mismo redondeo que el backend. */}
       {valido && baseBps != null && (
-        <p className="mt-3 text-[12.5px] leading-relaxed text-[#8a5a33]">{ayudaDeTarifa(numero, baseBps, fundador)}</p>
-      )}
-
-      {desglose && !sigueGratis && (
-        <div className="mt-3 rounded-base bg-surface-raised px-4 py-3 text-[13px]">
-          <p className="flex items-center justify-between">
-            <span className="text-text-secondary">Tú recibes</span>
-            <span className="font-display text-[16px] font-bold text-success">
-              {precioCop(desglose.earningsCop ?? 0)}
-            </span>
-          </p>
-          <p className="mt-1 flex items-center justify-between text-text-muted">
-            <span>Comisión de Orión</span>
-            <span className="font-semibold">{precioCop(desglose.commissionCop ?? 0)}</span>
-          </p>
-        </div>
+        <p className="mt-3 text-[12.5px] leading-relaxed text-pretty text-warning">{ayudaDeTarifa(numero, baseBps, fundador)}</p>
       )}
     </section>
   );
