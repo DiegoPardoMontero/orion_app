@@ -6,7 +6,7 @@ Resumen vivo de qué hay construido y desplegado. Se actualiza al cerrar cada pa
 
 **Backend** (Spring Boot 4.1, `co.orion`): identidad + sesión, disponibilidad + `SlotCalculator`,
 reservas, asistencia, notificaciones por correo (con `.ics` + link a Google Calendar), panel admin
-(usuarios, reservas, métricas). **Migraciones Flyway V1–V78.**
+(usuarios, reservas, métricas). **Migraciones Flyway V1–V79.**
 
 Módulos: `identity`, `scheduling`, `catalog`, `billing`, `messaging`, `notifications`, `reputation`,
 `lifecycle`, `admin`, `engagement`, `legal`, `support`, `assessment`, `teaching`, `practice`,
@@ -30,6 +30,17 @@ dentro de `/cuenta`).
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots), con Rigel de protagonista.
 
 ## Verificación
+Al 28/09/2026 por la tarde, con una columna, el perfil del profe nuevo, el recorrido obligatorio y
+Rigel a los 5 minutos (V79):
+- **Backend: `./mvnw verify`, 450 unitarias y 675 de integración, en verde.** Incluye
+  `MensajesDeRigelIT.saludoALosCincoMinutos`: antes de su hora el saludo no se ve, no cuenta y no se
+  marca leído.
+- **Frontend:** `tsc` y `lint` en verde; 190 pruebas de Vitest; `next build` de producción en verde.
+- **E2E, sobre la base recreada y sin la prueba de Wompi: 104 en verde y 1 saltada (la del reclamo, que necesita una clase dentro del plazo).** El profe recién aprobado hace el
+  recorrido entero (`hacerElRecorrido`, en `apoyo.ts`), y `[p-bienvenida…]` comprueba que no hay «Lo veo
+  después», que Esc no cierra el recorrido y que se retoma donde iba.
+- Revisión visual de /perfil a 390, 1440 y 1920 px, de la vista previa y de Cuenta.
+
 Al 28/09/2026, con la megarrevisión del profe y la postulación obligatoria integradas (V78):
 - **Backend: `./mvnw verify`, 450 unitarias y 674 de integración, en verde.**
   - Nuevas: `ClaveFuerteTest` y los casos de contraseña débil en `AuthFlowIT`, `PasswordResetIT` y
@@ -893,6 +904,34 @@ Pendiente para Pardo:
 - Que el abogado lea la versión 2.0 del acuerdo del profesor. Su texto dice «liquidamos las clases
   que dictaste», y desde la decisión 4 también entran las cancelaciones tardías.
 - El manual técnico necesita esta sección.
+
+## Una columna, el perfil del profe nuevo, recorrido obligatorio y Rigel a los 5 minutos (28/09/2026, tarde)
+
+Pedido de Pardo (`docs/pedidos/2026-09-28-1253-…`):
+- **Una sola columna, salvo Mis horarios y Ayuda.** Las pantallas siguen anchas (hasta 1600 px), pero
+  Mi perfil del profe, la ficha y los datos del estudiante, Invitar y Saldo vuelven a una columna. En
+  la tarjeta de datos del estudiante, nombre y WhatsApp van lado a lado para no estirarse.
+- **El perfil del profe, rediseñado en una columna**:
+  - una portada con el cielo del amanecer y la foto encima (la cámara la cambia);
+  - el nombre, el título y la ciudad tal como se van escribiendo, y los idiomas;
+  - «Vista previa: así te ven», «Ver mi perfil público» y «Compartir mi enlace». La vista previa pasó
+    de la tarjeta de visibilidad a la portada;
+  - la tarifa, con «Tú recibes» y la comisión al lado, y justo debajo la visibilidad;
+  - secciones con ícono, título y una línea: presentación, idiomas (una fila por idioma), objetivos,
+    experiencia y lo que ofreces.
+- **Recorrido obligatorio para el profe aprobado; el video de Sofía, opcional.** La bienvenida ya no
+  tiene «Lo veo después»: «Empezar el recorrido» sirve se haya visto el video o no. El recorrido del
+  profe no tiene «Ahora no» ni «Saltar», y Esc no lo cierra. Si se cierra la pestaña a mitad, al
+  volver sigue donde iba. El del estudiante y el que se repite desde Ayuda se siguen pudiendo saltar.
+  Se quitó el aviso de Rigel que ofrecía el recorrido aplazado: ya nada se aplaza, y además marcaba el
+  recorrido como hecho en cuanto se mostraba.
+- **El primer saludo de Rigel, a los 5 minutos** (V79, `rigel_welcome_delay_minutes`, en Ajustes →
+  «Minutos hasta el saludo de Rigel»). Se cuenta desde la primera vez que la persona entra, sea
+  estudiante o profe aprobado. Hasta entonces el hilo no lo muestra ni lo cuenta, y abrir «Mensajes»
+  no lo da por leído. En 0 sale enseguida.
+- **Avisos en el navegador y en el celular** (pregunta de Pardo): ya están construidos (Web Push, V61).
+  Solo faltan `ORION_VAPID_PUBLIC_KEY` y `ORION_VAPID_PRIVATE_KEY` en el backend de Railway (ver
+  «Pendiente»).
 
 ## Megarrevisión del profe y postulación obligatoria (27 y 28/09/2026)
 
