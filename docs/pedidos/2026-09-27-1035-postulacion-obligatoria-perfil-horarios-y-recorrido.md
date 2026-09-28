@@ -62,6 +62,10 @@
   quedó» → Revisado: las siete ramas siguen intactas y en commit (solo `ade98…` tiene sin versionar
   su carpeta `capturas/`), ninguna toca un archivo de otra y la única migración nueva es la V78. No
   quedó nada corriendo. Se retoma cuando Pardo diga.
+- 28/09, 10:59: «Continúa entonces y termina. Y lo del reclamo no lo entiendo, sí, déjalo así, no lo
+  cambies. Termina y me vas el estado actual» → Se retoma la lista de «Lo que falta» hasta el final.
+  El A5 (asistencia registrada al terminar la clase ⇒ el estudiante ya no abre reclamo formal) **se
+  queda como está**; en el cierre va explicado en palabras simples por si quiere volver a él.
 
 ## Estado (27/09, 21:55: pausa por el reinicio de Pardo)
 
