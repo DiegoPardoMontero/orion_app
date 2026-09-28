@@ -48,3 +48,11 @@
    **Feature:** quitar la demora de esos pasos y desplazar siempre un poco la pantalla.
 10. **Historia:** Ayuda y las demás pantallas aprovechan el ancho de la pantalla en el computador.
     **Feature:** contenedores anchos en escritorio.
+
+## Respuestas de Pardo
+
+- 27/09, al ver el plan: «Vale, envíame un correo cuando termines. COn resumen ejecutivo en el correo
+  y en la terminal.» → Al cerrar: correo con resumen ejecutivo, y el mismo resumen en la terminal.
+- 27/09, 21:44, al ver que la sesión de la mañana se había cortado a las 11:27 con el trabajo de los
+  agentes sin integrar: «Eso, sigue trabajando en TODO por favor. Hasta que termines.» → Se retoma
+  todo: integrar lo que dejaron los agentes, terminar lo que quedó a medias y hacer lo que faltaba.

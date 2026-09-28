@@ -44,3 +44,10 @@ aplica tal cual y se cita en el commit y en el registro.
   - recorrido real en el navegador, en celular y en escritorio;
   - una prueba e2e nueva que recorra el camino completo;
   - arreglo de todo lo que aparezca.
+
+## Respuestas de Pardo
+
+- 27/09, 21:44, al ver que la sesión de la mañana se había cortado a las 11:27 con los arreglos de la
+  megarrevisión sin integrar: «Eso, sigue trabajando en TODO por favor. Hasta que termines.» → Se
+  retoma: integrar los arreglos de backend y frontend, terminar la prueba e2e del camino completo y
+  cerrar con `./mvnw verify` en verde.
