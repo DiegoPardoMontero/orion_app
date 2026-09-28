@@ -4,6 +4,7 @@ import {
   api,
   entrar,
   estudianteNueva,
+  hacerElRecorrido,
   SEMILLA,
   sinDesbordeLateral,
   sqlLocal,
@@ -302,12 +303,13 @@ async function atenderDialogosDeEntrada(page: Page, datosDePago: { llave: string
       await expect(pago).toBeHidden();
     } else if (await bienvenida.isVisible()) {
       vistos.push(BIENVENIDA);
-      await bienvenida.getByRole("button", { name: "Lo veo después" }).first().click();
+      // El video es opcional; el recorrido no: el único botón lleva a él.
+      await expect(bienvenida.getByRole("button", { name: "Lo veo después" })).toHaveCount(0);
+      await bienvenida.getByRole("button", { name: "Empezar el recorrido" }).first().click();
       await expect(bienvenida).toBeHidden();
     } else if (await recorrido.isVisible()) {
       vistos.push("Recorrido");
-      await recorrido.getByRole("button", { name: /^(Ahora no|Saltar)$/ }).first().click();
-      await expect(recorrido).toBeHidden();
+      await hacerElRecorrido(page);
     }
   }
   return vistos;

@@ -35,7 +35,6 @@ import { esperaPago, etiquetaEstado } from "@/lib/estados-clase";
 import { diaBogota, fechaCorta, fechaYRango, horaBogota, precioCop, rangoHoras } from "@/lib/format";
 import { useElegibilidadRetracto, useRetractarse } from "@/lib/retracto";
 import { horas, minutos, useCifras } from "@/lib/cifras";
-import { AvisoDelRecorrido } from "@/components/bienvenida/AvisoDelRecorrido";
 import { RecordatorioDePractica } from "@/components/InvitacionAPracticar";
 
 type Scope = "upcoming" | "past";
@@ -109,7 +108,6 @@ function Contenido() {
       {scope === "past" && me && (me.role === "PROFESSOR" || me.role === "STUDENT") && (
         <ListaDeActas esProfesor={esProfesor} />
       )}
-      <AvisoDelRecorrido />
       {!esProfesor && <RecordatorioDePractica className="mt-4" />}
       {scope === "upcoming" && esProfesor && <AvisoDeActas onVer={() => setScope("past")} />}
 

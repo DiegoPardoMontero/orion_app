@@ -310,13 +310,9 @@ export function deslizHastaSuSitio(el: { top: number; height: number }, v: Vista
   return Math.abs(ideal) >= DESLIZ_CORTO ? ideal : null;
 }
 
-/* ------------------------------------------------ el paso guardado y el aplazado */
+/* ------------------------------------------------------------------ el paso guardado */
 
 const CLAVE_PASO = (id: TourId) => `orion.recorrido.${id}.paso`;
-/** «Lo veo después» en la bienvenida: el recorrido espera al aviso de Rigel en la agenda. */
-export const CLAVE_APLAZADO = "orion.recorrido.aplazado";
-/** Ese aviso se ofrece una sola vez. */
-export const CLAVE_AVISO_MOSTRADO = "orion.recorrido.aviso-mostrado";
 
 function leer(clave: string): string | null {
   try {
@@ -343,14 +339,6 @@ export function pasoGuardado(id: TourId): number | null {
 
 export function guardarPaso(id: TourId, paso: number | null) {
   escribir(CLAVE_PASO(id), paso === null ? null : String(paso));
-}
-
-export function marca(clave: string): boolean {
-  return leer(clave) === "1";
-}
-
-export function poner(clave: string, si: boolean) {
-  escribir(clave, si ? "1" : null);
 }
 
 /* ------------------------------------------------- abrirlo a pedido (desde Ayuda) */

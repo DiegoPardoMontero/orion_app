@@ -69,6 +69,31 @@ export async function saltarRecorrido(page: Page) {
   await expect(saltar).toHaveCount(0);
 }
 
+/**
+ * El recorrido del profe recién aprobado no se salta (Pardo, 28/09/2026): se hace hasta el final,
+ * comprobando en cada paso que no ofrece «Ahora no» ni «Saltar». Sirve desde el inicio o desde
+ * «¿Seguimos donde íbamos?».
+ */
+export async function hacerElRecorrido(page: Page) {
+  const dialogo = page.getByRole("dialog");
+  const sinSalida = dialogo.getByRole("button", { name: /^(Ahora no|Saltar)$/ });
+  await expect(dialogo.getByRole("button", { name: /^(Empezar|Seguir)$/ })).toBeVisible({ timeout: 15_000 });
+  await expect(sinSalida).toHaveCount(0);
+  await dialogo.getByRole("button", { name: /^(Empezar|Seguir)$/ }).click();
+
+  const contador = dialogo.getByText(/^\d+ de \d+$/);
+  await expect(contador).toBeVisible({ timeout: 15_000 });
+  const [, desde, total] = (await contador.innerText()).match(/^(\d+) de (\d+)$/) ?? [];
+  for (let n = Number(desde); n <= Number(total); n++) {
+    await expect(dialogo.getByText(new RegExp(`^${n} de ${total}$`))).toBeVisible({ timeout: 15_000 });
+    await expect(sinSalida).toHaveCount(0);
+    await dialogo.getByRole("button", { name: n === Number(total) ? "Terminar" : "Siguiente" }).click();
+  }
+  // El cierre: cualquiera de sus dos botones lo da por hecho.
+  await dialogo.getByRole("button").first().click();
+  await expect(dialogo).toHaveCount(0);
+}
+
 /** Las cuentas de la semilla local (DevDataSeeder). */
 export const SEMILLA = {
   ana: { email: "ana@orion.local", pass: "orion123*" },
@@ -213,6 +238,16 @@ export async function horariosAmplios(browser: Browser) {
     await api(page, "POST", "/api/v1/me/availability/rules", { weekday, startTime: "12:00", endTime: "17:00" });
   }
   await ctx.close();
+}
+
+/**
+ * Rigel saluda a los minutos de Ajustes después de la primera entrada (V79, hoy 5): las pruebas que
+ * leen el saludo no pueden esperar tanto. Lo pone en 0 y adelanta los saludos que ya estaban en
+ * espera; `demoraDelSaludoDeRigel(5)` lo deja como en producción.
+ */
+export function demoraDelSaludoDeRigel(minutos: number) {
+  sqlLocal(`update platform_settings set value = '${minutos}' where key = 'rigel_welcome_delay_minutes'`);
+  if (minutos === 0) sqlLocal("update rigel_messages set created_at = now() where created_at > now()");
 }
 
 /**

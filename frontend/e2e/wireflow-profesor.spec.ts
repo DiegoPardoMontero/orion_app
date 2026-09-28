@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { api, aparece, apartarCelebraciones, entrar, estudianteNueva, horariosAmplios, SEMILLA, sqlLocal, ultimoCorreo } from "./apoyo";
+import { api, aparece, apartarCelebraciones, demoraDelSaludoDeRigel, entrar, estudianteNueva, hacerElRecorrido, horariosAmplios, SEMILLA, sqlLocal, ultimoCorreo } from "./apoyo";
 
 /**
  * El wireflow del profesor y del admin (24/09/2026). María es la profesora de la semilla; lo que
@@ -7,7 +7,12 @@ import { api, aparece, apartarCelebraciones, entrar, estudianteNueva, horariosAm
  */
 
 test.beforeAll(async ({ browser }) => {
+  demoraDelSaludoDeRigel(0);
   await horariosAmplios(browser);
+});
+
+test.afterAll(() => {
+  demoraDelSaludoDeRigel(5);
 });
 
 test.beforeEach(async ({ page }) => {
@@ -354,7 +359,7 @@ test("[v-invitacion.1 v-invitacion.3 v-invitacion.4 ad-usuarios.2] la invitació
   await ctx.close();
 });
 
-test("[p-bienvenida.1 p-bienvenida.2 p-bienvenida.3 e-whatsapp.2 e-whatsapp.3 p-acuerdo.1 p-acuerdo.2 p-acuerdo.3 p-acuerdo.4 p-falta-pago.1 p-falta-pago.3 ad-usuarios.7] con video: la bienvenida una vez, «Lo veo después» y Rigel ofrece el recorrido", async ({ page, browser }) => {
+test("[p-bienvenida.1 p-bienvenida.2 p-bienvenida.3 e-whatsapp.2 e-whatsapp.3 p-acuerdo.1 p-acuerdo.2 p-acuerdo.3 p-acuerdo.4 p-falta-pago.1 p-falta-pago.3 ad-usuarios.7] con video: la bienvenida una vez, el video opcional y el recorrido obligatorio", async ({ page, browser }) => {
   await entrar(page, SEMILLA.admin);
   // Los profesores de la semilla ya la vieron: la ve uno recién aprobado. Desde la V71 la invitación
   // pasa por la postulación, que en local no se completa sin Cloudinary: el admin crea al profe y la
@@ -417,18 +422,19 @@ test("[p-bienvenida.1 p-bienvenida.2 p-bienvenida.3 e-whatsapp.2 e-whatsapp.3 p-
     await pago.getByRole("button", { name: "Guardar mis datos de pago" }).click();
     await expect(pago).toBeHidden();
 
+    // El video de Sofía es opcional, el recorrido no (Pardo, 28/09/2026): no hay «Lo veo después»,
+    // y «Empezar el recorrido» sirve se haya visto el video o no.
     const bienvenida = profe.getByRole("dialog", { name: "Bienvenida a Orión" });
     await expect(bienvenida).toBeVisible({ timeout: 20_000 });
-    await expect(bienvenida.getByRole("button", { name: "Empezar el recorrido" }).first()).toBeVisible();
-    await bienvenida.getByRole("button", { name: "Lo veo después" }).first().click();
+    await expect(bienvenida.getByRole("button", { name: "Lo veo después" })).toHaveCount(0);
+    await bienvenida.getByRole("button", { name: "Empezar el recorrido" }).first().click();
     await expect(bienvenida).toBeHidden();
-    await expect(profe).toHaveURL(/\/mis-clases/);
 
-    // Rigel lo ofrece en la agenda, y el recorrido lleva de pantalla en pantalla.
-    const aviso = profe.getByRole("complementary", { name: "El recorrido de Orión" });
-    await expect(aviso).toBeVisible();
-    await aviso.getByRole("button", { name: "Empezar el recorrido" }).click();
+    // El recorrido: sin «Ahora no» ni «Saltar», Esc no lo cierra, y lleva de pantalla en pantalla.
     const recorrido = profe.getByRole("dialog");
+    await expect(recorrido.getByRole("heading", { name: "Te muestro Orión en 8 pasos" })).toBeVisible();
+    await expect(recorrido.getByRole("button", { name: "Ahora no" })).toHaveCount(0);
+    await profe.keyboard.press("Escape");
     await expect(recorrido.getByRole("heading", { name: "Te muestro Orión en 8 pasos" })).toBeVisible();
     await recorrido.getByRole("button", { name: "Empezar" }).click();
     await expect(recorrido.getByText(/^1 de \d/)).toBeVisible();
@@ -436,13 +442,20 @@ test("[p-bienvenida.1 p-bienvenida.2 p-bienvenida.3 e-whatsapp.2 e-whatsapp.3 p-
     await recorrido.getByRole("button", { name: "Siguiente" }).click();
     await expect(recorrido.getByText(/^2 de \d/)).toBeVisible();
     await expect.poll(() => profe.url()).not.toBe(antes);
-    await recorrido.getByRole("button", { name: /^(Saltar|Ahora no)$/ }).click();
+    await expect(recorrido.getByRole("button", { name: "Saltar" })).toHaveCount(0);
+    await profe.keyboard.press("Escape");
+    await expect(recorrido.getByText(/^2 de \d/)).toBeVisible();
 
-    // Una sola vez: ni la bienvenida ni el aviso vuelven.
+    // Cerrar la pestaña a mitad no lo deja atrás: al volver sigue donde iba, sin «Ahora no».
+    await profe.goto("/mis-clases");
+    await expect(recorrido.getByRole("heading", { name: "¿Seguimos donde íbamos?" })).toBeVisible({ timeout: 20_000 });
+    await hacerElRecorrido(profe);
+
+    // Una sola vez: ni la bienvenida ni el recorrido vuelven.
     await profe.goto("/mis-clases");
     await profe.waitForTimeout(1500);
     await expect(profe.getByRole("dialog", { name: "Bienvenida a Orión" })).toHaveCount(0);
-    await expect(profe.getByRole("complementary", { name: "El recorrido de Orión" })).toHaveCount(0);
+    await expect(profe.getByRole("dialog")).toHaveCount(0);
     await ctx.close();
   } finally {
     await api(page, "PUT", "/api/v1/admin/settings/professor_welcome_video_url", { value: "" });

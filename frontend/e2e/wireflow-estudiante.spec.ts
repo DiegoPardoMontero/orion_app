@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { api, aparece, apartarCelebraciones, cerrarCelebraciones, entrar, estudianteNueva, horariosAmplios, SEMILLA, sqlLocal, ultimoCorreo } from "./apoyo";
+import { api, aparece, apartarCelebraciones, cerrarCelebraciones, demoraDelSaludoDeRigel, entrar, estudianteNueva, horariosAmplios, SEMILLA, sqlLocal, ultimoCorreo } from "./apoyo";
 
 /**
  * El wireflow del estudiante (24/09/2026). Lo que cambia datos lo hace una estudiante recién
@@ -8,7 +8,12 @@ import { api, aparece, apartarCelebraciones, cerrarCelebraciones, entrar, estudi
  */
 
 test.beforeAll(async ({ browser }) => {
+  demoraDelSaludoDeRigel(0);
   await horariosAmplios(browser);
+});
+
+test.afterAll(() => {
+  demoraDelSaludoDeRigel(5);
 });
 
 test.beforeEach(async ({ page }) => {

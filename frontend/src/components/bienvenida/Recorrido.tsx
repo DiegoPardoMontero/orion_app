@@ -57,11 +57,17 @@ export function Recorrido({
   definicion,
   nombre,
   arranque,
+  obligatorio = false,
   onTerminar,
 }: {
   definicion: Definicion;
   nombre: string;
   arranque: Arranque;
+  /**
+   * Sin «Ahora no», sin «Saltar» y sin Esc: solo se sale terminándolo. El del profe recién aprobado
+   * (Pardo, 28/09/2026: «el video de Sofía es opcional, el recorrido NO»).
+   */
+  obligatorio?: boolean;
   /** Al saltarlo, al decir «Ahora no» o al cerrarlo desde el final: todos lo dan por visto. */
   onTerminar: () => void;
 }) {
@@ -147,8 +153,8 @@ export function Recorrido({
           titulo={definicion.inicio.titulo}
           texto={definicion.inicio.texto}
           principal={{ etiqueta: "Empezar", accion: () => irA(0) }}
-          secundaria={{ etiqueta: "Ahora no", accion: terminar }}
-          onEscape={terminar}
+          secundaria={obligatorio ? undefined : { etiqueta: "Ahora no", accion: terminar }}
+          onEscape={obligatorio ? undefined : terminar}
         />
       )}
       {fase.tipo === "reanudar" && (
@@ -157,8 +163,8 @@ export function Recorrido({
           titulo="¿Seguimos donde íbamos?"
           texto={`Te quedaste en «${definicion.pasos[fase.paso - 1]?.titulo ?? ""}», el paso ${fase.paso} de ${total}.`}
           principal={{ etiqueta: "Seguir", accion: () => irA(fase.paso - 1) }}
-          secundaria={{ etiqueta: "Ahora no", accion: terminar }}
-          onEscape={terminar}
+          secundaria={obligatorio ? undefined : { etiqueta: "Ahora no", accion: terminar }}
+          onEscape={obligatorio ? undefined : terminar}
         />
       )}
       {fase.tipo === "cierre" && (
@@ -192,7 +198,7 @@ export function Recorrido({
           total={total}
           onSiguiente={() => irA(fase.i + 1)}
           onAtras={() => irA(fase.i - 1)}
-          onSaltar={terminar}
+          onSaltar={obligatorio ? undefined : terminar}
         />
       )}
     </div>,
@@ -219,7 +225,8 @@ function PasoConFoco({
   total: number;
   onSiguiente: () => void;
   onAtras: () => void;
-  onSaltar: () => void;
+  /** Sin él, el recorrido es obligatorio: no hay «Saltar» y Esc no hace nada. */
+  onSaltar?: () => void;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -309,7 +316,7 @@ function PasoConFoco({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
-        onSaltar();
+        onSaltar?.();
       } else if (e.key === "ArrowRight") {
         e.preventDefault();
         onSiguiente();
@@ -415,13 +422,15 @@ function PasoConFoco({
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onSaltar}
-              className="h-11 rounded-pill px-2.5 text-[14px] font-semibold text-[#5E4E6B] transition-colors hover:bg-[#F4EAE0] hover:text-[#33203B] focus-visible:shadow-[0_0_0_4px_rgba(232,80,58,.22)] focus-visible:outline-none"
-            >
-              Saltar
-            </button>
+            {onSaltar && (
+              <button
+                type="button"
+                onClick={onSaltar}
+                className="h-11 rounded-pill px-2.5 text-[14px] font-semibold text-[#5E4E6B] transition-colors hover:bg-[#F4EAE0] hover:text-[#33203B] focus-visible:shadow-[0_0_0_4px_rgba(232,80,58,.22)] focus-visible:outline-none"
+              >
+                Saltar
+              </button>
+            )}
             <span className="flex-1" />
             <button
               type="button"
@@ -441,7 +450,9 @@ function PasoConFoco({
             </button>
           </div>
 
-          <span className="hidden text-[12px] text-[#7A6B85] lg:block">Esc para salir · ← → para moverte</span>
+          <span className="hidden text-[12px] text-[#7A6B85] lg:block">
+            {onSaltar ? "Esc para salir · ← → para moverte" : "← → para moverte"}
+          </span>
         </div>
       )}
     </>
@@ -509,8 +520,10 @@ function ModalDelRecorrido({
   titulo: string;
   texto: ReactNode;
   principal: { etiqueta: string; accion: () => void };
-  secundaria: { etiqueta: string; accion: () => void };
-  onEscape: () => void;
+  /** Sin ella, solo queda el botón principal (el recorrido obligatorio). */
+  secundaria?: { etiqueta: string; accion: () => void };
+  /** Sin él, Esc no cierra. */
+  onEscape?: () => void;
 }) {
   const tituloId = useId();
   const textoId = useId();
@@ -522,7 +535,7 @@ function ModalDelRecorrido({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
-        onEscape();
+        onEscape?.();
       } else if (e.key === "Tab") {
         atraparFoco(e, caja.current);
       }
@@ -557,13 +570,15 @@ function ModalDelRecorrido({
           >
             {principal.etiqueta}
           </button>
-          <button
-            type="button"
-            onClick={secundaria.accion}
-            className="h-12 rounded-pill px-5 text-[15px] font-semibold text-[#5E4E6B] transition-colors hover:bg-[#F4EAE0] hover:text-[#33203B] focus-visible:shadow-[0_0_0_4px_rgba(232,80,58,.22)] focus-visible:outline-none sm:h-[52px]"
-          >
-            {secundaria.etiqueta}
-          </button>
+          {secundaria && (
+            <button
+              type="button"
+              onClick={secundaria.accion}
+              className="h-12 rounded-pill px-5 text-[15px] font-semibold text-[#5E4E6B] transition-colors hover:bg-[#F4EAE0] hover:text-[#33203B] focus-visible:shadow-[0_0_0_4px_rgba(232,80,58,.22)] focus-visible:outline-none sm:h-[52px]"
+            >
+              {secundaria.etiqueta}
+            </button>
+          )}
         </div>
       </div>
     </div>
