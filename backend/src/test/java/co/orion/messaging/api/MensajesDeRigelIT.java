@@ -2,6 +2,7 @@ package co.orion.messaging.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -9,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -65,12 +67,24 @@ class MensajesDeRigelIT extends ApiIntegrationSupport {
     @BeforeEach
     void seed() {
         jdbc.update("delete from rigel_messages");
+        // El saludo sale a los minutos de Ajustes; estas pruebas lo quieren enseguida, salvo la suya.
+        demoraDelSaludo(0);
         bookings.deleteAll();
         profiles.deleteAll();
         users.deleteAll();
         ana = createUser("ana@orion.test", "Ana Ramírez", UserRole.STUDENT);
         maria = createUser("maria@orion.test", "María Gómez", UserRole.PROFESSOR);
         profiles.save(new ProfessorProfile(maria));
+    }
+
+    @AfterEach
+    void restaurar() {
+        demoraDelSaludo(5);
+    }
+
+    private void demoraDelSaludo(int minutos) {
+        jdbc.update("update platform_settings set value = ? where key = 'rigel_welcome_delay_minutes'",
+                String.valueOf(minutos));
     }
 
     @SuppressWarnings("unchecked")
@@ -111,6 +125,29 @@ class MensajesDeRigelIT extends ApiIntegrationSupport {
         assertThat(post("/api/v1/me/rigel/read", login("ana@orion.test"), Map.of(), Void.class).getStatusCode())
                 .isEqualTo(HttpStatus.NO_CONTENT);
         assertThat(hilo("ana@orion.test").get("unread")).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("El saludo llega a los minutos de Ajustes: antes no se ve, no cuenta ni se da por leído")
+    void saludoALosCincoMinutos() {
+        demoraDelSaludo(5);
+        Map<String, Object> alEntrar = hilo("ana@orion.test");
+        assertThat(alEntrar.get("unread")).isEqualTo(0);
+        assertThat((List<?>) alEntrar.get("messages")).isEmpty();
+
+        // Abrir «Mensajes» antes de su hora no lo marca como leído.
+        post("/api/v1/me/rigel/read", login("ana@orion.test"), Map.of(), Void.class);
+
+        // Se guardó una sola vez, con su hora: cinco minutos después de la primera entrada.
+        Instant programado = jdbc.queryForObject(
+                "select created_at from rigel_messages where kind = 'WELCOME_STUDENT'", Timestamp.class).toInstant();
+        assertThat(programado).isBetween(Instant.now().plus(Duration.ofMinutes(4)), Instant.now().plus(Duration.ofMinutes(6)));
+
+        // Pasados los cinco minutos (se adelanta en la base), aparece y cuenta como sin leer.
+        jdbc.update("update rigel_messages set created_at = created_at - interval '6 minutes'");
+        assertThat(hilo("ana@orion.test").get("unread")).isEqualTo(1);
+        assertThat(tipos("ana@orion.test")).containsExactly("WELCOME_STUDENT");
+        assertThat(jdbc.queryForObject("select count(*) from rigel_messages", Integer.class)).isEqualTo(1);
     }
 
     @Test

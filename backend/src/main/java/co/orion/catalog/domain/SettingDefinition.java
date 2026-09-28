@@ -59,6 +59,11 @@ public enum SettingDefinition {
             "Si le reservan una clase con la ventana de cancelación ya encima, el profesor tiene estos "
                     + "minutos desde la reserva para cancelarla sin que cuente como cancelación tardía.",
             0, 720, false),
+    RIGEL_WELCOME_DELAY_MINUTES("rigel_welcome_delay_minutes", Grupo.PLAZOS, Tipo.ENTERO,
+            "Minutos hasta el saludo de Rigel",
+            "El primer mensaje de Rigel en «Mensajes» llega estos minutos después de la primera vez "
+                    + "que la persona entra, para no competir con la bienvenida y el recorrido. En 0 sale enseguida.",
+            0, 1440, false),
     // --------------------------------------------------------------- diagnóstico de confianza
     ASSESSMENT_ENABLED("assessment_enabled", Grupo.POLITICAS, Tipo.BOOLEANO,
             "Diagnóstico de confianza activo",

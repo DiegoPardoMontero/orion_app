@@ -51,27 +51,33 @@ public class RigelMessages {
         return Boolean.TRUE.equals(hay);
     }
 
-    public List<Guardado> de(UUID userId) {
+    /**
+     * Los que ya se pueden ver. Un mensaje guardado con fecha futura —el saludo, que sale unos
+     * minutos después de la primera entrada— no aparece ni cuenta hasta su hora.
+     */
+    public List<Guardado> de(UUID userId, Instant ahora) {
         return jdbc.query("""
                 select id, kind, params::text, created_at, read_at from rigel_messages
-                 where user_id = ? order by created_at, id
+                 where user_id = ? and created_at <= ? order by created_at, id
                 """, (rs, i) -> new Guardado(
                 rs.getObject(1, UUID.class),
                 RigelKind.valueOf(rs.getString(2)),
                 mapa(rs.getString(3)),
                 rs.getTimestamp(4).toInstant(),
-                rs.getTimestamp(5) == null ? null : rs.getTimestamp(5).toInstant()), userId);
+                rs.getTimestamp(5) == null ? null : rs.getTimestamp(5).toInstant()), userId, Timestamp.from(ahora));
     }
 
-    public int noLeidos(UUID userId) {
+    public int noLeidos(UUID userId, Instant ahora) {
         Integer n = jdbc.queryForObject(
-                "select count(*) from rigel_messages where user_id = ? and read_at is null", Integer.class, userId);
+                "select count(*) from rigel_messages where user_id = ? and read_at is null and created_at <= ?",
+                Integer.class, userId, Timestamp.from(ahora));
         return n == null ? 0 : n;
     }
 
+    /** Solo los que ya se ven: abrir «Mensajes» antes de la hora del saludo no lo da por leído. */
     public void marcarLeidos(UUID userId, Instant cuando) {
-        jdbc.update("update rigel_messages set read_at = ? where user_id = ? and read_at is null",
-                Timestamp.from(cuando), userId);
+        jdbc.update("update rigel_messages set read_at = ? where user_id = ? and read_at is null and created_at <= ?",
+                Timestamp.from(cuando), userId, Timestamp.from(cuando));
     }
 
     private static String json(Map<String, String> params) {
