@@ -153,7 +153,7 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
             </div>
           )}
 
-          <div className={seccion === "ficha" ? "" : "hidden"}>
+          <div className={seccion === "ficha" ? "lg:sticky lg:top-6" : "hidden"}>
             <QuienLoVe
               icono={<Lock size={15} strokeWidth={2} />}
               titulo="Solo para ti"
