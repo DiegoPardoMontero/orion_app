@@ -10,6 +10,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -50,6 +52,7 @@ import co.orion.shared.time.FechasEnPalabras;
 @Service
 public class PayoutService {
 
+    private static final Logger log = LoggerFactory.getLogger(PayoutService.class);
     private static final String CLAIM_WINDOW_HOURS = "dispute_report_window_hours";
     private static final Set<PayoutStatus> ABIERTAS = Set.of(PayoutStatus.DRAFT, PayoutStatus.ON_HOLD);
 
@@ -93,7 +96,16 @@ public class PayoutService {
      * quincena ya se cortó no hace nada, y si una corrida se cayó a mitad, la siguiente crea solo las
      * que faltan (cada profe va en su transacción, y el único de profe y quincena impide duplicar).
      *
+     * <p>Un profe que falla no frena a los demás: su error se registra y se sigue con el siguiente,
+     * como en el autocompletado de clases. Antes el primer fallo abortaba el corte para todos los que
+     * venían detrás, y como el job corre cada hora, les pasaba lo mismo en cada corrida. Si alguno
+     * falló, la quincena NO se marca cortada y el método termina con {@link CorteIncompleto}: el job
+     * lo registra como fallo (el admin lo ve) y la corrida siguiente reintenta solo las que faltan.
+     * Si el problema persiste hasta que cierre la quincena siguiente, esas clases entran en ese corte:
+     * el dinero se retrasa, pero no se pierde.
+     *
      * @return cuántas liquidaciones creó (0 si la quincena ya estaba cortada)
+     * @throws CorteIncompleto si la liquidación de algún profe no se pudo crear
      */
     public int runCut(Fortnight quincena) {
         if (cuts.existsById(quincena.start())) {
@@ -105,15 +117,25 @@ public class PayoutService {
         profes.addAll(adjustments.findProfessorsWithPendingAdjustments());
 
         int creadas = 0;
+        int fallidas = 0;
         for (UUID profe : profes) {
             if (payouts.existsByProfessorIdAndPeriodStart(profe, quincena.start())) {
                 continue;
             }
             List<Candidate> suyas = porProfe.getOrDefault(profe, List.of());
-            Boolean creada = enSuTransaccion.execute(estado -> crear(profe, quincena, suyas, reclamo));
-            if (Boolean.TRUE.equals(creada)) {
-                creadas++;
+            try {
+                Boolean creada = enSuTransaccion.execute(estado -> crear(profe, quincena, suyas, reclamo));
+                if (Boolean.TRUE.equals(creada)) {
+                    creadas++;
+                }
+            } catch (RuntimeException ex) {
+                fallidas++;
+                log.error("El corte de la quincena del {} no pudo crear la liquidación del profe {}",
+                        quincena.start(), profe, ex);
             }
+        }
+        if (fallidas > 0) {
+            throw new CorteIncompleto(quincena, creadas, fallidas);
         }
         final int total = creadas;
         enSuTransaccion.executeWithoutResult(estado -> cuts.save(new PayoutCut(quincena, clock.instant(), total)));
@@ -190,10 +212,22 @@ public class PayoutService {
      */
     @Transactional
     public void refreshHolds() {
-        for (Payout p : payouts.findByStatusIn(ABIERTAS)) {
-            if (p.getAmountCop() > 0) {
-                p.applyHold(holds.motivo(p.getProfessorId()).orElse(null));
-            }
+        payouts.findByStatusIn(ABIERTAS).forEach(this::refreshHold);
+    }
+
+    /**
+     * Lo mismo, para un solo profe. Lo llaman el registro de sus datos de pago (por evento) y su
+     * propia vista de liquidaciones: antes solo se recalculaba cuando un admin abría /admin/pagos, y
+     * el profe seguía leyendo «Retenida: faltan los datos de pago» después de registrarlos.
+     */
+    @Transactional
+    public void refreshHoldsOf(UUID professorId) {
+        payouts.findByProfessorIdAndStatusIn(professorId, ABIERTAS).forEach(this::refreshHold);
+    }
+
+    private void refreshHold(Payout p) {
+        if (p.getAmountCop() > 0) {
+            p.applyHold(holds.motivo(p.getProfessorId()).orElse(null));
         }
     }
 
@@ -318,5 +352,19 @@ public class PayoutService {
 
     public Instant now() {
         return clock.instant();
+    }
+
+    /**
+     * El corte terminó, pero sin la liquidación de algún profe: la quincena queda sin marcar para que
+     * la próxima corrida las reintente. El mensaje es lo que el admin ve como último resultado del job.
+     */
+    public static class CorteIncompleto extends RuntimeException {
+
+        public CorteIncompleto(Fortnight quincena, int creadas, int fallidas) {
+            super("Corte de la quincena del " + FechasEnPalabras.periodo(quincena.start(), quincena.end())
+                    + " incompleto: " + creadas + (creadas == 1 ? " liquidación creada y " : " liquidaciones creadas y ")
+                    + fallidas + (fallidas == 1 ? " profe" : " profes")
+                    + " con error. Se reintenta en la próxima corrida; el detalle está en el log.");
+        }
     }
 }

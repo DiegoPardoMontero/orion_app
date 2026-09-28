@@ -48,9 +48,17 @@ public class PayoutViews {
         this.users = users;
     }
 
-    /** «Mis ganancias» del profe: el próximo corte, lo que tiene por liquidar y su historial. */
-    @Transactional(readOnly = true)
+    /**
+     * «Mis ganancias» del profe: el próximo corte, lo que tiene por liquidar y su historial.
+     *
+     * <p>Antes de leer, recalcula la retención de sus liquidaciones abiertas: aceptar el acuerdo del
+     * profesor no publica ningún evento (lo registra legal), así que sin esto seguiría viendo «Falta
+     * aceptar el acuerdo del profesor» hasta que un admin abriera /admin/pagos. Por eso la
+     * transacción NO es de solo lectura: en una readOnly el cambio se descartaría sin error.
+     */
+    @Transactional
     public ForProfessor forProfessor(UUID professorId) {
+        payouts.refreshHoldsOf(professorId);
         Instant ahora = payouts.now();
         Fortnight proxima = PayoutCalculator.next(ahora);
         List<Pending> pendientes = candidates.pendingOf(professorId, ahora).stream()

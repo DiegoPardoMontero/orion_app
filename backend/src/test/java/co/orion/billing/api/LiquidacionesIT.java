@@ -107,6 +107,13 @@ class LiquidacionesIT extends ApiIntegrationSupport {
     @Autowired
     private PayoutService payouts;
 
+    /** Espía: se comporta como el real salvo cuando una prueba le pide fallar para un profe. */
+    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
+    private PayoutHolds retenciones;
+
+    @Autowired
+    private co.orion.shared.observability.JobRunRegistry ejecuciones;
+
     @Autowired
     private BookingRepository bookings;
 
@@ -373,10 +380,86 @@ class LiquidacionesIT extends ApiIntegrationSupport {
                 .getStatusCode()).isEqualTo(org.springframework.http.HttpStatus.OK);
     }
 
+    /**
+     * La retención se levanta para el profe sin que un admin abra /admin/pagos. Antes solo la
+     * recalculaba la vista del admin, y el profe seguía leyendo «Retenida: faltan los datos de pago»
+     * después de registrarlos.
+     */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    @Test
+    void laRetencionSeLevantaParaElProfeSinQueUnAdminAbraLosPagos() {
+        clase(2026, 10, 5, 18, "COMPLETED", 50_000, 2000);
+        mover(2026, 10, 16, 1, 0);
+        corte.run();
+        Payout octubre = payouts.ofFortnight(LocalDate.of(2026, 10, 1)).getFirst();
+        assertThat(octubre.getHoldReason()).isEqualTo(PayoutHolds.SIN_MANDATO);
+
+        // Aceptar el acuerdo no publica ningún evento: lo recalcula su propia vista al leer.
+        Session sesion = login(maria.getEmail());
+        post("/api/v1/me/agreements/TEACHER_AGREEMENT/accept", sesion, null, Void.class);
+        assertThat((List<Map>) get("/api/v1/me/payouts", sesion, Map.class).getBody().get("payouts"))
+                .singleElement().satisfies(p -> assertThat(p).containsEntry("status", "ON_HOLD")
+                        .containsEntry("holdReason", PayoutHolds.SIN_DATOS_DE_PAGO));
+
+        // Registrar los datos de pago sí publica uno: la liquidación vuelve a borrador en la base
+        // en ese mismo momento, antes de que nadie la lea.
+        put("/api/v1/me/payout-details", sesion, Map.of("keyType", "PHONE", "key", "3001234567",
+                "documentType", "CC", "documentNumber", "1020304050", "holderName", "María Gómez"), Map.class);
+        Payout despues = payouts.get(octubre.getId());
+        assertThat(despues.getStatus()).isEqualTo(PayoutStatus.DRAFT);
+        assertThat(despues.getHoldReason()).isNull();
+        assertThat((List<Map>) get("/api/v1/me/payouts", sesion, Map.class).getBody().get("payouts"))
+                .singleElement().satisfies(p -> assertThat(p).containsEntry("status", "DRAFT")
+                        .containsEntry("holdReason", null));
+    }
+
+    /**
+     * Un profe que falla no frena el corte de los demás. Antes el primer error abortaba la corrida
+     * para todos los que venían detrás, cada hora. La quincena no se marca cortada mientras falte
+     * alguno, el job lo registra como fallo, y la corrida siguiente crea solo la que faltaba.
+     */
+    @Test
+    void unProfeQueFallaNoFrenaElCorteDeLosDemas() {
+        User juan = createUser("juan." + UUID.randomUUID() + "@orion.test", "Juan Torres", UserRole.PROFESSOR);
+        approveTeacher(juan.getId());
+        clase(maria, 2026, 10, 5, 18, "COMPLETED", 50_000, 2000);
+        clase(juan, 2026, 10, 6, 18, "COMPLETED", 40_000, 2000);
+        org.mockito.Mockito.doThrow(new IllegalStateException("Fallo de prueba"))
+                .when(retenciones).motivo(maria.getId());
+
+        mover(2026, 10, 16, 1, 0);
+        assertThatThrownBy(() -> corte.run())
+                .isInstanceOf(PayoutService.CorteIncompleto.class)
+                .hasMessageContaining("1 liquidación creada y 1 profe con error");
+        assertThat(payouts.ofFortnight(LocalDate.of(2026, 10, 1)))
+                .extracting(Payout::getProfessorId).containsExactly(juan.getId());
+        assertThat(jdbc.queryForObject("select count(*) from payout_cuts", Integer.class)).isZero();
+
+        // El job programado lo deja a la vista del admin como fallo, con el porqué.
+        corte.cortar();
+        assertThat(ejecuciones.all()).filteredOn(r -> r.job().equals(PayoutCutJob.JOB)).singleElement()
+                .satisfies(r -> {
+                    assertThat(r.ok()).isFalse();
+                    assertThat(r.detail()).contains("incompleto");
+                });
+
+        // Resuelto el problema, la corrida siguiente crea solo la que faltaba y marca la quincena.
+        org.mockito.Mockito.reset(retenciones);
+        mover(2026, 10, 16, 2, 0);
+        assertThat(corte.run()).isEqualTo(1);
+        assertThat(payouts.ofFortnight(LocalDate.of(2026, 10, 1)))
+                .extracting(Payout::getProfessorId).containsExactlyInAnyOrder(juan.getId(), maria.getId());
+        assertThat(jdbc.queryForObject("select count(*) from payout_cuts", Integer.class)).isEqualTo(1);
+    }
+
     /** Una clase dictada con su pago liberado, un día a una hora de Bogotá. Devuelve la reserva. */
     private UUID clase(int anio, int mes, int dia, int hora, String estado, long bruto, int bps) {
+        return clase(maria, anio, mes, dia, hora, estado, bruto, bps);
+    }
+
+    private UUID clase(User profe, int anio, int mes, int dia, int hora, String estado, long bruto, int bps) {
         Instant inicio = LocalDateTime.of(anio, mes, dia, hora, 0).atZone(BusinessZone.BOGOTA).toInstant();
-        Booking b = bookings.save(TestBookings.confirmed(ana.getId(), maria.getId(), inicio,
+        Booking b = bookings.save(TestBookings.confirmed(ana.getId(), profe.getId(), inicio,
                 inicio.plus(Duration.ofMinutes(55)), BookingModality.VIRTUAL, null, ana.getId()));
         jdbc.update("update bookings set status = ?, completed_at = ends_at where id = ?", estado, b.getId());
         long comision = bruto * bps / 10_000;
@@ -384,7 +467,7 @@ class LiquidacionesIT extends ApiIntegrationSupport {
                 insert into payments (booking_id, student_id, professor_id, amount_cop, credit_applied_cop, charged_cop,
                                       commission_rate_bps, commission_cop, professor_earnings_cop, status, paid_at, released_at)
                 values (?, ?, ?, ?, 0, ?, ?, ?, ?, 'RELEASED', ?, ?)
-                """, b.getId(), ana.getId(), maria.getId(), bruto, bruto, bps, comision, bruto - comision,
+                """, b.getId(), ana.getId(), profe.getId(), bruto, bruto, bps, comision, bruto - comision,
                 Timestamp.from(inicio), Timestamp.from(inicio.plus(Duration.ofHours(1))));
         return b.getId();
     }

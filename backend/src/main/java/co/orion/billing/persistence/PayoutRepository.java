@@ -20,5 +20,7 @@ public interface PayoutRepository extends JpaRepository<Payout, UUID> {
 
     List<Payout> findByStatusIn(Collection<PayoutStatus> statuses);
 
+    List<Payout> findByProfessorIdAndStatusIn(UUID professorId, Collection<PayoutStatus> statuses);
+
     boolean existsByProfessorIdAndPeriodStart(UUID professorId, LocalDate periodStart);
 }
