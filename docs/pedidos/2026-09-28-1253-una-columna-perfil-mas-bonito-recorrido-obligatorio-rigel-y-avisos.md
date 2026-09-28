@@ -40,6 +40,12 @@
   celular, y qué tengo que hacer yo.
 - **Respuesta:** en «Estado».
 
+## Preguntas de Pardo después
+
+- 28/09, al cierre: «¿Qué son las claves VAPID? ¿Cómo las configuro?» → Respondida en el chat: qué
+  son, en palabras simples, y el paso a paso para generarlas y ponerlas en Railway (el mismo de
+  «5. Los avisos», abajo, con más detalle).
+
 ## Estado (28/09/2026): hecho
 
 ### 5. Los avisos: qué hace falta (respuesta, dada primero en el chat)
