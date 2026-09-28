@@ -3,6 +3,8 @@ package co.orion.notifications.api;
 import java.net.URI;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,6 +34,8 @@ import jakarta.validation.constraints.Size;
  */
 @RestController
 public class PushController {
+
+    private static final Logger log = LoggerFactory.getLogger(PushController.class);
 
     /** Los servicios de push de Chrome/Edge/Android, Firefox, Windows y Safari. */
     private static final List<String> SERVICIOS = List.of(
@@ -110,6 +114,9 @@ public class PushController {
         boolean conocido = "https".equalsIgnoreCase(uri.getScheme()) && uri.getUserInfo() == null
                 && SERVICIOS.stream().anyMatch(s -> s.startsWith(".") ? host.endsWith(s) : host.equals(s));
         if (!conocido) {
+            // Solo el servicio, no la dirección entera: esa es la llave para avisarle a esa persona. Si
+            // un navegador de verdad cae aquí, en el log se ve cuál agregar a SERVICIOS.
+            log.warn("Suscripción a avisos rechazada: el servicio {} no está entre los conocidos", host);
             throw new UnprocessableException("Esa suscripción no viene de un servicio de avisos conocido.");
         }
     }
