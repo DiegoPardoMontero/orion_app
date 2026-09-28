@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { RECORRIDO_ESTUDIANTE, RECORRIDO_PROFESOR, ubicarTarjeta } from "./recorrido";
+import { DESLIZ_MINIMO, deslizHastaSuSitio, RECORRIDO_ESTUDIANTE, RECORRIDO_PROFESOR, ubicarTarjeta } from "./recorrido";
 
 const escritorio = { width: 1280, height: 800 };
 const movil = { width: 390, height: 844 };
@@ -60,7 +60,55 @@ describe("los recorridos", () => {
     }
   });
 
+  it("las actas y las clases dictadas se buscan en «Pasadas», que es donde se pintan", () => {
+    // En «Próximas» la lista de actas no existe: el paso esperaba 1,8 s y caía en la navegación.
+    for (const r of [RECORRIDO_PROFESOR, RECORRIDO_ESTUDIANTE]) {
+      for (const p of r.pasos.filter((p) => p.anclas[0] === "actas" || p.anclas[0] === "clase-pasada")) {
+        expect(p.ruta).toBe("/mis-clases?scope=past");
+      }
+    }
+  });
+
   it("el cierre lleva el nombre del profe", () => {
     expect(RECORRIDO_PROFESOR.cierre.titulo("Mariana")).toBe("¡Listo, Mariana! Ya conoces Orión.");
+  });
+});
+
+describe("deslizHastaSuSitio", () => {
+  const escritorioVista = { alto: 800, arriba: 0, abajo: 0, scroll: 0, scrollMax: 1200 };
+  const movilVista = { alto: 844, arriba: 64, abajo: 68, scroll: 0, scrollMax: 1500 };
+
+  it("lleva lo que está lejos hasta un tercio del alto", () => {
+    expect(deslizHastaSuSitio({ top: 1400, height: 60 }, escritorioVista)).toBe(1400 - 267);
+  });
+
+  it("la grilla de horarios, más alta que la pantalla y arriba, igual se mueve (antes: píldora sin desliz)", () => {
+    // La medida real a 1280 × 800: arriba en 217, 830 de alto y 279 de recorrido.
+    const d = deslizHastaSuSitio({ top: 217, height: 830 }, { ...escritorioVista, scrollMax: 279 });
+    expect(d).toBe(DESLIZ_MINIMO);
+  });
+
+  it("si ya está en su sitio, un desliz corto que lo deja a la vista", () => {
+    const d = deslizHastaSuSitio({ top: 270, height: 44 }, escritorioVista);
+    expect(Math.abs(d ?? 0)).toBeGreaterThanOrEqual(DESLIZ_MINIMO);
+    expect(270 - (d ?? 0)).toBeGreaterThanOrEqual(16);
+  });
+
+  it("al final de la página, el desliz corto va hacia arriba", () => {
+    const d = deslizHastaSuSitio({ top: 300, height: 44 }, { ...escritorioVista, scroll: 1200 });
+    expect(d).toBe(-DESLIZ_MINIMO);
+  });
+
+  it("en el celular no mete el elemento bajo la cabecera", () => {
+    // Pegado a la cabecera y con la página arriba del todo: no hay hacia dónde ir sin taparlo.
+    expect(deslizHastaSuSitio({ top: 90, height: 40 }, movilVista)).toBeNull();
+    // Más abajo sí: sube y queda debajo de ella.
+    const d = deslizHastaSuSitio({ top: 250, height: 40 }, movilVista) ?? 0;
+    expect(d).toBeGreaterThanOrEqual(DESLIZ_MINIMO);
+    expect(250 - d).toBeGreaterThanOrEqual(64 + 16);
+  });
+
+  it("una página que no se desplaza no se mueve: sin desliz, sin píldora", () => {
+    expect(deslizHastaSuSitio({ top: 400, height: 60 }, { ...escritorioVista, scrollMax: 0 })).toBeNull();
   });
 });

@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowDown } from "lucide-react";
+import { useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { ArrowDown, ArrowUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -11,11 +12,13 @@ import type { PagedProfessors } from "@/lib/api/types";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import {
   type Caja,
+  deslizHastaSuSitio,
   guardarPaso,
   type PasoDelRecorrido,
   type Recorrido as Definicion,
   ubicarTarjeta,
   type Ubicacion,
+  type Vista,
 } from "@/lib/recorrido";
 
 /**
@@ -23,10 +26,12 @@ import {
  * margen de su fondo y un anillo durazno de 3 px, y al lado la tarjeta del paso con Rigel —o
  * Meissa en el de la práctica—, su contador, su progreso y «Saltar · Atrás · Siguiente».
  *
- * <p>Cada paso <strong>lleva a su pantalla</strong> y espera a que aparezca lo que explica; si el
- * elemento está fuera de la vista, primero sale la píldora «Te llevo hasta allá», se desliza hasta
- * dejarlo a un tercio de la altura y solo entonces aparece la tarjeta. Con movimiento reducido,
- * salto directo y sin píldora.
+ * <p>Cada paso <strong>lleva a su pantalla</strong> y espera a que aparezca lo que explica, sin
+ * plazos fijos: mira el DOM y los datos de la pantalla, y en cuanto la pantalla terminó de cargar
+ * sin pintar lo preferido, ilumina la navegación. Si lo que explica está en la página, primero sale
+ * la píldora «Te llevo hasta allá», la página se desliza —siempre, así sea un poco— hasta dejarlo a
+ * un tercio de la altura y, al llegar, aparece la tarjeta. Con movimiento reducido, salto directo y
+ * sin píldora. La pantalla del paso siguiente se precarga mientras se lee el actual.
  *
  * <p>Mientras está abierto, lo de atrás es `inert`: un clic en el velo no hace nada y el elemento
  * iluminado no recibe clics. Esc es «Saltar» y devuelve el foco a donde estaba; ← → navegan; el
@@ -39,8 +44,14 @@ export type Arranque = "inicio" | "paso1" | { reanudar: number };
 type Fase = { tipo: "inicio" } | { tipo: "reanudar"; paso: number } | { tipo: "paso"; i: number } | { tipo: "cierre" };
 
 const VELO = "rgba(46,30,78,.74)";
-const ESPERA_ANCLA_MS = 3000;
-const ESPERA_ANCLA_PREFERIDA_MS = 1800;
+/** El tope por si la pantalla nunca llega (una redirección, la red caída): vale lo que haya. */
+const ESPERA_MAXIMA_MS = 2500;
+/** Cuánto tiene que estar quieta la pantalla —sin datos por llegar— para dar por hecho que ya pintó. */
+const PANTALLA_QUIETA_MS = 120;
+/** La píldora asoma antes de que la página se mueva (su animación de entrada dura 220). */
+const PILDORA_ANTES_MS = 150;
+/** El desliz suave lo cronometra el navegador; esto es solo por si nunca avisa que terminó. */
+const DESLIZ_MAXIMO_MS = 1000;
 
 export function Recorrido({
   definicion,
@@ -95,6 +106,31 @@ export function Recorrido({
     (i: number) => setFase(i < 0 ? { tipo: "inicio" } : i >= total ? { tipo: "cierre" } : { tipo: "paso", i }),
     [total],
   );
+
+  // El perfil del primer profe se averigua una vez por recorrido, no cada vez que se pasa por ahí.
+  const primerProfesor = useRef<Promise<string> | null>(null);
+  const rutaDe = useCallback((paso: PasoDelRecorrido): Promise<string | null> => {
+    if (paso.ruta !== "profesor") return Promise.resolve(paso.ruta);
+    primerProfesor.current ??= rutaDelPrimerProfesor();
+    return primerProfesor.current;
+  }, []);
+
+  // Mientras se lee un paso, la pantalla del siguiente (y la del anterior) ya se está cargando: al
+  // pulsar «Siguiente» la navegación no espera a la red. `next dev` no precarga; producción sí.
+  useEffect(() => {
+    const vecinos =
+      fase.tipo === "inicio"
+        ? [0]
+        : fase.tipo === "reanudar"
+          ? [fase.paso - 1]
+          : fase.tipo === "paso"
+            ? [fase.i + 1, fase.i - 1]
+            : [];
+    for (const i of vecinos) {
+      const paso = definicion.pasos[i];
+      if (paso) void rutaDe(paso).then((ruta) => ruta && router.prefetch(ruta));
+    }
+  }, [fase, definicion.pasos, rutaDe, router]);
 
   if (typeof document === "undefined") return null;
 
@@ -151,6 +187,7 @@ export function Recorrido({
         <PasoConFoco
           key={fase.i}
           paso={definicion.pasos[fase.i]}
+          rutaDe={rutaDe}
           indice={fase.i}
           total={total}
           onSiguiente={() => irA(fase.i + 1)}
@@ -169,6 +206,7 @@ type Foco = { caja: Caja; radio: string; fondo: string };
 
 function PasoConFoco({
   paso,
+  rutaDe,
   indice,
   total,
   onSiguiente,
@@ -176,6 +214,7 @@ function PasoConFoco({
   onSaltar,
 }: {
   paso: PasoDelRecorrido;
+  rutaDe: (paso: PasoDelRecorrido) => Promise<string | null>;
   indice: number;
   total: number;
   onSiguiente: () => void;
@@ -183,11 +222,12 @@ function PasoConFoco({
   onSaltar: () => void;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const movil = !useMediaQuery("(min-width: 640px)");
   const menosMovimiento = useMediaQuery("(prefers-reduced-motion: reduce)");
   const [elemento, setElemento] = useState<HTMLElement | null>(null);
   const [listo, setListo] = useState(false);
-  const [pildora, setPildora] = useState(false);
+  const [pildora, setPildora] = useState<"abajo" | "arriba" | null>(null);
   const [foco, setFoco] = useState<Foco | null>(null);
   const [ubicacion, setUbicacion] = useState<Ubicacion | null>(null);
   const tarjeta = useRef<HTMLDivElement>(null);
@@ -196,32 +236,41 @@ function PasoConFoco({
   // 1 · Llevar a la pantalla del paso y esperar a que aparezca lo que se explica. Cada paso monta
   // su propio componente (key = índice), así que el estado arranca limpio sin reiniciarlo aquí.
   useEffect(() => {
-    let vivo = true;
+    const cancelado = new AbortController();
+    const vivo = () => !cancelado.signal.aborted;
     (async () => {
-      const ruta = paso.ruta === "profesor" ? await rutaDelPrimerProfesor() : paso.ruta;
-      if (!vivo) return;
-      if (ruta && window.location.pathname + window.location.search !== ruta) router.push(ruta);
-      const el = await esperarAncla(paso.anclas, () => vivo);
-      if (!vivo) return;
+      const ruta = await rutaDe(paso);
+      if (!vivo()) return;
+      if (ruta && dondeEstoy() !== ruta) router.push(ruta);
+      const el = await esperarAncla(
+        paso.anclas,
+        { enRuta: () => !ruta || dondeEstoy() === ruta, datos: queryClient },
+        cancelado.signal,
+      );
+      if (!vivo()) return;
       setElemento(el);
-      if (el && fueraDeVista(el)) {
-        // Fuera de pantalla: la píldora, el desliz hasta un tercio de la altura y luego la tarjeta.
-        if (!menosMovimiento) {
-          setPildora(true);
-          await pausa(450);
+      // La navegación es fija y no se desplaza; lo que está en la página, sí.
+      if (el && !el.dataset.tour?.startsWith("nav:")) {
+        const d = deslizHastaSuSitio(el.getBoundingClientRect(), vistaActual());
+        if (menosMovimiento) {
+          // Sin animaciones: salto directo, y solo si hace falta para verlo.
+          if (d !== null && fueraDeVista(el)) window.scrollTo({ top: window.scrollY + d, behavior: "auto" });
+        } else if (d !== null) {
+          // La píldora, el desliz hasta su sitio y, al llegar, la tarjeta.
+          setPildora(d > 0 ? "abajo" : "arriba");
+          await pausa(PILDORA_ANTES_MS);
+          if (!vivo()) return;
+          const destino = window.scrollY + d;
+          window.scrollTo({ top: destino, behavior: "smooth" });
+          await finDelDesliz(destino, vivo);
+          if (!vivo()) return;
+          setPildora(null);
         }
-        const r = el.getBoundingClientRect();
-        window.scrollTo({ top: window.scrollY + r.top - window.innerHeight / 3, behavior: menosMovimiento ? "auto" : "smooth" });
-        if (!menosMovimiento) await pausa(520);
-        if (!vivo) return;
-        setPildora(false);
       }
       setListo(true);
     })();
-    return () => {
-      vivo = false;
-    };
-  }, [paso, router, menosMovimiento]);
+    return () => cancelado.abort();
+  }, [paso, rutaDe, router, queryClient, menosMovimiento]);
 
   // 2 · Medir el foco y ubicar la tarjeta; se vuelve a medir al redimensionar o desplazar.
   const medir = useCallback(() => {
@@ -240,11 +289,16 @@ function PasoConFoco({
   useEffect(() => {
     window.addEventListener("resize", medir);
     window.addEventListener("scroll", medir, true);
+    // Si la página se reacomoda debajo (llegan más datos arriba del elemento), el foco lo sigue.
+    const cambios = new ResizeObserver(medir);
+    cambios.observe(document.body);
+    if (elemento) cambios.observe(elemento);
     return () => {
       window.removeEventListener("resize", medir);
       window.removeEventListener("scroll", medir, true);
+      cambios.disconnect();
     };
-  }, [medir]);
+  }, [medir, elemento]);
 
   // 3 · El foco del teclado arranca en «Siguiente» y no sale de la tarjeta.
   useEffect(() => {
@@ -303,7 +357,11 @@ function PasoConFoco({
             {conMeissa ? <Meissa decorativo recorte="22 14 156 156" className="h-7 w-7" /> : <RigelMini className="h-7 w-7" />}
           </span>
           <span className="text-[14px] font-bold text-[#33203B]">Te llevo hasta allá</span>
-          <ArrowDown size={18} strokeWidth={1.75} className="text-[#33203B]" aria-hidden />
+          {pildora === "arriba" ? (
+            <ArrowUp size={18} strokeWidth={1.75} className="text-[#33203B]" aria-hidden />
+          ) : (
+            <ArrowDown size={18} strokeWidth={1.75} className="text-[#33203B]" aria-hidden />
+          )}
         </div>
       )}
 
@@ -547,29 +605,123 @@ function visible(ancla: string): HTMLElement | null {
   );
 }
 
-/**
- * Espera a que la pantalla pinte lo que el paso explica. El ancla preferida tiene un rato para
- * aparecer —la página acaba de cambiar y está cargando sus datos—; pasado ese rato vale la
- * siguiente de la lista, que al final es siempre la navegación.
- */
-async function esperarAncla(anclas: string[], sigue: () => boolean): Promise<HTMLElement | null> {
-  const inicio = Date.now();
-  while (sigue() && Date.now() - inicio < ESPERA_ANCLA_MS) {
-    const preferida = visible(anclas[0]);
-    if (preferida) return preferida;
-    if (Date.now() - inicio > ESPERA_ANCLA_PREFERIDA_MS) {
-      for (const a of anclas.slice(1)) {
-        const el = visible(a);
-        if (el) return el;
-      }
-    }
-    await pausa(100);
-  }
+function primeraVisible(anclas: string[]): HTMLElement | null {
   for (const a of anclas) {
     const el = visible(a);
     if (el) return el;
   }
   return null;
+}
+
+function dondeEstoy(): string {
+  return window.location.pathname + window.location.search;
+}
+
+/**
+ * Espera, sin sondear, a que la pantalla pinte lo que el paso explica. Mira dos cosas: el DOM (cada
+ * cambio se revisa una vez por cuadro) y los datos de la pantalla (TanStack Query).
+ *
+ * <p>El ancla preferida gana en cuanto aparece. Si la pantalla ya llegó, no le queda nada por cargar
+ * —cuenta lo que carga por primera vez, no el refresco periódico de los mensajes— y aun así no la
+ * pintó, ya no la va a pintar (el primer día no hay clase que unirse): vale la siguiente de la lista,
+ * que al final es siempre la navegación. Antes esa espera era un plazo fijo de 1,8 s, y era lo que
+ * se sentía como «un par de segundos» en los pasos de las clases.
+ */
+function esperarAncla(
+  anclas: string[],
+  { enRuta, datos }: { enRuta: () => boolean; datos: QueryClient },
+  cancelado: AbortSignal,
+): Promise<HTMLElement | null> {
+  return new Promise((resolver) => {
+    if (cancelado.aborted) return resolver(null);
+    let cuadro = 0;
+    let quietaDesde: number | null = null;
+    let reloj: ReturnType<typeof setTimeout> | undefined;
+    const cargando = () => datos.isFetching({ predicate: (q) => q.state.status === "pending" }) > 0;
+
+    const programar = () => {
+      if (!cuadro) cuadro = requestAnimationFrame(revisar);
+    };
+    const observador = new MutationObserver(programar);
+    const desuscribir = datos.getQueryCache().subscribe(programar);
+    const tope = setTimeout(() => terminar(primeraVisible(anclas)), ESPERA_MAXIMA_MS);
+    const alCancelar = () => terminar(null);
+
+    function terminar(el: HTMLElement | null) {
+      observador.disconnect();
+      desuscribir();
+      cancelAnimationFrame(cuadro);
+      clearTimeout(reloj);
+      clearTimeout(tope);
+      cancelado.removeEventListener("abort", alCancelar);
+      resolver(el);
+    }
+
+    function revisar() {
+      cuadro = 0;
+      if (!enRuta()) return;
+      const preferida = visible(anclas[0]);
+      if (preferida) return terminar(preferida);
+      if (cargando()) {
+        quietaDesde = null;
+        return;
+      }
+      const ahora = performance.now();
+      quietaDesde ??= ahora;
+      const falta = PANTALLA_QUIETA_MS - (ahora - quietaDesde);
+      if (falta <= 0) return terminar(primeraVisible(anclas.slice(1)));
+      clearTimeout(reloj);
+      reloj = setTimeout(programar, falta);
+    }
+
+    cancelado.addEventListener("abort", alCancelar);
+    observador.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class", "style", "hidden"],
+    });
+    programar();
+  });
+}
+
+/** Termina cuando el desliz suave llegó o se detuvo: lo mira cuadro a cuadro, sin plazo fijo. */
+function finDelDesliz(destino: number, sigue: () => boolean): Promise<void> {
+  return new Promise((resolver) => {
+    const inicio = performance.now();
+    let antes = window.scrollY;
+    let quietos = 0;
+    const cuadro = () => {
+      const y = window.scrollY;
+      quietos = Math.abs(y - antes) < 0.5 ? quietos + 1 : 0;
+      antes = y;
+      const transcurrido = performance.now() - inicio;
+      const llego = Math.abs(y - destino) < 1;
+      // Quieto tres cuadros seguidos, pasado el arranque: el navegador lo detuvo antes (el borde).
+      const detenido = quietos >= 3 && transcurrido > 150;
+      if (!sigue() || llego || detenido || transcurrido > DESLIZ_MAXIMO_MS) resolver();
+      else requestAnimationFrame(cuadro);
+    };
+    requestAnimationFrame(cuadro);
+  });
+}
+
+/** Lo que se ve de la página: el alto, lo que tapan las barras fijas y cuánto se puede desplazar. */
+function vistaActual(): Vista {
+  const alto = window.innerHeight;
+  let arriba = 0;
+  let abajo = 0;
+  // La cabecera pegada del celular y la barra de pestañas; el lateral de escritorio es angosto y no cuenta.
+  for (const barra of Array.from(document.querySelectorAll<HTMLElement>("header, nav"))) {
+    const posicion = getComputedStyle(barra).position;
+    if (posicion !== "fixed" && posicion !== "sticky") continue;
+    const r = barra.getBoundingClientRect();
+    if (r.height === 0 || r.width < window.innerWidth / 2) continue;
+    if (r.top <= 1 && r.bottom < alto / 2) arriba = Math.max(arriba, r.bottom);
+    else if (r.bottom >= alto - 1 && r.top > alto / 2) abajo = Math.max(abajo, alto - r.top);
+  }
+  const raiz = document.scrollingElement ?? document.documentElement;
+  return { alto, arriba, abajo, scroll: window.scrollY, scrollMax: raiz.scrollHeight - alto };
 }
 
 function fueraDeVista(el: HTMLElement): boolean {

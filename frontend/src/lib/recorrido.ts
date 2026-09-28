@@ -8,7 +8,8 @@ import { useSyncExternalStore } from "react";
  * 24/09/2026: «que te muevas entre pantallas, no solamente los iconos»). Las anclas van en orden
  * de preferencia: primero el elemento de la página —«Unirse a la clase», los filtros, los
  * horarios—, y si no existe —el primer día no hay clases que unirse—, el ítem de la navegación, que
- * existe siempre. Sin ninguna a la vista, la tarjeta sale centrada.
+ * existe siempre. Sin ninguna a la vista, la tarjeta sale centrada. La ruta tiene que ser la que pinta
+ * el ancla preferida: si no, el paso espera algo que nunca llega.
  */
 
 export type Guia = "rigel" | "meissa";
@@ -77,7 +78,8 @@ export const RECORRIDO_PROFESOR: Recorrido = {
       titulo: "Al terminar, el acta",
       texto: "Marca si tu estudiante asistió y cuéntanos en un minuto qué vieron. Orión lo ordena y tú lo revisas.",
       guia: "rigel",
-      ruta: "/mis-clases",
+      // La lista de actas vive en «Pasadas»: en «Próximas» no existe, y el paso esperaba en vano.
+      ruta: "/mis-clases?scope=past",
       anclas: ["actas", "nav:/mis-clases"],
     },
     {
@@ -144,7 +146,7 @@ export const RECORRIDO_ESTUDIANTE: Recorrido = {
       titulo: "Tu resumen y tu práctica",
       texto: "Después de cada clase te llega lo que vieron y unos ejercicios cortos. Yo te acompaño.",
       guia: "meissa",
-      ruta: "/mis-clases",
+      ruta: "/mis-clases?scope=past",
       anclas: ["actas", "nav:/mis-clases"],
     },
     {
@@ -255,6 +257,57 @@ export function ubicarTarjeta(
     return { top, left: izquierda, width, lugar: "izquierda", flecha: flechaY(top) };
   }
   return centrada;
+}
+
+/* ------------------------------------------------------------ «Te llevo hasta allá» */
+
+/** Lo que se desplaza la página, como mínimo, para que el desliz se note. */
+export const DESLIZ_MINIMO = 80;
+/** Menos que esto ya no se ve como un movimiento: mejor no mover y no sacar la píldora. */
+const DESLIZ_CORTO = 32;
+const HOLGURA = 16;
+
+export type Vista = {
+  /** El alto de la ventana. */
+  alto: number;
+  /** Lo que tapan las barras fijas: la cabecera del celular arriba y las pestañas abajo. */
+  arriba: number;
+  abajo: number;
+  /** Dónde va el scroll y hasta dónde puede llegar. */
+  scroll: number;
+  scrollMax: number;
+};
+
+/**
+ * Cuánto desplazar la página (en px; positivo, hacia abajo) para llevar lo que el paso explica a su
+ * sitio: su borde de arriba a un tercio del alto libre.
+ *
+ * <p>«Te llevo hasta allá» siempre se mueve (Pardo, 27/09/2026: «así sea un poco, para que se note la
+ * animación»). Si el elemento ya está en su sitio, o la página no deja acercarlo más —la grilla de
+ * horarios es más alta que la pantalla y está arriba: el desliz calculado era negativo, se quedaba en
+ * cero y la píldora salía sin que nada se moviera—, el desliz es de {@link DESLIZ_MINIMO} hacia donde
+ * quepa sin sacarlo de la vista. `null` si la página no se puede mover: entonces no hay píldora.
+ */
+export function deslizHastaSuSitio(el: { top: number; height: number }, v: Vista): number | null {
+  const libre = v.alto - v.arriba - v.abajo;
+  const posible = (d: number) => Math.min(Math.max(d, -v.scroll), Math.max(0, v.scrollMax - v.scroll));
+  const crudo = Math.round(el.top - (v.arriba + libre / 3));
+  const ideal = posible(crudo);
+  if (Math.abs(ideal) >= DESLIZ_MINIMO) return ideal;
+
+  // Hacia donde quería ir primero; si ahí no hay recorrido, hacia el otro lado.
+  const direcciones = crudo < 0 ? [-DESLIZ_MINIMO, DESLIZ_MINIMO] : [DESLIZ_MINIMO, -DESLIZ_MINIMO];
+  for (const d of direcciones) {
+    const real = posible(d);
+    if (Math.abs(real) < DESLIZ_CORTO) continue;
+    // Bajar la página sube el elemento: que no se meta bajo la cabecera. Subirla lo baja: que su
+    // comienzo siga a la vista.
+    const top = el.top - real;
+    const aLaVista =
+      real > 0 ? top >= v.arriba + HOLGURA : top + Math.min(el.height, libre / 3) <= v.alto - v.abajo - HOLGURA;
+    if (aLaVista) return real;
+  }
+  return Math.abs(ideal) >= DESLIZ_CORTO ? ideal : null;
 }
 
 /* ------------------------------------------------ el paso guardado y el aplazado */
