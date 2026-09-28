@@ -211,7 +211,7 @@ export default function ProfesoresPage() {
   );
 
   return (
-    <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-6xl lg:px-12 lg:py-8">
+    <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-[1600px] lg:px-10 xl:px-14 lg:py-8">
       {/*
         Un banner ancho y bajo: ocupa todo el horizontal para que se lea de un vistazo, y poco
         vertical para no empujar a los profesores fuera de la pantalla, que es a lo que se viene.
@@ -325,7 +325,7 @@ export default function ProfesoresPage() {
 
           {listado.length > 0 && (
             <>
-              <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {listado.map((profesor, i) => (
                   <li
                     key={profesor.id}

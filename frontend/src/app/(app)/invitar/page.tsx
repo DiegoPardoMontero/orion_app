@@ -36,7 +36,7 @@ export default function InvitarPage() {
 
   if (!me || perfil.isPending || corto.isPending) {
     return (
-      <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-5xl lg:px-12">
+      <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-[1600px] lg:px-10 xl:px-14">
         <Cargando filas={3} />
       </main>
     );
@@ -101,7 +101,7 @@ function Invitar({
   ];
 
   return (
-    <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-5xl lg:px-12 lg:py-8">
+    <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-[1600px] lg:px-10 xl:px-14 lg:py-8">
       <h1 className="font-display text-h1 font-bold">Invitar estudiantes</h1>
       <p className="mt-1 text-[14px] text-text-secondary">
         Tu enlace lleva a tu perfil: tu presentación, tu tarifa y tus reseñas. Quien llega por él crea su cuenta, ve tus
@@ -121,86 +121,89 @@ function Invitar({
         </div>
       )}
 
-      <section className="mt-5 rounded-card bg-surface-raised p-5 shadow-sm">
-        <div className="flex items-center gap-3">
-          <Rigel pose="guia" decorativo className="h-auto w-12 shrink-0" />
-          <h2 className="font-display text-[17px] font-bold">Tu enlace</h2>
-        </div>
-        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-          <p className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-base bg-surface-sunken px-3.5 text-[13.5px] font-semibold text-text">
-            <Link2 size={16} strokeWidth={2} className="shrink-0 text-text-muted" aria-hidden />
-            <span className="min-w-0 select-all break-all">{enlace}</span>
-          </p>
-          <button
-            type="button"
-            onClick={() => void copiar("enlace")}
-            className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-pill bg-primary px-5 text-[14px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus"
-          >
-            {copiado === "enlace" ? <Check size={16} strokeWidth={2.2} /> : <Copy size={16} strokeWidth={2} />}
-            {copiado === "enlace" ? "Copiado" : "Copiar enlace"}
-          </button>
-        </div>
-        <Link
-          href={perfilPublico}
-          className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-pill px-1 text-[13.5px] font-bold text-primary-strong hover:underline focus-visible:shadow-focus"
-        >
-          <Globe size={15} strokeWidth={2} aria-hidden />
-          Ver mi perfil público
-        </Link>
-      </section>
-
-      <section className="mt-4 rounded-card bg-surface-raised p-5 shadow-sm">
-        <label htmlFor="mensaje" className="font-display text-[17px] font-bold">
-          El mensaje
-        </label>
-        <p className="mt-0.5 text-[13px] text-text-muted">Cámbialo si quieres: el enlace va al final.</p>
-        <textarea
-          id="mensaje"
-          value={mensaje}
-          onChange={(e) => setMensaje(e.target.value)}
-          rows={3}
-          maxLength={400}
-          className="mt-2.5 w-full resize-y rounded-base border-[1.5px] border-border bg-surface-raised px-4 py-3 text-[14.5px] leading-relaxed text-text focus:border-primary focus:shadow-focus focus:outline-none"
-        />
-
-        <h3 className="mt-4 text-[12px] font-bold uppercase tracking-[0.06em] text-text-secondary">Compártelo</h3>
-        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {puedeCompartir && (
+      {/* En el computador, el enlace y el mensaje lado a lado (27/09/2026: usar el ancho). */}
+      <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
+        <section className="mt-5 rounded-card bg-surface-raised p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <Rigel pose="guia" decorativo className="h-auto w-12 shrink-0" />
+            <h2 className="font-display text-[17px] font-bold">Tu enlace</h2>
+          </div>
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <p className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-base bg-surface-sunken px-3.5 text-[13.5px] font-semibold text-text">
+              <Link2 size={16} strokeWidth={2} className="shrink-0 text-text-muted" aria-hidden />
+              <span className="min-w-0 select-all break-all">{enlace}</span>
+            </p>
             <button
               type="button"
-              onClick={() => void navigator.share({ text: mensaje.trim(), url: enlace }).catch(() => {})}
-              className="col-span-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-pill bg-night px-4 text-[14px] font-bold text-on-primary focus-visible:shadow-focus sm:col-span-3"
+              onClick={() => void copiar("enlace")}
+              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-pill bg-primary px-5 text-[14px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus"
             >
-              <Share2 size={17} strokeWidth={2} />
-              Compartir desde el celular
+              {copiado === "enlace" ? <Check size={16} strokeWidth={2.2} /> : <Copy size={16} strokeWidth={2} />}
+              {copiado === "enlace" ? "Copiado" : "Copiar enlace"}
             </button>
-          )}
-          {redes.map((r) => (
-            <a
-              key={r.nombre}
-              href={r.href}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-pill border-[1.5px] border-border bg-surface-raised px-4 text-[14px] font-semibold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
-            >
-              {r.icono}
-              {r.nombre}
-            </a>
-          ))}
-          <button
-            type="button"
-            onClick={() => void copiar("mensaje")}
-            className="inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-pill border-[1.5px] border-border bg-surface-raised px-4 text-[14px] font-semibold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
+          </div>
+          <Link
+            href={perfilPublico}
+            className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-pill px-1 text-[13.5px] font-bold text-primary-strong hover:underline focus-visible:shadow-focus"
           >
-            {copiado === "mensaje" ? <Check size={16} strokeWidth={2.2} /> : <Copy size={16} strokeWidth={2} />}
-            {copiado === "mensaje" ? "Copiado" : "Copiar mensaje"}
-          </button>
-        </div>
-        <p className="mt-3 text-[12.5px] text-text-muted">
-          Instagram y TikTok no dejan compartir un enlace desde afuera: copia el mensaje y pégalo en tu historia o en
-          tu biografía.
-        </p>
-      </section>
+            <Globe size={15} strokeWidth={2} aria-hidden />
+            Ver mi perfil público
+          </Link>
+        </section>
+
+        <section className="mt-4 rounded-card bg-surface-raised p-5 shadow-sm lg:mt-5">
+          <label htmlFor="mensaje" className="font-display text-[17px] font-bold">
+            El mensaje
+          </label>
+          <p className="mt-0.5 text-[13px] text-text-muted">Cámbialo si quieres: el enlace va al final.</p>
+          <textarea
+            id="mensaje"
+            value={mensaje}
+            onChange={(e) => setMensaje(e.target.value)}
+            rows={3}
+            maxLength={400}
+            className="mt-2.5 w-full resize-y rounded-base border-[1.5px] border-border bg-surface-raised px-4 py-3 text-[14.5px] leading-relaxed text-text focus:border-primary focus:shadow-focus focus:outline-none"
+          />
+
+          <h3 className="mt-4 text-[12px] font-bold uppercase tracking-[0.06em] text-text-secondary">Compártelo</h3>
+          <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {puedeCompartir && (
+              <button
+                type="button"
+                onClick={() => void navigator.share({ text: mensaje.trim(), url: enlace }).catch(() => {})}
+                className="col-span-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-pill bg-night px-4 text-[14px] font-bold text-on-primary focus-visible:shadow-focus sm:col-span-3"
+              >
+                <Share2 size={17} strokeWidth={2} />
+                Compartir desde el celular
+              </button>
+            )}
+            {redes.map((r) => (
+              <a
+                key={r.nombre}
+                href={r.href}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-pill border-[1.5px] border-border bg-surface-raised px-4 text-[14px] font-semibold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
+              >
+                {r.icono}
+                {r.nombre}
+              </a>
+            ))}
+            <button
+              type="button"
+              onClick={() => void copiar("mensaje")}
+              className="inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-pill border-[1.5px] border-border bg-surface-raised px-4 text-[14px] font-semibold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
+            >
+              {copiado === "mensaje" ? <Check size={16} strokeWidth={2.2} /> : <Copy size={16} strokeWidth={2} />}
+              {copiado === "mensaje" ? "Copiado" : "Copiar mensaje"}
+            </button>
+          </div>
+          <p className="mt-3 text-[12.5px] text-text-muted">
+            Instagram y TikTok no dejan compartir un enlace desde afuera: copia el mensaje y pégalo en tu historia o en
+            tu biografía.
+          </p>
+        </section>
+      </div>
     </main>
   );
 }

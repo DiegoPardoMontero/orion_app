@@ -184,7 +184,7 @@ export default function AgendaProfesorPage() {
   // Sin sesión la consulta de cupos está apagada y en TanStack v5 eso es «pendiente» para siempre.
   if (profesor.isPending || (conSesion && cupos.isPending)) {
     return (
-      <main className="mx-auto w-full max-w-md px-7 py-6 lg:max-w-[1180px] lg:px-12 lg:py-8">
+      <main className="mx-auto w-full max-w-md px-7 py-6 lg:max-w-[1600px] lg:px-10 xl:px-14 lg:py-8">
         <Cargando filas={4} />
       </main>
     );
@@ -194,7 +194,7 @@ export default function AgendaProfesorPage() {
     // El perfil sin publicar no existe para nadie (404), tampoco para su dueño: a él se le explica.
     const oculto = esPropio && profesor.error instanceof ApiError && profesor.error.status === 404;
     return (
-      <main className="mx-auto w-full max-w-md px-7 py-6 lg:max-w-[1180px] lg:px-12 lg:py-8">
+      <main className="mx-auto w-full max-w-md px-7 py-6 lg:max-w-[1600px] lg:px-10 xl:px-14 lg:py-8">
         {oculto ? (
           <Vacio
             mascota
@@ -379,7 +379,7 @@ export default function AgendaProfesorPage() {
   );
 
   return (
-    <main className="mx-auto w-full max-w-md px-7 py-6 lg:max-w-[1180px] lg:px-12 lg:py-8">
+    <main className="mx-auto w-full max-w-md px-7 py-6 lg:max-w-[1600px] lg:px-10 xl:px-14 lg:py-8">
       {/* Al catálogo vuelve quien puede usarlo; al profe, el catálogo lo mandaría a su agenda. */}
       <Link
         href={esPropio ? "/perfil" : me && soloMira ? HOME_BY_ROLE[me.role] : "/profesores"}

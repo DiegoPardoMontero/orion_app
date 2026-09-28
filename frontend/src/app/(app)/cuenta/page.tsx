@@ -109,7 +109,7 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
     SECCIONES.some((s) => s.clave === pedida) || pedida === "cielo" ? (pedida as Seccion) : (ANTIGUAS[pedida] ?? "resumen");
 
   return (
-    <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-5xl lg:px-12 lg:py-8">
+    <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-[1600px] lg:px-10 xl:px-14 lg:py-8">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="font-display text-h1 font-bold">Mi perfil</h1>
         <MisPuntosChip />
@@ -145,15 +145,22 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
 
       {/* La ficha y los datos se editan directo, y una sola barra guarda los dos (24/09/2026). */}
       <EdicionEnPagina>
-        {seccion === "ficha" && <MiFicha />}
+        {/* En el computador, la ficha y los datos lado a lado: usan el ancho (27/09/2026). */}
+        <div className={seccion === "ficha" ? "lg:grid lg:grid-cols-2 lg:items-start lg:gap-10 xl:gap-14" : ""}>
+          {seccion === "ficha" && (
+            <div>
+              <MiFicha />
+            </div>
+          )}
 
-        <div className={seccion === "ficha" ? "" : "hidden"}>
-          <QuienLoVe
-            icono={<Lock size={15} strokeWidth={2} />}
-            titulo="Solo para ti"
-            texto="Tu correo, tu WhatsApp y tu contraseña. No los ve ningún profesor ni otro estudiante."
-          />
-          <MisDatos inicial={inicial} onCambiarClave={() => setCambiandoClave(true)} />
+          <div className={seccion === "ficha" ? "" : "hidden"}>
+            <QuienLoVe
+              icono={<Lock size={15} strokeWidth={2} />}
+              titulo="Solo para ti"
+              texto="Tu correo, tu WhatsApp y tu contraseña. No los ve ningún profesor ni otro estudiante."
+            />
+            <MisDatos inicial={inicial} onCambiarClave={() => setCambiandoClave(true)} />
+          </div>
         </div>
       </EdicionEnPagina>
 

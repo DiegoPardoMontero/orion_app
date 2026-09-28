@@ -62,7 +62,7 @@ function Perfil() {
   // Privada: a dónde le paga Orión (brief de liquidaciones, paso 2). No sale en el perfil público.
   if (seccion === "pagos") {
     return (
-      <main className="mx-auto w-full max-w-md px-5 py-5 lg:max-w-[1180px] lg:px-12 lg:py-8">
+      <main className="mx-auto w-full max-w-md px-5 py-5 lg:max-w-[1600px] lg:px-10 xl:px-14 lg:py-8">
         <Cabecera seccion="pagos" />
         <DatosDePago />
       </main>
@@ -71,7 +71,7 @@ function Perfil() {
 
   if (seccion === "horarios") {
     return (
-      <main className="mx-auto w-full max-w-md px-5 py-5 lg:max-w-[1180px] lg:px-12 lg:py-8">
+      <main className="mx-auto w-full max-w-md px-5 py-5 lg:max-w-[1600px] lg:px-10 xl:px-14 lg:py-8">
         <Cabecera seccion="horarios" />
         <MisHorarios />
       </main>
@@ -137,7 +137,7 @@ function Cabecera({ seccion }: { seccion: SeccionPerfil }) {
 
 function FormularioPerfil({ inicial }: { inicial: ProfileResponse }) {
   return (
-    <main className="mx-auto w-full max-w-md px-5 py-5 lg:max-w-[1180px] lg:px-12 lg:py-8">
+    <main className="mx-auto w-full max-w-md px-5 py-5 lg:max-w-[1600px] lg:px-10 xl:px-14 lg:py-8">
       <Cabecera seccion="perfil" />
       <p className="mt-4 text-[12.5px] text-text-secondary">
         Esto es lo que ven los estudiantes. Cambia lo que quieras y guarda con la barra que aparece abajo.
@@ -368,273 +368,278 @@ function CamposDelPerfil({ inicial }: { inicial: ProfileResponse }) {
   };
 
   return (
-    <>
-      {/* — Tarifa — */}
-      <WidgetTarifa
-        valor={tarifa}
-        onValor={setTarifa}
-        guardada={inicial.rate ?? undefined}
-        gratisPorOrion={tarifaInicial === 0}
-        baseBps={inicial.baseRateBps}
-        fundador={inicial.founder}
-      />
+    <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-10 xl:gap-14">
+      {/* En el computador, dos columnas para usar el ancho (Pardo, 27/09/2026): a la izquierda lo que
+          decide si te reservan —tarifa, visibilidad, presentación—, a la derecha lo que la completa. */}
+      <div>
+        {/* — Tarifa — */}
+        <WidgetTarifa
+          valor={tarifa}
+          onValor={setTarifa}
+          guardada={inicial.rate ?? undefined}
+          gratisPorOrion={tarifaInicial === 0}
+          baseBps={inicial.baseRateBps}
+          fundador={inicial.founder}
+        />
 
-      {/* — Visible u oculto: justo debajo de la tarifa, para saberlo de un vistazo (27/09/2026) — */}
-      <section
-        className={`mt-4 rounded-card p-4 ${publicado ? "bg-success-bg" : "bg-warning-bg"}`}
-        aria-label="Visibilidad de tu perfil"
-      >
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p
-              className={`flex items-center gap-1.5 text-[13.5px] font-bold ${publicado ? "text-success" : "text-warning"}`}
-            >
-              {publicado ? <Eye size={15} strokeWidth={2.2} /> : <EyeOff size={15} strokeWidth={2.2} />}
-              {publicado ? "Tu perfil está visible" : "Tu perfil está oculto"}
-            </p>
-            <p className="mt-0.5 text-[11.5px] text-text-secondary">
-              {publicado
-                ? "Los estudiantes pueden verte y reservar"
-                : "Los estudiantes no te ven ni pueden reservar contigo. Tus clases ya agendadas siguen en pie."}
-            </p>
-          </div>
-          <Toggle activo={publicado} onCambio={setPublicado} etiqueta="Perfil visible" />
-        </div>
-
-        {publicado !== (inicial.isPublished ?? false) && (
-          <p className="mt-3 text-[12px] font-semibold text-text-secondary">
-            Guarda con la barra de abajo para que el cambio se aplique.
-          </p>
-        )}
-
-        {publicado && !tieneTarifa && (
-          <p className="mt-3 rounded-base bg-warning-bg px-3.5 py-2.5 text-[12px] text-warning">
-            Fija tu tarifa antes de publicar: escribe un precio por hora aquí arriba y guarda.
-          </p>
-        )}
-
-        <button
-          type="button"
-          onClick={() => setViendoVistaPrevia(true)}
-          className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-pill border-[1.5px] border-border bg-surface-raised px-4 text-[13px] font-bold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
+        {/* — Visible u oculto: justo debajo de la tarifa, para saberlo de un vistazo (27/09/2026) — */}
+        <section
+          className={`mt-4 rounded-card p-4 ${publicado ? "bg-success-bg" : "bg-warning-bg"}`}
+          aria-label="Visibilidad de tu perfil"
         >
-          <Eye size={15} strokeWidth={2} aria-hidden />
-          Vista previa: así te ven
-        </button>
-      </section>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p
+                className={`flex items-center gap-1.5 text-[13.5px] font-bold ${publicado ? "text-success" : "text-warning"}`}
+              >
+                {publicado ? <Eye size={15} strokeWidth={2.2} /> : <EyeOff size={15} strokeWidth={2.2} />}
+                {publicado ? "Tu perfil está visible" : "Tu perfil está oculto"}
+              </p>
+              <p className="mt-0.5 text-[11.5px] text-text-secondary">
+                {publicado
+                  ? "Los estudiantes pueden verte y reservar"
+                  : "Los estudiantes no te ven ni pueden reservar contigo. Tus clases ya agendadas siguen en pie."}
+              </p>
+            </div>
+            <Toggle activo={publicado} onCambio={setPublicado} etiqueta="Perfil visible" />
+          </div>
 
-      {viendoVistaPrevia && (
-        <Modal titulo="Así te ven los estudiantes" onCerrar={() => setViendoVistaPrevia(false)}>
-          <VistaPrevia
-            tarjeta={tarjetaBorrador}
-            bio={bio.trim()}
-            visible={publicado}
-            profesorId={inicial.id}
-          />
-        </Modal>
-      )}
+          {publicado !== (inicial.isPublished ?? false) && (
+            <p className="mt-3 text-[12px] font-semibold text-text-secondary">
+              Guarda con la barra de abajo para que el cambio se aplique.
+            </p>
+          )}
 
-      {/* — Presentación — */}
-      <label className="mt-6 block text-[12.5px] font-bold text-text-secondary" htmlFor="headline">
-        Título
-      </label>
-      <p className="mt-0.5 text-[12px] text-text-muted">
-        Atrae estudiantes con una frase que muestre tu experiencia.
-      </p>
-      <Campo
-        id="headline"
-        type="text"
-        maxLength={120}
-        value={headline}
-        onChange={(event) => setHeadline(event.target.value)}
-        placeholder="Conversación en inglés para adultos que ya estudiaron"
-        aria-describedby="headline-contador"
-        className={`mt-1.5 ${bordeSegun(estadoDelTitular)}`}
-      />
-      <ContadorPalabras id="headline-contador" estado={estadoDelTitular} />
+          {publicado && !tieneTarifa && (
+            <p className="mt-3 rounded-base bg-warning-bg px-3.5 py-2.5 text-[12px] text-warning">
+              Fija tu tarifa antes de publicar: escribe un precio por hora aquí arriba y guarda.
+            </p>
+          )}
 
-      <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="bio">
-        Sobre ti
-      </label>
-      <textarea
-        id="bio"
-        rows={4}
-        value={bio}
-        onChange={(event) => setBio(event.target.value)}
-        placeholder="Cuéntales cómo son tus clases."
-        aria-describedby="bio-contador"
-        className={`mt-1.5 w-full rounded-base border-[1.5px] bg-surface-raised px-4 py-3 text-sm placeholder:text-text-muted focus:shadow-focus focus:outline-none ${bordeSegun(estadoDeLaBio)}`}
-      />
-      <ContadorPalabras id="bio-contador" estado={estadoDeLaBio} />
+          <button
+            type="button"
+            onClick={() => setViendoVistaPrevia(true)}
+            className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-pill border-[1.5px] border-border bg-surface-raised px-4 text-[13px] font-bold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
+          >
+            <Eye size={15} strokeWidth={2} aria-hidden />
+            Vista previa: así te ven
+          </button>
+        </section>
 
-      {/* — Idiomas — */}
-      <section className="mt-6">
-        <h2 className="text-[13.5px] font-bold text-text">Idiomas que enseñas</h2>
-        {langs.length === 0 && (
-          <p className="mt-1.5 text-[12.5px] text-text-muted">
-            Agrega al menos un idioma y marca los niveles que enseñas.
-          </p>
+        {viendoVistaPrevia && (
+          <Modal titulo="Así te ven los estudiantes" onCerrar={() => setViendoVistaPrevia(false)}>
+            <VistaPrevia
+              tarjeta={tarjetaBorrador}
+              bio={bio.trim()}
+              visible={publicado}
+              profesorId={inicial.id}
+            />
+          </Modal>
         )}
 
-        <div className="mt-3 space-y-3">
-          {langs.map((lang) => (
-            <div key={lang.code} className="rounded-card bg-surface-raised p-4 shadow-sm">
-              <div className="flex items-center justify-between gap-3">
-                <p className="flex items-center gap-1.5 text-[14px] font-bold text-text">
-                  {banderaIdioma(lang.code) && <span aria-hidden="true">{banderaIdioma(lang.code)}</span>}
-                  {nombreIdioma(lang.code)}
-                </p>
-                <button
-                  type="button"
-                  aria-label={`Quitar ${nombreIdioma(lang.code)}`}
-                  onClick={() => quitarIdioma(lang.code)}
-                  className="grid h-8 w-8 place-items-center rounded-full text-text-muted transition-colors hover:bg-surface-sunken hover:text-text focus-visible:shadow-focus"
-                >
-                  <X size={16} strokeWidth={1.75} />
-                </button>
-              </div>
+        {/* — Presentación — */}
+        <label className="mt-6 block text-[12.5px] font-bold text-text-secondary" htmlFor="headline">
+          Título
+        </label>
+        <p className="mt-0.5 text-[12px] text-text-muted">
+          Atrae estudiantes con una frase que muestre tu experiencia.
+        </p>
+        <Campo
+          id="headline"
+          type="text"
+          maxLength={120}
+          value={headline}
+          onChange={(event) => setHeadline(event.target.value)}
+          placeholder="Conversación en inglés para adultos que ya estudiaron"
+          aria-describedby="headline-contador"
+          className={`mt-1.5 ${bordeSegun(estadoDelTitular)}`}
+        />
+        <ContadorPalabras id="headline-contador" estado={estadoDelTitular} />
 
-              <div className="mt-3 flex flex-wrap gap-2">
-                {NIVELES.map((nivel) => (
+        <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="bio">
+          Sobre ti
+        </label>
+        <textarea
+          id="bio"
+          rows={4}
+          value={bio}
+          onChange={(event) => setBio(event.target.value)}
+          placeholder="Cuéntales cómo son tus clases."
+          aria-describedby="bio-contador"
+          className={`mt-1.5 w-full rounded-base border-[1.5px] bg-surface-raised px-4 py-3 text-sm placeholder:text-text-muted focus:shadow-focus focus:outline-none ${bordeSegun(estadoDeLaBio)}`}
+        />
+        <ContadorPalabras id="bio-contador" estado={estadoDeLaBio} />
+      </div>
+
+      <div>
+        {/* — Idiomas — */}
+        <section className="mt-6">
+          <h2 className="text-[13.5px] font-bold text-text">Idiomas que enseñas</h2>
+          {langs.length === 0 && (
+            <p className="mt-1.5 text-[12.5px] text-text-muted">
+              Agrega al menos un idioma y marca los niveles que enseñas.
+            </p>
+          )}
+
+          <div className="mt-3 space-y-3">
+            {langs.map((lang) => (
+              <div key={lang.code} className="rounded-card bg-surface-raised p-4 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="flex items-center gap-1.5 text-[14px] font-bold text-text">
+                    {banderaIdioma(lang.code) && <span aria-hidden="true">{banderaIdioma(lang.code)}</span>}
+                    {nombreIdioma(lang.code)}
+                  </p>
                   <button
-                    key={nivel}
                     type="button"
-                    aria-pressed={lang.levels.includes(nivel)}
-                    onClick={() => alternarNivel(lang.code, nivel)}
-                    className={`min-h-9 rounded-pill px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors focus-visible:shadow-focus ${
-                      lang.levels.includes(nivel)
-                        ? "bg-primary text-on-primary"
-                        : "bg-surface-sunken text-text-secondary hover:bg-border/60 hover:text-text"
-                    }`}
+                    aria-label={`Quitar ${nombreIdioma(lang.code)}`}
+                    onClick={() => quitarIdioma(lang.code)}
+                    className="grid h-8 w-8 place-items-center rounded-full text-text-muted transition-colors hover:bg-surface-sunken hover:text-text focus-visible:shadow-focus"
                   >
-                    {etiquetaNivel(nivel)}
+                    <X size={16} strokeWidth={1.75} />
                   </button>
-                ))}
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {NIVELES.map((nivel) => (
+                    <button
+                      key={nivel}
+                      type="button"
+                      aria-pressed={lang.levels.includes(nivel)}
+                      onClick={() => alternarNivel(lang.code, nivel)}
+                      className={`min-h-9 rounded-pill px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors focus-visible:shadow-focus ${
+                        lang.levels.includes(nivel)
+                          ? "bg-primary text-on-primary"
+                          : "bg-surface-sunken text-text-secondary hover:bg-border/60 hover:text-text"
+                      }`}
+                    >
+                      {etiquetaNivel(nivel)}
+                    </button>
+                  ))}
+                </div>
+
+                <label className="mt-3 flex items-center justify-between gap-3">
+                  <span className="text-[12.5px] font-semibold text-text-secondary">Es mi lengua materna</span>
+                  <Toggle
+                    activo={lang.isNative}
+                    onCambio={(v) => marcarNativo(lang.code, v)}
+                    etiqueta="Lengua materna"
+                  />
+                </label>
               </div>
-
-              <label className="mt-3 flex items-center justify-between gap-3">
-                <span className="text-[12.5px] font-semibold text-text-secondary">Es mi lengua materna</span>
-                <Toggle
-                  activo={lang.isNative}
-                  onCambio={(v) => marcarNativo(lang.code, v)}
-                  etiqueta="Lengua materna"
-                />
-              </label>
-            </div>
-          ))}
-        </div>
-
-        {disponibles.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {disponibles.map((idioma) => (
-              <button
-                key={idioma.code}
-                type="button"
-                onClick={() => idioma.code && agregarIdioma(idioma.code)}
-                className="inline-flex min-h-9 items-center gap-1.5 rounded-pill border-[1.5px] border-dashed border-border-strong px-3.5 py-1.5 text-[13px] font-semibold text-text-secondary transition-colors hover:border-primary hover:text-primary-strong focus-visible:shadow-focus"
-              >
-                <Plus size={14} strokeWidth={2} />
-                <DiscoIdioma code={idioma.code ?? ""} size={18} />
-                {idioma.nameEs}
-              </button>
             ))}
           </div>
-        )}
-      </section>
 
-      {/* — Objetivos — */}
-      {(goalsCat.data ?? []).length > 0 && (
-        <section className="mt-6">
-          <h2 className="text-[13.5px] font-bold text-text">¿Para qué objetivos preparas?</h2>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {(goalsCat.data ?? []).map((goal) => (
-              <button
-                key={goal.code}
-                type="button"
-                aria-pressed={!!goal.code && goals.includes(goal.code)}
-                onClick={() => goal.code && alternarObjetivo(goal.code)}
-                className={`min-h-9 rounded-pill px-3.5 py-1.5 text-[13px] font-semibold transition-colors focus-visible:shadow-focus ${
-                  goal.code && goals.includes(goal.code)
-                    ? "bg-primary text-on-primary"
-                    : "bg-surface-sunken text-text-secondary hover:bg-border/60 hover:text-text"
-                }`}
-              >
-                {goal.nameEs}
-              </button>
-            ))}
+          {disponibles.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {disponibles.map((idioma) => (
+                <button
+                  key={idioma.code}
+                  type="button"
+                  onClick={() => idioma.code && agregarIdioma(idioma.code)}
+                  className="inline-flex min-h-9 items-center gap-1.5 rounded-pill border-[1.5px] border-dashed border-border-strong px-3.5 py-1.5 text-[13px] font-semibold text-text-secondary transition-colors hover:border-primary hover:text-primary-strong focus-visible:shadow-focus"
+                >
+                  <Plus size={14} strokeWidth={2} />
+                  <DiscoIdioma code={idioma.code ?? ""} size={18} />
+                  {idioma.nameEs}
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* — Objetivos — */}
+        {(goalsCat.data ?? []).length > 0 && (
+          <section className="mt-6">
+            <h2 className="text-[13.5px] font-bold text-text">¿Para qué objetivos preparas?</h2>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {(goalsCat.data ?? []).map((goal) => (
+                <button
+                  key={goal.code}
+                  type="button"
+                  aria-pressed={!!goal.code && goals.includes(goal.code)}
+                  onClick={() => goal.code && alternarObjetivo(goal.code)}
+                  className={`min-h-9 rounded-pill px-3.5 py-1.5 text-[13px] font-semibold transition-colors focus-visible:shadow-focus ${
+                    goal.code && goals.includes(goal.code)
+                      ? "bg-primary text-on-primary"
+                      : "bg-surface-sunken text-text-secondary hover:bg-border/60 hover:text-text"
+                  }`}
+                >
+                  {goal.nameEs}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* — Datos — */}
+        <section className="mt-6 grid grid-cols-2 gap-3">
+          <div className="col-span-2 sm:col-span-1">
+            <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="country">
+              País
+            </label>
+            <SelectorDePais id="country" value={countryCode} onChange={cambiarPais} className="mt-1.5" />
+          </div>
+          <div className="col-span-2 sm:col-span-1">
+            <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="city">
+              Ciudad
+            </label>
+            <SelectorDeCiudad id="city" pais={countryCode} value={city} onChange={setCity} className="mt-1.5" />
+          </div>
+          <div className="col-span-2 sm:col-span-1">
+            <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="years">
+              Años de experiencia
+            </label>
+            <Campo
+              id="years"
+              type="number"
+              min={0}
+              max={80}
+              value={yearsExperience}
+              onChange={(e) => setYearsExperience(e.target.value)}
+              placeholder="5"
+              className="mt-1.5"
+            />
+          </div>
+          <div className="col-span-2">
+            <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="education">
+              Formación
+            </label>
+            <Campo
+              id="education"
+              type="text"
+              maxLength={160}
+              value={education}
+              onChange={(e) => setEducation(e.target.value)}
+              placeholder="Licenciatura en Lenguas Modernas"
+              className="mt-1.5"
+            />
           </div>
         </section>
-      )}
 
-      {/* — Datos — */}
-      <section className="mt-6 grid grid-cols-2 gap-3">
-        <div className="col-span-2 sm:col-span-1">
-          <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="country">
-            País
-          </label>
-          <SelectorDePais id="country" value={countryCode} onChange={cambiarPais} className="mt-1.5" />
-        </div>
-        <div className="col-span-2 sm:col-span-1">
-          <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="city">
-            Ciudad
-          </label>
-          <SelectorDeCiudad id="city" pais={countryCode} value={city} onChange={setCity} className="mt-1.5" />
-        </div>
-        <div className="col-span-2 sm:col-span-1">
-          <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="years">
-            Años de experiencia
-          </label>
-          <Campo
-            id="years"
-            type="number"
-            min={0}
-            max={80}
-            value={yearsExperience}
-            onChange={(e) => setYearsExperience(e.target.value)}
-            placeholder="5"
-            className="mt-1.5"
-          />
-        </div>
-        <div className="col-span-2">
-          <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="education">
-            Formación
-          </label>
-          <Campo
-            id="education"
-            type="text"
-            maxLength={160}
-            value={education}
-            onChange={(e) => setEducation(e.target.value)}
-            placeholder="Licenciatura en Lenguas Modernas"
-            className="mt-1.5"
-          />
-        </div>
-      </section>
-
-      <section className="mt-4 space-y-3">
-        <label className="flex items-center justify-between gap-3 rounded-card bg-surface-raised p-4 shadow-sm">
-          <span className="flex items-center gap-2 text-[13.5px] font-semibold text-text">
-            <BadgeCheck size={16} strokeWidth={2} className="text-success" />
-            Tengo certificación docente
-          </span>
-          <Toggle activo={certified} onCambio={setCertified} etiqueta="Certificado" />
-        </label>
-        <div className="rounded-card bg-surface-raised p-4 shadow-sm">
-          <label className="flex items-center justify-between gap-3">
+        <section className="mt-4 space-y-3">
+          <label className="flex items-center justify-between gap-3 rounded-card bg-surface-raised p-4 shadow-sm">
             <span className="flex items-center gap-2 text-[13.5px] font-semibold text-text">
-              <Sparkles size={16} strokeWidth={2} className="text-primary-strong" />
-              Ofrezco la primera clase gratis
+              <BadgeCheck size={16} strokeWidth={2} className="text-success" />
+              Tengo certificación docente
             </span>
-            <Toggle activo={acceptsTrial} onCambio={setAcceptsTrial} etiqueta="Primera clase gratis" />
+            <Toggle activo={certified} onCambio={setCertified} etiqueta="Certificado" />
           </label>
-          <p className="mt-1.5 text-[12.5px] leading-relaxed text-text-muted">
-            Una clase de prueba sin costo para cada estudiante que todavía no ha tomado clases contigo: sirve para
-            conocerse. No se cobra ni tiene comisión.
-          </p>
-        </div>
-      </section>
-
-    </>
+          <div className="rounded-card bg-surface-raised p-4 shadow-sm">
+            <label className="flex items-center justify-between gap-3">
+              <span className="flex items-center gap-2 text-[13.5px] font-semibold text-text">
+                <Sparkles size={16} strokeWidth={2} className="text-primary-strong" />
+                Ofrezco la primera clase gratis
+              </span>
+              <Toggle activo={acceptsTrial} onCambio={setAcceptsTrial} etiqueta="Primera clase gratis" />
+            </label>
+            <p className="mt-1.5 text-[12.5px] leading-relaxed text-text-muted">
+              Una clase de prueba sin costo para cada estudiante que todavía no ha tomado clases contigo: sirve para
+              conocerse. No se cobra ni tiene comisión.
+            </p>
+          </div>
+        </section>
+      </div>
+    </div>
   );
 }
 

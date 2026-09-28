@@ -23,7 +23,7 @@ export default function HiloPage() {
   const { id } = useParams<{ id: string }>();
 
   return (
-    <main className="mx-auto w-full max-w-5xl lg:px-12 lg:py-8">
+    <main className="mx-auto w-full max-w-5xl lg:max-w-[1600px] lg:px-10 lg:py-8 xl:px-14">
       <div className="lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-8">
         {/* La bandeja acompaña al hilo en desktop; en móvil se oculta (ya está en /mensajes). */}
         <div className="hidden lg:block">

@@ -10,7 +10,7 @@ import { ListaConversaciones } from "./lista";
  */
 export default function MensajesPage() {
   return (
-    <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-5xl lg:px-12 lg:py-8">
+    <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-[1600px] lg:px-10 xl:px-14 lg:py-8">
       <h1 className="font-display text-h1 font-bold">Mensajes</h1>
       <p className="mt-1 text-[13.5px] text-text-secondary">
         Coordina tus clases aquí. Por tu seguridad, todo queda dentro de Orión.

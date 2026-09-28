@@ -51,7 +51,7 @@ export default function AyudaPage() {
   const [abriendo, setAbriendo] = useState(false);
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-5 py-8 lg:max-w-5xl lg:px-12">
+    <main className="mx-auto w-full max-w-3xl px-5 py-8 lg:max-w-[1600px] lg:px-10 xl:px-14">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="font-display text-h1 font-bold">Ayuda</h1>
@@ -67,76 +67,84 @@ export default function AyudaPage() {
         )}
       </div>
 
-      {contacto.data && (
-        <a
-          href={`https://wa.me/${contacto.data.whatsappDigits}`}
-          target="_blank"
-          rel="noreferrer noopener"
-          className="mt-5 flex items-center gap-3 rounded-card border border-border bg-surface-raised p-4 transition-colors hover:border-border-strong focus-visible:shadow-focus"
-        >
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-success-bg text-success">
-            <MessageCircle size={19} strokeWidth={1.75} />
-          </span>
-          <span className="min-w-0">
-            <span className="block text-[14px] font-bold">Hablar por WhatsApp</span>
-            <span className="block text-[12.5px] text-text-muted">{contacto.data.horario}</span>
-          </span>
-        </a>
-      )}
+      {/* En el computador, dos columnas (Pardo, 27/09/2026: «utiliza todo o casi todo el ancho»): lo
+          tuyo a la izquierda —escribirnos y tus solicitudes— y a la derecha lo que se lee. */}
+      <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-10 xl:gap-14">
+        <div>
+          {contacto.data && (
+            <a
+              href={`https://wa.me/${contacto.data.whatsappDigits}`}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="mt-5 flex items-center gap-3 rounded-card border border-border bg-surface-raised p-4 transition-colors hover:border-border-strong focus-visible:shadow-focus"
+            >
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-success-bg text-success">
+                <MessageCircle size={19} strokeWidth={1.75} />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[14px] font-bold">Hablar por WhatsApp</span>
+                <span className="block text-[12.5px] text-text-muted">{contacto.data.horario}</span>
+              </span>
+            </a>
+          )}
 
-      <ConoceOrion
-        rol={me?.role === "PROFESSOR" || me?.role === "STUDENT" ? me.role : null}
-        onPreguntas={() => document.getElementById("preguntas")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-        onSoporte={() => {
-          setAbriendo(true);
-          requestAnimationFrame(() =>
-            document.getElementById("nueva-solicitud")?.scrollIntoView({ behavior: "smooth", block: "start" }),
-          );
-        }}
-      />
+          <ConoceOrion
+            rol={me?.role === "PROFESSOR" || me?.role === "STUDENT" ? me.role : null}
+            onPreguntas={() => document.getElementById("preguntas")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            onSoporte={() => {
+              setAbriendo(true);
+              requestAnimationFrame(() =>
+                document.getElementById("nueva-solicitud")?.scrollIntoView({ behavior: "smooth", block: "start" }),
+              );
+            }}
+          />
 
-      {abriendo && (
-        <div id="nueva-solicitud" className="scroll-mt-20">
-          <FormularioNuevaSolicitud onListo={() => setAbriendo(false)} />
+          {abriendo && (
+            <div id="nueva-solicitud" className="scroll-mt-20">
+              <FormularioNuevaSolicitud onListo={() => setAbriendo(false)} />
+            </div>
+          )}
+
+          <h2 className="mt-8 font-display text-[17px] font-bold">Mis solicitudes</h2>
+
+          {solicitudes.isPending && <Cargando filas={2} />}
+          {solicitudes.isError && <ErrorCarga mensaje="No pudimos cargar tus solicitudes." onReintentar={() => solicitudes.refetch()} />}
+          {solicitudes.data?.length === 0 && (
+            <Vacio
+              titulo="Todavía no has escrito"
+              texto="Cuando abras una solicitud, aparecerá aquí con su respuesta."
+            />
+          )}
+
+          <div className="mt-3 grid gap-2">
+            {solicitudes.data?.map((t) => (
+              <Link key={t.code} href={`/ayuda/${t.code}`} className="block">
+                <Tarjeta className="border border-border transition-colors hover:border-border-strong">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-display text-[15px] font-bold">{t.subject}</p>
+                    <Badge tono={TONO_ESTADO[t.status]}>{ETIQUETA_ESTADO[t.status]}</Badge>
+                  </div>
+                  <p className="mt-1 text-[12.5px] text-text-muted">
+                    <span className="mono">{t.code}</span> · {t.categoryLabel} ·{" "}
+                    {fechaRelativa(t.createdAt)}
+                  </p>
+                </Tarjeta>
+              </Link>
+            ))}
+          </div>
         </div>
-      )}
 
-      <h2 className="mt-8 font-display text-[17px] font-bold">Mis solicitudes</h2>
-
-      {solicitudes.isPending && <Cargando filas={2} />}
-      {solicitudes.isError && <ErrorCarga mensaje="No pudimos cargar tus solicitudes." onReintentar={() => solicitudes.refetch()} />}
-      {solicitudes.data?.length === 0 && (
-        <Vacio
-          titulo="Todavía no has escrito"
-          texto="Cuando abras una solicitud, aparecerá aquí con su respuesta."
-        />
-      )}
-
-      <div className="mt-3 grid gap-2">
-        {solicitudes.data?.map((t) => (
-          <Link key={t.code} href={`/ayuda/${t.code}`} className="block">
-            <Tarjeta className="border border-border transition-colors hover:border-border-strong">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-display text-[15px] font-bold">{t.subject}</p>
-                <Badge tono={TONO_ESTADO[t.status]}>{ETIQUETA_ESTADO[t.status]}</Badge>
-              </div>
-              <p className="mt-1 text-[12.5px] text-text-muted">
-                <span className="mono">{t.code}</span> · {t.categoryLabel} ·{" "}
-                {fechaRelativa(t.createdAt)}
-              </p>
-            </Tarjeta>
-          </Link>
-        ))}
+        <div className="lg:[&>*:first-child>section]:mt-5">
+          {/* Las preguntas frecuentes y la política de cancelación viven también en la cuenta de cada
+              rol, pero /perfil está cerrado para el profesor no aprobado y el aspirante ni lo tiene en
+              el menú — y son justo quienes más dudas tienen. Ayuda es la única pantalla a la que
+              llegan todos, así que aquí no pueden faltar. */}
+          <div id="preguntas" className="scroll-mt-20">
+            {faq && <PreguntasFrecuentes rol={faq} />}
+          </div>
+          {politica && <PoliticaCancelacion rol={politica} />}
+        </div>
       </div>
-
-      {/* Las preguntas frecuentes y la política de cancelación viven también en la cuenta de cada
-          rol, pero /perfil está cerrado para el profesor no aprobado y el aspirante ni lo tiene en
-          el menú — y son justo quienes más dudas tienen. Ayuda es la única pantalla a la que
-          llegan todos, así que aquí no pueden faltar. */}
-      <div id="preguntas" className="scroll-mt-20">
-        {faq && <PreguntasFrecuentes rol={faq} />}
-      </div>
-      {politica && <PoliticaCancelacion rol={politica} />}
     </main>
   );
 }

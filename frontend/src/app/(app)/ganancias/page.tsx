@@ -30,7 +30,7 @@ export default function GananciasPage() {
   const datosDePago = useDatosDePago();
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-6 lg:max-w-5xl lg:px-12 lg:py-8">
+    <main className="mx-auto max-w-4xl px-6 py-6 lg:max-w-[1600px] lg:px-10 xl:px-14 lg:py-8">
       <h1 className="font-display text-h1 font-bold">Mis ganancias</h1>
       <p className="mt-1 text-[13.5px] text-text-secondary">
         Orión cobra al estudiante en tu nombre y te paga cada quincena las clases que ya dictaste.
