@@ -47,7 +47,7 @@ Aparecieron además dos fallas:
   quiere decir que Orión sabe a dónde avisar.
 - El servidor deja en el log qué servicio de push rechazó.
 
-**Verificación:** `./mvnw verify` con 450 unitarias y 675 de integración en verde; Vitest 195; `next build` en verde. En el navegador: el pie
+**Verificación:** `./mvnw verify` 450 unitarias y 675 de integración en verde (la primera corrida falló: `TextosDelActaTest` todavía leía `AvisoDelRecorrido.tsx`, que se había borrado esa tarde; corregido en el commit siguiente, ver ESTADO); Vitest 195; `next build` en verde. En el navegador: el pie
 dice «Revisando…» al abrir, y en incógnito explica por qué no se puede.
 
 **Para cerrar:** saber en qué dispositivo y navegador probó Pardo. Si fue Safari en el iPhone sin

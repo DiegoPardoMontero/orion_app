@@ -40,6 +40,9 @@ Rigel a los 5 minutos (V79):
   recorrido entero (`hacerElRecorrido`, en `apoyo.ts`), y `[p-bienvenida…]` comprueba que no hay «Lo veo
   después», que Esc no cierra el recorrido y que se retoma donde iba.
 - Revisión visual de /perfil a 390, 1440 y 1920 px, de la vista previa y de Cuenta.
+- **Corrección (28/09, 15:50):** esa corrida del backend fue anterior al commit que borró
+  `AvisoDelRecorrido.tsx` (94cf153). `TextosDelActaTest` lo leía, y con eso `./mvnw verify` falló en
+  `master` hasta que se quitó de su lista. Después: 450 unitarias y 675 de integración en verde.
 
 Al 28/09/2026, con la megarrevisión del profe y la postulación obligatoria integradas (V78):
 - **Backend: `./mvnw verify`, 450 unitarias y 674 de integración, en verde.**
