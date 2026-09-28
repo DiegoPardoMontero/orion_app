@@ -5,6 +5,7 @@ estado. La regla está en `CLAUDE.md` → «Registro de pedidos». Del más reci
 
 | Fecha | Pedido | Estado |
 |---|---|---|
+| 28/09/2026 15:28 | [Los avisos no suenan, y la campana no muestra si están activos ni pide permiso](2026-09-28-1528-los-avisos-no-suenan.md) | En curso |
 | 28/09/2026 12:53 | [Una sola columna, el perfil del profe más bonito, recorrido obligatorio, Rigel a los 5 minutos y cómo activar los avisos](2026-09-28-1253-una-columna-perfil-mas-bonito-recorrido-obligatorio-rigel-y-avisos.md) | Hecho |
 | 27/09/2026 10:35 | [La postulación con todo obligatorio, el perfil visible arriba, horarios arrastrando y un recorrido más rápido](2026-09-27-1035-postulacion-obligatoria-perfil-horarios-y-recorrido.md) | Hecho |
 | 27/09/2026 10:02 | [Lo que dijo el abogado, y la megarrevisión del flujo del profesor](2026-09-27-1002-abogado-terminos-y-megareview-del-profesor.md) | Hecho |
