@@ -93,5 +93,7 @@ frontend) y lo de hoy: `99a3067` (contraseña en el servidor), `bd9a32b` (perfil
 previa y ciudad), `97af1d1` (Mis clases → perfil público), `ba9a83f` (cambiar contraseña),
 `22f34fd` y `ff55b76` (el ancho), `caa958a` y `025c70b` (e2e).
 
+**Cierre:** push a `master` el 28/09 y correo a Pardo con el resumen ejecutivo, el mismo de la terminal.
+
 **Queda como está (Pardo, 28/09):** si el profe registra la asistencia apenas termina la clase, el
 estudiante ya no puede abrir un reclamo formal (A5 de la revisión).
