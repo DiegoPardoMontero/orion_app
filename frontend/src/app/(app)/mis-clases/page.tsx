@@ -72,7 +72,7 @@ function Contenido() {
   const { aprobado } = useMiAplicacion(esProfesor);
 
   return (
-    <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-5xl lg:px-12 lg:py-8">
+    <main className="mx-auto w-full max-w-md px-5 py-6 lg:max-w-[1600px] lg:px-10 lg:py-8 xl:px-14">
       <Suspense fallback={null}>
         <BannerReserva />
         <AvisoAsistenciaCerrada />
@@ -179,6 +179,10 @@ function Contenido() {
           Antes era una retícula de dos columnas, y esa era la razón de que no se entendiera el
           orden: en dos columnas la lectura zigzaguea y la segunda clase queda a la derecha de la
           primera, no debajo. Aquí el orden se lee bajando, que es como se lee una agenda.
+
+          En pantallas anchas (27/09: «utiliza todo o casi todo el ancho») la columna sigue siendo
+          una: lo que se ensancha es cada tarjeta, que pasa a leerse en un renglón —hora, con quién,
+          qué hacer—. Así se usa el ancho sin volver al zigzag.
         */}
         {vista === "agenda" ? (
           <Agenda clases={data ?? []} scope={scope} esProfesor={esProfesor} senalada={claseSenalada} />
@@ -268,12 +272,13 @@ function ListaDeActas({ esProfesor }: { esProfesor: boolean }) {
             : "Todavía no hay resúmenes. Aparecerán aquí después de tus clases."}
         </p>
       ) : (
-        <ul className="mt-2 divide-y divide-border">
+        // En ancho, una rejilla: cada acta es independiente y el orden no cuenta una historia.
+        <ul className="mt-2 divide-y divide-border lg:grid lg:grid-cols-2 lg:gap-2 lg:divide-y-0 2xl:grid-cols-3">
           {visibles.map((e) => (
             <li key={e.bookingId}>
               <Link
                 href={`/mis-clases/${e.bookingId}/acta`}
-                className="flex min-h-11 items-center justify-between gap-3 py-2 text-[13.5px] transition-colors hover:text-primary-strong focus-visible:shadow-focus"
+                className="flex min-h-11 items-center justify-between gap-3 py-2 text-[13.5px] transition-colors hover:text-primary-strong focus-visible:shadow-focus lg:rounded-base lg:bg-surface-sunken lg:px-3.5"
               >
                 <span className="min-w-0 truncate">
                   <span className="font-semibold">{e.counterpartName ?? "Clase"}</span>
@@ -308,8 +313,9 @@ function VistaCalendario({
   const [diaElegido, setDiaElegido] = useState<string | null>(null);
   const delDia = clases.filter((clase) => clase.startsAt && diaBogota(clase.startsAt) === diaElegido);
 
+  // En ancho, el mes y el día elegido lado a lado: se elige un día sin perder de vista el mes.
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start lg:gap-6 2xl:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
       <CalendarioClases clases={clases} onElegirDia={setDiaElegido} />
 
       {diaElegido && (
@@ -542,8 +548,15 @@ function TarjetaClase({
   return (
     <>
       <Tarjeta tour={scope === "past" && clase.status === "COMPLETED" ? "clase-pasada" : undefined}>
-        <div className="flex items-center justify-between gap-2">
-          <span className="flex items-center gap-2 text-[13.5px] font-bold">
+        {/*
+          Con espacio (la tarjeta, no la pantalla: en el calendario va en media columna), la tarjeta
+          se lee en un renglón: hora | con quién | qué hacer. Es una rejilla con posiciones
+          explícitas para no reordenar el DOM: en el celular todo queda como estaba.
+        */}
+        <div className="@container">
+        <div className="@3xl:grid @3xl:grid-cols-[230px_minmax(160px,1fr)_auto] @3xl:items-center @3xl:gap-x-6 @3xl:gap-y-3">
+        <div className="flex items-center justify-between gap-2 @3xl:col-start-1 @3xl:row-start-1 @3xl:flex-col @3xl:items-start @3xl:justify-start">
+          <span className="flex items-center gap-2 text-[13.5px] font-bold @3xl:flex-wrap">
             <Clock size={15} strokeWidth={1.9} className="text-primary" />
             <span className="whitespace-nowrap">{rangoHoras(clase.startsAt!, clase.endsAt!)}</span>
             {enCurso ? (
@@ -558,7 +571,7 @@ function TarjetaClase({
               )
             )}
           </span>
-          <span className="flex flex-wrap items-center justify-end gap-1.5">
+          <span className="flex flex-wrap items-center justify-end gap-1.5 @3xl:justify-start">
             {clase.rehearsal && <Badge tono="neutral">Ensayo</Badge>}
             {clase.trial && <Badge tono="coral">Clase de prueba</Badge>}
             <Badge tono={virtual ? "menta" : "melocoton"}>
@@ -568,7 +581,7 @@ function TarjetaClase({
           </span>
         </div>
 
-        <div className="mt-3 flex items-center gap-2.5">
+        <div className="mt-3 flex items-center gap-2.5 @3xl:col-start-2 @3xl:row-start-1 @3xl:mt-0">
           <Avatar nombre={nombreContraparte} fotoUrl={contraparte?.photoUrl} size="sm" />
           <div className="min-w-0">
             {/* El profesor entra a la ficha de su estudiante desde aquí: es donde están sus
@@ -593,11 +606,11 @@ function TarjetaClase({
         </div>
 
         {clase.locationNote && (
-          <p className="ml-11 mt-1 text-[12px] text-text-muted">Lugar: {clase.locationNote}</p>
+          <p className="ml-11 mt-1 text-[12px] text-text-muted @3xl:col-start-2 @3xl:mt-0">Lugar: {clase.locationNote}</p>
         )}
 
         {scope === "past" && clase.status !== "CONFIRMED" && !esperaPago(clase.status) && (
-          <div className="mt-3">
+          <div className="mt-3 @3xl:col-start-1 @3xl:mt-0">
             <Badge
               tono={
                 clase.status === "COMPLETED"
@@ -623,7 +636,7 @@ function TarjetaClase({
           pago, no los botones de una clase que existe.
         */}
         {esperaPago(clase.status) && (
-          <div className="mt-3.5 rounded-base bg-warning-bg px-4 py-3">
+          <div className="mt-3.5 rounded-base bg-warning-bg px-4 py-3 @3xl:col-span-full @3xl:mt-0">
             <p className="flex items-center gap-1.5 text-[13px] font-bold text-warning">
               <Clock size={15} strokeWidth={2.2} />
               {esProfesor ? "Reservada, a la espera del pago" : "Te guardamos el horario mientras pagas"}
@@ -662,7 +675,7 @@ function TarjetaClase({
           otro horario —que no rompen nada y se deshacen solos— van sin borde. Con las cuatro del
           mismo peso la tarjeta pedía leerlas todas para encontrar la única que importa.
         */}
-        <div className="mt-3.5 flex flex-wrap gap-2 sm:justify-end">
+        <div className="mt-3.5 flex flex-wrap gap-2 sm:justify-end @3xl:col-start-3 @3xl:row-start-1 @3xl:mt-0">
           {scope === "upcoming" && clase.status === "CONFIRMED" && virtual && clase.meetingLink && (
             <Link
               href={clase.meetingLink}
@@ -744,11 +757,13 @@ function TarjetaClase({
         </div>
 
         {puedeCalificar && resenaHecha && (
-          <p className="mt-2.5 flex items-center justify-center gap-1.5 text-center text-[12px] font-semibold text-success">
+          <p className="mt-2.5 flex items-center justify-center gap-1.5 text-center text-[12px] font-semibold text-success @3xl:col-span-full @3xl:mt-0">
             <Check size={13} strokeWidth={2.2} />
             ¡Gracias! Ya calificaste esta clase.
           </p>
         )}
+        </div>
+        </div>
       </Tarjeta>
 
       {cancelando && <ModalCancelar clase={clase} onCerrar={() => setCancelando(false)} />}
