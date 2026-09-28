@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BadgeCheck, Eye, Globe, Plus, Sparkles, UserPlus, X } from "lucide-react";
+import { BadgeCheck, Eye, EyeOff, Globe, Plus, Sparkles, UserPlus, X } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -17,6 +17,7 @@ import { apiFetch } from "@/lib/api/fetch";
 import type {
   GoalResponse,
   LanguageResponse,
+  ProfessorCard,
   ProfileResponse,
   RateBreakdownResponse,
 } from "@/lib/api/types";
@@ -27,6 +28,9 @@ import { estadoBio, estadoTitular } from "@/lib/perfil-profesor";
 import { minutos, useCifras } from "@/lib/cifras";
 import { conMiles, posicionTrasCifras, soloDigitos } from "@/lib/tarifa";
 import { SelectorDePais } from "@/components/SelectorDePais";
+import { SelectorDeCiudad } from "@/components/SelectorDeCiudad";
+import { Modal } from "@/components/Modal";
+import { TarjetaProfesor } from "@/components/profesor/TarjetaProfesor";
 
 /** El idioma tal como lo edita el profesor: código + si es nativo + niveles que enseña. */
 type LangEdit = { code: string; isNative: boolean; levels: string[] };
@@ -218,6 +222,13 @@ function CamposDelPerfil({ inicial }: { inicial: ProfileResponse }) {
   const [langs, setLangs] = useState<LangEdit[]>(idiomasDe(inicial));
   const [goals, setGoals] = useState<string[]>(inicial.goals ?? []);
   const [publicado, setPublicado] = useState(inicial.isPublished ?? false);
+  const [viendoVistaPrevia, setViendoVistaPrevia] = useState(false);
+
+  // La ciudad es del catálogo del país: con otro país, la de antes ya no corresponde.
+  const cambiarPais = (code: string) => {
+    if (code !== countryCode) setCity("");
+    setCountryCode(code);
+  };
 
   /** Vuelve a lo que dice el servidor: al descartar, y después de guardar (ya normalizado). */
   function aplicar(p: ProfileResponse) {
@@ -338,6 +349,24 @@ function CamposDelPerfil({ inicial }: { inicial: ProfileResponse }) {
   const alternarObjetivo = (code: string) =>
     setGoals((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]));
 
+  // La tarjeta del buscador con lo que hay escrito ahora, guardado o no. La foto sale de la caché
+  // porque CambiarFoto la sube por su lado y actualiza ["me", "profile"], no este formulario.
+  const tarjetaBorrador: ProfessorCard = {
+    id: inicial.id,
+    fullName: inicial.fullName,
+    photoUrl: queryClient.getQueryData<ProfileResponse>(["me", "profile"])?.photoUrl ?? inicial.photoUrl,
+    headline: headline.trim() || undefined,
+    city: city.trim() || undefined,
+    countryCode: countryCode || undefined,
+    certified,
+    hourlyRateCop: tarifa.trim() !== "" && Number.isFinite(numeroTarifa) ? numeroTarifa : undefined,
+    languages: langs
+      .filter((l) => l.code)
+      .map((l) => ({ code: l.code, nameEs: nombreIdioma(l.code), isNative: l.isNative })),
+    levels: NIVELES.filter((n) => langs.some((l) => l.levels.includes(n))),
+    goals,
+  };
+
   return (
     <>
       {/* — Tarifa — */}
@@ -349,6 +378,61 @@ function CamposDelPerfil({ inicial }: { inicial: ProfileResponse }) {
         baseBps={inicial.baseRateBps}
         fundador={inicial.founder}
       />
+
+      {/* — Visible u oculto: justo debajo de la tarifa, para saberlo de un vistazo (27/09/2026) — */}
+      <section
+        className={`mt-4 rounded-card p-4 ${publicado ? "bg-success-bg" : "bg-warning-bg"}`}
+        aria-label="Visibilidad de tu perfil"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p
+              className={`flex items-center gap-1.5 text-[13.5px] font-bold ${publicado ? "text-success" : "text-warning"}`}
+            >
+              {publicado ? <Eye size={15} strokeWidth={2.2} /> : <EyeOff size={15} strokeWidth={2.2} />}
+              {publicado ? "Tu perfil está visible" : "Tu perfil está oculto"}
+            </p>
+            <p className="mt-0.5 text-[11.5px] text-text-secondary">
+              {publicado
+                ? "Los estudiantes pueden verte y reservar"
+                : "Los estudiantes no te ven ni pueden reservar contigo. Tus clases ya agendadas siguen en pie."}
+            </p>
+          </div>
+          <Toggle activo={publicado} onCambio={setPublicado} etiqueta="Perfil visible" />
+        </div>
+
+        {publicado !== (inicial.isPublished ?? false) && (
+          <p className="mt-3 text-[12px] font-semibold text-text-secondary">
+            Guarda con la barra de abajo para que el cambio se aplique.
+          </p>
+        )}
+
+        {publicado && !tieneTarifa && (
+          <p className="mt-3 rounded-base bg-warning-bg px-3.5 py-2.5 text-[12px] text-warning">
+            Fija tu tarifa antes de publicar: escribe un precio por hora aquí arriba y guarda.
+          </p>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setViendoVistaPrevia(true)}
+          className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-pill border-[1.5px] border-border bg-surface-raised px-4 text-[13px] font-bold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
+        >
+          <Eye size={15} strokeWidth={2} aria-hidden />
+          Vista previa: así te ven
+        </button>
+      </section>
+
+      {viendoVistaPrevia && (
+        <Modal titulo="Así te ven los estudiantes" onCerrar={() => setViendoVistaPrevia(false)}>
+          <VistaPrevia
+            tarjeta={tarjetaBorrador}
+            bio={bio.trim()}
+            visible={publicado}
+            profesorId={inicial.id}
+          />
+        </Modal>
+      )}
 
       {/* — Presentación — */}
       <label className="mt-6 block text-[12.5px] font-bold text-text-secondary" htmlFor="headline">
@@ -485,24 +569,16 @@ function CamposDelPerfil({ inicial }: { inicial: ProfileResponse }) {
       {/* — Datos — */}
       <section className="mt-6 grid grid-cols-2 gap-3">
         <div className="col-span-2 sm:col-span-1">
-          <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="city">
-            Ciudad
-          </label>
-          <Campo
-            id="city"
-            type="text"
-            maxLength={80}
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-            placeholder="Bogotá"
-            className="mt-1.5"
-          />
-        </div>
-        <div className="col-span-2 sm:col-span-1">
           <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="country">
             País
           </label>
-          <SelectorDePais id="country" value={countryCode} onChange={setCountryCode} className="mt-1.5" />
+          <SelectorDePais id="country" value={countryCode} onChange={cambiarPais} className="mt-1.5" />
+        </div>
+        <div className="col-span-2 sm:col-span-1">
+          <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="city">
+            Ciudad
+          </label>
+          <SelectorDeCiudad id="city" pais={countryCode} value={city} onChange={setCity} className="mt-1.5" />
         </div>
         <div className="col-span-2 sm:col-span-1">
           <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="years">
@@ -558,35 +634,56 @@ function CamposDelPerfil({ inicial }: { inicial: ProfileResponse }) {
         </div>
       </section>
 
-      {/* — Publicar — */}
-      <section className="mt-6 rounded-card bg-success-bg p-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="flex items-center gap-1.5 text-[13.5px] font-bold text-success">
-              <Eye size={15} strokeWidth={2.2} />
-              Perfil visible
-            </p>
-            <p className="mt-0.5 text-[11.5px] text-text-secondary">
-              Los estudiantes pueden verte y reservar
-            </p>
-          </div>
-          <Toggle activo={publicado} onCambio={setPublicado} etiqueta="Perfil visible" />
-        </div>
-
-        {publicado && !tieneTarifa && (
-          <p className="mt-3 rounded-base bg-warning-bg px-3.5 py-2.5 text-[12px] text-warning">
-            Fija tu tarifa antes de publicar: escribe un precio por hora más arriba y guarda.
-          </p>
-        )}
-
-        {!publicado && (
-          <p className="mt-3 rounded-base bg-warning-bg px-3.5 py-2.5 text-[12px] text-warning">
-            Mientras esté oculto, los estudiantes no te ven ni pueden reservar contigo. Tus clases ya
-            agendadas siguen en pie.
-          </p>
-        )}
-      </section>
     </>
+  );
+}
+
+/**
+ * La vista previa sencilla del perfil (Pardo, 27/09/2026): la tarjeta con la que sale en el buscador
+ * y su «Sobre ti», con lo que tiene escrito aunque no lo haya guardado. El perfil completo, con la
+ * agenda y las reseñas, está a un enlace, y ese sí muestra lo guardado.
+ */
+function VistaPrevia({
+  tarjeta,
+  bio,
+  visible,
+  profesorId,
+}: {
+  tarjeta: ProfessorCard;
+  bio: string;
+  visible: boolean;
+  profesorId?: string;
+}) {
+  return (
+    <div className="space-y-4">
+      <p className="text-[12.5px] text-text-secondary">
+        Así sales en el buscador de profesores, con lo que tienes escrito ahora, aunque todavía no lo hayas guardado.
+      </p>
+      {!visible && (
+        <p className="rounded-base bg-warning-bg px-3.5 py-2.5 text-[12px] text-warning">
+          Ahora mismo tu perfil está oculto: nadie lo ve hasta que lo actives y guardes.
+        </p>
+      )}
+      <TarjetaProfesor profesor={tarjeta} vistaPrevia />
+      <div className="rounded-card bg-surface-raised p-4 shadow-sm">
+        <p className="text-[12.5px] font-bold text-text-secondary">Sobre ti</p>
+        <p className="mt-1.5 text-[13.5px] leading-relaxed whitespace-pre-line text-text">
+          {bio || <span className="text-text-muted">Todavía no has escrito nada aquí.</span>}
+        </p>
+      </div>
+      {profesorId && (
+        <Link
+          href={`/profesores/${profesorId}`}
+          className="inline-flex min-h-11 items-center gap-2 rounded-pill border-[1.5px] border-border px-4 text-[13.5px] font-bold text-text transition-colors hover:bg-surface-sunken focus-visible:shadow-focus"
+        >
+          <Globe size={15} strokeWidth={2} aria-hidden />
+          Abrir mi perfil público completo
+        </Link>
+      )}
+      {profesorId && (
+        <p className="-mt-2 text-[11.5px] text-text-muted">El perfil completo muestra lo que ya guardaste.</p>
+      )}
+    </div>
   );
 }
 
