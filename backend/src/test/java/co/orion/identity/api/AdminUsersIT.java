@@ -117,6 +117,14 @@ class AdminUsersIT extends ApiIntegrationSupport {
                 (short) 5, "Lic. en Lenguas", false, false,
                 List.of(new UpdateProfileRequest.LanguageEntry("EN", false, List.of("BEGINNER"))),
                 List.of("CONVERSATION"), true);
+        // El correo que escribió el admin nadie lo ha confirmado, y publicar lo exige (29/09/2026).
+        ResponseEntity<Map> sinConfirmar = put("/api/v1/me/profile", profe, publicar, Map.class);
+        assertThat(sinConfirmar.getStatusCode().value()).isEqualTo(422);
+        assertThat(sinConfirmar.getBody().get("error").toString()).contains("Confirma tu correo");
+
+        var usuario = users.findById(response.getBody().id()).orElseThrow();
+        usuario.markEmailVerified(java.time.Instant.now());
+        users.save(usuario);
         assertThat(put("/api/v1/me/profile", profe, publicar, Map.class).getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 

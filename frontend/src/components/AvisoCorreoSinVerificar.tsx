@@ -10,15 +10,15 @@ import { ApiError } from "@/lib/api/fetch";
  * <p>Una barra y no un diálogo, a diferencia de la de mayoría de edad. La distinción es
  * deliberada: la mayoría de edad es una declaración que hay que dar y no se puede posponer; esto
  * es una tarea que está a medias en otro sitio —el buzón— y bloquear la app mientras tanto no la
- * acerca ni un paso. Solo estorba cuando llega el momento de reservar, y ahí sí, el backend
- * responde 422.
+ * acerca ni un paso. Solo estorba cuando llega el momento de reservar o, para el profe, de
+ * publicar su perfil (29/09/2026), y ahí sí, el backend responde 422.
  */
 export function AvisoCorreoSinVerificar({
   correo,
   ensena = false,
 }: {
   correo: string;
-  /** Quien vino a enseñar todavía no puede reservar nada: decírselo le hace dudar de dónde se registró. */
+  /** Quien vino a enseñar no reserva: lo que le frena el correo sin confirmar es publicar su perfil. */
   ensena?: boolean;
 }) {
   const reenviar = useReenviarVerificacion();
@@ -36,7 +36,7 @@ export function AvisoCorreoSinVerificar({
         <p className="min-w-0 flex-1">
           {mensaje ?? (
             <>
-              {ensena ? "Confirma tu correo para poder dictar tus clases." : "Confirma tu correo para poder reservar."}{" "}
+              {ensena ? "Confirma tu correo para poder publicar tu perfil." : "Confirma tu correo para poder reservar."}{" "}
               Ya te enviamos un enlace a <strong className="font-bold">{correo}</strong>.
             </>
           )}

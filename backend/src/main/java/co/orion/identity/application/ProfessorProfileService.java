@@ -107,6 +107,13 @@ public class ProfessorProfileService {
                 throw new UnprocessableException(
                         "Fija tu tarifa por hora antes de publicar tu perfil.");
             }
+            // Correo confirmado (Pardo, 29/09/2026): un profe publicado recibe en ese correo sus
+            // reservas, sus avisos y sus liquidaciones, y uno que nunca se confirmó puede estar mal
+            // escrito. Como el resto del gate, mira solo el paso a publicado.
+            if (!profile.getUser().isEmailVerified()) {
+                throw new UnprocessableException("Confirma tu correo antes de publicar tu perfil: abre el enlace "
+                        + "que te enviamos. Si no te llegó, pídelo de nuevo con «Reenviar».");
+            }
         }
 
         profile.describe(req.headline(), req.bio());

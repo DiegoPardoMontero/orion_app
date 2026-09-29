@@ -14,6 +14,7 @@ import {
   Sparkles,
   Target,
   UserPlus,
+  UserRound,
   Wallet,
   X,
 } from "lucide-react";
@@ -29,6 +30,8 @@ import { Campo, Toggle } from "@/components/ui";
 import { EdicionEnPagina, useFormularioEditable } from "@/components/edicion/EdicionEnPagina";
 import { DiscoIdioma } from "@/components/DiscoIdioma";
 import { apiFetch } from "@/lib/api/fetch";
+import { type Cuenta, MisDatos } from "@/components/cuenta/MisDatos";
+import { useMe } from "@/lib/auth/session";
 import type {
   GoalResponse,
   LanguageResponse,
@@ -190,6 +193,7 @@ const huella = (valor: unknown) => JSON.stringify(valor);
  */
 function CamposDelPerfil({ inicial }: { inicial: ProfileResponse }) {
   const queryClient = useQueryClient();
+  const { data: me } = useMe();
 
   const languages = useQuery({
     queryKey: ["catalog", "languages"],
@@ -375,6 +379,8 @@ function CamposDelPerfil({ inicial }: { inicial: ProfileResponse }) {
         onVistaPrevia={() => setViendoVistaPrevia(true)}
       />
 
+      <TusDatos />
+
       {/* — Tarifa — */}
       <WidgetTarifa
         valor={tarifa}
@@ -418,6 +424,14 @@ function CamposDelPerfil({ inicial }: { inicial: ProfileResponse }) {
         {publicado && !tieneTarifa && (
           <p className="mt-3 rounded-base bg-warning-bg px-3.5 py-2.5 text-[12px] text-warning">
             Fija tu tarifa antes de publicar: escribe un precio por hora aquí arriba y guarda.
+          </p>
+        )}
+
+        {/* Publicar exige el correo confirmado (Pardo, 29/09/2026); el servidor también lo exige. */}
+        {publicado && !inicial.isPublished && me && !me.emailVerified && (
+          <p className="mt-3 rounded-base bg-surface-raised px-3.5 py-2.5 text-[12px] text-warning">
+            Confirma tu correo antes de publicar: abre el enlace que te enviamos a <strong>{me.email}</strong>. Si no
+            te llegó, pídelo de nuevo con «Reenviar» en el aviso de arriba.
           </p>
         )}
       </section>
@@ -663,6 +677,37 @@ function CamposDelPerfil({ inicial }: { inicial: ProfileResponse }) {
  * está escrito, aunque no esté guardado—, y los tres caminos para verse como lo ven: la vista previa,
  * el perfil público y el enlace para compartir.
  */
+/**
+ * Nombre y WhatsApp del profe (Pardo, 29/09/2026): antes solo se corregían pidiéndoselo al equipo.
+ * Se guardan con la misma barra que el resto del perfil.
+ */
+function TusDatos() {
+  const cuenta = useQuery({
+    queryKey: ["me", "account"],
+    queryFn: () => apiFetch<Cuenta>("/api/v1/me/account"),
+  });
+  return (
+    <Seccion
+      icono={<UserRound size={18} strokeWidth={2} />}
+      tono="lavanda"
+      titulo="Tus datos"
+      descripcion="Tu nombre sale en tu perfil y en tus clases. El WhatsApp y el correo solo los ve el equipo de Orión."
+    >
+      {cuenta.data ? (
+        <MisDatos
+          inicial={cuenta.data}
+          enTarjeta={false}
+          ayudaNombre="Escríbelo como quieres que lo lean tus estudiantes."
+        />
+      ) : cuenta.isError ? (
+        <ErrorCarga mensaje="No pudimos cargar tus datos." onReintentar={() => void cuenta.refetch()} />
+      ) : (
+        <Cargando filas={2} />
+      )}
+    </Seccion>
+  );
+}
+
 function Portada({
   inicial,
   titular,
