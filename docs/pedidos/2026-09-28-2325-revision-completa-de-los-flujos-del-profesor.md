@@ -83,3 +83,17 @@ Contestadas en el chat, eligiendo entre opciones:
   invitados; la regla de dinero no cambia.
 - **Indicativos del WhatsApp:** «No, por ahora solo esos». Se quedan los 9 países: el lanzamiento
   recluta profes en Colombia.
+
+Segunda tanda, 29/09/2026 (00:25), también eligiendo entre opciones:
+
+- **Aviso de datos de pago:** «Obligatorio + Salir y soporte». Sigue sin poder cerrarse para usar la
+  app, pero trae «Salir» y el enlace a WhatsApp de soporte.
+- **Postulación en revisión:** «Bloqueada en revisión». Solo se edita en borrador o cuando el equipo
+  pide cambios. Se cierra también en la API y se corrigen las preguntas frecuentes.
+- **Nota privada de la hoja de cierre:** «Quitar el campo». Lo que importa de la clase ya va en el acta.
+- **Sala con un reclamo abierto:** «Abierta hasta el final». Los dos pueden entrar hasta que termine la
+  hora de la clase.
+- **Nombre y WhatsApp del profe:** «Sí, en su perfil». Se editan en «Editar mi perfil»; los
+  comprobantes ya emitidos conservan el nombre con el que salieron.
+- **Correo sin verificar:** «Exigirlo de verdad». Un profe sin el correo verificado no puede publicar
+  su perfil.
