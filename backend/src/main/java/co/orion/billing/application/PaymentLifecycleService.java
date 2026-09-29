@@ -148,7 +148,7 @@ public class PaymentLifecycleService {
     @Transactional
     public void markDisputed(UUID bookingId) {
         payments.findByBookingId(bookingId)
-                .filter(Payment::isPaid)
+                .filter(Payment::canBeDisputed)
                 .ifPresent(payment -> {
                     payment.markDisputed();
                     payments.save(payment);

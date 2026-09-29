@@ -24,9 +24,13 @@ import co.orion.scheduling.persistence.BookingRepository;
 @Service
 public class BookingQueryService {
 
-    /** Una reserva sigue viva mientras esté confirmada o en pleno pago. */
+    /**
+     * Una reserva sigue viva mientras esté confirmada o en pleno pago. También en revisión: un
+     * reclamo puede llegar con la clase en curso, y la sala sigue abierta hasta el final, así que
+     * la clase se queda en «Próximas» con su botón para entrar hasta que termine.
+     */
     private static final List<BookingStatus> ACTIVE_STATUSES =
-            List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT);
+            List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT, BookingStatus.UNDER_REVIEW);
 
     public enum Scope {
         UPCOMING,

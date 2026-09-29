@@ -84,7 +84,10 @@ public class ClassroomService {
             // 404 y no 403: quien no es de esta clase no tiene por qué saber que existe.
             throw new ResourceNotFoundException("Reserva no encontrada");
         }
-        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+        // Con un reclamo abierto la sala sigue abierta hasta el final (Pardo, 29/09/2026): el profe
+        // que se cayó de la llamada o llegó tarde puede volver a entrar, y si la clase al final se
+        // dio, eso es justo lo que el equipo necesita saber para resolver.
+        if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.UNDER_REVIEW) {
             throw new BusinessRuleViolationException(
                     "Esta clase no está confirmada, así que no tiene sala.");
         }

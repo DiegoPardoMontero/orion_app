@@ -22,6 +22,8 @@ public interface DisputeRepository extends JpaRepository<Dispute, UUID> {
 
     List<Dispute> findByBookingIdOrderByCreatedAtDesc(UUID bookingId);
 
+    boolean existsByBookingId(UUID bookingId);
+
     /** Los ids de reserva con reclamo vivo: el filtro que el autocompletado no puede saltarse. */
     @org.springframework.data.jpa.repository.Query("""
             select d.bookingId from Dispute d

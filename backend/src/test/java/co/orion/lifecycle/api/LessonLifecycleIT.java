@@ -82,6 +82,7 @@ class LessonLifecycleIT extends ApiIntegrationSupport {
     @Autowired private ProfessorProfileRepository profiles;
     @Autowired private co.orion.scheduling.persistence.AvailabilityRuleRepository rules;
     @Autowired private LessonAutoCompleteJob autoComplete;
+    @Autowired private co.orion.billing.application.PayoutCandidates payoutCandidates;
     @Autowired private JdbcTemplate jdbc;
 
     private User ana;
@@ -350,6 +351,91 @@ class LessonLifecycleIT extends ApiIntegrationSupport {
         assertThat(absences.count()).isZero();
     }
 
+    /* ------------------------------------------ reclamos después de la asistencia (29/09/2026) */
+
+    /**
+     * El caso que cerraba la puerta: el profe marca «no llegó» a los 15 minutos sin haber entrado,
+     * el pago se libera, y la estudiante que llega al minuto 16 tiene que poder reclamar igual. El
+     * reclamo congela el dinero ya liberado, la sala sigue abierta y la clase no entra al corte.
+     */
+    @Test
+    void marcarQueNoLlegoNoCierraElReclamoNiLaSala() {
+        UUID id = bookAndPay(9);
+        moveClassTo(id, FROZEN_NOW.minusSeconds(16 * 60), FROZEN_NOW.plusSeconds(39 * 60));
+        marcarAsistencia(id, false);
+        assertThat(payments.findByBookingId(id).orElseThrow().getStatus()).isEqualTo(PaymentStatus.RELEASED);
+
+        assertThat(reportProblem(id).getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+        assertThat(bookings.findById(id).orElseThrow().getStatus()).isEqualTo(BookingStatus.UNDER_REVIEW);
+        assertThat(payments.findByBookingId(id).orElseThrow().getStatus()).isEqualTo(PaymentStatus.DISPUTED);
+        assertThat(payoutCandidates.ofProfessor(maria.getId())).isEmpty();
+        // Los dos pueden volver a la sala hasta que termine la clase.
+        assertThat(get(BOOKINGS + "/" + id + "/classroom", anaSession, Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.OK);
+        assertThat(get(BOOKINGS + "/" + id + "/classroom", mariaSession, Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    void unaClaseYaDadaPorDictadaTambienSeReclamaDentroDelPlazo() {
+        UUID id = bookAndPay(9);
+        moveClassTo(id, FROZEN_NOW.minusSeconds(3 * 3600), FROZEN_NOW.minusSeconds(3 * 3600 - 55 * 60));
+        marcarAsistencia(id, true);
+
+        assertThat(reportProblem(id).getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(payments.findByBookingId(id).orElseThrow().getStatus()).isEqualTo(PaymentStatus.DISPUTED);
+    }
+
+    @Test
+    void siGanaElProfeLaClaseVuelveANoLlegoConSuHoraDeCierre() {
+        UUID id = bookAndPay(9);
+        moveClassTo(id, FROZEN_NOW.minusSeconds(16 * 60), FROZEN_NOW.plusSeconds(39 * 60));
+        marcarAsistencia(id, false);
+        Instant cerrada = bookings.findById(id).orElseThrow().getCompletedAt();
+        UUID disputeId = openDispute(id);
+
+        resolver(disputeId, "RESOLVED_FOR_PROFESSOR");
+
+        var clase = bookings.findById(id).orElseThrow();
+        // No vuelve a COMPLETED: una clase que nadie recibió no lleva acta ni cuenta como dictada.
+        assertThat(clase.getStatus()).isEqualTo(BookingStatus.NO_SHOW_STUDENT);
+        assertThat(clase.getCompletedAt()).isEqualTo(cerrada);
+        assertThat(payments.findByBookingId(id).orElseThrow().getStatus()).isEqualTo(PaymentStatus.RELEASED);
+        assertThat(absences.count()).isZero();
+    }
+
+    @Test
+    void siGanaLaEstudianteRecuperaElValorAunqueElPagoYaSeHubieraLiberado() {
+        UUID id = bookAndPay(9);
+        moveClassTo(id, FROZEN_NOW.minusSeconds(16 * 60), FROZEN_NOW.plusSeconds(39 * 60));
+        marcarAsistencia(id, false);
+        UUID disputeId = openDispute(id);
+
+        resolver(disputeId, "RESOLVED_FOR_STUDENT");
+
+        assertThat(bookings.findById(id).orElseThrow().getStatus()).isEqualTo(BookingStatus.NO_SHOW_PROFESSOR);
+        assertThat(payments.findByBookingId(id).orElseThrow().getStatus()).isEqualTo(PaymentStatus.REFUNDED);
+        assertThat(credits.findUsable(ana.getId(), FROZEN_NOW).stream()
+                .mapToLong(c -> c.getRemainingCop()).sum()).isEqualTo(RATE_COP);
+        assertThat(absences.count()).isEqualTo(1);
+        assertThat(payoutCandidates.ofProfessor(maria.getId())).isEmpty();
+    }
+
+    /** Resuelto el reclamo, la clase vuelve a un estado reclamable; no por eso se reclama otra vez. */
+    @Test
+    void unaClaseNoSeReclamaDosVeces() {
+        UUID id = bookAndPay(9);
+        moveClassTo(id, FROZEN_NOW.minusSeconds(16 * 60), FROZEN_NOW.plusSeconds(39 * 60));
+        marcarAsistencia(id, false);
+        resolver(openDispute(id), "RESOLVED_FOR_PROFESSOR");
+
+        ResponseEntity<Map> otra = reportProblem(id);
+
+        assertThat(otra.getStatusCode().value()).isEqualTo(409);
+        assertThat(payments.findByBookingId(id).orElseThrow().getStatus()).isEqualTo(PaymentStatus.RELEASED);
+    }
+
     /** La primera ausencia es un aviso, y en modo observación queda PROPUESTA, no aplicada. */
     @Test
     void laPrimeraAusenciaProponeUnAvisoSinAplicarlo() {
@@ -492,6 +578,17 @@ class LessonLifecycleIT extends ApiIntegrationSupport {
     private ResponseEntity<Map> reportProblem(UUID bookingId) {
         return post(BOOKINGS + "/" + bookingId + "/report-problem", anaSession,
                 Map.of("reason", "PROFESSOR_NO_SHOW", "description", "No se conectó"), Map.class);
+    }
+
+    private void marcarAsistencia(UUID bookingId, boolean present) {
+        assertThat(post(BOOKINGS + "/" + bookingId + "/attendance", mariaSession,
+                Map.of("present", present), Map.class).getStatusCode()).isEqualTo(HttpStatus.CREATED);
+    }
+
+    private void resolver(UUID disputeId, String outcome) {
+        assertThat(post("/api/v1/admin/disputes/" + disputeId + "/resolve", adminSession,
+                Map.of("outcome", outcome, "note", "Revisado con los dos"), Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.OK);
     }
 
     private UUID openDispute(UUID bookingId) {

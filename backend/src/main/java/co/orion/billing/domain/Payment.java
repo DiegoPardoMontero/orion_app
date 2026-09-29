@@ -227,12 +227,21 @@ public class Payment {
     /**
      * Un reclamo congeló este dinero. Ni se libera ni se devuelve hasta que una persona decida: es
      * exactamente lo que distingue un reclamo de una cancelación.
+     *
+     * <p>También si ya estaba liberado: registrar la asistencia libera el pago, y el reclamo sigue
+     * abierto hasta 24 h después de la clase. Dentro de ese plazo la clase todavía no entra en
+     * ninguna liquidación ({@code PayoutCalculator.pendingReason}), así que congelarlo no le quita
+     * al profe nada que ya se le haya pagado.
      */
     public void markDisputed() {
-        if (status != PaymentStatus.PAID) {
+        if (!canBeDisputed()) {
             throw new IllegalStateException("Un pago en " + status + " no admite reclamo");
         }
         this.status = PaymentStatus.DISPUTED;
+    }
+
+    public boolean canBeDisputed() {
+        return status == PaymentStatus.PAID || status == PaymentStatus.RELEASED;
     }
 
     public boolean needsHumanReview() {

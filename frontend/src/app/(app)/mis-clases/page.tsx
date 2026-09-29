@@ -504,16 +504,30 @@ function TarjetaClase({
   const desdeAsistencia = esperaAsistencia
     ? momentosDeAsistencia(clase.startsAt!, clase.endsAt!, cifras.noShowReportMinutes)
     : null;
-  const ahora = useAhoraHasta(desdeAsistencia ? [desdeAsistencia.asistio, desdeAsistencia.noAsistio] : []);
+  // El reclamo del estudiante vence un plazo después del final, marque lo que marque el profesor.
+  const venceElReclamo =
+    !esProfesor && clase.endsAt
+      ? new Date(clase.endsAt).getTime() + cifras.disputeReportWindowHours * 3_600_000
+      : null;
+  const ahora = useAhoraHasta([
+    ...(desdeAsistencia ? [desdeAsistencia.asistio, desdeAsistencia.noAsistio] : []),
+    ...(venceElReclamo ? [venceElReclamo] : []),
+  ]);
   const puedeRegistrar =
     !!desdeAsistencia && ahora >= Math.min(desdeAsistencia.asistio, desdeAsistencia.noAsistio);
 
   // El estudiante califica una clase pasada que se dio (confirmada o completada). El backend arbitra
   // el plazo/estado real (422) y el duplicado (409); aquí basta con ofrecer el botón en ese rango.
-  // Reportar un problema: del estudiante, sobre una clase pasada que todavía no se cerró. El
-  // backend arbitra la ventana real (desde 15 min después de empezar y hasta 24 h después de
-  // terminar); aquí basta con ofrecer el botón en ese rango.
-  const puedeReportar = !esProfesor && yaEmpezo && clase.status === "CONFIRMED";
+  // Reportar un problema: del estudiante, desde que la clase empezó y hasta que vence el plazo,
+  // aunque el profesor ya haya marcado la asistencia: si marcó «no llegó» a los 15 minutos sin
+  // haber entrado, quien llega al minuto 16 tiene que poder decirlo (Pardo, 29/09/2026). El backend
+  // arbitra la ventana real (desde 15 min después de empezar) y el reclamo único por clase.
+  const puedeReportar =
+    !esProfesor &&
+    yaEmpezo &&
+    (clase.status === "CONFIRMED" || clase.status === "COMPLETED" || clase.status === "NO_SHOW_STUDENT") &&
+    venceElReclamo !== null &&
+    ahora < venceElReclamo;
 
   // Un ensayo del admin no se califica: movería la reputación del profesor por una clase que no
   // existió (el servidor también lo rechaza). La clase de prueba de un estudiante sí: es una clase.
@@ -675,7 +689,11 @@ function TarjetaClase({
           mismo peso la tarjeta pedía leerlas todas para encontrar la única que importa.
         */}
         <div className="mt-3.5 flex flex-wrap gap-2 sm:justify-end @3xl:col-start-3 @3xl:row-start-1 @3xl:mt-0">
-          {scope === "upcoming" && clase.status === "CONFIRMED" && virtual && clase.meetingLink && (
+          {/* Con un reclamo abierto la sala sigue abierta hasta el final (Pardo, 29/09/2026). */}
+          {scope === "upcoming" &&
+            (clase.status === "CONFIRMED" || clase.status === "UNDER_REVIEW") &&
+            virtual &&
+            clase.meetingLink && (
             <Link
               href={clase.meetingLink}
               data-tour="unirse"

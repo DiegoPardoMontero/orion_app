@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import co.orion.identity.domain.User;
 import co.orion.scheduling.domain.Booking;
+import co.orion.scheduling.domain.BookingStatus;
 import co.orion.shared.time.BusinessZone;
 
 /**
@@ -81,6 +82,7 @@ public record MyBookingResponse(UUID id,
                 Counterpart.of(counterpart, counterpartPhotoUrl, counterpartHeadline),
                 booking.isRehearsal(),
                 booking.isTrial(),
-                booking.isConfirmed() && !now.isBefore(booking.getStartsAt()) && now.isBefore(booking.getEndsAt()));
+                (booking.isConfirmed() || booking.getStatus() == BookingStatus.UNDER_REVIEW)
+                        && !now.isBefore(booking.getStartsAt()) && now.isBefore(booking.getEndsAt()));
     }
 }

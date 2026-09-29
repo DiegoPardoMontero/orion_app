@@ -24,6 +24,7 @@ import co.orion.scheduling.application.BookingService;
 import co.orion.scheduling.domain.Booking;
 import co.orion.scheduling.domain.AbsenceKind;
 import co.orion.scheduling.domain.ProfessorAbsence;
+import co.orion.scheduling.persistence.AttendanceRecordRepository;
 import co.orion.scheduling.persistence.BookingRepository;
 import co.orion.scheduling.persistence.ProfessorAbsenceRepository;
 import co.orion.shared.error.ConflictException;
@@ -55,6 +56,7 @@ public class DisputeService {
     private final BookingRepository bookings;
     private final BookingService bookingService;
     private final ProfessorAbsenceRepository absences;
+    private final AttendanceRecordRepository attendance;
     private final PaymentLifecycleService payments;
     private final PlatformSettingsService settings;
     private final ApplicationEventPublisher events;
@@ -64,6 +66,7 @@ public class DisputeService {
                           BookingRepository bookings,
                           BookingService bookingService,
                           ProfessorAbsenceRepository absences,
+                          AttendanceRecordRepository attendance,
                           PaymentLifecycleService payments,
                           PlatformSettingsService settings,
                           ApplicationEventPublisher events,
@@ -72,6 +75,7 @@ public class DisputeService {
         this.bookings = bookings;
         this.bookingService = bookingService;
         this.absences = absences;
+        this.attendance = attendance;
         this.payments = payments;
         this.settings = settings;
         this.events = events;
@@ -82,6 +86,10 @@ public class DisputeService {
      * El estudiante reporta un problema. La clase pasa a UNDER_REVIEW y su pago a DISPUTED: a
      * partir de aquí el autocompletado no la toca y el dinero se queda quieto hasta que alguien
      * decida.
+     *
+     * <p>Lo que abre y cierra el reclamo es el plazo, no lo que haya marcado el profesor: una clase
+     * ya cerrada con la asistencia se sigue pudiendo reclamar hasta que venza (Pardo, 29/09/2026).
+     * Una sola vez por clase: la que ya tuvo un reclamo resuelto no se vuelve a abrir.
      */
     @Transactional
     public Dispute report(User student, UUID bookingId, String reasonName, String description) {
@@ -89,9 +97,11 @@ public class DisputeService {
                 .filter(candidate -> candidate.getStudentId().equals(student.getId()))
                 .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada"));
 
-        if (!booking.isConfirmed()) {
-            throw new ConflictException(
-                    "Esta clase ya no admite un reclamo: ya tiene uno abierto, se canceló o ya se cerró.");
+        if (disputes.existsByBookingId(bookingId)) {
+            throw new ConflictException("Esta clase ya tiene un reclamo: lo estamos revisando o ya lo resolvimos.");
+        }
+        if (!booking.admitsClaim()) {
+            throw new ConflictException("Esta clase ya no admite un reclamo: se canceló o no llegó a confirmarse.");
         }
 
         Instant now = clock.instant();
@@ -139,7 +149,10 @@ public class DisputeService {
 
         Booking booking = bookingService.require(dispute.getBookingId());
         boolean lessonHeld = !outcome.favoursStudent();
-        booking.resolveReview(lessonHeld, now);
+        boolean studentWasAbsent = attendance.findByBookingId(booking.getId())
+                .map(record -> !record.isPresent())
+                .orElse(false);
+        booking.resolveReview(lessonHeld, studentWasAbsent, now);
         bookings.save(booking);
 
         if (lessonHeld) {

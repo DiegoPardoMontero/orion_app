@@ -249,21 +249,45 @@ public class Booking {
         return true;
     }
 
+    /**
+     * Si su estado todavía admite un reclamo; el plazo lo mide {@code DisputeService}. Una clase
+     * cerrada con la asistencia también: el profesor puede marcar «no llegó» a los 15 minutos sin
+     * haber entrado a la sala, y si eso cerrara el reclamo, el estudiante que llega al minuto 16
+     * se quedaría sin clase, sin sala y sin a quién decírselo (Pardo, 29/09/2026).
+     */
+    public boolean admitsClaim() {
+        return status == BookingStatus.CONFIRMED
+                || status == BookingStatus.COMPLETED
+                || status == BookingStatus.NO_SHOW_STUDENT;
+    }
+
     /** El estudiante abrió un reclamo: la clase no se cierra sola hasta que alguien lo resuelva. */
     public void putUnderReview() {
-        if (!isConfirmed()) {
-            throw new IllegalStateException("Solo una reserva CONFIRMED admite un reclamo");
+        if (!admitsClaim()) {
+            throw new IllegalStateException("Esta reserva ya no admite un reclamo");
         }
         this.status = BookingStatus.UNDER_REVIEW;
     }
 
-    /** El reclamo se resolvió: la clase contó (a favor del profesor) o no (ausencia suya). */
-    public void resolveReview(boolean lessonHeld, Instant now) {
+    /**
+     * El reclamo se resolvió: la clase contó (a favor del profesor) o no (ausencia suya).
+     *
+     * <p>Si contó y el profesor ya había marcado que el estudiante no llegó, vuelve a
+     * NO_SHOW_STUDENT y no a COMPLETED: una clase que nadie recibió no lleva acta ni suma como
+     * dictada. La hora del cierre, si ya la tenía, se conserva: el acta y las métricas la leen.
+     */
+    public void resolveReview(boolean lessonHeld, boolean studentWasAbsent, Instant now) {
         if (status != BookingStatus.UNDER_REVIEW) {
             throw new IllegalStateException("Esta reserva no está en revisión");
         }
-        this.status = lessonHeld ? BookingStatus.COMPLETED : BookingStatus.NO_SHOW_PROFESSOR;
-        this.completedAt = now;
+        if (!lessonHeld) {
+            this.status = BookingStatus.NO_SHOW_PROFESSOR;
+        } else {
+            this.status = studentWasAbsent ? BookingStatus.NO_SHOW_STUDENT : BookingStatus.COMPLETED;
+        }
+        if (completedAt == null) {
+            this.completedAt = now;
+        }
     }
 
     public Instant getCompletedAt() {
