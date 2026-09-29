@@ -19,6 +19,7 @@ import {
 } from "@/lib/mensajeria";
 import { useCerrarConEscape } from "@/lib/useCerrarConEscape";
 import { AvisosEnEsteDispositivo } from "@/components/AvisosEnEsteDispositivo";
+import { puedeSalirA } from "@/components/edicion/EdicionEnPagina";
 
 /** Momento relativo compacto para el panel: hora si es de hoy, si no la fecha corta. */
 function cuando(iso: string | undefined): string {
@@ -126,7 +127,9 @@ export function CampanaNotificaciones({
       void queryClient.invalidateQueries({ queryKey: meQueryKey });
     }
     setAbierto(false);
-    router.push(rutaNotificacion(notif.linkPath));
+    // Si la página tiene cambios sin guardar (el perfil a medio editar), pregunta antes de salir.
+    const ruta = rutaNotificacion(notif.linkPath);
+    if (puedeSalirA(ruta)) router.push(ruta);
   }
 
   return (
@@ -246,12 +249,14 @@ export function CampanaNotificaciones({
                         )}
                       </span>
                     </button>
+                    {/* En un celular no hay hover: la X escondida era una zona invisible que borraba
+                        la notificación al tocar su borde derecho. Con dedo se ve siempre. */}
                     <button
                       type="button"
                       aria-label={`Borrar la notificación «${notif.title}»`}
                       onClick={() => notif.id && borrarUna.mutate(notif.id)}
                       disabled={borrarUna.isPending}
-                      className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-text-muted opacity-0 transition-opacity hover:bg-surface-sunken hover:text-text focus-visible:opacity-100 focus-visible:shadow-focus group-hover:opacity-100 disabled:opacity-40"
+                      className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-text-muted opacity-0 transition-opacity hover:bg-surface-sunken hover:text-text focus-visible:opacity-100 focus-visible:shadow-focus group-hover:opacity-100 pointer-coarse:opacity-100 disabled:opacity-40"
                     >
                       <X size={15} strokeWidth={2.2} />
                     </button>

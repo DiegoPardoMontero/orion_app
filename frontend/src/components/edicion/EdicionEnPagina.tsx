@@ -207,10 +207,22 @@ export function EdicionEnPagina({ children }: { children: ReactNode }) {
   );
 }
 
+const EVENTO_SALIR = "orion:salir";
+
+/**
+ * Para lo que navega por código y no con un enlace (la campana): le pregunta a la página abierta si
+ * tiene cambios sin guardar. Devuelve false si la página se quedó con la decisión y ya muestra su
+ * «¿Salir sin guardar?»; true si se puede navegar.
+ */
+export function puedeSalirA(ruta: string): boolean {
+  return window.dispatchEvent(new CustomEvent(EVENTO_SALIR, { detail: ruta, cancelable: true }));
+}
+
 /**
  * Mientras haya cambios: cerrar o recargar la pestaña pregunta el navegador, y un enlace de la app
  * pregunta la página. El App Router no trae una guarda de navegación, así que los clics en enlaces
- * se atajan en la fase de captura, antes de que los vea el `Link` de Next.
+ * se atajan en la fase de captura, antes de que los vea el `Link` de Next. Lo que navega por código
+ * pasa por {@link puedeSalirA}.
  */
 function useGuardaDeSalida(activa: boolean) {
   const router = useRouter();
@@ -235,11 +247,17 @@ function useGuardaDeSalida(activa: boolean) {
       evento.stopPropagation();
       setPendiente(url.pathname + url.search + url.hash);
     };
+    const alSalirPorCodigo = (evento: Event) => {
+      evento.preventDefault();
+      setPendiente((evento as CustomEvent<string>).detail);
+    };
     window.addEventListener("beforeunload", alCerrar);
     document.addEventListener("click", alClic, true);
+    window.addEventListener(EVENTO_SALIR, alSalirPorCodigo);
     return () => {
       window.removeEventListener("beforeunload", alCerrar);
       document.removeEventListener("click", alClic, true);
+      window.removeEventListener(EVENTO_SALIR, alSalirPorCodigo);
     };
   }, [activa]);
 
