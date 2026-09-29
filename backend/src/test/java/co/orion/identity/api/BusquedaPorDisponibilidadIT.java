@@ -161,6 +161,27 @@ class BusquedaPorDisponibilidadIT extends ApiIntegrationSupport {
 
     @SuppressWarnings("rawtypes")
     @Test
+    @DisplayName("Dos franjas contiguas son la misma tarde, como en el cálculo de cupos")
+    void lasFranjasContiguasSeFunden() {
+        // Laura abrió 13:00–14:00 y 14:00–15:00 (arrastrar sobre la semana deja franjas así). La clase de
+        // las 13:30 termina a las 14:25: no cabe en ninguna de las dos sola, pero el perfil sí la ofrece.
+        User laura = createUser("laura@orion.test", "Laura Díaz", UserRole.PROFESSOR);
+        approveTeacher(laura.getId());
+        ProfessorProfile perfil = new ProfessorProfile(laura);
+        perfil.changeRate(45000L);
+        perfil.publish();
+        perfiles.saveAndFlush(perfil);
+        reglas.saveAndFlush(new AvailabilityRule(laura.getId(), DayOfWeek.THURSDAY, LocalTime.parse("13:00"), LocalTime.parse("14:00")));
+        reglas.saveAndFlush(new AvailabilityRule(laura.getId(), DayOfWeek.THURSDAY, LocalTime.parse("14:00"), LocalTime.parse("15:00")));
+
+        assertThat(nombresDe(rest.getForEntity("/api/v1/professors?day=THURSDAY&hour=13:30", Map.class)))
+                .containsExactly("Laura Díaz");
+        assertThat(nombresDe(rest.getForEntity("/api/v1/professors?day=THURSDAY&from=13:30&to=14:30", Map.class)))
+                .containsExactly("Laura Díaz");
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Test
     @DisplayName("La última hora de una franja no cuenta si la clase no alcanza a caber")
     void laUltimaHoraNoCabe() {
         // La franja de María cierra a las 21:00: una clase a las 21 terminaría a las 21:55.
@@ -169,9 +190,11 @@ class BusquedaPorDisponibilidadIT extends ApiIntegrationSupport {
 
     @SuppressWarnings("rawtypes")
     @Test
-    @DisplayName("Una hora que no es en punto responde 422: los cupos empiezan en punto")
-    void unaHoraSinPuntoEs422() {
-        ResponseEntity<Map> respuesta = rest.getForEntity("/api/v1/professors?hour=18:30", Map.class);
+    @DisplayName("La media hora se puede pedir (los cupos salen cada media hora desde la V78); otro minuto, 422")
+    void laMediaHoraSiOtroMinutoNo() {
+        assertThat(nombresDe(rest.getForEntity("/api/v1/professors?hour=18:30", Map.class)))
+                .containsExactly("María Gómez");
+        ResponseEntity<Map> respuesta = rest.getForEntity("/api/v1/professors?hour=18:15", Map.class);
 
         assertThat(respuesta.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
         assertThat(rest.getForEntity("/api/v1/professors?hour=tarde", Map.class).getStatusCode())

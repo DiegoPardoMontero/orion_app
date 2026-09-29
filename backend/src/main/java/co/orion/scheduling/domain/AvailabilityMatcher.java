@@ -2,6 +2,10 @@ package co.orion.scheduling.domain;
 
 import java.time.Duration;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * Si una franja de disponibilidad deja caber una clase dentro del rango que alguien busca.
@@ -15,6 +19,32 @@ import java.time.LocalTime;
 public final class AvailabilityMatcher {
 
     private AvailabilityMatcher() {
+    }
+
+    /** Un tramo de disponibilidad de un día, {@code [inicio, fin)} en hora de pared de Bogotá. */
+    public record Tramo(LocalTime inicio, LocalTime fin) {
+    }
+
+    /**
+     * Las franjas de un mismo día con las contiguas o solapadas fundidas en un solo tramo, como las
+     * funde {@link SlotCalculator} al calcular los cupos. Sin esto el buscador miraba cada franja
+     * sola: con 17:00–18:00 y 18:00–19:30, la clase de las 17:30 existe en el perfil pero el filtro
+     * «martes a las 17:30» no encontraba al profe. Y las contiguas son normales: arrastrar sobre la
+     * semana crea una franja corta para unir dos (revisión del 28/09/2026).
+     */
+    public static List<Tramo> fundir(Collection<Tramo> tramos) {
+        List<Tramo> ordenados = tramos.stream().sorted(Comparator.comparing(Tramo::inicio)).toList();
+        List<Tramo> fundidos = new ArrayList<>();
+        for (Tramo tramo : ordenados) {
+            Tramo ultimo = fundidos.isEmpty() ? null : fundidos.getLast();
+            if (ultimo != null && !tramo.inicio().isAfter(ultimo.fin())) {
+                LocalTime fin = tramo.fin().isAfter(ultimo.fin()) ? tramo.fin() : ultimo.fin();
+                fundidos.set(fundidos.size() - 1, new Tramo(ultimo.inicio(), fin));
+            } else {
+                fundidos.add(tramo);
+            }
+        }
+        return fundidos;
     }
 
     /**
@@ -33,8 +63,8 @@ public final class AvailabilityMatcher {
 
     /**
      * Si en la franja cabe una clase que empieza exactamente a {@code hora}: los cupos van alineados
-     * a la hora (ver {@link SlotCalculator}), así que pedir «las 7» es pedir el cupo de las 7:00, no
-     * cualquier rato entre las 7 y las 8.
+     * a la hora o a la media hora (ver {@link SlotCalculator}), así que pedir «las 7» es pedir el cupo
+     * de las 7:00, no cualquier rato entre las 7 y las 8.
      */
     public static boolean empiezaALas(LocalTime inicioFranja, LocalTime finFranja, LocalTime hora,
                                       Duration duracionClase) {

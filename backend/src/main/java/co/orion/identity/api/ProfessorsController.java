@@ -98,8 +98,9 @@ public class ProfessorsController {
     }
 
     /**
-     * Horas exactas de inicio: «07:00» o «7», repetibles. Los cupos van en punto, así que «7:30» no
-     * es una hora que se pueda pedir y responde 422 en vez de no encontrar nada.
+     * Horas exactas de inicio: «07:00», «7» o «17:30», repetibles. Desde la V78 los cupos van en punto
+     * o a la media hora; otro minuto («7:15») no es una hora que se pueda pedir y responde 422 en vez
+     * de no encontrar nada.
      */
     private Set<LocalTime> parseHours(List<String> hours) {
         if (hours == null || hours.isEmpty()) {
@@ -114,8 +115,10 @@ public class ProfessorsController {
             } catch (java.time.DateTimeException ex) {
                 throw new UnprocessableException("La hora «" + hour + "» debe ir como HH:00, por ejemplo 18:00.");
             }
-            if (hora.getMinute() != 0 || hora.getSecond() != 0) {
-                throw new UnprocessableException("Las clases empiezan en punto: pide «" + hora.getHour() + ":00».");
+            if ((hora.getMinute() != 0 && hora.getMinute() != 30) || hora.getSecond() != 0) {
+                throw new UnprocessableException(
+                        "Las clases empiezan en punto o a la media hora: pide «" + hora.getHour() + ":00» o «"
+                                + hora.getHour() + ":30».");
             }
             parsed.add(hora);
         }

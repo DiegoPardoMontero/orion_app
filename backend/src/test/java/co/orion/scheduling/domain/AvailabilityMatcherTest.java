@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 import java.time.LocalTime;
+import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -104,5 +105,20 @@ class AvailabilityMatcherTest {
     @DisplayName("Una clase que cruzaría la medianoche no cabe")
     void medianoche() {
         assertThat(empieza("22:00", "23:59", "23:30")).isFalse();
+    }
+
+    private static AvailabilityMatcher.Tramo tramo(String inicio, String fin) {
+        return new AvailabilityMatcher.Tramo(LocalTime.parse(inicio), LocalTime.parse(fin));
+    }
+
+    @Test
+    @DisplayName("Las franjas contiguas o solapadas de un día se funden en un tramo; las separadas, no")
+    void fundir() {
+        assertThat(AvailabilityMatcher.fundir(List.of(tramo("14:00", "15:00"), tramo("13:00", "14:00"))))
+                .containsExactly(tramo("13:00", "15:00"));
+        assertThat(AvailabilityMatcher.fundir(List.of(tramo("08:00", "10:00"), tramo("09:00", "09:30"))))
+                .containsExactly(tramo("08:00", "10:00"));
+        assertThat(AvailabilityMatcher.fundir(List.of(tramo("08:00", "09:00"), tramo("10:00", "11:00"))))
+                .containsExactly(tramo("08:00", "09:00"), tramo("10:00", "11:00"));
     }
 }

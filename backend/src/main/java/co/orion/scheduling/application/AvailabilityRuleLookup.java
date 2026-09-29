@@ -3,9 +3,14 @@ package co.orion.scheduling.application;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 import co.orion.shared.time.ClassLength;
 import co.orion.identity.application.ProfessorAvailabilityLookup;
 import co.orion.scheduling.domain.AvailabilityMatcher;
+import co.orion.scheduling.domain.AvailabilityMatcher.Tramo;
+import co.orion.scheduling.domain.AvailabilityRule;
 import co.orion.scheduling.persistence.AvailabilityRuleRepository;
 
 /**
@@ -45,12 +52,8 @@ class AvailabilityRuleLookup implements ProfessorAvailabilityLookup {
                 ? rules.findByActiveTrue()
                 : rules.findByWeekdayInAndActiveTrue(days);
 
-        return candidatas.stream()
-                .filter(r -> AvailabilityMatcher.cabeUnaClase(
-                        r.getStartTime(), r.getEndTime(), from, to, CLASS_LENGTH))
-                .map(r -> r.getProfessorId())
-                .distinct()
-                .toList();
+        return conAlgunTramo(candidatas, t -> AvailabilityMatcher.cabeUnaClase(
+                t.inicio(), t.fin(), from, to, CLASS_LENGTH));
     }
 
     @Override
@@ -60,11 +63,25 @@ class AvailabilityRuleLookup implements ProfessorAvailabilityLookup {
                 ? rules.findByActiveTrue()
                 : rules.findByWeekdayInAndActiveTrue(days);
 
-        return candidatas.stream()
-                .filter(r -> hours.stream().anyMatch(h ->
-                        AvailabilityMatcher.empiezaALas(r.getStartTime(), r.getEndTime(), h, CLASS_LENGTH)))
-                .map(r -> r.getProfessorId())
-                .distinct()
+        return conAlgunTramo(candidatas, t -> hours.stream().anyMatch(h ->
+                AvailabilityMatcher.empiezaALas(t.inicio(), t.fin(), h, CLASS_LENGTH)));
+    }
+
+    /**
+     * Los profesores con algún tramo que cumple, mirando las franjas de cada día ya fundidas: como las
+     * funde el cálculo de cupos, el buscador tiene que ver las mismas tardes que ve el perfil.
+     */
+    private static List<UUID> conAlgunTramo(List<AvailabilityRule> reglas, Predicate<Tramo> cumple) {
+        Map<UUID, Map<DayOfWeek, List<Tramo>>> porProfesorYDia = new LinkedHashMap<>();
+        for (AvailabilityRule r : reglas) {
+            porProfesorYDia.computeIfAbsent(r.getProfessorId(), k -> new EnumMap<>(DayOfWeek.class))
+                    .computeIfAbsent(r.getWeekday(), k -> new ArrayList<>())
+                    .add(new Tramo(r.getStartTime(), r.getEndTime()));
+        }
+        return porProfesorYDia.entrySet().stream()
+                .filter(e -> e.getValue().values().stream()
+                        .anyMatch(tramos -> AvailabilityMatcher.fundir(tramos).stream().anyMatch(cumple)))
+                .map(Map.Entry::getKey)
                 .toList();
     }
 }
