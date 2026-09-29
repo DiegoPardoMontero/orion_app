@@ -7,8 +7,10 @@
  * cadenas sueltas. El backend manda códigos; la UI los traduce a español de Colombia.
  */
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import { apiFetch, ApiError } from "@/lib/api/fetch";
+import { meQueryKey } from "@/lib/auth/session";
 import type { TeacherApplicationView } from "@/lib/api/types";
 import { estadoBio, estadoTitular, MAX_PALABRAS_BIO, MIN_PALABRAS_BIO, MIN_PALABRAS_TITULAR } from "@/lib/perfil-profesor";
 
@@ -269,6 +271,18 @@ export function useMiAplicacion(enabled = true) {
   const noAplico = query.error instanceof ApiError && query.error.status === 404;
   const status = query.data?.status;
   const aprobado = status === "APPROVED";
+
+  // La decisión cambia el rol (aspirante → profe): la sesión se refresca en cuanto el sondeo la ve.
+  // Antes se refrescaba al primer clic en «Completa y publica tu perfil», que rebotaba
+  // /perfil → /aplicacion → /perfil con el rol viejo en caché.
+  const queryClient = useQueryClient();
+  const anterior = useRef(status);
+  useEffect(() => {
+    if (anterior.current && status && anterior.current !== status) {
+      void queryClient.invalidateQueries({ queryKey: meQueryKey });
+    }
+    anterior.current = status;
+  }, [status, queryClient]);
 
   return { ...query, noAplico, status, aprobado };
 }

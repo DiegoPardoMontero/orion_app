@@ -248,7 +248,13 @@ export function MisHorarios() {
 
           <aside className="order-3 xl:order-none">
             <Bloque tono="melocoton" titulo="Fechas bloqueadas" icono={<CalendarOff size={16} strokeWidth={1.75} />}>
-              {(excepciones.data ?? []).length === 0 ? (
+              {/* Un fallo al cargarlas no es «ninguna»: el profe creería que sus días bloqueados se borraron. */}
+              {excepciones.isError ? (
+                <ErrorCarga
+                  mensaje="No pudimos cargar tus fechas bloqueadas."
+                  onReintentar={() => void excepciones.refetch()}
+                />
+              ) : (excepciones.data ?? []).length === 0 ? (
                 <p className="text-[12.5px] text-warning">
                   Ninguna por ahora. Bloquea un día cuando no puedas dar clases.
                 </p>

@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
-import { useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 
 export type Opcion = {
   valor: string;
@@ -58,6 +58,12 @@ export function Buscador({
   const [abierto, setAbierto] = useState(false);
   const [texto, setTexto] = useState<string | null>(null);
   const [activa, setActiva] = useState(0);
+  // Lo escrito, visto desde el temporizador del blur: si entretanto se eligió una opción con el
+  // ratón, ya vale null y el blur no la pisa.
+  const textoActual = useRef<string | null>(null);
+  useEffect(() => {
+    textoActual.current = texto;
+  }, [texto]);
 
   const elegida = opciones.find((o) => o.valor === valor);
   const mostrado = texto ?? elegida?.etiqueta ?? valor;
@@ -131,11 +137,22 @@ export function Buscador({
         }}
         onFocus={() => setAbierto(true)}
         onClick={() => setAbierto(true)}
-        // Se cierra un poco después para que el clic en una opción alcance a contar.
-        onBlur={() => setTimeout(() => {
-          setAbierto(false);
-          setTexto(null);
-        }, 150)}
+        // Se cierra un poco después para que el clic en una opción alcance a contar. Lo escrito no se
+        // pierde al salir del campo: si coincide con una opción, se elige esa; si no y el campo es
+        // `libre`, se usa tal cual. Antes se borraba, y la ciudad escrita entera («Chía») quedaba
+        // vacía y la postulación decía «Escribe o elige tu ciudad».
+        onBlur={() =>
+          setTimeout(() => {
+            setAbierto(false);
+            const escritoAlSalir = (textoActual.current ?? "").trim();
+            if (textoActual.current !== null && escritoAlSalir !== "") {
+              const igual = opciones.find((o) => normalizar(o.etiqueta) === normalizar(escritoAlSalir));
+              if (igual) onElegir(igual.valor);
+              else if (libre) onElegir(escritoAlSalir);
+            }
+            setTexto(null);
+          }, 150)
+        }
         onKeyDown={onKeyDown}
         className={`h-[52px] w-full rounded-base border-[1.5px] border-border bg-surface-raised pr-11 text-[15px] text-text transition-[border-color,box-shadow] placeholder:text-text-muted focus:border-primary focus:shadow-focus focus:outline-none disabled:opacity-60 ${
           elegida?.prefijo && texto === null ? "pl-[48px]" : "pl-[18px]"

@@ -195,7 +195,9 @@ function Burbuja({ mensaje }: { mensaje: MessageResponse }) {
   return (
     <div className={`flex flex-col ${mio ? "items-end" : "items-start"}`}>
       <div
-        className={`max-w-[80%] rounded-[18px] px-3.5 py-2 text-[14px] leading-relaxed ${
+        // pre-wrap: los saltos de línea que se escribieron con Shift+Enter se ven; y un enlace largo
+        // se parte en vez de salirse de la burbuja en un celular.
+        className={`max-w-[80%] whitespace-pre-wrap wrap-break-word rounded-[18px] px-3.5 py-2 text-[14px] leading-relaxed ${
           mio
             ? "bg-primary text-on-primary"
             : "bg-surface-sunken text-text"

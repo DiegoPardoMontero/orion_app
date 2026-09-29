@@ -29,9 +29,9 @@ function claveDia(anio: number, mes: number, dia: number): string {
  */
 function mesInicial(clases: MyBookingResponse[]): { anio: number; mes: number } {
   const primera = clases.find((clase) => clase.startsAt);
-  const hoy = new Date();
-  if (!primera) return { anio: hoy.getFullYear(), mes: hoy.getMonth() };
-  const { anio, mes } = partes(diaBogota(primera.startsAt!));
+  // El mes de hoy en Bogotá, no en el reloj del aparato: un profe fuera de Colombia cerca de la
+  // medianoche abría en otro mes.
+  const { anio, mes } = partes(diaBogota(primera?.startsAt ?? new Date().toISOString()));
   return { anio, mes };
 }
 
@@ -64,7 +64,8 @@ export function CalendarioClases({
   const diasDelMes = new Date(anio, mes + 1, 0).getDate();
   // getDay() da 0 para domingo; aquí la semana arranca en lunes, así que el domingo pasa a 6.
   const huecoInicial = (new Date(anio, mes, 1).getDay() + 6) % 7;
-  const hoy = claveDia(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+  // «Hoy» es el día en Bogotá, como todas las fechas de la app.
+  const hoy = diaBogota(new Date().toISOString());
 
   function mover(paso: number) {
     const fecha = new Date(anio, mes + paso, 1);

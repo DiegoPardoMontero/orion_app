@@ -136,9 +136,13 @@ export function diaBogota(iso: string): string {
 /**
  * Precio en pesos colombianos, sin decimales y con punto de miles: 45000 → "$45.000".
  * El COP no usa centavos; se redondea al peso. Formato es-CO (separador de miles con punto).
+ * Un valor negativo lleva el signo delante del peso, «− $5.000», y no «$-5.000»: así se leen los
+ * descuentos de una liquidación.
  */
 export function precioCop(n: number): string {
-  return `$${new Intl.NumberFormat(LOCALE).format(Math.round(n))}`;
+  const pesos = Math.round(n);
+  const cifra = new Intl.NumberFormat(LOCALE).format(Math.abs(pesos));
+  return pesos < 0 ? `− $${cifra}` : `$${cifra}`;
 }
 
 /**

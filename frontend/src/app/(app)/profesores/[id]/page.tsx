@@ -494,7 +494,9 @@ export default function AgendaProfesorPage() {
 
           {detalle.bio && (
             <div className="mt-4 rounded-base bg-surface-raised p-4 shadow-sm lg:mt-5 lg:bg-transparent lg:p-0 lg:shadow-none">
-              <p className="text-[13.5px] leading-relaxed text-text-secondary lg:text-[15px] lg:leading-[1.7]">
+              {/* Con sus saltos de línea, como en la vista previa del profe: sin ellos, dos párrafos
+                  se leían como un bloque. */}
+              <p className="whitespace-pre-line wrap-break-word text-[13.5px] leading-relaxed text-text-secondary lg:text-[15px] lg:leading-[1.7]">
                 {detalle.bio}
               </p>
             </div>
