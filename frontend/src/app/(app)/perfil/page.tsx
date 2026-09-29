@@ -446,7 +446,7 @@ function CamposDelPerfil({ inicial }: { inicial: ProfileResponse }) {
             maxLength={120}
             value={headline}
             onChange={(event) => setHeadline(event.target.value)}
-            placeholder="Conversación en inglés para adultos que ya estudiaron"
+            placeholder="Ej.: Conversación en inglés para adultos que ya estudiaron"
             aria-describedby="headline-contador"
             className={`mt-1.5 ${bordeSegun(estadoDelTitular)}`}
           />
@@ -600,7 +600,7 @@ function CamposDelPerfil({ inicial }: { inicial: ProfileResponse }) {
               max={80}
               value={yearsExperience}
               onChange={(e) => setYearsExperience(e.target.value)}
-              placeholder="5"
+              placeholder="Ej.: 5"
               className="mt-1.5"
             />
           </div>
@@ -614,7 +614,7 @@ function CamposDelPerfil({ inicial }: { inicial: ProfileResponse }) {
               maxLength={160}
               value={education}
               onChange={(e) => setEducation(e.target.value)}
-              placeholder="Licenciatura en Lenguas Modernas"
+              placeholder="Ej.: Licenciatura en Lenguas Modernas"
               className="mt-1.5"
             />
           </div>

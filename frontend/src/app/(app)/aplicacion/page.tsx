@@ -406,8 +406,10 @@ function Wizard({
       </header>
 
       <div className="mt-6 lg:mt-8">
+        {/* Una columna (Pardo, 28/09/2026: «no uses dobles columnas»), con un tope para que en un
+            monitor grande los campos no se estiren de lado a lado. */}
         {paso === 0 && (
-          <section className="grid gap-6 lg:grid-cols-2 lg:gap-10">
+          <section className="grid gap-6 lg:max-w-4xl">
             <div className="space-y-5">
               <PanelRigel pose="saludo" texto="Cuéntanos quién eres. Empieza por tu foto y un título que enganche a tus estudiantes." />
               <div>
@@ -438,7 +440,7 @@ function Wizard({
                 maxLength={120}
                 value={headline}
                 onChange={(e) => setHeadline(e.target.value)}
-                placeholder="Conversación en inglés para adultos que ya estudiaron"
+                placeholder="Ej.: Conversación en inglés para adultos que ya estudiaron"
                 aria-describedby="headline-contador"
                 aria-invalid={!!errorDe("headline") || undefined}
                 className={`mt-1.5 ${errorDe("headline") ? "border-error" : bordeSegun(estadoDelTitular)}`}
@@ -455,7 +457,7 @@ function Wizard({
         {paso === 1 && (
           <section className="space-y-6">
             <PanelRigel pose="guia" texto="Esto es lo que buscan los estudiantes: qué enseñas y para qué sirve." />
-            <div className="grid gap-6 lg:grid-cols-2 lg:gap-10">
+            <div className="grid gap-6 lg:max-w-4xl">
               <div>
                 <label className="block text-[12.5px] font-bold text-text-secondary" htmlFor="bio">
                   Sobre ti
@@ -628,7 +630,7 @@ function Wizard({
                     step={1}
                     value={yearsExperience}
                     onChange={(e) => setYearsExperience(e.target.value)}
-                    placeholder="5"
+                    placeholder="Ej.: 5"
                     aria-invalid={!!errorDe("years") || undefined}
                     className={`mt-1.5 ${errorDe("years") ? "border-error" : ""}`}
                   />
@@ -642,7 +644,7 @@ function Wizard({
                     maxLength={160}
                     value={education}
                     onChange={(e) => setEducation(e.target.value)}
-                    placeholder="Licenciatura en Lenguas Modernas"
+                    placeholder="Ej.: Licenciatura en Lenguas Modernas"
                     aria-invalid={!!errorDe("education") || undefined}
                     className={`mt-1.5 ${errorDe("education") ? "border-error" : ""}`}
                   />
@@ -1078,8 +1080,10 @@ function Revision({
         Esto es lo que vas a enviar. Toca «Editar» en lo que quieras cambiar: lo guardas y vuelves aquí.
       </p>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
-        <div className="grid gap-4 xl:grid-cols-2">
+      {/* Una columna: en tres, un nombre largo quedaba en cuatro líneas y el nombre de un archivo se
+          partía por la mitad. Primero lo que se envía, y al final el botón para enviarlo. */}
+      <div className="grid gap-6 lg:max-w-4xl">
+        <div className="grid gap-4">
           <SeccionRevision titulo="Datos personales" faltas={faltas[0]} onEditar={() => onEditar(0)}>
             <div className="flex items-center gap-4">
               <Avatar nombre={nombre} fotoUrl={foto} size="xl" />
@@ -1088,24 +1092,7 @@ function Revision({
             <DatoRevision etiqueta="Título" valor={d.headline.trim()} />
           </SeccionRevision>
 
-          <SeccionRevision titulo="Experiencia" faltas={faltas[2]} onEditar={() => onEditar(2)}>
-            <DatoRevision etiqueta="Lugar" valor={d.city.trim() ? lugar : ""} />
-            <DatoRevision
-              etiqueta="Años de experiencia"
-              valor={anios == null ? "" : anios === 0 ? "Estoy empezando" : `${anios} ${anios === 1 ? "año" : "años"}`}
-            />
-            <DatoRevision etiqueta="Formación" valor={d.education.trim()} />
-            <div className="flex flex-wrap gap-1.5">
-              <Badge tono={d.certified ? "menta" : "neutral"}>
-                {d.certified ? "Con certificación docente" : "Sin certificación docente"}
-              </Badge>
-              <Badge tono={d.acceptsTrial ? "melocoton" : "neutral"}>
-                {d.acceptsTrial ? "Primera clase gratis" : "Sin clase de prueba gratis"}
-              </Badge>
-            </div>
-          </SeccionRevision>
-
-          <SeccionRevision titulo="Enseñanza" faltas={faltas[1]} onEditar={() => onEditar(1)} ancha>
+          <SeccionRevision titulo="Enseñanza" faltas={faltas[1]} onEditar={() => onEditar(1)}>
             <DatoRevision etiqueta="Sobre ti" valor={d.bio.trim()} largo />
             <div>
               <p className="text-[12px] font-bold text-text-secondary">Idiomas y niveles</p>
@@ -1141,6 +1128,23 @@ function Revision({
               )}
             </div>
           </SeccionRevision>
+          <SeccionRevision titulo="Experiencia" faltas={faltas[2]} onEditar={() => onEditar(2)}>
+            <DatoRevision etiqueta="Lugar" valor={d.city.trim() ? lugar : ""} />
+            <DatoRevision
+              etiqueta="Años de experiencia"
+              valor={anios == null ? "" : anios === 0 ? "Estoy empezando" : `${anios} ${anios === 1 ? "año" : "años"}`}
+            />
+            <DatoRevision etiqueta="Formación" valor={d.education.trim()} />
+            <div className="flex flex-wrap gap-1.5">
+              <Badge tono={d.certified ? "menta" : "neutral"}>
+                {d.certified ? "Con certificación docente" : "Sin certificación docente"}
+              </Badge>
+              <Badge tono={d.acceptsTrial ? "melocoton" : "neutral"}>
+                {d.acceptsTrial ? "Primera clase gratis" : "Sin clase de prueba gratis"}
+              </Badge>
+            </div>
+          </SeccionRevision>
+
 
           <SeccionRevision titulo="Documentos" faltas={faltas[3]} onEditar={() => onEditar(3)}>
             {documentos.length ? (
@@ -1173,7 +1177,7 @@ function Revision({
           </SeccionRevision>
         </div>
 
-        <aside className="lg:sticky lg:top-6">
+        <aside>
           <PanelEnviar
             faltas={faltas}
             missing={vista.missing ?? []}
@@ -1193,18 +1197,16 @@ function SeccionRevision({
   titulo,
   faltas,
   onEditar,
-  ancha = false,
   children,
 }: {
   titulo: string;
   faltas: Falta[];
   onEditar: () => void;
-  ancha?: boolean;
   children: ReactNode;
 }) {
   return (
     <section
-      className={`rounded-card bg-surface-raised p-4 shadow-sm lg:p-5 ${ancha ? "xl:col-span-2" : ""} ${
+      className={`rounded-card bg-surface-raised p-4 shadow-sm lg:p-5 ${
         faltas.length ? "ring-[1.5px] ring-warning/60" : ""
       }`}
     >
