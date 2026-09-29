@@ -908,6 +908,60 @@ Pendiente para Pardo:
   que dictaste», y desde la decisión 4 también entran las cancelaciones tardías.
 - El manual técnico necesita esta sección.
 
+## La noche del 28 al 29/09/2026: revisión de los flujos del profesor
+
+Pedido de Pardo (`docs/pedidos/2026-09-28-2325-…`): revisar todo el camino del profe fundador de
+cara al lanzamiento (`docs/plan-de-lanzamiento.md`, versión 2), en código, pantallas y calidad
+visual. Dos revisiones de solo lectura (backend y frontend), capturas del camino completo y
+arreglos. Las decisiones de Pardo están en el pedido, con su texto.
+
+**Dinero y clases:**
+- **Marcar la asistencia ya no cierra el reclamo** (reemplaza la decisión del 28/09, arriba).
+  - `Booking.admitsClaim`: CONFIRMED, COMPLETED y NO_SHOW_STUDENT se reclaman dentro del plazo
+    (`no_show_report_minutes` desde el inicio, hasta `dispute_report_window_hours` después del final).
+  - El reclamo congela el pago aunque ya estuviera RELEASED (`Payment.canBeDisputed`). Dentro del
+    plazo la clase todavía no entra en ninguna liquidación, así que no hay nada pagado que deshacer.
+  - Un solo reclamo por clase (`existsByBookingId`).
+  - Si gana el profe, la clase vuelve a NO_SHOW_STUDENT cuando el estudiante estaba marcado ausente, y
+    conserva su `completed_at`: una clase que nadie recibió no lleva acta.
+  - Con el reclamo abierto la sala sigue abierta hasta el final, y la clase sigue en «Próximas»
+    (UNDER_REVIEW cuenta como viva en `BookingQueryService`).
+  - Pruebas: cinco casos nuevos en `LessonLifecycleIT`.
+- **La gracia de la cancelación tardía del profe** se cuenta desde `payments.paid_at` y no desde que se
+  creó la reserva: el cobro podía comerse 20 de sus 60 minutos.
+- **El profe que crea el admin** nace con la postulación aprobada. **Los aspirantes** ya no reciben
+  los recordatorios de ficha de estudiante (les gastaban los del perfil). **Al equipo le llega un
+  correo** con cada postulación nueva o reenviada.
+- **El buscador** filtra por disponibilidad sobre franjas unidas y acepta horas y media.
+
+**Postulación y perfil:**
+- La postulación solo se edita en borrador o con cambios pedidos: en revisión o aprobada, la API
+  responde 409 (`requireEditable`). Un profe aprobado ya no abre borradores sueltos.
+- **Publicar exige el correo confirmado** (422 en el paso a publicado). El perfil lo avisa junto al
+  interruptor, y la barra dice «para poder publicar tu perfil».
+- **Nombre y WhatsApp del profe** en «Mi perfil», sección «Tus datos». El formulario vive en
+  `components/cuenta/MisDatos.tsx` y lo comparten Cuenta y el perfil.
+- **El aviso de datos de pago** sigue sin cerrarse, pero trae «Salir» y WhatsApp de soporte.
+- **`Modal`** retiene el foco con Tab, y ya no vuelve a enfocar el panel en cada render de la página.
+- «Enseña con Orión» y las preguntas frecuentes dicen que el 15 % de fundador es por invitación.
+
+**Pantallas:**
+- Ganancias con «Desde»/«Hasta».
+- El perfil público en el computador con la foto encima del nombre.
+- La postulación en una columna.
+- Sin la «nota privada» de asistencia, que nadie volvía a ver.
+- La «X» de las notificaciones visible en pantallas táctiles, y la campana pregunta antes de salir
+  con cambios sin guardar (`puedeSalirA`).
+- La ciudad escrita no se borra al salir del campo.
+- La bio y el chat conservan sus saltos de línea.
+- Los valores negativos se escriben «− $5.000».
+- El calendario usa el «hoy» de Bogotá.
+- La descripción corta del profe se lee entera también en las tarjetas de clase y en la antesala.
+
+**Pendiente de Pardo:** congelar o no el nombre del profe en los comprobantes (hoy muestran el
+actual). Además, al resolver un reclamo a favor del estudiante no se revierten los puntos de
+asistencia.
+
 ## Una columna, el perfil del profe nuevo, recorrido obligatorio y Rigel a los 5 minutos (28/09/2026, tarde)
 
 Pedido de Pardo (`docs/pedidos/2026-09-28-1253-…`):
@@ -1002,7 +1056,8 @@ liquidaciones como el acuerdo: el 15 y el último día del mes.
 
 **Queda como está (Pardo, 28/09).** Si el profe registra la asistencia apenas termina la clase, la
 clase se cierra y el estudiante ya no puede abrir un reclamo formal, aunque le queden horas de las
-24 del plazo.
+24 del plazo. **Reemplazado el 29/09:** Pardo eligió «Reclamo abierto 24 h» al ver el caso del
+«no asistió» a los 15 minutos (ver «La noche del 28 al 29/09/2026»).
 
 ## Revisión de textos de toda la plataforma (26/09/2026, tarde)
 
