@@ -159,7 +159,8 @@ public class TeacherApplicationService {
 
         Instant now = clock.instant();
         // DRAFT → SUBMITTED; CHANGES_REQUESTED → RESUBMITTED. Cualquier otro estado: la entidad lanza 409.
-        if (application.getStatus() == ApplicationStatus.CHANGES_REQUESTED) {
+        boolean reenviada = application.getStatus() == ApplicationStatus.CHANGES_REQUESTED;
+        if (reenviada) {
             application.markResubmitted(now);
             events.save(new TeacherApplicationEvent(
                     application.getId(), ApplicationEventType.RESUBMITTED, userId, null));
@@ -169,6 +170,8 @@ public class TeacherApplicationService {
                     application.getId(), ApplicationEventType.SUBMITTED, userId, null));
         }
         applications.save(application);
+        String nombre = users.findById(userId).map(User::getFullName).orElse(null);
+        publisher.publishEvent(new TeacherApplicationSubmittedEvent(application.getId(), nombre, reenviada));
         return toView(userId, application);
     }
 

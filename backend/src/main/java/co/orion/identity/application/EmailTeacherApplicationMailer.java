@@ -1,5 +1,8 @@
 package co.orion.identity.application;
 
+import java.util.List;
+import java.util.UUID;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -74,6 +77,29 @@ public class EmailTeacherApplicationMailer implements TeacherApplicationMailer {
                 + "<blockquote>" + escape(note) + "</blockquote>"
                 + "<p>Te deseamos lo mejor.<br>El equipo de Orión</p>";
         send(toEmail, "Sobre tu postulación en Orión", text, html);
+    }
+
+    @Override
+    public void sendSubmittedToTeam(List<String> toEmails, String applicantName, UUID applicationId,
+                                    boolean resubmitted) {
+        String revisar = baseUrl + "/admin/aplicaciones/" + applicationId;
+        String nombre = applicantName == null || applicantName.isBlank() ? "Un aspirante" : applicantName.trim();
+        String subject = resubmitted
+                ? nombre + " reenvió su postulación con los cambios"
+                : "Nueva postulación de " + nombre + " por revisar";
+        String text = (resubmitted
+                ? nombre + " hizo los cambios que pediste y reenvió su postulación a profesor.\n\n"
+                : nombre + " envió su postulación a profesor.\n\n")
+                + "Revísala aquí: " + revisar + "\n\n"
+                + "Cuanto antes la revises, antes puede empezar a dar clases.\nOrión";
+        String html = "<p>" + escape(nombre) + (resubmitted
+                ? " hizo los cambios que pediste y <strong>reenvió</strong> su postulación a profesor.</p>"
+                : " envió su postulación a profesor.</p>")
+                + "<p><a href=\"" + revisar + "\">Revisar la postulación</a></p>"
+                + "<p>Cuanto antes la revises, antes puede empezar a dar clases.<br>Orión</p>";
+        for (String to : toEmails) {
+            send(to, subject, text, html);
+        }
     }
 
     private void send(String toEmail, String subject, String text, String html) {

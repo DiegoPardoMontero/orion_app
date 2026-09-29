@@ -49,6 +49,15 @@ class TeacherApplicationFlowIT extends ApiIntegrationSupport {
         volatile String approved;
         volatile String changesNote;
         volatile String rejectedNote;
+        volatile List<String> team;
+        volatile Boolean teamResubmitted;
+
+        @Override
+        public void sendSubmittedToTeam(List<String> toEmails, String applicantName, UUID applicationId,
+                                        boolean resubmitted) {
+            this.team = toEmails;
+            this.teamResubmitted = resubmitted;
+        }
 
         @Override
         public void sendApproved(String toEmail) {
@@ -110,6 +119,8 @@ class TeacherApplicationFlowIT extends ApiIntegrationSupport {
         mailer.approved = null;
         mailer.changesNote = null;
         mailer.rejectedNote = null;
+        mailer.team = null;
+        mailer.teamResubmitted = null;
     }
 
     // --- helpers ---
@@ -249,6 +260,9 @@ class TeacherApplicationFlowIT extends ApiIntegrationSupport {
         String id = draftId();
         completeProfile();
         post(SUBMIT, aspirantSession, null, Map.class);
+        // Al equipo le llega el aviso: el plan de lanzamiento pide revisarlas el mismo día.
+        assertThat(mailer.team).containsExactlyInAnyOrder("admin@orion.test", "admin2@orion.test");
+        assertThat(mailer.teamResubmitted).isFalse();
         post(ADMIN + "/" + id + "/start-review", adminSession, null, Void.class);
 
         assertThat(post(ADMIN + "/" + id + "/request-changes", adminSession,
@@ -258,10 +272,11 @@ class TeacherApplicationFlowIT extends ApiIntegrationSupport {
                 .isEqualTo("CHANGES_REQUESTED");
         assertThat(mailer.changesNote).contains("CV más detallado");
 
-        // Reenvío: vuelve a PENDING_REVIEW.
+        // Reenvío: vuelve a PENDING_REVIEW, y el equipo sabe que volvió con los cambios.
         assertThat(post(SUBMIT, aspirantSession, null, Map.class).getStatusCode().value()).isEqualTo(200);
         assertThat(get(MINE, aspirantSession, Map.class).getBody().get("status"))
                 .isEqualTo("PENDING_REVIEW");
+        assertThat(mailer.teamResubmitted).isTrue();
     }
 
     @Test

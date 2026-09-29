@@ -2,6 +2,7 @@ package co.orion.identity.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -15,8 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import co.orion.TestcontainersConfiguration;
-import co.orion.identity.domain.User;
 import co.orion.identity.domain.ApplicationStatus;
+import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.identity.persistence.ProfessorProfileRepository;
 import co.orion.identity.persistence.TeacherApplicationRepository;
@@ -109,10 +110,14 @@ class AdminUsersIT extends ApiIntegrationSupport {
         // dado de alta desde Usuarios no tenía salida (revisión del 28/09/2026).
         assertThat(applications.existsByUserIdAndStatus(response.getBody().id(), ApplicationStatus.APPROVED)).isTrue();
         Session profe = login("profe@orion.test");
-        assertThat(put("/api/v1/me/profile/rate", profe, Map.of("hourlyRateCop", 50_000), Map.class)
+        assertThat(put("/api/v1/me/profile/rate", profe, new RateRequest(50_000L), Map.class)
                 .getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(put("/api/v1/me/profile", profe, Map.of("isPublished", true), Map.class)
-                .getStatusCode()).isEqualTo(HttpStatus.OK);
+        UpdateProfileRequest publicar = new UpdateProfileRequest(
+                "Conversación en inglés para adultos", "Enseño inglés conversacional a adultos que ya estudiaron el idioma alguna vez y aun así no se atreven a hablarlo. Practicamos desde la primera clase con temas que te importan.", "CO", "Bogotá", "ES",
+                (short) 5, "Lic. en Lenguas", false, false,
+                List.of(new UpdateProfileRequest.LanguageEntry("EN", false, List.of("BEGINNER"))),
+                List.of("CONVERSATION"), true);
+        assertThat(put("/api/v1/me/profile", profe, publicar, Map.class).getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     @Test
