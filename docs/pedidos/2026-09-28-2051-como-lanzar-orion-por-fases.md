@@ -6,7 +6,7 @@
 | **Canal** | Chat de Claude Code |
 | **Quién** | Pardo |
 | **Relacionado** | `2026-09-28-1528-los-avisos-no-suenan.md` (el comentario sobre los avisos, al inicio) |
-| **Estado** | En curso |
+| **Estado** | Recomendación entregada; faltan tres datos |
 
 ## El pedido, tal cual
 
@@ -20,6 +20,15 @@
 - **Sobre los avisos:** Pardo dice que no le parece que estén sirviendo bien, pero que no es vital.
   Queda abierto el pedido `2026-09-28-1528-…`.
 
-## Estado
+## Estado (28/09/2026): recomendación entregada; faltan tres datos de Pardo
 
-En curso.
+La recomendación completa está en **`docs/plan-de-lanzamiento.md`**. Tiene cinco fases, y cada una
+tiene sus condiciones para pasar a la siguiente, atadas a lo que ya dicen ESTADO y el brief maestro:
+0. Cerrar la casa: contador, abogado, integraciones en verde y una transacción real de punta a punta.
+1. Gente de casa, cruzando un corte de liquidación.
+2. De 8 a 10 profes fundadores.
+3. Estudiantes en grupo controlado, con metas y semáforo.
+4. Apertura pública con la cuenta de cuánto cuesta traer a cada estudiante.
+
+Para ajustarlo faltan tres datos: cuántos estudiantes y profes tiene hoy la academia (y si pagan), la
+fecha objetivo y el presupuesto de anuncios.
