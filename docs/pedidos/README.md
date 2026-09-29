@@ -5,6 +5,7 @@ estado. La regla está en `CLAUDE.md` → «Registro de pedidos». Del más reci
 
 | Fecha | Pedido | Estado |
 |---|---|---|
+| 29/09/2026 12:01 | [¿Cuál es el estado actual de la plataforma?](2026-09-29-1201-estado-actual-de-la-plataforma.md) | Respondido |
 | 28/09/2026 23:25 | [Revisión completa de los flujos del profesor, de noche, hasta las 5 a. m.](2026-09-28-2325-revision-completa-de-los-flujos-del-profesor.md) | Hecho; dos preguntas pendientes |
 | 28/09/2026 20:51 | [Cómo lanzar Orión: por fases y con quién empezar a probar](2026-09-28-2051-como-lanzar-orion-por-fases.md) | Recomendación v2 entregada |
 | 28/09/2026 15:28 | [Los avisos no suenan, y la campana no muestra si están activos ni pide permiso](2026-09-28-1528-los-avisos-no-suenan.md) | En curso |
