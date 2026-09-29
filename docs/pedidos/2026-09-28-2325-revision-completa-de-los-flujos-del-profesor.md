@@ -71,3 +71,15 @@ La verificación dirigida (9 pruebas de integración y 3 unitarias) terminó en 
 - Al final: ESTADO, push y el correo con el resumen.
 
 Revisado sin hallazgo: el saludo de Rigel sí llegó (23:34), solo faltaba que corriera el proceso.
+
+## Decisiones de Pardo (29/09/2026, 00:20)
+
+Contestadas en el chat, eligiendo entre opciones:
+
+- **Asistencia y reclamos:** «Reclamo abierto 24 h». El estudiante puede reclamar dentro de su ventana
+  aunque el profe ya haya marcado asistencia, y el reclamo congela el pago hasta que el admin decida.
+  «No asistió» no exige, por ahora, que el profe haya estado en la sala.
+- **Fundador 15 %:** «Decir “por invitación”». La página dice que el 15 % es para los fundadores
+  invitados; la regla de dinero no cambia.
+- **Indicativos del WhatsApp:** «No, por ahora solo esos». Se quedan los 9 países: el lanzamiento
+  recluta profes en Colombia.
