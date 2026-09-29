@@ -30,6 +30,20 @@ dentro de `/cuenta`).
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots), con Rigel de protagonista.
 
 ## Verificación
+Al 29/09/2026, 01:30, con la revisión nocturna de los flujos del profesor:
+- **Backend: `./mvnw verify`, 451 unitarias y 684 de integración, en verde.** Nuevas: cinco casos de
+  reclamo después de la asistencia y uno de la gracia desde el pago en `LessonLifecycleIT`, la
+  postulación bloqueada en revisión en `TeacherApplicationFlowIT` y el correo sin confirmar en
+  `AdminUsersIT`.
+- **Frontend:** `lint` en verde; 195 pruebas de Vitest; `next build` de producción en verde.
+- **E2E, sobre la base recreada y sin la prueba de Wompi: 105 en verde**, contando la del texto del
+  fundador corrida de nuevo tras actualizarla. `[e-pasadas.3 ad-reclamos.1]`, que antes siempre se
+  saltaba, ahora corre y pasa: con la regla nueva, una clase de Ana ya cerrada entra en el plazo del
+  reclamo. Nada de lo que corre después se rompió.
+- Revisión visual en local, a 390 y 1440 px, de lo que cambió: «Tus datos» y el aviso de correo en
+  Mi perfil, el aviso de pago con «Salir» (Tab no sale del diálogo), la campana y «Reportar un
+  problema» en una clase ya cerrada.
+
 Al 28/09/2026 por la tarde, con una columna, el perfil del profe nuevo, el recorrido obligatorio y
 Rigel a los 5 minutos (V79):
 - **Backend: `./mvnw verify`, 450 unitarias y 675 de integración, en verde.** Incluye

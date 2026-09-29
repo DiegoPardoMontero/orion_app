@@ -7,7 +7,7 @@
 | **Quién** | Pardo |
 | **Relacionado** | `docs/plan-de-lanzamiento.md` (versión 2: se abre primero a profesores) y `2026-09-27-1002-abogado-terminos-y-megareview-del-profesor.md` (la megarrevisión anterior) |
 | **Plazo** | Hasta el 29/09/2026 a las 05:00 (Bogotá) |
-| **Estado** | En curso |
+| **Estado** | Hecho; dos preguntas pendientes para Pardo |
 
 ## El pedido, tal cual
 
@@ -34,9 +34,10 @@
 
 ## Estado
 
-En curso: arreglos hechos y probados por partes; falta la verificación completa (`./mvnw verify`, e2e
-y `next build`), el push y el correo. El terminal de Pardo se cayó a las 00:08 del 29/09 y no se perdió
-nada: todo estaba en commits.
+Hecho el 29/09 a la 01:30, con dos preguntas pendientes para Pardo (abajo). La verificación está en
+`docs/ESTADO.md`: `./mvnw verify` 451 + 684, e2e 105 y `next build`, todo en verde. Después vinieron
+el push a `master` y el correo con el resumen. El terminal de Pardo se cayó a las 00:08 del 29/09 y
+no se perdió nada: todo estaba en commits.
 
 **Hecho hasta las 23:56 del 28/09:**
 
@@ -110,6 +111,11 @@ problema».
   Congelar el nombre en cada pago exige una migración. ¿Se deja así o se congela?
 - Queda sin revertir un detalle: si el reclamo se resuelve a favor del estudiante, los puntos y
   logros que ganó al registrarse la asistencia se quedan. No es dinero.
+- La regla del reclamo **reemplaza lo que Pardo dijo el 28/09** («lo del reclamo no lo entiendo, sí,
+  déjalo así»). Se aplica la decisión del 29/09, que tomó con el caso del minuto 15 delante; va dicho
+  en el correo.
+- Anotado sin tocar: en «Mis horarios», «una franja de 6 a 9 PM ya abre 5 cupos» cuenta horas de
+  inicio que se pisan. Son 5 horas posibles, pero en 3 horas caben máximo 3 clases.
 
 ## Decisiones de Pardo (29/09/2026, 00:20)
 
