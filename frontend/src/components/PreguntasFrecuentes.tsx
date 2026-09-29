@@ -66,7 +66,7 @@ const base = (c: PublicFigures): Record<"estudiante" | "profesor" | "general", P
   profesor: [
     {
       p: "¿Cuánto tarda mi postulación?",
-      r: `La revisa una persona en ${diasHabiles(c.applicationReviewBusinessDays)}. Puede aprobarse, rechazarse o volver con cambios pedidos; en los tres casos te escribimos. Mientras esperas, tu cuenta es de aspirante: puedes editar tu postulación pero todavía no recibir reservas.`,
+      r: `La revisa una persona en ${diasHabiles(c.applicationReviewBusinessDays)}. Puede aprobarse, rechazarse o volver con cambios pedidos; en los tres casos te escribimos. Mientras la revisamos no se edita: revisamos lo que enviaste. Si te pedimos cambios, la ajustas y la vuelves a enviar. Hasta que se apruebe, tu cuenta es de aspirante y todavía no recibe reservas.`,
     },
     {
       p: "No aparezco en el buscador. ¿Por qué?",

@@ -44,6 +44,7 @@ import co.orion.identity.persistence.TeacherApplicationRepository;
 import co.orion.identity.persistence.TeacherDocumentRepository;
 import co.orion.identity.persistence.UserRepository;
 import co.orion.shared.error.BusinessRuleViolationException;
+import co.orion.shared.error.ConflictException;
 import co.orion.shared.error.ForbiddenException;
 import co.orion.shared.error.ResourceNotFoundException;
 
@@ -116,9 +117,16 @@ public class TeacherApplicationService {
 
     // --- Aspirante ---
 
-    /** Crea (o devuelve) la postulación viva del usuario. Idempotente: nunca abre dos a la vez. */
+    /**
+     * Crea (o devuelve) la postulación viva del usuario. Idempotente: nunca abre dos a la vez. A un
+     * profe ya aprobado le devuelve la aprobada: un borrador nuevo quedaría suelto y pasaría a ser
+     * «su postulación» en {@link #getMine}.
+     */
     @Transactional
     public TeacherApplicationView getOrCreateDraft(UUID userId) {
+        if (openApplicationOf(userId).isEmpty() && applications.existsByUserIdAndStatus(userId, ApplicationStatus.APPROVED)) {
+            return getMine(userId);
+        }
         TeacherApplication application = openApplicationOf(userId).orElseGet(() -> {
             TeacherApplication created = applications.saveAndFlush(new TeacherApplication(userId));
             events.save(new TeacherApplicationEvent(
@@ -126,6 +134,27 @@ public class TeacherApplicationService {
             return created;
         });
         return toView(userId, application);
+    }
+
+    /**
+     * La postulación se edita en borrador o cuando el equipo pidió cambios; en revisión no (Pardo,
+     * 29/09/2026): el equipo revisa lo que se envió, no algo que cambia mientras lo mira. La pantalla
+     * ya no dejaba; esto cierra la API. Una aprobada tampoco: el perfil del profe se edita en «Mi
+     * perfil». Tras un rechazo sí, porque reintentar es una postulación nueva.
+     */
+    @Transactional(readOnly = true)
+    public void requireEditable(UUID userId) {
+        applications.findFirstByUserIdOrderByCreatedAtDesc(userId).ifPresent(application -> {
+            switch (application.getStatus()) {
+                case PENDING_REVIEW, UNDER_REVIEW -> throw new ConflictException(
+                        "Tu postulación está en revisión: no se puede cambiar hasta que te respondamos.");
+                case APPROVED -> throw new ConflictException(
+                        "Tu postulación ya fue aprobada: tu perfil se edita en «Mi perfil».");
+                default -> {
+                    // DRAFT, CHANGES_REQUESTED y REJECTED: se edita.
+                }
+            }
+        });
     }
 
     @Transactional(readOnly = true)

@@ -255,6 +255,27 @@ class TeacherApplicationFlowIT extends ApiIntegrationSupport {
         assertThat(mailer.rejectedNote).contains("perfil mínimo");
     }
 
+    /** En revisión no se edita (Pardo, 29/09/2026); cuando el equipo pide cambios, sí. */
+    @Test
+    void anApplicationUnderReviewCannotBeEditedUntilChangesAreRequested() {
+        String id = draftId();
+        completeProfile();
+        post(SUBMIT, aspirantSession, null, Map.class);
+        UpdateProfileRequest otraBio = new UpdateProfileRequest(
+                null, "Enseño inglés conversacional a adultos que ya estudiaron el idioma alguna vez y aun así no se "
+                        + "atreven a hablarlo. Practicamos desde la primera clase con temas de su trabajo y de sus viajes.",
+                null, null, null, null, null, null, null, null, null, null);
+
+        ResponseEntity<Map> enRevision = put(MINE, aspirantSession, otraBio, Map.class);
+        assertThat(enRevision.getStatusCode().value()).isEqualTo(409);
+        assertThat(enRevision.getBody().get("error").toString()).contains("en revisión");
+
+        post(ADMIN + "/" + id + "/start-review", adminSession, null, Void.class);
+        post(ADMIN + "/" + id + "/request-changes", adminSession,
+                new ReviewDecisionRequest("Cuéntanos más de tu experiencia, por favor"), Void.class);
+        assertThat(put(MINE, aspirantSession, otraBio, Map.class).getStatusCode().value()).isEqualTo(200);
+    }
+
     @Test
     void requestingChangesSendsItBackAndItCanBeResubmitted() {
         String id = draftId();

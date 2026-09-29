@@ -61,6 +61,7 @@ public class TeacherApplicationController {
     public TeacherApplicationView save(@AuthenticationPrincipal OrionUserDetails principal,
                                        @Valid @RequestBody UpdateProfileRequest body) {
         UUID userId = principal.user().getId();
+        applications.requireEditable(userId);
         profiles.saveApplicationProfile(userId, body);
         return applications.getOrCreateDraft(userId);
     }
@@ -69,6 +70,7 @@ public class TeacherApplicationController {
     public DocumentView uploadDocument(@AuthenticationPrincipal OrionUserDetails principal,
                                        @RequestParam("file") MultipartFile file,
                                        @RequestParam("docType") String docType) {
+        applications.requireEditable(principal.user().getId());
         TeacherDocument saved = documents.upload(
                 principal.user().getId(), readBytes(file), file.getContentType(),
                 file.getOriginalFilename(), docType);
@@ -79,6 +81,7 @@ public class TeacherApplicationController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteDocument(@AuthenticationPrincipal OrionUserDetails principal,
                                @PathVariable UUID id) {
+        applications.requireEditable(principal.user().getId());
         documents.delete(principal.user().getId(), id);
     }
 
