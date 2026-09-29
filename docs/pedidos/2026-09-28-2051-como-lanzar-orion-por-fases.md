@@ -20,6 +20,12 @@
 - **Sobre los avisos:** Pardo dice que no le parece que estén sirviendo bien, pero que no es vital.
   Queda abierto el pedido `2026-09-28-1528-…`.
 
+## Respuestas de Pardo
+
+- 28/09, a las tres preguntas del plan: «0 estudiantes y 0 profes. Pensamos abrir en una semana.
+  Podemos gastar unos 200k cop al mes en anuncios.» → El plan se ajusta a un arranque desde cero (ver
+  abajo y `docs/plan-de-lanzamiento.md`).
+
 ## Estado (28/09/2026): recomendación entregada; faltan tres datos de Pardo
 
 La recomendación completa está en **`docs/plan-de-lanzamiento.md`**. Tiene cinco fases, y cada una
