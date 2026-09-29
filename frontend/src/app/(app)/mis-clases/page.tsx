@@ -613,7 +613,9 @@ function TarjetaClase({
               </span>
             )}
             {contraparte?.headline && (
-              <span className="block truncate text-[12px] text-text-muted">{contraparte.headline}</span>
+              // Entera, nunca con «…» (Pardo, 25–26/09/2026: el nombre y la descripción corta del profe
+              // se leen completos en todas sus tarjetas).
+              <span className="block text-pretty wrap-break-word text-[12px] text-text-muted">{contraparte.headline}</span>
             )}
           </div>
         </div>

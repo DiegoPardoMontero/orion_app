@@ -130,7 +130,7 @@ export function Antesala({
                 {esAnfitrion ? `Clase con ${nombre}` : `Clase con ${nombre}`}
               </h1>
               {otro?.headline && (
-                <p className="truncate text-[13px] text-text-secondary">{otro.headline}</p>
+                <p className="text-pretty wrap-break-word text-[13px] text-text-secondary">{otro.headline}</p>
               )}
               <p className="mt-0.5 text-[13px] text-text-muted">
                 {rangoHoras(datos.startsAt, datos.endsAt)} · {datos.classMinutes} minutos
