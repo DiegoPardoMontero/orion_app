@@ -66,13 +66,16 @@ public class RecordatorioDeFicha {
     /** @return cuántos recordatorios salieron */
     public int recordar() {
         Instant ahora = clock.instant();
-        // Estudiantes activos con al menos un día de cuenta y algún paso pendiente.
+        // Estudiantes activos con al menos un día de cuenta y algún paso pendiente. Sin los aspirantes a
+        // profesor (STUDENT que entró por «Quiero enseñar»): la ficha es del estudiante, su pantalla les
+        // responde 403, y estos avisos gastaban los de «completa tu perfil» que les tocan al aprobarlos
+        // (comparten `profile_reminders`; revisión del 28/09/2026).
         List<Object[]> candidatos = jdbc.query("""
                 select u.id, u.email, u.full_name, u.created_at,
                        (select max(step) from profile_reminders r where r.user_id = u.id),
                        (select max(sent_at) from profile_reminders r where r.user_id = u.id)
                   from users u
-                 where u.role = 'STUDENT' and u.status = 'ACTIVE' and u.created_at < ?
+                 where u.role = 'STUDENT' and u.signup_intent = 'LEARN' and u.status = 'ACTIVE' and u.created_at < ?
                    and (select count(*) from profile_reminders r where r.user_id = u.id) < 3
                 """, (rs, i) -> new Object[] {rs.getObject(1, UUID.class), rs.getString(2), rs.getString(3),
                         rs.getTimestamp(4).toInstant(), rs.getObject(5), rs.getTimestamp(6)},

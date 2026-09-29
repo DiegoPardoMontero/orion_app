@@ -62,6 +62,15 @@ class FichaCompletaIT extends ApiIntegrationSupport {
     }
 
     @Test
+    @DisplayName("Al aspirante a profesor no le llega: la ficha es del estudiante, y gastaría los avisos de su perfil")
+    void alAspiranteNo() {
+        jdbc.update("update users set signup_intent = 'TEACH' where id = ?", ana.getId());
+        cuentaDeHace(25);
+        assertThat(recordatorio.recordar()).isZero();
+        assertThat(pasos()).isZero();
+    }
+
+    @Test
     @DisplayName("Una cuenta de menos de un día no recibe nada; al día, el primer aviso, una sola vez")
     void elPrimerAviso() {
         cuentaDeHace(10);
