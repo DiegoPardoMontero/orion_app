@@ -221,7 +221,6 @@ function CierreProfesor({
   );
   const eleccion =
     (asistio === true && !puedeAsistio) || (asistio === false && !puedeNoAsistio) ? null : asistio;
-  const [nota, setNota] = useState("");
 
   // Si la clase se dio, lo siguiente natural es contarla: el acta se ofrece aquí mismo, mientras
   // la clase está fresca («Ahora no» devuelve a Mis clases). Si no se presentó, no hay nada que
@@ -230,7 +229,7 @@ function CierreProfesor({
     mutationFn: (present: boolean) =>
       apiFetch(`/api/v1/bookings/${bookingId}/attendance`, {
         method: "POST",
-        body: { present, notes: nota.trim() || undefined },
+        body: { present },
       }),
     onSuccess: (_, present) => {
       refrescarClases();
@@ -299,16 +298,8 @@ function CierreProfesor({
         </div>
       )}
 
-      <textarea
-        rows={2}
-        value={nota}
-        onChange={(e) => setNota(e.target.value)}
-        maxLength={500}
-        placeholder="Nota privada para la próxima clase (opcional)"
-        aria-label="Nota privada"
-        className="mt-3 w-full rounded-base border-[1.5px] border-border bg-surface-raised p-3 text-[14px] text-text focus:border-primary focus:shadow-focus focus:outline-none"
-      />
-
+      {/* La «nota privada para la próxima clase» se quitó (Pardo, 29/09/2026): se guardaba y ninguna
+          pantalla la volvía a mostrar. Lo que importa de la clase va en el acta. */}
       {cerrar.error instanceof ApiError && cerrar.error.status !== 409 && (
         <div className="mt-2">
           <AvisoError mensaje={cerrar.error.message} />

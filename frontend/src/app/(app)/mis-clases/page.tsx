@@ -1229,7 +1229,6 @@ function ModalReportar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar
 function ModalAsistencia({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar: () => void }) {
   const queryClient = useQueryClient();
   const cifras = useCifras();
-  const [notas, setNotas] = useState("");
   const [asistio, setAsistio] = useState<boolean | null>(null);
 
   // La misma regla que la tarjeta: con la clase en curso, «No asistió» ya se puede y «Asistió»
@@ -1252,7 +1251,7 @@ function ModalAsistencia({ clase, onCerrar }: { clase: MyBookingResponse; onCerr
     mutationFn: (present: boolean) =>
       apiFetch(`/api/v1/bookings/${clase.id}/attendance`, {
         method: "POST",
-        body: { present, notes: notas.trim() || undefined },
+        body: { present },
       }),
     onSuccess: () => {
       refrescar();
@@ -1299,18 +1298,7 @@ function ModalAsistencia({ clase, onCerrar }: { clase: MyBookingResponse; onCerr
         </p>
       )}
 
-      <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="notas">
-        Notas (opcional)
-      </label>
-      <textarea
-        id="notas"
-        rows={3}
-        maxLength={500}
-        value={notas}
-        onChange={(event) => setNotas(event.target.value)}
-        className="mt-1.5 w-full rounded-base border-[1.5px] border-border bg-surface-raised px-4 py-3 text-sm focus:border-primary focus:shadow-focus focus:outline-none"
-      />
-
+      {/* Sin «Notas»: se guardaban y ninguna pantalla las volvía a mostrar (Pardo, 29/09/2026). */}
       {error && (
         <div className="mt-3">
           <AvisoError mensaje={error} />
