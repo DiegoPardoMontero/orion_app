@@ -31,10 +31,8 @@ export default function GananciasPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-6 lg:max-w-[1600px] lg:px-10 xl:px-14 lg:py-8">
+      {/* Cómo funciona lo dice «Tus liquidaciones» justo debajo: aquí se repetía con otras palabras. */}
       <h1 className="font-display text-h1 font-bold">Mis ganancias</h1>
-      <p className="mt-1 text-[13.5px] text-text-secondary">
-        Orión cobra al estudiante en tu nombre y te paga cada quincena las clases que ya dictaste.
-      </p>
 
       {/* El único aviso nuevo del brief de liquidaciones: sin llave Bre-B no hay a dónde pagarle. */}
       {datosDePago.data && !datosDePago.data.details && (
@@ -57,19 +55,32 @@ export default function GananciasPage() {
       <MisLiquidaciones />
 
       <h2 className="mt-8 font-display text-h3 font-bold">Tus ganancias por fechas</h2>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <Campo
-          type="date"
-          value={desde}
-          onChange={(event) => setDesde(event.target.value)}
-          aria-label="Desde"
-        />
-        <Campo
-          type="date"
-          value={hasta}
-          onChange={(event) => setHasta(event.target.value)}
-          aria-label="Hasta"
-        />
+      {/* Con etiqueta a la vista: dos campos de fecha sin nombre no dicen cuál es el inicio. */}
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:max-w-2xl">
+        <div>
+          <label htmlFor="ganancias-desde" className="block text-[12.5px] font-bold text-text-secondary">
+            Desde
+          </label>
+          <Campo
+            id="ganancias-desde"
+            type="date"
+            value={desde}
+            onChange={(event) => setDesde(event.target.value)}
+            className="mt-1.5"
+          />
+        </div>
+        <div>
+          <label htmlFor="ganancias-hasta" className="block text-[12.5px] font-bold text-text-secondary">
+            Hasta
+          </label>
+          <Campo
+            id="ganancias-hasta"
+            type="date"
+            value={hasta}
+            onChange={(event) => setHasta(event.target.value)}
+            className="mt-1.5"
+          />
+        </div>
       </div>
 
       {ganancias.isPending ? (
