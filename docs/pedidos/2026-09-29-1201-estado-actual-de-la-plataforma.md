@@ -6,7 +6,7 @@
 | **Canal** | Chat de Claude Code |
 | **Quién** | Pardo |
 | **Relacionado** | `docs/ESTADO.md`, `docs/plan-de-lanzamiento.md` (versión 2) y `2026-09-28-2325-revision-completa-de-los-flujos-del-profesor.md` |
-| **Estado** | En curso: guía para cerrar la casa |
+| **Estado** | Hecho |
 
 ## El pedido, tal cual
 
@@ -44,4 +44,5 @@
 
 ## Estado
 
-Respondido en el chat. En curso: la guía para cerrar la casa.
+Hecho. La guía quedó en `docs/cerrar-la-casa.md` y va entera en el chat. Lo que queda es de Pardo
+(los pasos de la guía) y, cuando él diga, la prueba de la IP detrás del proxy.
