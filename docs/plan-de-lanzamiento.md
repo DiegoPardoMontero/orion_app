@@ -1,89 +1,104 @@
-# Plan de lanzamiento de Orión
+# Plan de lanzamiento de Orión (versión 2)
 
 Recomendación del 28/09/2026 (pedido `docs/pedidos/2026-09-28-2051-como-lanzar-orion-por-fases.md`).
+La versión 1 suponía que la academia ya tenía estudiantes y profes; Pardo aclaró que **arranca desde
+cero: 0 estudiantes y 0 profes**, que piensan abrir en una semana y que pueden gastar unos
+**$200.000 al mes en anuncios**. Esta versión reemplaza a la primera.
+
 Cada condición sale de algo que ya está escrito en `docs/ESTADO.md` («Pendiente / bloqueos
 conocidos») o en `docs/briefs/orion-brief-maestro-marketplace.md` (sección B, «Riesgos que no se
-resuelven con código»). Las duraciones son estimadas; las fechas las pone Pardo.
+resuelven con código»).
 
-## El principio: primero los profesores
+## Lo primero: abrir en una semana, sí, pero a los profesores
 
-Un marketplace sin profesores no convierte a nadie: el brief maestro pide al menos 8–10 profesores
-aprobados y publicados, repartidos entre los idiomas, antes de gastar un peso en anuncios (riesgo 6).
-Y el 23/09 ya se decidió lanzar primero a los profesores. Todo lo de abajo se ordena alrededor de eso.
+Con 0 profes, abrirle Orión a estudiantes en una semana sería abrir una vitrina vacía: quien llegue
+no encuentra con quién reservar, se va y no vuelve, y cada peso de anuncios paga esa visita. Es justo
+lo que el brief maestro advierte (riesgo 6): antes de anuncios, al menos **8 a 10 profes aprobados y
+publicados**.
 
-## Fase 0 — Cerrar la casa (1 a 2 semanas, antes de que entre nadie de afuera)
+Hoy `orionidiomas.com` ya es pública, con el catálogo abierto y sin profes. No hace daño mientras no
+llegue nadie, y por eso no hay que ponerle anuncios todavía.
 
-Lo que solo pueden cerrar Pardo, el contador y el abogado va primero, porque no se arregla con código.
+**Propuesta**: la semana que viene se abre, pero **a profesores**. A estudiantes que pagan se abre
+cuando haya 8 a 10 profes publicados y el piloto haya salido bien: con buen ritmo, entre la semana 4 y
+la 6.
 
-| Qué | Quién | De dónde sale |
-|---|---|---|
-| Facturación electrónica de la comisión, retención en la fuente y el contrato de mandato | Contador | Brief maestro, riesgo 3; pendiente desde el 02/09 |
-| Si la relación con el profesor es de contratista: comisión obligatoria + no-elusión + sanciones | Abogado laboral | Brief maestro, riesgo 2 |
-| Política de datos 1.2: nombrar a OpenAI, a 8x8 y lo que se toma al entrar con Google o Facebook | Abogado; Claude publica la versión | ESTADO, pendiente |
-| La línea del beneficio de fundador en los Términos del profesor | Abogado | Decisiones del 25/09 |
-| Todas las integraciones en verde en Administración → Sistema: Wompi, JaaS, Cloudinary, Resend, OpenAI, avisos | Pardo | Memoria «integraciones sin verificar» |
-| Revisar que `WOMPI_API_BASE_URL` apunte a producción (por defecto es el sandbox: se «cobraría» dinero de prueba sin enterarse) | Pardo | ESTADO, config de producción |
-| El webhook de JaaS configurado (sin él, la antesala dice «aún no ha entrado» en cada clase real) | Pardo | ESTADO, pendiente |
-| **Una transacción real de punta a punta**: una clase pequeña pagada por Wompi en producción, una devolución desde el panel de Wompi que aparece como saldo, y una liquidación por Bre-B con su comprobante | Pardo + un profe de confianza | Nunca se ha hecho; las pruebas e2e saltan Wompi a propósito |
-| Rotar la llave privada de Wompi y la de OpenAI (las dos pasaron por el chat) y poner un tope mensual de gasto en OpenAI | Pardo | ESTADO, pendiente |
-| Probar si la IP real llega detrás del proxy de Railway (`X-Forwarded-For`) | Claude | ESTADO, seguridad |
-| Decidir qué pasa con una clase pagada que el estudiante cancela: saldo a favor o devolución | Pardo | Decisión abierta desde el 02/09 |
-| Decidir si la reseña de una clase de prueba gratis cuenta en el ranking | Pardo | Revisión de seguridad del 25/09 |
-| Que Sofía lea el texto del resultado del diagnóstico: es el único lugar donde Orión le dice a alguien algo sobre sí mismo | Sofía | ESTADO, pendiente desde el 17/09 |
-| Sanciones en modo observación (como están): con pocos profes, nada se oculta sin que una persona lo mire | — | Decisión del 02/09 |
+## Semana 1 (del 29/09 al 5/10): abrir a profesores y cerrar la casa
 
-**No frenan el lanzamiento** (se atienden en paralelo): los avisos en el dispositivo (Pardo: «no es
-vital»; los recordatorios también van por la campana y el correo), la política de seguridad del
-navegador (CSP), que el avatar personalizado solo lo vea su dueño, y el resto de la lista de
-seguridad «para decidir» del 22/09.
+### Conseguir los profes fundadores
 
-**Sale de la Fase 0 cuando**: el contador y el abogado respondieron, Sistema está todo en verde y la
-transacción real cerró completa, incluido el comprobante de pago al profe.
+- **Meta**: de 10 a 15 candidatos esta semana, para llegar a 8–10 publicados en tres o cuatro
+  semanas.
+- **Dónde buscarlos**:
+  - la red de Sofía;
+  - estudiantes y egresados de licenciaturas en idiomas;
+  - grupos de profes de idiomas en Facebook y LinkedIn;
+  - sobre todo, **profes que ya dan clases por su cuenta**, porque traen a sus propios estudiantes.
+- **Con qué**, que ya está construido: la página «Enseña con Orión», la invitación de profe fundador
+  desde Usuarios (15 % de comisión durante sus primeros 3 meses de clases) y la postulación con
+  revisión.
+- **Revisar el mismo día**: la postulación le promete al aspirante una respuesta en 3 días hábiles
+  (Ajustes → «Plazo para revisar una postulación»). Con 12 personas esperando, tres días matan el
+  impulso. O Sofía revisa el mismo día, o se baja ese plazo a 1.
+- **Lo que se le ofrece al profe**:
+  - cobro por Wompi (tarjeta, PSE, Nequi) sin perseguir a nadie;
+  - su agenda con cupos y su aula virtual;
+  - el acta de cada clase y la práctica con IA para su estudiante;
+  - la liquidación cada quincena, con comprobante;
+  - un perfil público y su propio enlace para compartir.
 
-## Fase 1 — Gente de casa (2 semanas)
+### Cerrar la casa (lo que se puede hacer en una semana)
 
-**Quiénes**: Pardo, Sofía, 2 o 3 profes de mucha confianza de Sofía, y 5 a 10 estudiantes cercanos
-(familia, amigos o alumnos actuales de la academia que acepten probar).
+| Qué | Quién |
+|---|---|
+| Todas las integraciones en verde en Administración → Sistema: Wompi, JaaS, Cloudinary, Resend, OpenAI, avisos | Pardo |
+| Que `WOMPI_API_BASE_URL` apunte a producción (por defecto es el sandbox: se «cobraría» dinero de prueba sin enterarse) | Pardo |
+| El webhook de JaaS (sin él, la antesala dice «aún no ha entrado» en cada clase real) | Pardo |
+| Rotar la llave privada de Wompi y la de OpenAI (pasaron por el chat) y poner un tope mensual de gasto en OpenAI | Pardo |
+| **Una transacción real de punta a punta**, con Pardo de estudiante y el primer profe: una clase pagada por Wompi en producción, una devolución desde el panel de Wompi que aparece como saldo y, en el corte siguiente, la liquidación por Bre-B con su comprobante | Pardo + primer profe |
+| Probar si la IP real llega detrás del proxy de Railway (`X-Forwarded-For`) | Claude |
+| Que Sofía lea el texto del resultado del diagnóstico: es el único lugar donde Orión le dice a alguien algo sobre sí mismo | Sofía |
 
-**Cómo**:
-- Cuentas reales y pagos reales pequeños. Si se prefiere no cobrarles, el admin puede darles saldo
-  («Ajuste de Orión»), pero al menos tres clases tienen que pasar por Wompi.
-- **La prueba tiene que cruzar un corte de liquidación** (00:00 del 1 o del 16), para que una
-  quincena completa —corte, aprobar, pagar, comprobante— corra una vez con gente real.
+### Agendar esta semana (su respuesta va antes del primer cobro a alguien que no sea de la familia)
 
-**Lista de lo que hay que ver funcionar al menos una vez**: registro, postulación, aprobación, perfil
-y horarios, reserva, pago, clase por JaaS en celular y en computador, acta, práctica, calificación,
-cancelación de cada lado, reclamo, devolución y liquidación.
+- **Contador**: facturación electrónica de la comisión, retención en la fuente y el contrato de
+  mandato (pendiente desde el 02/09). Hoy el responsable legal que muestran los textos es Pardo como
+  persona (`ORION_LEGAL_*`). Si eso alcanza para facturar comisiones y liquidar a los profes, o si
+  hace falta una sociedad, lo responde el contador, no el código.
+- **Abogado laboral**: que la relación con el profe sea de contratista. La comisión obligatoria, la
+  no-elusión y las sanciones juntas son la combinación que se examina (brief maestro, riesgo 2).
+- **Abogado**: la política de datos 1.2 tiene que nombrar a OpenAI, a 8x8 y lo que se toma al entrar
+  con Google o Facebook. La línea del beneficio de fundador va en los Términos del profesor.
 
-**Sale de la Fase 1 cuando**:
-- toda la lista pasó;
-- no hubo ningún error con el dinero;
-- menos de 1 de cada 10 clases tuvo una falla técnica;
-- la quincena se pagó a tiempo.
+## Semanas 2 y 3 (del 6 al 19/10): fundadores publicando y piloto con su gente
 
-## Fase 2 — Profes fundadores (2 a 3 semanas; puede empezar al final de la Fase 1)
+La «gente de casa» de la versión 1 no existe, así que las dos fases van juntas: los primeros
+fundadores publican y cada uno invita a 2 o 3 de sus estudiantes o conocidos. Pueden usar la primera
+clase gratis y después pagar clases reales pequeñas.
 
-**Meta**: 8 a 10 profes publicados, repartidos entre los idiomas, con perfil completo, horarios
-abiertos y, idealmente, la primera clase gratis encendida.
+- **Cruzar un corte de liquidación**: las clases del piloto entre el 5 y el 14 de octubre entran al
+  corte del 16/10 y se pagan alrededor del 20 o 21 de octubre (tercer día hábil, con festivos). Así
+  una quincena completa —corte, aprobar, pagar, comprobante— corre una vez con gente real.
+- **Lo que hay que ver funcionar al menos una vez**: registro, postulación, aprobación, perfil y
+  horarios, reserva, pago, clase por JaaS en celular y en computador, acta, práctica, calificación,
+  cancelación de cada lado, reclamo, devolución y liquidación.
+- **Sale cuando**:
+  - toda la lista pasó;
+  - no hubo ningún error con el dinero;
+  - menos de 1 de cada 10 clases tuvo una falla técnica;
+  - la quincena se pagó a tiempo;
+  - el contador y el abogado respondieron.
 
-**Cómo**:
-- **Antes** de que un profe que ya trabaja con Sofía entre a Orión, la conversación sobre cómo va a
-  ganar: pasar de tarifa fija a comisión cambia su ingreso (brief maestro, riesgo 1). Esa charla va
-  antes, no cuando llegue la primera liquidación con menos plata.
-- Por la invitación con revisión: 15 % de comisión durante sus primeros 3 meses de clases.
-- Una sesión de bienvenida en grupo de 30 minutos, y un grupo de WhatsApp de fundadores para
-  preguntas y comentarios.
-- Cada profe invita a sus propios estudiantes con su enlace: es la primera demanda, y la más tibia.
+## Semanas 4 a 6: estudiantes en grupo controlado, sin anuncios
 
-**Sale de la Fase 2 cuando**: hay 8 a 10 profes publicados y cada uno tiene al menos una clase
-dictada en Orión.
+**El motor**:
+- los estudiantes que traen los profes;
+- el contenido de Sofía (el video de bienvenida, redes);
+- los referidos;
+- el diagnóstico gratis como puerta de entrada.
 
-## Fase 3 — Estudiantes en grupo controlado (4 semanas, sin anuncios)
-
-**Quiénes**: la base de la academia, los estudiantes que invitan los profes y los referidos.
-
-**Qué medir y metas de partida** (son referencias iniciales para ajustar con datos reales, no cifras
-de la industria):
+**Metas de partida** (son referencias iniciales para ajustar con datos reales, no cifras de la
+industria):
 
 | Métrica | Meta de partida |
 |---|---|
@@ -95,22 +110,55 @@ de la industria):
 | Ausencias (del profe o del estudiante) | menos del 10 % |
 
 **Semáforo**:
-- **Verde**, se abre al público: todas las metas se cumplen dos semanas seguidas.
+- **Verde**, se abre al público: 8–10 profes publicados y las metas se cumplen dos semanas seguidas.
 - **Amarillo**, se ajusta y se mide otra vez: la gente se registra pero no llega a clase, o no
   repite.
 - **Rojo**, se para: hay errores con el dinero o las clases fallan. Se arregla antes de seguir.
 
-## Fase 4 — Apertura pública (desde la semana 8 a 10, si la Fase 3 dio verde)
+## Los anuncios: con $200.000 al mes son un termómetro, no el motor
 
-- Anuncios pequeños y solo en Colombia, el video de Sofía y el programa de referidos.
-- **La cuenta que decide si el anuncio es una apuesta o un plan**: una clase de $45.000 le deja a
-  Orión entre $6.750 (15 %, fundador) y $9.000 (20 %), antes de lo que cobre Wompi por transacción.
-  Un estudiante que toma 8 clases deja entre $54.000 y $72.000. Si conseguir a ese estudiante por
-  anuncios (CAC) cuesta $40.000, casi toda la ganancia se va en traerlo. El presupuesto sube solo
-  cuando se sabe cuántas clases toma en promedio un estudiante y cuánto cuesta traerlo.
+- **Mes 1: nada en anuncios para estudiantes**, porque no hay profes que ofrecerles. Si reclutar
+  profes va lento, una parte puede ir a promocionar «Enseña con Orión».
+- **Desde el mes 2**, con el semáforo en verde: los $200.000 van al diagnóstico gratis, la entrada con
+  menos fricción. Se mide el costo por diagnóstico, por registro y por primera clase: los clics los da
+  la plataforma de anuncios, y los registros y las clases, la administración de Orión.
+- **La cuenta**: registros al mes = $200.000 ÷ costo por registro. El costo por registro no se sabe
+  hasta medirlo, y con este presupuesto van a ser pocos. Por eso el crecimiento de los primeros meses
+  viene de los profes y sus estudiantes, no de los anuncios.
 
-## Lo que falta saber para ajustar este plan
+## Las cuentas del negocio
 
-1. Cuántos estudiantes activos y cuántos profes tiene hoy la academia, y si hoy pagan.
-2. La fecha a la que se apunta para abrir al público.
-3. El presupuesto mensual para anuncios.
+- **Lo que deja una clase**: a $45.000, entre $6.750 (15 %, profe fundador) y $9.000 (20 %), antes de
+  lo que cobre Wompi por transacción.
+- **Punto de equilibrio**: clases al mes para cubrir los costos = costos fijos mensuales ÷ lo que deja
+  una clase. Los costos fijos son Railway, OpenAI, JaaS, Resend, Cloudinary, el dominio y los
+  anuncios.
+  - *Ejemplo ilustrativo, no son las cifras de Orión*: con $500.000 al mes de costos, harían falta
+    unas 74 clases al mes al 15 %, o 56 al 20 %.
+  - Con la cifra real, este número dice cuántos profes activos y cuántas clases por profe hacen
+    falta.
+
+## Decisiones de Pardo
+
+1. **El 15 % sobre los estudiantes que el profe ya tenía.** El fundador que trae a sus propios
+   alumnos le paga a Orión el 15 % de esas clases. Lo que recibe a cambio está arriba («Lo que se le
+   ofrece al profe»). Es la objeción que va a oír de casi todos los profes la primera semana, y la
+   respuesta es de Pardo.
+2. **Qué pasa con una clase pagada que el estudiante cancela**: saldo a favor o devolución. Abierta
+   desde el 02/09.
+3. **Si la reseña de una clase de prueba gratis cuenta en el ranking** (revisión de seguridad del
+   25/09).
+4. Las sanciones siguen en modo observación: con pocos profes, nada se oculta sin que una persona lo
+   mire (decisión del 02/09).
+
+## No frena el lanzamiento
+
+- Los avisos en el dispositivo: Pardo dice «no es vital», y los recordatorios también van por la
+  campana y el correo.
+- La política de seguridad del navegador (CSP).
+- Que el avatar personalizado solo lo vea su dueño.
+- El resto de la lista de seguridad «para decidir» del 22/09.
+
+## Lo que falta saber
+
+- **Los costos fijos mensuales de hoy.** Con esa cifra, el punto de equilibrio deja de ser un ejemplo.

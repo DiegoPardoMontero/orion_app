@@ -6,7 +6,7 @@
 | **Canal** | Chat de Claude Code |
 | **Quién** | Pardo |
 | **Relacionado** | `2026-09-28-1528-los-avisos-no-suenan.md` (el comentario sobre los avisos, al inicio) |
-| **Estado** | Recomendación entregada; faltan tres datos |
+| **Estado** | Recomendación v2 entregada; falta el costo fijo mensual |
 
 ## El pedido, tal cual
 
@@ -26,15 +26,21 @@
   Podemos gastar unos 200k cop al mes en anuncios.» → El plan se ajusta a un arranque desde cero (ver
   abajo y `docs/plan-de-lanzamiento.md`).
 
-## Estado (28/09/2026): recomendación entregada; faltan tres datos de Pardo
+## Estado (28/09/2026): recomendación v2 entregada; falta el costo fijo mensual
 
-La recomendación completa está en **`docs/plan-de-lanzamiento.md`**. Tiene cinco fases, y cada una
-tiene sus condiciones para pasar a la siguiente, atadas a lo que ya dicen ESTADO y el brief maestro:
-0. Cerrar la casa: contador, abogado, integraciones en verde y una transacción real de punta a punta.
-1. Gente de casa, cruzando un corte de liquidación.
-2. De 8 a 10 profes fundadores.
-3. Estudiantes en grupo controlado, con metas y semáforo.
-4. Apertura pública con la cuenta de cuánto cuesta traer a cada estudiante.
+`docs/plan-de-lanzamiento.md` pasó a la **versión 2**. La primera suponía una academia con base; no
+la hay.
 
-Para ajustarlo faltan tres datos: cuántos estudiantes y profes tiene hoy la academia (y si pagan), la
-fecha objetivo y el presupuesto de anuncios.
+- **Abrir en una semana, sí, pero a profesores.** Con 0 profes, abrirle a estudiantes sería una
+  vitrina vacía (brief maestro, riesgo 6).
+- **Semana 1**:
+  - reclutar de 10 a 15 profes fundadores y revisarlos el mismo día;
+  - cerrar lo rápido de la casa y hacer una transacción real;
+  - agendar al contador y al abogado laboral.
+- **Semanas 2 y 3**: los fundadores publican, y el piloto se hace con sus estudiantes. Cruza el corte
+  del 16/10, así que la liquidación se paga hacia el 20 o 21/10.
+- **Semanas 4 a 6**: estudiantes en grupo controlado, sin anuncios, con metas y semáforo.
+- **Anuncios**: con $200.000 al mes son para medir, no el motor. En el mes 1, nada para estudiantes.
+- **Decisión nueva para Pardo**: el 15 % sobre los estudiantes que el profe ya tenía.
+
+Para cerrar el punto de equilibrio falta la cifra de costos fijos mensuales.
