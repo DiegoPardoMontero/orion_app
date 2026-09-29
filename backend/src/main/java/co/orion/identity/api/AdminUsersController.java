@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,6 +20,7 @@ import co.orion.identity.application.FounderService;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.shared.error.BusinessRuleViolationException;
+import co.orion.shared.security.OrionUserDetails;
 import jakarta.validation.Valid;
 
 /** Toda la ruta /api/v1/admin/** exige rol ADMIN en la SecurityFilterChain. */
@@ -48,8 +50,10 @@ public class AdminUsersController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public AdminUserResponse create(@Valid @RequestBody CreateUserRequest body) {
+    public AdminUserResponse create(@AuthenticationPrincipal OrionUserDetails principal,
+                                    @Valid @RequestBody CreateUserRequest body) {
         return AdminUserResponse.from(adminUsers.create(
+                principal.user().getId(),
                 body.email(),
                 body.fullName(),
                 body.whatsappPhone(),

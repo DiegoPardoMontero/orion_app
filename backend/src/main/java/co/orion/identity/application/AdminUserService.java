@@ -1,5 +1,6 @@
 package co.orion.identity.application;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -13,11 +14,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.criteria.Predicate;
 
+import co.orion.identity.domain.ApplicationEventType;
+import co.orion.identity.domain.ApplicationStatus;
 import co.orion.identity.domain.ProfessorProfile;
+import co.orion.identity.domain.TeacherApplication;
+import co.orion.identity.domain.TeacherApplicationEvent;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
 import co.orion.identity.domain.UserStatus;
 import co.orion.identity.persistence.ProfessorProfileRepository;
+import co.orion.identity.persistence.TeacherApplicationEventRepository;
+import co.orion.identity.persistence.TeacherApplicationRepository;
 import co.orion.identity.persistence.UserRepository;
 import co.orion.shared.PhoneNumbers;
 import co.orion.shared.error.BusinessRuleViolationException;
@@ -31,14 +38,23 @@ public class AdminUserService {
 
     private final UserRepository users;
     private final ProfessorProfileRepository profiles;
+    private final TeacherApplicationRepository applications;
+    private final TeacherApplicationEventRepository applicationEvents;
     private final PasswordEncoder passwordEncoder;
+    private final Clock clock;
 
     public AdminUserService(UserRepository users,
                             ProfessorProfileRepository profiles,
-                            PasswordEncoder passwordEncoder) {
+                            TeacherApplicationRepository applications,
+                            TeacherApplicationEventRepository applicationEvents,
+                            PasswordEncoder passwordEncoder,
+                            Clock clock) {
         this.users = users;
         this.profiles = profiles;
+        this.applications = applications;
+        this.applicationEvents = applicationEvents;
         this.passwordEncoder = passwordEncoder;
+        this.clock = clock;
     }
 
     @Transactional(readOnly = true)
@@ -67,7 +83,7 @@ public class AdminUserService {
      * (existe uno por configuración, y multiplicarlos es una decisión de negocio, no de UI).
      */
     @Transactional
-    public User create(String email, String fullName, String whatsappPhone,
+    public User create(UUID adminId, String email, String fullName, String whatsappPhone,
                        UserRole role, String rawPassword) {
         if (role != UserRole.STUDENT && role != UserRole.PROFESSOR) {
             throw new BusinessRuleViolationException("El rol debe ser STUDENT o PROFESSOR");
@@ -91,9 +107,15 @@ public class AdminUserService {
             throw new ConflictException("Ya existe un usuario con ese correo");
         }
 
-        // Un profesor sin perfil no podría publicarse: nace con uno vacío, sin publicar.
+        // Un profesor sin perfil no podría publicarse: nace con uno vacío, sin publicar. Y con su
+        // postulación aprobada por quien lo crea: sin una APPROVED, publicar, mostrar cupos y salir en
+        // el buscador responden 403, y el profe que el admin daba de alta quedaba sin salida.
         if (role == UserRole.PROFESSOR) {
             profiles.save(new ProfessorProfile(saved));
+            TeacherApplication aprobada = applications.saveAndFlush(new TeacherApplication(
+                    saved.getId(), ApplicationStatus.APPROVED, adminId, clock.instant()));
+            applicationEvents.save(new TeacherApplicationEvent(
+                    aprobada.getId(), ApplicationEventType.APPROVED, adminId, "Creado por el admin desde Usuarios"));
         }
         return saved;
     }

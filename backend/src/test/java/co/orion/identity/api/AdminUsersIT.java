@@ -16,8 +16,10 @@ import org.springframework.http.ResponseEntity;
 
 import co.orion.TestcontainersConfiguration;
 import co.orion.identity.domain.User;
+import co.orion.identity.domain.ApplicationStatus;
 import co.orion.identity.domain.UserRole;
 import co.orion.identity.persistence.ProfessorProfileRepository;
+import co.orion.identity.persistence.TeacherApplicationRepository;
 import co.orion.support.ApiIntegrationSupport;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -29,6 +31,9 @@ class AdminUsersIT extends ApiIntegrationSupport {
 
     @Autowired
     private ProfessorProfileRepository profiles;
+
+    @Autowired
+    private TeacherApplicationRepository applications;
 
     private User ana;
     private Session adminSession;
@@ -90,7 +95,7 @@ class AdminUsersIT extends ApiIntegrationSupport {
     void aNewProfessorIsBornWithAnEmptyUnpublishedProfile() {
         ResponseEntity<AdminUserResponse> response = post(
                 USERS, adminSession,
-                new CreateUserRequest("profe@orion.test", "Profe Nuevo", null, "PROFESSOR", "clave-larga-1"),
+                new CreateUserRequest("profe@orion.test", "Profe Nuevo", null, "PROFESSOR", PASSWORD),
                 AdminUserResponse.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
@@ -99,6 +104,15 @@ class AdminUsersIT extends ApiIntegrationSupport {
         var perfil = profiles.findById(response.getBody().id());
         assertThat(perfil).isPresent();
         assertThat(perfil.get().isPublished()).isFalse();
+
+        // Y aprobado por quien lo creó: sin una postulación APPROVED, publicar respondía 403 y el profe
+        // dado de alta desde Usuarios no tenía salida (revisión del 28/09/2026).
+        assertThat(applications.existsByUserIdAndStatus(response.getBody().id(), ApplicationStatus.APPROVED)).isTrue();
+        Session profe = login("profe@orion.test");
+        assertThat(put("/api/v1/me/profile/rate", profe, Map.of("hourlyRateCop", 50_000), Map.class)
+                .getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(put("/api/v1/me/profile", profe, Map.of("isPublished", true), Map.class)
+                .getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     @Test

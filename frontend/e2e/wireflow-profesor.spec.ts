@@ -362,8 +362,8 @@ test("[v-invitacion.1 v-invitacion.3 v-invitacion.4 ad-usuarios.2] la invitació
 test("[p-bienvenida.1 p-bienvenida.2 p-bienvenida.3 e-whatsapp.2 e-whatsapp.3 p-acuerdo.1 p-acuerdo.2 p-acuerdo.3 p-acuerdo.4 p-falta-pago.1 p-falta-pago.3 ad-usuarios.7] con video: la bienvenida una vez, el video opcional y el recorrido obligatorio", async ({ page, browser }) => {
   await entrar(page, SEMILLA.admin);
   // Los profesores de la semilla ya la vieron: la ve uno recién aprobado. Desde la V71 la invitación
-  // pasa por la postulación, que en local no se completa sin Cloudinary: el admin crea al profe y la
-  // aprobación se escribe en la base, como la dejaba el enlace de invitación de antes.
+  // pasa por la postulación, que en local no se completa sin Cloudinary: el admin crea al profe desde
+  // Usuarios, y desde el 28/09/2026 ese profe nace con su postulación aprobada por el admin.
   const video = "https://www.youtube.com/watch?v=aqz-KE-bpKQ";
   expect((await api(page, "PUT", "/api/v1/admin/settings/professor_welcome_video_url", { value: video })).status).toBe(200);
   try {
@@ -371,9 +371,6 @@ test("[p-bienvenida.1 p-bienvenida.2 p-bienvenida.3 e-whatsapp.2 e-whatsapp.3 p-
     expect(
       (await api(page, "POST", "/api/v1/admin/users", { email: correo, fullName: "Bienvenida Prueba", role: "PROFESSOR", password: "orion123*" })).status,
     ).toBe(201);
-    sqlLocal(
-      `insert into teacher_applications (user_id, status, reviewed_at) select id, 'APPROVED', now() from users where email = '${correo}'`,
-    );
     const ctx = await browser.newContext();
     const profe = await ctx.newPage();
     await entrar(profe, { email: correo, pass: "orion123*" });
