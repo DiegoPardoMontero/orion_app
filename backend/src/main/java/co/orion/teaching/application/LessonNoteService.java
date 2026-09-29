@@ -114,6 +114,11 @@ public class LessonNoteService {
         LessonNote nota = notas.findByBookingId(b.getId()).orElseGet(() -> notas.save(
                 new LessonNote(b.getId(), b.getProfessorId(), b.getStudentId(), b.getLanguageCode(),
                         crudo, ahora)));
+        // Antes de llamar a la IA: una publicada no se regenera (la entidad lo rechaza igual), y
+        // descubrirlo después gastaba el presupuesto de OpenAI para responder un 422.
+        if (nota.getStatus() == LessonNoteStatus.PUBLISHED) {
+            throw new UnprocessableException("Esta acta ya está publicada: edítala en vez de regenerarla.");
+        }
 
         // Apagada desde Ajustes, la función no desaparece: el profesor escribe el acta a mano en
         // los mismos cuatro campos. El interruptor vale para cualquier redactor, también el local.

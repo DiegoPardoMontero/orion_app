@@ -4,6 +4,7 @@ import java.time.Clock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -30,11 +31,14 @@ public class MessageNotificationListener {
     private final MessageDelivery delivery;
     private final MailTransport mail;
     private final Clock clock;
+    private final String baseUrl;
 
-    public MessageNotificationListener(MessageDelivery delivery, MailTransport mail, Clock clock) {
+    public MessageNotificationListener(MessageDelivery delivery, MailTransport mail, Clock clock,
+                                       @Value("${orion.app.base-url}") String baseUrl) {
         this.delivery = delivery;
         this.mail = mail;
         this.clock = clock;
+        this.baseUrl = baseUrl;
     }
 
     @Async
@@ -46,21 +50,24 @@ public class MessageNotificationListener {
     private void email(Delivery target) {
         String firstName = target.recipientName().split(" ")[0];
         String subject = "Nuevo mensaje de " + target.senderName() + " en Orión";
+        // Con el enlace a la conversación, como los demás avisos: «búscalo en tu bandeja» era la mitad
+        // del mensaje (revisión del 28/09/2026).
+        String conversacion = baseUrl + "/mensajes/" + target.conversationId();
         String html = """
                 <p>Hola, %s.</p>
-                <p>%s te escribió un mensaje en Orión. Respóndele desde la plataforma, en tu bandeja
-                de Mensajes.</p>
+                <p>%s te escribió un mensaje en Orión.</p>
+                <p><a href="%s">Leer y responder</a></p>
                 <p>Un abrazo,<br>El equipo de Orión</p>
                 """.formatted(HtmlUtils.htmlEscape(firstName, "UTF-8"),
-                HtmlUtils.htmlEscape(target.senderName(), "UTF-8"));
+                HtmlUtils.htmlEscape(target.senderName(), "UTF-8"), conversacion);
         String text = """
                 Hola, %s.
 
-                %s te escribió un mensaje en Orión. Respóndele desde la plataforma, en tu bandeja de Mensajes.
+                %s te escribió un mensaje en Orión. Léelo y respóndele aquí: %s
 
                 Un abrazo,
                 El equipo de Orión
-                """.formatted(firstName, target.senderName());
+                """.formatted(firstName, target.senderName(), conversacion);
         try {
             mail.send(OutgoingEmail.plain(target.recipientEmail(), subject, text, html));
             log.info("Aviso de mensaje enviado a {}", target.recipientEmail());
