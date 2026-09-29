@@ -408,15 +408,16 @@ export default function AgendaProfesorPage() {
         </div>
       )}
 
-      <div className="lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-10">
-        {/* Columna de perfil (compacta) */}
+      <div className="lg:grid lg:grid-cols-[400px_minmax(0,1fr)] lg:gap-10">
+        {/* Columna de perfil (compacta). En el computador la foto va encima del nombre: al lado, un
+            nombre largo quedaba partido en cuatro líneas en la mitad del ancho. */}
         <section className="mt-5 lg:mt-6">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 lg:flex-col lg:items-start lg:gap-3">
             <Avatar nombre={detalle.fullName ?? ""} fotoUrl={detalle.photoUrl} size="lg" className="lg:hidden" />
             <Avatar nombre={detalle.fullName ?? ""} fotoUrl={detalle.photoUrl} size="xl" className="hidden lg:block" />
             {/* El nombre y la descripción corta se leen enteros: nunca se cortan con «…». */}
             <div className="min-w-0">
-              <h1 className="font-display text-[20px] leading-tight font-bold text-balance wrap-break-word lg:text-[30px]">
+              <h1 className="font-display text-[20px] leading-tight font-bold text-balance wrap-break-word lg:text-[28px]">
                 {detalle.fullName}
               </h1>
               <p className="mt-1 text-[13px] leading-snug text-pretty wrap-break-word text-text-secondary lg:text-[15px]">
@@ -589,7 +590,7 @@ export default function AgendaProfesorPage() {
         </section>
 
         {/* Columna de agenda */}
-        <section data-tour="horarios" className="mt-5 lg:mt-6 lg:rounded-card lg:bg-surface-raised lg:p-9 lg:shadow-lg">
+        <section data-tour="horarios" className="mt-5 lg:mt-6 lg:self-start lg:rounded-card lg:bg-surface-raised lg:p-9 lg:shadow-lg">
           {!conSesion ? (
             <ReservarConCuenta nombre={detalle.fullName ?? null} aqui={aqui} />
           ) : cupos.isError ? (
