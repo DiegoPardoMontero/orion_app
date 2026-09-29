@@ -13,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import co.orion.billing.domain.Payment;
+import co.orion.billing.persistence.PaymentRepository;
 import co.orion.scheduling.domain.AbsenceKind;
 import co.orion.scheduling.domain.Booking;
 import co.orion.scheduling.domain.BookingCancelledEvent;
@@ -47,15 +49,18 @@ public class LateCancellationListener {
 
     private final BookingRepository bookings;
     private final ProfessorAbsenceRepository absences;
+    private final PaymentRepository payments;
     private final PlatformSettingsService settings;
     private final ApplicationEventPublisher publisher;
 
     public LateCancellationListener(BookingRepository bookings,
                                     ProfessorAbsenceRepository absences,
+                                    PaymentRepository payments,
                                     PlatformSettingsService settings,
                                     ApplicationEventPublisher publisher) {
         this.bookings = bookings;
         this.absences = absences;
+        this.payments = payments;
         this.settings = settings;
         this.publisher = publisher;
     }
@@ -108,6 +113,11 @@ public class LateCancellationListener {
      * tuvo un momento para cancelar sin falta. Con la gracia, lo tiene durante un rato después de
      * enterarse. Si la reserva se hizo con margen, la gracia vence mucho antes que la ventana y no
      * cambia nada.
+     *
+     * <p>El «enterarse» es cuando la reserva quedó pagada, no cuando se creó: al profe se le anuncia
+     * la clase al confirmarse, y el cobro puede tardar hasta {@code payment_hold_minutes} (hoy 20).
+     * Contada desde la creación, la gracia de 60 minutos le dejaba 40. Una reserva sin cobro (la
+     * clase de prueba, gratis) se confirma al crearse, y ahí las dos horas coinciden.
      */
     private boolean fueTardia(Booking booking) {
         Instant cancelledAt = booking.getCancelledAt();
@@ -116,8 +126,10 @@ public class LateCancellationListener {
         }
         Instant ventanaAbre = booking.getStartsAt()
                 .minus(Duration.ofHours(settings.getInt(PROFESSOR_WINDOW)));
-        Instant graciaVence = booking.getCreatedAt()
-                .plus(Duration.ofMinutes(settings.getInt(PROFESSOR_GRACE)));
+        Instant seEntero = payments.findByBookingId(booking.getId())
+                .map(Payment::getPaidAt)
+                .orElse(booking.getCreatedAt());
+        Instant graciaVence = seEntero.plus(Duration.ofMinutes(settings.getInt(PROFESSOR_GRACE)));
         Instant frontera = ventanaAbre.isAfter(graciaVence) ? ventanaAbre : graciaVence;
         return cancelledAt.isAfter(frontera);
     }

@@ -237,6 +237,22 @@ class LessonLifecycleIT extends ApiIntegrationSupport {
                 .satisfies(falta -> assertThat(falta.getKind()).isEqualTo(AbsenceKind.LATE_CANCELLATION));
     }
 
+    /**
+     * La gracia cuenta desde que la reserva quedó pagada, que es cuando al profe se le anuncia: una
+     * reserva de hace 70 minutos que se pagó hace 30 todavía se puede soltar sin falta.
+     */
+    @Test
+    void laGraciaCuentaDesdeQueLaReservaSePago() {
+        UUID id = bookAndPay(9);
+        moverClase(id, FROZEN_NOW.plusSeconds(7 * 3600), FROZEN_NOW.minus(Duration.ofMinutes(70)),
+                FROZEN_NOW.minus(Duration.ofMinutes(30)));
+
+        assertThat(post(BOOKINGS + "/" + id + "/cancel", mariaSession, null, Map.class)
+                .getStatusCode().value()).isEqualTo(200);
+
+        assertThat(absences.findAll()).isEmpty();
+    }
+
     /** Una reserva sin pagar no era una clase: soltarla no le cuesta nada al profesor. */
     @Test
     void soltarUnaReservaSinPagarNoEsCancelacionTardia() {
@@ -267,11 +283,20 @@ class LessonLifecycleIT extends ApiIntegrationSupport {
         assertThat(absences.findAll()).isEmpty();
     }
 
-    /** Pone la clase en {@code empieza} (una hora de duración) y la reserva como hecha en {@code reservada}. */
+    /**
+     * Pone la clase en {@code empieza} (una hora de duración) y la reserva como hecha y pagada en
+     * {@code reservada}.
+     */
     private void moverClase(UUID id, Instant empieza, Instant reservada) {
+        moverClase(id, empieza, reservada, reservada);
+    }
+
+    private void moverClase(UUID id, Instant empieza, Instant reservada, Instant pagada) {
         jdbc.update("update bookings set starts_at = ?, ends_at = ?, created_at = ? where id = ?",
                 java.sql.Timestamp.from(empieza), java.sql.Timestamp.from(empieza.plusSeconds(3600)),
                 java.sql.Timestamp.from(reservada), id);
+        jdbc.update("update payments set paid_at = ? where booking_id = ? and paid_at is not null",
+                java.sql.Timestamp.from(pagada), id);
     }
 
     /* ------------------------------------------------------------ no-show y reclamo */
