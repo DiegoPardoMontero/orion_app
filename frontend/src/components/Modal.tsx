@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 /**
  * Diálogo modal. En desktop es una tarjeta centrada (máx. 440 px); en móvil se presenta como
  * hoja inferior a todo el ancho, con radio solo en las esquinas superiores. Escape cierra y el
- * foco entra al panel — lo espera cualquiera que use teclado.
+ * foco entra al panel y no sale de él con Tab — lo espera cualquiera que use teclado.
  *
  * <p>Se dibuja en un <strong>portal a {@code document.body}</strong>, y eso no es un detalle de
  * implementación: es lo que hace que el modal funcione. Un `z-index` solo compite dentro de su
@@ -36,10 +36,18 @@ export function Modal({
 }) {
   const panel = useRef<HTMLDivElement>(null);
   const tituloId = useId();
+  // `onCerrar` suele ser una flecha nueva en cada render de quien abre el diálogo. Si el efecto
+  // dependiera de ella, cada render de la página de detrás (una consulta que se refresca sola cada
+  // minuto) volvería a enfocar el panel y le quitaría el foco al campo en el que alguien escribe.
+  const cerrar = useRef(onCerrar);
+  useEffect(() => {
+    cerrar.current = onCerrar;
+  });
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !bloqueante) onCerrar();
+      if (event.key === "Escape" && !bloqueante) cerrar.current();
+      if (event.key === "Tab") retenerFoco(event, panel.current);
     };
     document.addEventListener("keydown", onKey);
     panel.current?.focus();
@@ -51,7 +59,7 @@ export function Modal({
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = desbordeAnterior;
     };
-  }, [onCerrar, bloqueante]);
+  }, [bloqueante]);
 
   // En el render del servidor no hay `document`. Todos los diálogos de la app se abren por una
   // interacción, así que esto nunca se renderiza allí; la guarda está por si algún día alguien
@@ -62,7 +70,7 @@ export function Modal({
     <div
       className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-5"
       style={{ background: "rgba(51,32,59,0.45)" }}
-      onClick={bloqueante ? undefined : onCerrar}
+      onClick={bloqueante ? undefined : () => cerrar.current()}
     >
       <div
         ref={panel}
@@ -83,4 +91,37 @@ export function Modal({
     </div>,
     document.body,
   );
+}
+
+const ENFOCABLES =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/**
+ * Tab da la vuelta dentro del diálogo en vez de salir a la página de detrás, que está tapada por
+ * el velo: con un aviso que no se cierra, el foco terminaba en botones que nadie ve. Solo el
+ * diálogo de más arriba retiene el foco, por si hay dos abiertos a la vez.
+ */
+function retenerFoco(event: KeyboardEvent, panel: HTMLDivElement | null) {
+  if (!panel) return;
+  const abiertos = document.querySelectorAll('[role="dialog"][aria-modal="true"]');
+  if (abiertos[abiertos.length - 1] !== panel) return;
+  const enfocables = Array.from(panel.querySelectorAll<HTMLElement>(ENFOCABLES)).filter(
+    (el) => el.offsetParent !== null || el === document.activeElement,
+  );
+  if (enfocables.length === 0) {
+    event.preventDefault();
+    panel.focus();
+    return;
+  }
+  const primero = enfocables[0];
+  const ultimo = enfocables[enfocables.length - 1];
+  const activo = document.activeElement;
+  const dentro = activo instanceof Node && panel.contains(activo);
+  if (event.shiftKey && (!dentro || activo === primero || activo === panel)) {
+    event.preventDefault();
+    ultimo.focus();
+  } else if (!event.shiftKey && (!dentro || activo === ultimo)) {
+    event.preventDefault();
+    primero.focus();
+  }
 }
