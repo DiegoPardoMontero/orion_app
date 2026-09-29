@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { Check, Clock, Eye, Loader, Minus, PlayCircle, RotateCcw, SkipForward, type LucideIcon } from "lucide-react";
 import { apiFetch } from "@/lib/api/fetch";
 import {
@@ -55,6 +56,15 @@ export function EjerciciosDelActa({ actaId }: { actaId: string }) {
       (await apiFetch<PracticaDelActa | undefined>(`/api/v1/professors/me/lesson-notes/${actaId}/practice`)) ?? null,
     refetchInterval: (q) => (q.state.data?.status === "PENDING" ? 15_000 : false),
   });
+
+  // La ficha del estudiante enlaza aquí con #como-le-fue, pero la sección aparece cuando llega la
+  // práctica, después de que el navegador buscó el ancla: se baja a ella al aparecer, una vez.
+  const hayPractica = !!practica.data;
+  useEffect(() => {
+    if (hayPractica && window.location.hash === "#como-le-fue") {
+      document.getElementById("como-le-fue")?.scrollIntoView({ block: "start" });
+    }
+  }, [hayPractica]);
 
   // Sin set (la práctica está apagada) no hay nada que mostrar, ni siquiera el título.
   if (!practica.data) return null;
