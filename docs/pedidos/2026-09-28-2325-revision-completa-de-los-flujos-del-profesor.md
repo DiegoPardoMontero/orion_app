@@ -34,9 +34,11 @@
 
 ## Estado
 
-En curso. El terminal de Pardo se cayó a las 00:08 del 29/09; nada se perdió (todo estaba en commits).
+En curso: arreglos hechos y probados por partes; falta la verificación completa (`./mvnw verify`, e2e
+y `next build`), el push y el correo. El terminal de Pardo se cayó a las 00:08 del 29/09 y no se perdió
+nada: todo estaba en commits.
 
-**Hecho hasta las 23:56** (commits locales, sin push):
+**Hecho hasta las 23:56 del 28/09:**
 
 - Ganancias: las fechas dicen «Desde» y «Hasta», y la explicación ya no sale dos veces (`388acda`).
 - Perfil público en el computador: la foto va encima del nombre y el calendario se ajusta a su contenido (`ed0ae89`).
@@ -48,29 +50,66 @@ En curso. El terminal de Pardo se cayó a las 00:08 del 29/09; nada se perdió (
 - Un acta publicada se rechaza antes de llamar a la IA, y el correo de mensaje nuevo enlaza la
   conversación (`e0372f8`).
 
-La verificación dirigida (9 pruebas de integración y 3 unitarias) terminó en verde a las 00:10:
-77 de integración y 36 unitarias, sin fallos. Faltan el `./mvnw verify` completo, los e2e y `next build`.
+**Hecho el 29/09, con las decisiones de abajo:**
 
-**Pendiente:**
+- **Crítico (dinero):** marcar la asistencia ya no cierra el reclamo del estudiante (`9b0ca84`).
+  - Una clase cerrada, sea «asistió» o «no asistió», se puede reclamar hasta 24 h después del final,
+    y el reclamo congela el pago aunque ya estuviera liberado.
+  - Hay un solo reclamo por clase.
+  - Si gana el profe, la clase vuelve a «no asistió» con su hora de cierre original.
+  - Con un reclamo abierto, la sala sigue abierta hasta el final y la clase se queda en «Próximas»
+    con su botón para entrar.
+- «Enseña con Orión» y las preguntas frecuentes dicen que el 15 % de fundador es por invitación (`f78ce6c`).
+- El aviso de datos de pago sigue siendo obligatorio, pero trae «Salir» y WhatsApp de soporte (`c730534`).
+  - Los diálogos ya no dejan escapar el foco con Tab.
+  - Tampoco le quitan el foco al campo en el que se escribe cada vez que la página se redibuja.
+- La postulación en revisión o aprobada ya no se edita por la API, y las preguntas frecuentes ya no
+  dicen que sí (`eeb2041`). Un profe aprobado ya no puede crear borradores sueltos.
+- El profe edita su nombre y su WhatsApp en «Mi perfil», y publicar exige el correo confirmado
+  (`60465dd`).
+  - El perfil lo avisa junto al interruptor.
+  - La barra de correo sin confirmar dice lo que de verdad bloquea.
+- Sin la «nota privada» de asistencia, que nadie volvía a ver (`3facb0c`).
+- La «X» de las notificaciones se ve en el celular, y abrir una notificación pregunta antes de perder
+  cambios sin guardar (`a8adeb8`).
+- Detalles (`dda8cb4`):
+  - la ciudad escrita no se borra al salir del campo;
+  - la bio y el chat conservan sus saltos de línea;
+  - los valores negativos se escriben «− $5.000»;
+  - un error en las fechas bloqueadas ya no se muestra como «Ninguna»;
+  - el «hoy» del calendario es el de Bogotá;
+  - la sesión se refresca en cuanto cambia el estado de la postulación.
+- La gracia de la cancelación tardía del profe cuenta desde que la reserva se pagó (`e6ac40b`).
+- El enlace a «Cómo le fue» de la ficha del estudiante baja hasta esa sección (`e860b93`).
+- La descripción corta del profe se lee entera en las tarjetas de clase y en la antesala (`2bb4f65`).
 
-- Backend, **crítico (dinero)**: al marcar asistencia (incluso «no asistió» a los 15 min sin haber
-  entrado a la sala) el pago queda liberado y el estudiante ya no puede reclamar ni entrar. Un pago
-  liberado tampoco se puede reembolsar, así que Orión terminaría pagando dos veces.
-- Backend, menores: la gracia de la cancelación tardía se cuenta desde que se crea la reserva y no
-  desde que se confirma. Además, la postulación se puede editar en revisión, la nota de «cambios» vieja
-  sigue apareciendo al reenviar, y un profe aprobado puede crear borradores sueltos por la API.
-- Frontend, **alto**: el diálogo de datos de pago no tiene salida (ni «Salir» ni soporte).
-- Frontend, medios:
-  - solo hay 9 indicativos de país;
-  - «Enseña con Orión» promete el 15 % a todos, pero solo se da por invitación;
-  - el campo de ciudad borra lo escrito;
-  - el profe no puede cambiar su nombre ni su WhatsApp;
-  - la «X» de las notificaciones no se ve en el celular y borra al tocar.
-- Frontend: 10 menores (nota de asistencia que nunca se vuelve a mostrar, saltos de línea de la bio
-  y del chat, «$-5.000», preguntas frecuentes, etc.).
-- Al final: ESTADO, push y el correo con el resumen.
+Pruebas por partes, todas en verde:
+- las del ciclo de la clase, pagos y liquidaciones;
+- las 21 de identidad;
+- 195 unitarias del frontend;
+- lint y tipos.
 
-Revisado sin hallazgo: el saludo de Rigel sí llegó (23:34), solo faltaba que corriera el proceso.
+Las pantallas cambiadas se revisaron en local a 390 y 1440 px: el perfil con «Tus datos», el aviso
+de correo, el aviso de pago con «Salir», la campana y la clase reciente de Ana con «Reportar un
+problema».
+
+**Descartado tras revisarlo:**
+
+- El saludo de Rigel sí llegó (23:34); solo faltaba que corriera el proceso.
+- El límite de 10 MB del proxy de Next no aplica: el frontend no tiene `proxy.ts`, y las
+  reescrituras a `/api` no lo usan.
+- La nota vieja de «cambios pedidos» que sigue en una postulación reenviada no se muestra en ninguna
+  pantalla del aspirante; el admin la ve como contexto.
+
+**Pendiente de una respuesta de Pardo:**
+
+- **Corrección de lo que se le dijo:** al preguntarle por el nombre, la opción decía que los
+  comprobantes ya emitidos conservan el nombre con el que salieron. **No es así.** El comprobante del
+  estudiante toma el nombre actual del profe, así que corregir el nombre lo corrige también en los
+  comprobantes viejos. Las liquidaciones usan el titular de la llave Bre-B, que es otro dato.
+  Congelar el nombre en cada pago exige una migración. ¿Se deja así o se congela?
+- Queda sin revertir un detalle: si el reclamo se resuelve a favor del estudiante, los puntos y
+  logros que ganó al registrarse la asistencia se quedan. No es dinero.
 
 ## Decisiones de Pardo (29/09/2026, 00:20)
 
@@ -93,7 +132,7 @@ Segunda tanda, 29/09/2026 (00:25), también eligiendo entre opciones:
 - **Nota privada de la hoja de cierre:** «Quitar el campo». Lo que importa de la clase ya va en el acta.
 - **Sala con un reclamo abierto:** «Abierta hasta el final». Los dos pueden entrar hasta que termine la
   hora de la clase.
-- **Nombre y WhatsApp del profe:** «Sí, en su perfil». Se editan en «Editar mi perfil»; los
-  comprobantes ya emitidos conservan el nombre con el que salieron.
+- **Nombre y WhatsApp del profe:** «Sí, en su perfil». Se editan en «Editar mi perfil». (La opción
+  decía que los comprobantes ya emitidos conservan el nombre: no es cierto; ver «Pendiente».)
 - **Correo sin verificar:** «Exigirlo de verdad». Un profe sin el correo verificado no puede publicar
   su perfil.
