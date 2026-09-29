@@ -5,7 +5,7 @@ estado. La regla está en `CLAUDE.md` → «Registro de pedidos». Del más reci
 
 | Fecha | Pedido | Estado |
 |---|---|---|
-| 29/09/2026 18:40 | [Invitación genérica por WhatsApp, Rigel, la comisión discreta, ambiente de pruebas y la llave Bre-B en la postulación](2026-09-29-1840-invitacion-generica-rigel-comision-uat-y-bre-b.md) | Preguntas a Pardo |
+| 29/09/2026 18:40 | [Invitación genérica por WhatsApp, Rigel, la comisión discreta, ambiente de pruebas y la llave Bre-B en la postulación](2026-09-29-1840-invitacion-generica-rigel-comision-uat-y-bre-b.md) | En curso |
 | 29/09/2026 12:20 | [Los pasos desde cero para probar la fase 1 del lanzamiento, con profes](2026-09-29-1220-pasos-para-probar-la-fase-1-con-profes.md) | Hecho: guía en `docs/prueba-fase-1.md` |
 | 29/09/2026 12:01 | [¿Cuál es el estado actual de la plataforma?](2026-09-29-1201-estado-actual-de-la-plataforma.md) | Hecho: guía en `docs/cerrar-la-casa.md` |
 | 28/09/2026 23:25 | [Revisión completa de los flujos del profesor, de noche, hasta las 5 a. m.](2026-09-28-2325-revision-completa-de-los-flujos-del-profesor.md) | Hecho |
