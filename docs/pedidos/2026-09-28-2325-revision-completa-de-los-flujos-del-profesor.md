@@ -34,7 +34,7 @@
 
 ## Estado
 
-Hecho el 29/09 a la 01:30, con dos preguntas pendientes para Pardo (abajo). La verificación está en
+Hecho el 29/09 a la 01:20, con dos preguntas pendientes para Pardo (abajo). La verificación está en
 `docs/ESTADO.md`: `./mvnw verify` 451 + 684, e2e 105 y `next build`, todo en verde. Después vinieron
 el push a `master` y el correo con el resumen. El terminal de Pardo se cayó a las 00:08 del 29/09 y
 no se perdió nada: todo estaba en commits.

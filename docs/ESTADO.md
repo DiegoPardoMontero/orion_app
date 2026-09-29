@@ -30,7 +30,7 @@ dentro de `/cuenta`).
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots), con Rigel de protagonista.
 
 ## Verificación
-Al 29/09/2026, 01:30, con la revisión nocturna de los flujos del profesor:
+Al 29/09/2026, 01:20, con la revisión nocturna de los flujos del profesor:
 - **Backend: `./mvnw verify`, 451 unitarias y 684 de integración, en verde.** Nuevas: cinco casos de
   reclamo después de la asistencia y uno de la gracia desde el pago en `LessonLifecycleIT`, la
   postulación bloqueada en revisión en `TeacherApplicationFlowIT` y el correo sin confirmar en
