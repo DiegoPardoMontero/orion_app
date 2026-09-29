@@ -7,7 +7,7 @@
 | **Quién** | Pardo |
 | **Relacionado** | `docs/plan-de-lanzamiento.md` (versión 2: se abre primero a profesores) y `2026-09-27-1002-abogado-terminos-y-megareview-del-profesor.md` (la megarrevisión anterior) |
 | **Plazo** | Hasta el 29/09/2026 a las 05:00 (Bogotá) |
-| **Estado** | Hecho; dos preguntas pendientes para Pardo |
+| **Estado** | Hecho |
 
 ## El pedido, tal cual
 
@@ -109,6 +109,7 @@ problema».
   estudiante toma el nombre actual del profe, así que corregir el nombre lo corrige también en los
   comprobantes viejos. Las liquidaciones usan el titular de la llave Bre-B, que es otro dato.
   Congelar el nombre en cada pago exige una migración. ¿Se deja así o se congela?
+  → **Pardo, 29/09 (12:05): «Dejarlo así».** Corregir el nombre lo corrige en todas partes.
 - Queda sin revertir un detalle: si el reclamo se resuelve a favor del estudiante, los puntos y
   logros que ganó al registrarse la asistencia se quedan. No es dinero.
 - La regla del reclamo **reemplaza lo que Pardo dijo el 28/09** («lo del reclamo no lo entiendo, sí,

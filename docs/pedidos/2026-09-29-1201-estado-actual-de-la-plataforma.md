@@ -6,7 +6,7 @@
 | **Canal** | Chat de Claude Code |
 | **Quién** | Pardo |
 | **Relacionado** | `docs/ESTADO.md`, `docs/plan-de-lanzamiento.md` (versión 2) y `2026-09-28-2325-revision-completa-de-los-flujos-del-profesor.md` |
-| **Estado** | Respondido |
+| **Estado** | En curso: guía para cerrar la casa |
 
 ## El pedido, tal cual
 
@@ -29,6 +29,19 @@
 - **Desde aquí no se puede comprobar** si las integraciones están encendidas en producción (Wompi,
   JaaS, Cloudinary, Resend, OpenAI, avisos): se ven en Administración → Sistema, con sesión de admin.
 
+## Respuestas de Pardo (29/09, 12:05, eligiendo entre opciones)
+
+- **Nombre del profe en los comprobantes:** «Dejarlo así» (queda anotado también en el pedido de la
+  revisión nocturna).
+- **«Diego Pardo Test 28/09» en el catálogo público:** «Ocultarlo». Desde aquí no hay acceso a
+  producción (ni Railway ni sesión de admin), así que lo hace Pardo. Se le recomendó entrar con esa
+  cuenta, ir a Mi perfil, apagar «Perfil visible» y guardar: así la cuenta sigue sirviendo para sus
+  pruebas. Desactivarla desde Admin → Usuarios también la saca del catálogo, pero ya no puede entrar.
+- **Siguiente paso:** «Guía para cerrar la casa»: la lista paso a paso de lo que le toca a Pardo
+  (variables de Railway, webhook de JaaS, claves VAPID, rotar llaves y tope de OpenAI).
+  - **Historia:** como dueño de Orión, quiero una guía paso a paso para dejar producción lista para
+    cobrar de verdad, y así no olvidar ninguna llave ni configuración antes del primer profe.
+
 ## Estado
 
-Respondido en el chat.
+Respondido en el chat. En curso: la guía para cerrar la casa.
