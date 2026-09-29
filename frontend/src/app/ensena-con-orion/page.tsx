@@ -208,9 +208,11 @@ export default async function EnsenaConOrionPage() {
               sobre tu tarifa por cada clase pagada. Lo demás es tuyo. Sin cuotas por adelantado ni
               costos ocultos: verás el desglose completo antes de publicar tu perfil.
             </p>
+            {/* Por invitación (Pardo, 29/09/2026): el backend solo da el beneficio a quien llega con una
+                invitación de fundador, y la página se lo prometía a cualquiera que se postulara. */}
             <p className="mt-2 text-[15px] leading-relaxed text-on-primary/85">
-              <strong className="font-bold text-accent-peach">Profes fundadores:</strong> {fund.pct} % durante sus
-              primeros {fund.meses} meses de clases, contados desde la primera clase pagada.
+              <strong className="font-bold text-accent-peach">Profes fundadores, por invitación:</strong> {fund.pct} %
+              durante sus primeros {fund.meses} meses de clases, contados desde la primera clase pagada.
             </p>
           </div>
         </div>
