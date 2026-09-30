@@ -10,6 +10,9 @@ COPY . .
 # Horneamos un placeholder en el destino del rewrite; el entrypoint lo sustituye por el API_URL
 # real al arrancar. Así la MISMA imagen sirve en cualquier entorno (local y Railway).
 ENV API_URL=http://__API_URL__
+# «uat» en el ambiente de pruebas (29/09/2026): la franja y el noindex se compilan en el bundle, así que
+# Railway tiene que pasar la variable como argumento de build. En producción queda vacía.
+ARG NEXT_PUBLIC_ENVIRONMENT
 RUN npm run build
 
 FROM node:24-alpine AS run

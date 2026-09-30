@@ -13,7 +13,7 @@ class BrandedMailTransportTest {
 
     private final List<OutgoingEmail> entregados = new ArrayList<>();
     private final BrandedMailTransport transport =
-            new BrandedMailTransport(entregados::add, new EmailLayout("https://orion.co"));
+            new BrandedMailTransport(entregados::add, new EmailLayout("https://orion.co"), "production");
 
     @Test
     void elHtmlSaleConLaPlantillaDeMarca() {
@@ -51,6 +51,17 @@ class BrandedMailTransportTest {
 
         assertThat(entregados.getFirst().to()).isEqualTo("ana@orion.test");
         assertThat(entregados.getFirst().subject()).isEqualTo("Tu clase quedó agendada");
+    }
+
+    /** En el ambiente de pruebas (29/09/2026) los correos llegan a buzones reales: el asunto lo avisa. */
+    @Test
+    void enPruebasElAsuntoLoDice() {
+        BrandedMailTransport dePruebas =
+                new BrandedMailTransport(entregados::add, new EmailLayout("https://orion.co"), "uat");
+
+        dePruebas.send(OutgoingEmail.plain("ana@orion.test", "Tu clase quedó agendada", "texto", "<p>Hola.</p>"));
+
+        assertThat(entregados.getFirst().subject()).isEqualTo("[Pruebas] Tu clase quedó agendada");
     }
 
     @Test

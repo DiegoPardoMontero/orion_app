@@ -1,6 +1,7 @@
 package co.orion.shared.mail;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
@@ -22,10 +23,15 @@ public class BrandedMailTransport implements MailTransport {
 
     private final MailTransport entrega;
     private final EmailLayout layout;
+    private final boolean dePruebas;
 
-    public BrandedMailTransport(@Qualifier("entrega") MailTransport entrega, EmailLayout layout) {
+    public BrandedMailTransport(@Qualifier("entrega") MailTransport entrega, EmailLayout layout,
+                                @Value("${orion.environment:production}") String ambiente) {
         this.entrega = entrega;
         this.layout = layout;
+        // En el ambiente de pruebas (UAT, 29/09/2026) los correos llegan a buzones de verdad: el asunto
+        // dice que son de pruebas, para que nadie confunda una clase de mentira con una real.
+        this.dePruebas = "uat".equalsIgnoreCase(ambiente.trim());
     }
 
     @Override
@@ -41,7 +47,7 @@ public class BrandedMailTransport implements MailTransport {
         String html = email.htmlBody() == null ? null : layout.wrap(email.htmlBody());
         return new OutgoingEmail(
                 email.to(),
-                email.subject(),
+                dePruebas ? "[Pruebas] " + email.subject() : email.subject(),
                 email.textBody(),
                 html,
                 email.attachmentFilename(),

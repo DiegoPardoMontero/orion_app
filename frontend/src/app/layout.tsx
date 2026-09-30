@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Figtree } from "next/font/google";
+import { FranjaDePruebas } from "@/components/FranjaDePruebas";
 import { InstalarApp } from "@/components/InstalarApp";
+import { ES_PRUEBAS } from "@/lib/config";
 import "./globals.css";
 import { Providers } from "./providers";
 
@@ -30,6 +32,8 @@ export const metadata: Metadata = {
   description: "Find your right teacher, learn your way.",
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "Orión", statusBarStyle: "black-translucent" },
+  // El ambiente de pruebas no se indexa (29/09/2026); robots.txt además lo cierra entero.
+  ...(ES_PRUEBAS ? { robots: { index: false, follow: false } } : {}),
 };
 
 /** El theme-color tiñe la barra del navegador y la barra de estado en modo instalado. */
@@ -50,6 +54,7 @@ export default function RootLayout({
       className={`${bricolage.variable} ${figtree.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <FranjaDePruebas />
         <Providers>{children}</Providers>
         <InstalarApp />
       </body>

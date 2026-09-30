@@ -10,6 +10,13 @@ export const SUPPORT_WHATSAPP = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP || "573
  */
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://orionidiomas.com";
 
+/**
+ * El ambiente de pruebas (UAT, 29/09/2026): una réplica de Orión en uat.orionidiomas.com, con Wompi
+ * de sandbox. Con `NEXT_PUBLIC_ENVIRONMENT=uat` sale una franja que lo dice en todas las pantallas y
+ * ningún buscador lo indexa. Va al bundle al compilar: Railway compila cada ambiente por su lado.
+ */
+export const ES_PRUEBAS = process.env.NEXT_PUBLIC_ENVIRONMENT === "uat";
+
 /** Link wa.me con mensaje opcional. null si no hay número configurado (el botón entonces no se pinta). */
 export function whatsappSoporte(mensaje?: string): string | null {
   const digitos = SUPPORT_WHATSAPP.replace(/\D/g, "");

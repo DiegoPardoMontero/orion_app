@@ -51,6 +51,9 @@ spring:
           writetimeout: 5000
 
 orion:
+  # «production» o «uat» (el ambiente de pruebas, 29/09/2026). En pruebas, los correos dicen
+  # «[Pruebas]» en el asunto; el frontend lee su propio NEXT_PUBLIC_ENVIRONMENT para la franja.
+  environment: ${ORION_ENVIRONMENT:production}
   app:
     # Origen público del frontend; base de los enlaces que van en correos (recuperación, etc.).
     base-url: ${ORION_APP_BASE_URL:http://localhost:3000}
