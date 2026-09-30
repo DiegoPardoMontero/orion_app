@@ -78,6 +78,7 @@ public class TeacherApplicationService {
     private final AdminAuditService audit;
     private final ProfessorInviteRepository invites;
     private final FounderService founders;
+    private final PayoutDetailsLookup payoutDetails;
     private final ApplicationEventPublisher publisher;
     private final Clock clock;
 
@@ -95,6 +96,7 @@ public class TeacherApplicationService {
                                      AdminAuditService audit,
                                      ProfessorInviteRepository invites,
                                      FounderService founders,
+                                     PayoutDetailsLookup payoutDetails,
                                      ApplicationEventPublisher publisher,
                                      Clock clock) {
         this.applications = applications;
@@ -111,6 +113,7 @@ public class TeacherApplicationService {
         this.audit = audit;
         this.invites = invites;
         this.founders = founders;
+        this.payoutDetails = payoutDetails;
         this.publisher = publisher;
         this.clock = clock;
     }
@@ -388,6 +391,12 @@ public class TeacherApplicationService {
 
         if (!documents.existsByUserIdAndDocType(userId, DocumentType.CV)) {
             missing.add("cv");
+        }
+
+        // A dónde pagarle, antes del acuerdo que habla del mandato de recaudo (Pardo, 29/09/2026). Así
+        // el profe aprobado entra a la bienvenida sin que se le pida nada más.
+        if (!payoutDetails.registered(userId)) {
+            missing.add("payout");
         }
 
         if (!legal.aceptoLaVigente(userId, LegalDocumentCode.TEACHER_AGREEMENT)) {

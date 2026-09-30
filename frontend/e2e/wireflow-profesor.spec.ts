@@ -285,7 +285,7 @@ test("[a-postulacion.1 a-postulacion.2 a-postulacion.4 a-estado.1] la postulaci�
 
   // Sin foto ni título, «Siguiente» no avanza y dice qué falta (Pardo, 27/09/2026: nada de enterarse al final).
   await page.getByRole("button", { name: /Siguiente/ }).click();
-  await expect(page.getByText("Paso 1 de 6")).toBeVisible();
+  await expect(page.getByText("Paso 1 de 7")).toBeVisible();
   await expect(page.getByText(/Sube una foto de perfil/).first()).toBeVisible();
 
   // La foto, por SQL: en local no hay Cloudinary. Lo demás, por la pantalla.

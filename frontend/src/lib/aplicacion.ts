@@ -67,6 +67,7 @@ export const FALTANTE_LABEL: Record<string, string> = {
   language: "Agrega al menos un idioma con su nivel",
   goal: "Elige al menos un objetivo de enseñanza",
   cv: "Sube tu hoja de vida (CV)",
+  payout: "Registra tu llave Bre-B: a dónde te pagamos",
   agreement: "Acepta el acuerdo del profesor",
 };
 
@@ -82,6 +83,9 @@ export const PASOS_POSTULACION = [
   "Enseñanza",
   "Experiencia",
   "Documentos",
+  // La llave Bre-B va en la postulación (Pardo, 29/09/2026), antes del acuerdo que habla del mandato
+  // de recaudo: así el profe aprobado entra a la bienvenida sin que se le pida nada más.
+  "Pagos",
   "Acuerdo",
   "Revisar y enviar",
 ] as const;
@@ -101,6 +105,7 @@ export type BorradorPostulacion = {
   anios: string;
   formacion: string;
   tieneCv: boolean;
+  tieneLlave: boolean;
   aceptoAcuerdo: boolean;
 };
 
@@ -125,7 +130,7 @@ export function aniosDeExperiencia(texto: string): number | null {
  * obligatorios»; enterarse al final de que faltaba la foto obligaba a devolverse seis pantallas).
  *
  * <p>Va más allá de lo que exige el backend al enviar (`missingRequirements`: foto, presentación, un
- * idioma con algún nivel, un objetivo, CV y acuerdo): aquí también son obligatorios el título, el
+ * idioma con algún nivel, un objetivo, CV, llave Bre-B y acuerdo): aquí también son obligatorios el título, el
  * mínimo de palabras, un nivel por cada idioma, país, ciudad, años de experiencia y formación.
  */
 export function faltasDelPaso(paso: number, b: BorradorPostulacion): Falta[] {
@@ -197,6 +202,10 @@ export function faltasDelPaso(paso: number, b: BorradorPostulacion): Falta[] {
   } else if (paso === 3) {
     if (!b.tieneCv) faltas.push({ campo: "doc-CV", nombre: "tu hoja de vida", mensaje: "Sube tu hoja de vida (CV), en PDF o imagen." });
   } else if (paso === 4) {
+    if (!b.tieneLlave) {
+      faltas.push({ campo: "llave", nombre: "tu llave Bre-B", mensaje: "Registra tu llave Bre-B y guárdala para seguir." });
+    }
+  } else if (paso === 5) {
     if (!b.aceptoAcuerdo) {
       faltas.push({ campo: "acuerdo", nombre: "aceptar el acuerdo", mensaje: "Lee el acuerdo y márcalo como aceptado para seguir." });
     }

@@ -165,6 +165,7 @@ class InvitacionDeProfesoresIT extends ApiIntegrationSupport {
         assertThat(put("/api/v1/me/teacher-application", sesion, perfil, Map.class).getStatusCode())
                 .isEqualTo(HttpStatus.OK);
         subirCv(sesion);
+        registrarLlaveBreB(sesion, "Mariana Ruiz");
         post("/api/v1/me/agreements/TEACHER_AGREEMENT/accept", sesion, null, Void.class);
         assertThat(post("/api/v1/me/teacher-application/submit", sesion, null, Map.class).getStatusCode())
                 .isEqualTo(HttpStatus.OK);

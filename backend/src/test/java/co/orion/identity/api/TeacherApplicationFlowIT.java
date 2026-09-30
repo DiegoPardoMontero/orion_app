@@ -101,6 +101,9 @@ class TeacherApplicationFlowIT extends ApiIntegrationSupport {
     }
 
     @org.springframework.beans.factory.annotation.Autowired
+    private co.orion.billing.persistence.ProfessorPayoutDetailsRepository llaves;
+
+    @org.springframework.beans.factory.annotation.Autowired
     private CapturingMailer mailer;
 
     private User aspirant;
@@ -144,6 +147,7 @@ class TeacherApplicationFlowIT extends ApiIntegrationSupport {
         assertThat(put(MINE, aspirantSession, req, Map.class).getStatusCode().value()).isEqualTo(200);
 
         uploadCv();
+        registrarLlaveBreB(aspirantSession, "Aspi Rante");
         assertThat(post("/api/v1/me/agreements/TEACHER_AGREEMENT/accept", aspirantSession, null, Void.class)
                 .getStatusCode().value()).isEqualTo(204);
     }
@@ -180,7 +184,7 @@ class TeacherApplicationFlowIT extends ApiIntegrationSupport {
         assertThat(res.getStatusCode().value()).isEqualTo(400);
         @SuppressWarnings("unchecked")
         List<String> missing = (List<String>) res.getBody().get("missing");
-        assertThat(missing).contains("photo", "bio", "language", "goal", "cv", "agreement");
+        assertThat(missing).contains("photo", "bio", "language", "goal", "cv", "payout", "agreement");
     }
 
     @Test
@@ -194,6 +198,7 @@ class TeacherApplicationFlowIT extends ApiIntegrationSupport {
                 List.of(new UpdateProfileRequest.LanguageEntry("EN", false, List.of("BEGINNER"))),
                 List.of("CONVERSATION"), false);
         put(MINE, aspirantSession, req, Map.class);
+        registrarLlaveBreB(aspirantSession, "Aspi Rante");
         post("/api/v1/me/agreements/TEACHER_AGREEMENT/accept", aspirantSession, null, Void.class);
 
         ResponseEntity<Map> res = post(SUBMIT, aspirantSession, null, Map.class);
@@ -253,6 +258,8 @@ class TeacherApplicationFlowIT extends ApiIntegrationSupport {
                 .getStatusCode().value()).isEqualTo(204);
         assertThat(get(MINE, aspirantSession, Map.class).getBody().get("status")).isEqualTo("REJECTED");
         assertThat(mailer.rejectedNote).contains("perfil mínimo");
+        // La llave Bre-B que dio en la postulación se borra: no trabaja con Orión (29/09/2026).
+        assertThat(llaves.existsById(aspirant.getId())).isFalse();
     }
 
     /** En revisión no se edita (Pardo, 29/09/2026); cuando el equipo pide cambios, sí. */

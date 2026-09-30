@@ -15,14 +15,16 @@ import co.orion.billing.domain.PayoutDestination;
 import co.orion.billing.domain.PayoutDetailsChangedEvent;
 import co.orion.billing.domain.ProfessorPayoutDetails;
 import co.orion.billing.persistence.ProfessorPayoutDetailsRepository;
+import co.orion.identity.application.PayoutDetailsLookup;
 import co.orion.shared.error.BusinessRuleViolationException;
 
 /**
  * Los datos de pago del profe (brief de liquidaciones, paso 2). El profe los escribe y los ve
- * enmascarados; completos solo los ve el admin, en el flujo de pago de una liquidación.
+ * enmascarados; completos solo los ve el admin, en el flujo de pago de una liquidación. Desde el
+ * 29/09/2026 los escribe ya en la postulación, como aspirante.
  */
 @Service
-public class PayoutDetailsService {
+public class PayoutDetailsService implements PayoutDetailsLookup {
 
     private final ProfessorPayoutDetailsRepository details;
     private final ApplicationEventPublisher events;
@@ -71,9 +73,19 @@ public class PayoutDetailsService {
         return details.findById(professorId).map(ProfessorPayoutDetails::destino);
     }
 
+    @Override
     @Transactional(readOnly = true)
     public boolean registered(UUID professorId) {
         return details.existsById(professorId);
+    }
+
+    /**
+     * Se borran los de un aspirante rechazado (Pardo, 29/09/2026): no hay por qué guardar los datos
+     * bancarios de quien no trabaja con Orión. Nunca tuvo clases, así que ninguna liquidación los usó.
+     */
+    @Transactional
+    public void forget(UUID userId) {
+        details.deleteById(userId);
     }
 
     private static Masked masked(ProfessorPayoutDetails d) {

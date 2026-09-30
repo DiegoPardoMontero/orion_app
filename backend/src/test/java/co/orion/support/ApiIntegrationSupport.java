@@ -245,6 +245,14 @@ public abstract class ApiIntegrationSupport {
         return rest.exchange(path, HttpMethod.PUT, new HttpEntity<>(body, headers(session)), responseType);
     }
 
+    /** La llave Bre-B: desde el 29/09/2026 el aspirante la da en su postulación, antes del acuerdo. */
+    protected void registrarLlaveBreB(Session session, String titular) {
+        ResponseEntity<java.util.Map> r = put("/api/v1/me/payout-details", session, java.util.Map.of(
+                "keyType", "PHONE", "key", "3001234567", "documentType", "CC",
+                "documentNumber", "1020304050", "holderName", titular), java.util.Map.class);
+        org.assertj.core.api.Assertions.assertThat(r.getStatusCode().value()).isEqualTo(200);
+    }
+
     protected <T> ResponseEntity<T> patch(String path, Session session, Object body, Class<T> responseType) {
         return rest.exchange(path, HttpMethod.PATCH, new HttpEntity<>(body, headers(session)), responseType);
     }

@@ -212,8 +212,9 @@ public class SecurityConfig {
                 // El admin llega a lo mismo por /api/v1/admin/payments, que ya exige rol ADMIN.
                 .requestMatchers("/api/v1/me/credits", "/api/v1/me/payments").hasAnyRole("STUDENT", "ADMIN")
                 .requestMatchers("/api/v1/me/earnings").hasRole("PROFESSOR")
-                // A dónde se le paga: solo el profe, y enmascarado (brief de liquidaciones, paso 2).
-                .requestMatchers("/api/v1/me/payout-details").hasRole("PROFESSOR")
+                // A dónde se le paga: solo el profe, y enmascarado (brief de liquidaciones, paso 2). Desde
+                // el 29/09/2026 también el aspirante, que la da en la postulación.
+                .requestMatchers("/api/v1/me/payout-details").hasAnyRole("TEACHER_APPLICANT", "PROFESSOR")
                 // Sus liquidaciones y sus comprobantes (paso 5): solo las suyas, y solo el profe.
                 .requestMatchers("/api/v1/me/payouts", "/api/v1/me/payouts/**").hasRole("PROFESSOR")
                 // El estado del pago de una clase lo consulta su estudiante (el servicio comprueba

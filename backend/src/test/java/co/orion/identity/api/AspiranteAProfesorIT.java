@@ -113,6 +113,7 @@ class AspiranteAProfesorIT extends ApiIntegrationSupport {
         assertThat(put(MINE, sesion, perfil, Map.class).getStatusCode()).isEqualTo(HttpStatus.OK);
 
         subirCv(sesion);
+        registrarLlaveBreB(sesion, "Aspirante");
         assertThat(post("/api/v1/me/agreements/TEACHER_AGREEMENT/accept", sesion, null, Void.class)
                 .getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     }

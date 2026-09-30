@@ -19,6 +19,7 @@ const COMPLETO: BorradorPostulacion = {
   anios: "8",
   formacion: "Licenciatura en Lenguas Modernas",
   tieneCv: true,
+  tieneLlave: true,
   aceptoAcuerdo: true,
 };
 
@@ -59,9 +60,14 @@ describe("faltasDelPaso", () => {
     expect(campos(2, { ...COMPLETO, anios: "81" })).toEqual(["years"]);
   });
 
-  it("los documentos piden el CV y el acuerdo, aceptarlo", () => {
+  it("los documentos piden el CV, los pagos la llave Bre-B y el acuerdo, aceptarlo", () => {
     expect(campos(3, { ...COMPLETO, tieneCv: false })).toEqual(["doc-CV"]);
-    expect(campos(4, { ...COMPLETO, aceptoAcuerdo: false })).toEqual(["acuerdo"]);
+    expect(campos(4, { ...COMPLETO, tieneLlave: false })).toEqual(["llave"]);
+    expect(campos(5, { ...COMPLETO, aceptoAcuerdo: false })).toEqual(["acuerdo"]);
+  });
+
+  it("sin llave Bre-B la postulación se abre en «Pagos», antes del acuerdo", () => {
+    expect(primerPasoIncompleto({ ...COMPLETO, tieneLlave: false, aceptoAcuerdo: false })).toBe(4);
   });
 
   it("el primer paso incompleto es el que se abre", () => {

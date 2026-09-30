@@ -27,6 +27,7 @@ import { bordeSegun, ContadorPalabras } from "@/components/ContadorPalabras";
 import { CuerpoLegal } from "@/components/DocumentoLegal";
 import { DiscoIdioma } from "@/components/DiscoIdioma";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
+import { DatosDePago, useDatosDePago } from "@/components/profesor/DatosDePago";
 import { Rigel } from "@/components/Rigel";
 import { SelectorDeCiudad } from "@/components/SelectorDeCiudad";
 import { SelectorDePais } from "@/components/SelectorDePais";
@@ -199,6 +200,9 @@ function Wizard({
   const fotoActual = fotoSubida ?? foto ?? null;
 
   const documentos = vista.documents ?? [];
+  // La llave: lo que dice la postulación al abrirla, o lo que se acaba de guardar en el paso «Pagos».
+  const datosDePago = useDatosDePago();
+  const tieneLlave = !!datosDePago.data?.details || !(vista.missing ?? []).includes("payout");
   const borrador: BorradorPostulacion = {
     tieneFoto: !!fotoActual,
     titular: headline,
@@ -210,6 +214,7 @@ function Wizard({
     anios: yearsExperience,
     formacion: education,
     tieneCv: documentos.some((d) => d.docType === "CV"),
+    tieneLlave,
     aceptoAcuerdo: vista.agreementAccepted ?? false,
   };
   const faltas = PASOS.map((_, i) => faltasDelPaso(i, borrador));
@@ -673,7 +678,9 @@ function Wizard({
 
         {paso === 3 && <PasoDocumentos documentos={documentos} errorCv={errorDe("doc-CV")} />}
 
-        {paso === 4 && <PasoAcuerdo aceptado={vista.agreementAccepted ?? false} error={errorDe("acuerdo")} />}
+        {paso === 4 && <PasoPagos error={errorDe("llave")} />}
+
+        {paso === 5 && <PasoAcuerdo aceptado={vista.agreementAccepted ?? false} error={errorDe("acuerdo")} />}
 
         {paso === PASO_REVISION && (
           <Revision
@@ -763,7 +770,8 @@ function IndicadorPasos({
 }) {
   return (
     <nav aria-label="Pasos de la postulación" className="mt-4">
-      <ol className="grid grid-cols-6 gap-1.5 lg:gap-3">
+      {/* Una columna por paso: eran seis fijas y con «Pagos» (29/09/2026) el séptimo caía a otra fila. */}
+      <ol className="grid gap-1.5 lg:gap-3" style={{ gridTemplateColumns: `repeat(${PASOS.length}, minmax(0, 1fr))` }}>
         {PASOS.map((nombrePaso, i) => {
           const actual = i === paso;
           const completo = i < PASO_REVISION && faltas[i].length === 0;
@@ -836,6 +844,46 @@ function PanelRigel({ pose, texto }: { pose: "saludo" | "guia" | "animo"; texto:
       <Rigel pose={pose} decorativo className="h-16 w-auto shrink-0" />
       <p className="text-[13px] leading-relaxed text-[#8a5a33]">{texto}</p>
     </div>
+  );
+}
+
+/* ---------------- Paso 5: pagos ---------------- */
+
+/**
+ * A dónde le pagamos (Pardo, 29/09/2026: la llave Bre-B «es sumamente importante», y pedirla después
+ * de la bienvenida era seguir pidiendo cosas antes de que supiera nada). Es el mismo formulario de
+ * «Mi perfil › Datos de pago». Si la postulación se rechaza, la llave se borra.
+ */
+function PasoPagos({ error }: { error: string | null }) {
+  return (
+    <section className="space-y-5">
+      <PanelRigel
+        pose="guia"
+        texto="¿A dónde te pagamos? Si no te aprobamos, borramos estos datos."
+      />
+      <DatosDePago />
+      <MensajeCampo id="llave-error" mensaje={error} />
+    </section>
+  );
+}
+
+/** La llave en «Revisar y enviar»: enmascarada, como en el perfil. */
+function LlaveEnLaRevision() {
+  const datos = useDatosDePago();
+  const d = datos.data?.details;
+  if (!d) {
+    return (
+      <p className="flex items-center gap-2 text-[13px] font-semibold text-warning">
+        <Circle size={16} strokeWidth={2} />
+        Todavía sin registrar
+      </p>
+    );
+  }
+  return (
+    <p className="text-[13px] text-text">
+      <span className="font-semibold">{d.keyTypeLabel}</span> {d.maskedKey}
+      <span className="text-text-muted"> · a nombre de {d.holderName}</span>
+    </p>
   );
 }
 
@@ -947,7 +995,7 @@ function SubidorDocumento({
   );
 }
 
-/* ---------------- Paso 5: acuerdo ---------------- */
+/* ---------------- Paso 6: acuerdo ---------------- */
 
 function PasoAcuerdo({ aceptado, error: errorObligatorio }: { aceptado: boolean; error: string | null }) {
   const queryClient = useQueryClient();
@@ -1014,7 +1062,7 @@ function PasoAcuerdo({ aceptado, error: errorObligatorio }: { aceptado: boolean;
   );
 }
 
-/* ---------------- Paso 6: revisar y enviar ---------------- */
+/* ---------------- Paso 7: revisar y enviar ---------------- */
 
 type DatosLocales = {
   headline: string;
@@ -1162,7 +1210,11 @@ function Revision({
             )}
           </SeccionRevision>
 
-          <SeccionRevision titulo="Acuerdo del profesor" faltas={faltas[4]} onEditar={() => onEditar(4)}>
+          <SeccionRevision titulo="Pagos" faltas={faltas[4]} onEditar={() => onEditar(4)}>
+            <LlaveEnLaRevision />
+          </SeccionRevision>
+
+          <SeccionRevision titulo="Acuerdo del profesor" faltas={faltas[5]} onEditar={() => onEditar(5)}>
             {vista.agreementAccepted ? (
               <p className="flex items-center gap-2 text-[13px] font-semibold text-success">
                 <CheckCircle2 size={16} strokeWidth={2.2} />

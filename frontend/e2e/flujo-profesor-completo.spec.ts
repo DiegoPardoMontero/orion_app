@@ -415,7 +415,7 @@ test("un profesor nuevo: de «Enseña con Orión» a su primera clase dictada, c
       // Con la foto puesta, el wizard la muestra al volver a cargar.
       await p.reload();
       await expect(p.getByRole("heading", { name: "Datos personales" })).toBeVisible({ timeout: 20_000 });
-      await expect(p.getByText("Paso 1 de 6")).toBeVisible();
+      await expect(p.getByText("Paso 1 de 7")).toBeVisible();
       await revisarPantalla(p, "profe", "aplicacion-1-datos");
 
       // 1 · Datos personales
@@ -452,7 +452,19 @@ test("un profesor nuevo: de «Enseña con Orión» a su primera clase dictada, c
       await revisarPantalla(p, "profe", "aplicacion-4-documentos");
       await p.getByRole("button", { name: /Siguiente/ }).click();
 
-      // 5 · Acuerdo del profesor
+      // 5 · Pagos: la llave Bre-B va en la postulación (Pardo, 29/09/2026), no al entrar aprobado.
+      await expect(p.getByRole("heading", { name: "Pagos" })).toBeVisible();
+      await p.getByRole("button", { name: /Siguiente/ }).click();
+      await expect(p.getByText("Registra tu llave Bre-B y guárdala para seguir.")).toBeVisible();
+      await p.locator("#llave").fill("300 765 4321");
+      if (!(await p.locator("#titular").inputValue()).trim()) await p.locator("#titular").fill(profe.nombre);
+      await p.locator("#numero-documento").fill("1098765432");
+      await p.getByRole("button", { name: "Guardar mis datos de pago" }).click();
+      await expect(p.getByText("••••4321").first()).toBeVisible();
+      await revisarPantalla(p, "profe", "aplicacion-5-pagos");
+      await p.getByRole("button", { name: /Siguiente/ }).click();
+
+      // 6 · Acuerdo del profesor
       await expect(p.getByRole("heading", { name: "Acuerdo", exact: true })).toBeVisible();
       // La casilla es controlada: al marcarla se acepta en el servidor y se cambia por «Aceptaste…».
       // Se habilita cuando llega el texto del acuerdo.
@@ -460,13 +472,13 @@ test("un profesor nuevo: de «Enseña con Orión» a su primera clase dictada, c
       await expect(casilla).toBeEnabled();
       await casilla.click();
       await expect(p.getByText("Aceptaste el acuerdo. ¡Listo!")).toBeVisible();
-      await revisarPantalla(p, "profe", "aplicacion-5-acuerdo");
+      await revisarPantalla(p, "profe", "aplicacion-6-acuerdo");
       await p.getByRole("button", { name: /Siguiente/ }).click();
 
-      // 6 · Revisar y enviar
+      // 7 · Revisar y enviar
       await expect(p.getByRole("heading", { name: "Revisar y enviar" })).toBeVisible();
       await expect(p.getByText("¡Todo listo! Revisa que esté a tu gusto y envía tu postulación a revisión.")).toBeVisible();
-      await revisarPantalla(p, "profe", "aplicacion-6-enviar");
+      await revisarPantalla(p, "profe", "aplicacion-7-enviar");
 
       // Antes de enviarla, las dos pantallas del aspirante a 1280 px.
       const esc = await abrirEscritorio(browser, "profe@1280", profeCtx);
@@ -567,12 +579,12 @@ test("un profesor nuevo: de «Enseña con Orión» a su primera clase dictada, c
       await expect(p).toHaveURL(/\/mis-clases/);
       const vistos = await atenderDialogosDeEntrada(p, { llave: "300 765 4321", documento: "1098765432" });
       console.log(`Diálogos al entrar: ${vistos.join(" → ") || "(ninguno)"}`);
-      // Aceptó Términos y política al registrarse y el acuerdo del profesor en la postulación: no le
-      // falta ninguno. Lo que sí falta es a dónde pagarle, y después la bienvenida (o el recorrido,
-      // si no hay video de bienvenida en Ajustes).
+      // Aceptó Términos y política al registrarse, y el acuerdo del profesor y la llave Bre-B en la
+      // postulación: no le falta nada. Entra directo a la bienvenida (o al recorrido, si no hay video
+      // de bienvenida en Ajustes).
       expect.soft(vistos, "no le vuelve a pedir acuerdos que ya aceptó").not.toContain(ACUERDOS);
       expect.soft(vistos, "no le pide la edad ni el WhatsApp, que dio al registrarse").not.toContain("Antes de seguir");
-      expect.soft(vistos.filter((v) => v !== ACUERDOS)[0], "lo primero, a dónde le pagamos").toBe(PAGO);
+      expect.soft(vistos, "no le pide la llave Bre-B, que dio en la postulación").not.toContain(PAGO);
       expect.soft(vistos.at(-1), "lo último, la bienvenida o el recorrido").toMatch(new RegExp(`^(${BIENVENIDA}|Recorrido)$`));
       expect.soft(new Set(vistos).size, "ningún diálogo sale dos veces").toBe(vistos.length);
       await revisarPantalla(p, "profe", "mis-clases-primera-vez");
@@ -926,7 +938,9 @@ test("un profe fundador: la invitación del admin, el registro con su correo fij
     await paso("F2. La invitada abre el enlace, se registra con el correo fijo y cae en su postulación", async () => {
       await inv.goto(enlace);
       await expect(inv.getByRole("heading", { name: "Valentina, queremos que seas de los primeros profes de Orión." })).toBeVisible();
-      await expect.soft(inv.getByText(new RegExp(`Por ser de los profes fundadores, tienes ${figuras.founderCommissionPercent} %`))).toBeVisible();
+      // La invitación dice que es de fundador, pero no el descuento: se ve al poner la tarifa (29/09/2026).
+      await expect.soft(inv.getByText("Invitación personal · Profes fundadores")).toBeVisible();
+      await expect.soft(inv.locator("main")).not.toContainText("%");
       await revisarPantalla(inv, "fundador", "invitacion");
       await inv.getByRole("link", { name: "Aceptar la invitación" }).click();
       await expect(inv).toHaveURL(/\/registro\?invitacion=/);
@@ -967,6 +981,10 @@ test("un profe fundador: la invitación del admin, el registro con su correo fij
         isPublished: false,
       });
       expect(guardado.status, "guarda la postulación").toBe(200);
+      const llave = await api(inv, "PUT", "/api/v1/me/payout-details", {
+        keyType: "PHONE", key: "3105551234", documentType: "CC", documentNumber: "52123456", holderName: invitado.nombre,
+      });
+      expect(llave.status, "registra su llave Bre-B en la postulación").toBe(200);
       expect((await api(inv, "POST", "/api/v1/me/agreements/TEACHER_AGREEMENT/accept")).status).toBeLessThan(300);
       const enviada = await api(inv, "POST", "/api/v1/me/teacher-application/submit");
       expect(enviada.status, `la envía (${JSON.stringify(enviada.json)})`).toBe(200);
@@ -984,6 +1002,7 @@ test("un profe fundador: la invitación del admin, el registro con su correo fij
       const vistos = await atenderDialogosDeEntrada(inv, { llave: "310 555 1234", documento: "52123456" });
       console.log(`Diálogos al entrar (fundador): ${vistos.join(" → ") || "(ninguno)"}`);
       expect.soft(vistos, "no le vuelve a pedir acuerdos que ya aceptó").not.toContain(ACUERDOS);
+      expect.soft(vistos, "no le pide la llave Bre-B, que dio en la postulación").not.toContain(PAGO);
 
       const perfil = (await api(inv, "GET", "/api/v1/me/profile")).json as { founder?: { rateBps?: number } | null };
       expect.soft(perfil.founder?.rateBps, "el perfil trae la comisión de fundador").toBe(figuras.founderCommissionPercent * 100);
