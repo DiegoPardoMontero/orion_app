@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Star } from "lucide-react";
 import { Constelacion, Wordmark } from "@/components/marca";
+import { Rigel } from "@/components/Rigel";
 import { serverFetch } from "@/lib/api/server";
 
 /**
@@ -13,10 +14,14 @@ import { serverFetch } from "@/lib/api/server";
  * un token que no existe se ve igual que uno vencido. Quien invita es siempre «el equipo de Orión»:
  * el nombre y el cargo de la persona que la mandó no salen (Pardo, 26/09/2026), y el backend ya no
  * los envía. «Aceptar la
- * invitación» lleva al registro de profesor con el correo puesto y bloqueado; el token se consume
- * al crear la cuenta, no al abrir el enlace.
+ * invitación» lleva al registro de profesor con el correo puesto y bloqueado (o para escribirlo, si
+ * la invitación salió por WhatsApp sin correo); el token se consume al crear la cuenta, no al abrir
+ * el enlace.
  *
- * <p>Rigel sale del SVG del paquete, sin redibujar, y Meissa no aparece: nunca comparten pantalla.
+ * <p>Ni la comisión ni el descuento de fundador se dicen aquí (Pardo, 29/09/2026): la cifra aparece
+ * cuando el profe pone su tarifa, para que no se eche para atrás antes de registrarse.
+ *
+ * <p>Rigel es el de la app, y Meissa no aparece: nunca comparten pantalla.
  */
 export const metadata: Metadata = {
   title: "Tu invitación · Orión",
@@ -37,9 +42,6 @@ function diaYMes(iso: string) {
     new Date(iso),
   );
 }
-
-const porcentaje = (bps: number) => `${bps / 100} %`;
-const meses = (n: number) => (n === 1 ? "tu primer mes" : `tus primeros ${n} meses`);
 
 export default async function InvitacionPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -72,12 +74,12 @@ export default async function InvitacionPage({ params }: { params: Promise<{ tok
         >
           <Wordmark className="text-[16px] text-on-primary lg:text-[18px]" />
         </Link>
-        {/* eslint-disable-next-line @next/next/no-img-element -- el SVG del paquete, tal cual */}
-        <img
-          src="/rigel/rigel-saluda.svg"
-          alt=""
-          aria-hidden="true"
-          className="absolute left-1/2 top-[78px] w-[160px] -translate-x-1/2 lg:top-[300px] lg:w-[260px]"
+        {/* El Rigel de la app, no el SVG suelto del paquete de diseño: ese todavía traía la línea negra
+            sobre los guantes que se le quitó al personaje (Pardo, 29/09/2026). */}
+        <Rigel
+          pose="saludo"
+          decorativo
+          className="absolute left-1/2 top-[78px] h-auto w-[160px] -translate-x-1/2 lg:top-[300px] lg:w-[260px]"
         />
         <p className="absolute bottom-11 left-12 hidden font-display text-[22px] font-bold text-text lg:block">
           Find your right teacher, learn your way
@@ -89,7 +91,7 @@ export default async function InvitacionPage({ params }: { params: Promise<{ tok
           {vigente && (
             <span className="inline-flex w-fit items-center gap-1.5 whitespace-nowrap rounded-pill bg-accent-lavender-soft px-3 py-1.5 text-[12px] font-bold text-lavanda-ink">
               <Star size={14} strokeWidth={2.2} aria-hidden="true" />
-              Invitación personal · Profes fundadores
+              {invitacion.founder ? "Invitación personal · Profes fundadores" : "Invitación personal"}
             </span>
           )}
 
@@ -101,21 +103,6 @@ export default async function InvitacionPage({ params }: { params: Promise<{ tok
                 Estamos lanzando Orión y abrimos las puertas a un grupo pequeño de profesores. Nos alegra mucho contar
                 contigo desde el comienzo.
               </p>
-
-              {/* El beneficio real de ser fundador, con los números de la API (brief del profe fundador). */}
-              {invitacion.founder && (
-                <div className="rounded-card border border-border bg-surface-raised px-4 py-3.5 lg:px-5 lg:py-4">
-                  <p className="text-[15px] font-semibold leading-[1.5] text-text lg:text-[16px]">
-                    La comisión de Orión es {porcentaje(invitacion.founder.baseRateBps)}. Por ser de los profes fundadores, tienes{" "}
-                    {porcentaje(invitacion.founder.rateBps)} durante {meses(invitacion.founder.periodMonths)} de
-                    clases.
-                  </p>
-                  <p className="mt-1 text-[13px] leading-[1.5] text-text-muted lg:text-[14px]">
-                    {invitacion.founder.periodMonths === 1 ? "El mes empieza" : `Los ${invitacion.founder.periodMonths} meses empiezan`}{" "}
-                    a contar desde tu primera clase pagada.
-                  </p>
-                </div>
-              )}
 
               <p className="flex items-center gap-3 text-[14px] text-text-secondary lg:text-[16px]">
                 <span

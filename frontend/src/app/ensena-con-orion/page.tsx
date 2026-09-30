@@ -4,7 +4,6 @@ import {
   CalendarClock,
   ClipboardCheck,
   FileCheck2,
-  Percent,
   Send,
   UserPlus,
   Users,
@@ -16,48 +15,27 @@ import { EnsenaCta } from "@/components/EnsenaCta";
 import { NavPublica } from "@/components/NavPublica";
 import { Rigel } from "@/components/Rigel";
 import { SITE_URL } from "@/lib/config";
-import { serverFetch } from "@/lib/api/server";
-import type { PublicFigures } from "@/lib/api/types";
 
 /**
  * "Enseña en Orión": propuesta de valor para profesores. Página pública, server-rendered (SEO), sin
- * datos propios —solo la isla `EnsenaCta` decide el destino según la sesión—. La comisión se dice
- * DE FRENTE, no en letra chica: es un compromiso de transparencia con el profesor.
+ * datos propios —solo la isla `EnsenaCta` decide el destino según la sesión—.
  *
- * <p>El porcentaje NO está escrito aquí. Sale de `platform_settings` en cada petición, igual que en
- * los Términos: si Pardo lo cambia desde Ajustes, cambia también el SEO, el JSON-LD y el número
- * grande de la sección de comisión. Un número tecleado en una página es una segunda verdad que
- * nadie recuerda actualizar.
+ * <p>La comisión no se dice aquí, ni el descuento de fundador (Pardo, 29/09/2026): la cifra aparece
+ * cuando el profe pone su tarifa, con el desglose clase por clase, para que no se eche para atrás
+ * antes de registrarse. La transparencia sigue: nadie publica sin ver cuánto recibe. Los Términos,
+ * que son el texto legal, sí la dicen.
  */
 
-/** Lo que se dice si el backend no contesta. La página tiene que salir igual: es la puerta de entrada. */
-const COMISION_POR_DEFECTO = 20;
-const FUNDADOR_POR_DEFECTO = { pct: 15, meses: 3 };
-
-async function comision(): Promise<number> {
-  const cifras = await serverFetch<PublicFigures>("/api/v1/catalog/figures", 3600);
-  return cifras?.commissionPercent ?? COMISION_POR_DEFECTO;
-}
-
-/** El beneficio de profe fundador (V70), con los números de Ajustes. */
-async function fundador(): Promise<{ pct: number; meses: number }> {
-  const cifras = await serverFetch<PublicFigures>("/api/v1/catalog/figures", 3600);
-  return cifras?.founderCommissionPercent != null
-    ? { pct: cifras.founderCommissionPercent, meses: cifras.founderPeriodMonths }
-    : FUNDADOR_POR_DEFECTO;
-}
-
 export async function generateMetadata(): Promise<Metadata> {
-  const pct = await comision();
   return {
     title: "Enseña en Orión · Construye tu agenda de clases de inglés",
     description:
-      `Publica tu perfil de profesor de inglés, define tus horarios y recibe estudiantes reales. Tú pones la tarifa; Orión retiene una comisión del ${pct} %. Sin cuotas por adelantado.`,
+      "Publica tu perfil de profesor de inglés, define tus horarios y recibe estudiantes reales. Tú pones la tarifa, sin cuotas por adelantado.",
     alternates: { canonical: "/ensena-con-orion" },
     openGraph: {
       title: "Enseña en Orión",
       description:
-        `Publica tu perfil, define tus horarios y recibe estudiantes reales. Comisión transparente del ${pct} %, sin cuotas por adelantado.`,
+        "Publica tu perfil, define tus horarios y recibe estudiantes reales. Tú pones la tarifa, sin cuotas por adelantado.",
       type: "website",
       images: [{ url: "/og.png", width: 1200, height: 630, alt: "Enseña en Orión" }],
     },
@@ -98,7 +76,7 @@ const PASOS = [
   {
     icono: FileCheck2,
     titulo: "Completa tu perfil",
-    texto: "Cuéntanos qué enseñas, tu experiencia y sube tus documentos. Aceptas el acuerdo del profesor.",
+    texto: "Cuéntanos qué enseñas y tu experiencia, sube tus documentos y dinos a dónde te pagamos. Aceptas el acuerdo del profesor.",
   },
   {
     icono: Send,
@@ -108,13 +86,11 @@ const PASOS = [
   {
     icono: ClipboardCheck,
     titulo: "Publica y recibe reservas",
-    texto: "Al aprobarte, registras a dónde te pagamos, publicas tu perfil, abres tus horarios y empiezas a recibir estudiantes.",
+    texto: "Al aprobarte, publicas tu perfil, abres tus horarios y empiezas a recibir estudiantes.",
   },
 ];
 
-export default async function EnsenaConOrionPage() {
-  const pct = await comision();
-  const fund = await fundador();
+export default function EnsenaConOrionPage() {
   return (
     <div className="flex-1">
       <script
@@ -127,7 +103,7 @@ export default async function EnsenaConOrionPage() {
             url: `${SITE_URL}/ensena-con-orion`,
             inLanguage: "es-CO",
             description:
-              `Propuesta para profesores de inglés: publica tu perfil, define tus horarios y recibe estudiantes. Comisión del ${pct} %.`,
+              "Propuesta para profesores de inglés: publica tu perfil, define tus horarios y recibe estudiantes.",
             publisher: {
               "@type": "Organization",
               name: "Orión Idiomas",
@@ -190,29 +166,18 @@ export default async function EnsenaConOrionPage() {
         </div>
       </section>
 
-      {/* — La comisión, de frente — */}
+      {/* — Cómo cobras — Sin la cifra de la comisión (Pardo, 29/09/2026): se ve al poner la tarifa, con el
+          desglose que ya promete la tarjeta «Tú pones la tarifa». */}
       <section className="mx-auto max-w-5xl px-5 pb-16 lg:px-8 lg:pb-24">
         <div className="grid items-center gap-6 rounded-card bg-night px-7 py-10 text-text-on-night lg:grid-cols-[auto_1fr] lg:px-12 lg:py-12">
-          <div className="flex items-center gap-4">
-            <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-accent-peach text-night">
-              <Percent size={30} strokeWidth={2.2} />
-            </span>
-            <p className="font-display text-[40px] font-extrabold leading-none text-on-primary lg:text-[52px]">
-              {pct} %
-            </p>
-          </div>
+          <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-accent-peach text-night">
+            <Wallet size={30} strokeWidth={2.2} />
+          </span>
           <div>
-            <h2 className="font-display text-h3 font-bold text-on-primary">Comisión clara, sin sorpresas.</h2>
+            <h2 className="font-display text-h3 font-bold text-on-primary">Cobras sin perseguir a nadie.</h2>
             <p className="mt-2 text-[15px] leading-relaxed text-on-primary/85">
-              Orión retiene una comisión del <strong className="font-bold text-accent-peach">{pct} %</strong>{" "}
-              sobre tu tarifa por cada clase pagada. Lo demás es tuyo. Sin cuotas por adelantado ni
-              costos ocultos: verás el desglose completo antes de publicar tu perfil.
-            </p>
-            {/* Por invitación (Pardo, 29/09/2026): el backend solo da el beneficio a quien llega con una
-                invitación de fundador, y la página se lo prometía a cualquiera que se postulara. */}
-            <p className="mt-2 text-[15px] leading-relaxed text-on-primary/85">
-              <strong className="font-bold text-accent-peach">Profes fundadores, por invitación:</strong> {fund.pct} %
-              durante sus primeros {fund.meses} meses de clases, contados desde la primera clase pagada.
+              Tus estudiantes pagan por Orión al reservar, y cada quincena te transferimos por Bre-B lo de las clases que
+              ya diste. Sin cuotas por adelantado ni costos ocultos.
             </p>
           </div>
         </div>

@@ -20,10 +20,13 @@ const cifras: PublicFigures = {
 };
 
 describe("las preguntas frecuentes dicen las reglas de Ajustes, no una copia", () => {
-  it("la comisión y el beneficio de fundador salen de Ajustes", () => {
+  // Pardo, 29/09/2026: la comisión y el descuento de fundador se ven al poner la tarifa, no antes.
+  it("ninguna respuesta dice la cifra de la comisión ni la del fundador", () => {
     const r = preguntas(cifras).profesor.find((q) => q.p === "¿Cuánto retiene Orión?")!.r;
-    expect(r).toContain("El 20 % del precio de la clase");
-    expect(r).toContain("15 % durante sus primeros 3 meses de clases");
+    expect(r).toContain("al fijar tu tarifa");
+    const todas = Object.values(preguntas(cifras)).flat().map((q) => q.r).join(" ");
+    expect(todas).not.toMatch(/\b(20|15) ?%/);
+    expect(preguntas(cifras).portadaProfesor.map((q) => q.p)).not.toContain("¿Cuánto cobra Orión de comisión?");
   });
 
   it("el plazo para pagar sale de payment_hold_minutes", () => {

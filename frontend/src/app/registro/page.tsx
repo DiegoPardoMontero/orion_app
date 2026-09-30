@@ -129,12 +129,9 @@ function Registro() {
           { icono: NotebookPen, texto: "Después de cada clase, un resumen y práctica hecha para ti." },
         ]
       : [
-          {
-            icono: Wallet,
-            texto: invitado?.founder
-              ? `Tú pones tu tarifa. Como profe fundador, Orión retiene el ${invitado.founder.rateBps / 100} % durante tus primeros ${invitado.founder.periodMonths} meses de clases; después, el ${invitado.founder.baseRateBps / 100} %.`
-              : `Tú pones tu tarifa, y Orión retiene el ${cifras.commissionPercent} %: lo ves desde el día uno.`,
-          },
+          // Sin la cifra de la comisión ni el descuento de fundador (Pardo, 29/09/2026): se ven, con el
+          // desglose, cuando el profe pone su tarifa.
+          { icono: Wallet, texto: "Tú pones tu tarifa, y antes de publicar ves cuánto recibes por clase." },
           { icono: CalendarDays, texto: "Tus horarios, sin mínimos ni permanencia." },
           { icono: Mic, texto: "Un minuto de audio al terminar y el seguimiento de tu estudiante queda listo." },
         ];

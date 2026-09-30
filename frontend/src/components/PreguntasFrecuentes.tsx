@@ -74,11 +74,12 @@ const base = (c: PublicFigures): Record<"estudiante" | "profesor" | "general", P
     },
     {
       p: "¿Cuánto retiene Orión?",
-      r: `El ${c.commissionPercent} % del precio de la clase. Los profes fundadores, que entran por invitación, pagan el ${c.founderCommissionPercent} % durante sus primeros ${c.founderPeriodMonths} meses de clases, contados desde la primera clase pagada. Lo ves desglosado al fijar tu tarifa y clase por clase en «Ganancias». La comisión se calcula siempre sobre el precio, aunque el estudiante pague con saldo.`,
+      // Sin cifras (Pardo, 29/09/2026): la comisión, y el descuento de fundador, se ven al fijar la tarifa.
+      r: "Una comisión sobre el precio de cada clase. La ves desglosada al fijar tu tarifa, antes de publicar, y clase por clase en «Ganancias». Se calcula siempre sobre el precio, aunque el estudiante pague con saldo.",
     },
     {
       p: "¿Cuándo me pagan?",
-      r: "Cada quincena. Orión recibe en tu nombre lo que pagan tus estudiantes; cuando la clase ya se dictó y venció el plazo de reclamo, entra en el siguiente corte (el 15 y el último día de cada mes) y te lo transferimos por Bre-B, menos la comisión, a más tardar el tercer día hábil después del corte. Para recibirlo necesitas tus datos de pago registrados y el acuerdo del profesor aceptado.",
+      r: "Cada quincena. Orión recibe en tu nombre lo que pagan tus estudiantes; cuando la clase ya se dictó y venció el plazo de reclamo, entra en el siguiente corte (el 15 y el último día de cada mes) y te transferimos lo tuyo por Bre-B, a más tardar el tercer día hábil después del corte, a la llave Bre-B que registraste.",
     },
     {
       p: "¿Qué pasa si tengo que cancelar?",
@@ -187,7 +188,6 @@ export const preguntas = (c: PublicFigures): Record<Lista, Pregunta[]> => {
         p: "¿Cómo me postulo y cuánto tarda la aprobación?",
         r: `Con «Postúlate como profesor»: completas tu perfil, tus idiomas y tus documentos, y una persona revisa tu postulación en ${diasHabiles(c.applicationReviewBusinessDays)}. Puede aprobarse, rechazarse o volver con cambios pedidos; en los tres casos te escribimos.`,
       },
-      { p: "¿Cuánto cobra Orión de comisión?", r: respuesta(b.profesor, "¿Cuánto retiene Orión?") },
       {
         p: "¿Yo pongo mi tarifa?",
         r: "Sí. La fijas tú, entre $20.000 y $500.000 por hora, y la cambias cuando quieras. El estudiante la ve en tu perfil antes de reservar.",

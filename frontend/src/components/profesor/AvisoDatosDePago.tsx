@@ -30,7 +30,7 @@ export function AvisoDatosDePago() {
       }}
     >
       <p className="text-[14px] leading-relaxed text-text-secondary">
-        Orión recibe en tu nombre lo que pagan tus estudiantes y te lo entrega cada quincena, menos la comisión, por
+        Orión recibe en tu nombre lo que pagan tus estudiantes y te lo entrega cada quincena por
         transferencia Bre-B. Sin tu llave no podemos pagarte.
       </p>
       <p className="mt-3 flex items-start gap-2 rounded-base bg-accent-lavender-soft px-4 py-3 text-[13px] text-[#5e4a8a]">
