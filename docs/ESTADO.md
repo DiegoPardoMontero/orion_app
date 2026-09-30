@@ -30,6 +30,15 @@ dentro de `/cuenta`).
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots), con Rigel de protagonista.
 
 ## Verificación
+Al 29/09/2026, 23:45, con la invitación por WhatsApp, la comisión discreta, la llave en la postulación y
+UAT:
+- **Backend: `./mvnw verify`, 451 unitarias y 686 de integración, en verde.** Nuevas: la invitación
+  sin correo, la llave que falta y la que se borra al rechazar, y el asunto «[Pruebas]».
+- **Frontend:** `lint`, `tsc` y `next build` en verde; 196 pruebas de Vitest.
+- **E2E, sobre la base recreada y sin la prueba de Wompi: 105 en verde.** En una corrida anterior falló
+  una vez «Ana practica lo de su clase» (la práctica mandaba al login). No se reprodujo en limpio: se
+  deja anotada por si vuelve.
+
 Al 29/09/2026, 01:20, con la revisión nocturna de los flujos del profesor:
 - **Backend: `./mvnw verify`, 451 unitarias y 684 de integración, en verde.** Nuevas: cinco casos de
   reclamo después de la asistencia y uno de la gracia desde el pago en `LessonLifecycleIT`, la
@@ -921,6 +930,34 @@ Pendiente para Pardo:
 - Que el abogado lea la versión 2.0 del acuerdo del profesor. Su texto dice «liquidamos las clases
   que dictaste», y desde la decisión 4 también entran las cancelaciones tardías.
 - El manual técnico necesita esta sección.
+
+## Invitación por WhatsApp, la comisión discreta, la llave en la postulación y UAT (29/09/2026, noche)
+
+Pedido de Pardo (`docs/pedidos/2026-09-29-1840-…`).
+
+- **Invitar sin correo** (V80): Usuarios → «Invitar profesor».
+  - Pide el nombre, el correo opcional y si es fundador, y devuelve el enlace.
+  - Trae «Enviar por WhatsApp» (`wa.me` con un mensaje genérico, sin comisión) y «Copiar enlace».
+  - El enlace sigue siendo personal: un solo uso y 7 días.
+  - Sin correo, el invitado escribe el suyo al registrarse y lo confirma como cualquiera.
+- **La comisión no se dice hasta la tarifa.**
+  - Ni la cifra ni el descuento de fundador salen en «Enseña con Orión» (página, SEO y JSON-LD), la
+    invitación, el registro ni las preguntas frecuentes.
+  - La pantalla de la tarifa conserva el desglose. Los Términos, como texto legal, conservan la
+    cifra.
+- **Rigel real en la invitación:** el componente de la app, no el SVG del paquete de diseño, que
+  traía la línea negra sobre los guantes.
+- **La llave Bre-B es el paso 5 de 7 de la postulación**, antes del acuerdo, y es obligatoria.
+  - `identity` pregunta por el puerto `PayoutDetailsLookup`, que implementa `billing`.
+  - Si la postulación se rechaza, `DatosDePagoDelRechazado` borra la llave.
+  - El aviso «Falta a dónde te pagamos» queda para los profes aprobados sin llave: los creados desde
+    Usuarios y los de antes de este cambio.
+- **Ambiente de pruebas (UAT):**
+  - `ORION_ENVIRONMENT=uat` pone «[Pruebas]» en el asunto de los correos.
+  - `NEXT_PUBLIC_ENVIRONMENT=uat` pone una franja rayada en todas las pantallas, `robots.txt` cerrado
+    y `noindex`.
+  - Montarlo en Railway es configuración (`docs/ambiente-de-pruebas.md`), y la rama `develop` es la
+    de UAT.
 
 ## La noche del 28 al 29/09/2026: revisión de los flujos del profesor
 

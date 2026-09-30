@@ -67,4 +67,37 @@
 
 ## Estado
 
-En curso: la invitación por WhatsApp primero.
+Hecho. Lo que falta es de Pardo: montar el ambiente en Railway con la guía.
+
+- **Invitación por WhatsApp: en producción** (`b0fc496`, push a las 21:19).
+  - V80: el correo de la invitación es opcional.
+  - Invitar devuelve el enlace. Sin correo no se manda nada, y el invitado confirma su correo como
+    cualquiera.
+  - Usuarios → «Invitar profesor» trae «Enviar por WhatsApp», con el mensaje genérico y sin comisión,
+    y «Copiar enlace».
+- **Rigel real y comisión sin cifras: en producción** (`82395a4`).
+  - «Enseña con Orión»: página, SEO y JSON-LD. La sección oscura dice «Cobras sin perseguir a
+    nadie», porque «Tú pones la tarifa» ya estaba en otra tarjeta.
+  - La invitación, el registro y las preguntas frecuentes. La portada pública ya no pregunta «¿Cuánto
+    cobra Orión de comisión?».
+  - Rigel: el componente de la app en vez del SVG del paquete.
+  - `PorQueOrion` («Tu tarifa, tu comisión a la vista», en la portada de estudiantes) no dice cifra y
+    se dejó.
+- **Llave Bre-B en la postulación: en producción** (`75b9389`).
+  - 7 pasos, con «Pagos» antes del acuerdo; `missing` incluye «payout».
+  - La llave se borra si la postulación se rechaza.
+  - El aviso al entrar queda para los profes que ya existen sin llave.
+- **UAT** (`117da52`):
+  - `ORION_ENVIRONMENT=uat` pone «[Pruebas]» en el asunto de los correos.
+  - `NEXT_PUBLIC_ENVIRONMENT=uat` pone la franja rayada arriba, cierra `robots.txt` y marca todo
+    `noindex`. El Dockerfile la declara como `ARG` de build.
+  - Se creó la rama `develop`. La guía de Railway está en `docs/ambiente-de-pruebas.md`.
+- **Verificación:**
+  - `./mvnw verify` completo: 451 + 686.
+  - E2E completos sobre una base limpia: 105 de 105.
+  - `next build` y lint en verde; 196 pruebas de Vitest.
+  - Revisado en pantalla: el diálogo de invitación, la invitación con Rigel, el registro sin correo
+    fijo, «Enseña con Orión», el paso «Pagos» y la franja de UAT.
+- **Nota:** en una corrida completa anterior falló «Ana practica lo de su clase» (la práctica mandaba
+  al login). No se reprodujo ni con `humo` solo ni con la suite completa sobre una base limpia; fue
+  del entorno o de los tiempos, no del código.
