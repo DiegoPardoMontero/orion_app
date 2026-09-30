@@ -32,7 +32,7 @@ dentro de `/cuenta`).
 ## Verificación
 Al 29/09/2026, 23:45, con la invitación por WhatsApp, la comisión discreta, la llave en la postulación y
 UAT:
-- **Backend: `./mvnw verify`, 451 unitarias y 686 de integración, en verde.** Nuevas: la invitación
+- **Backend: `./mvnw verify`, 452 unitarias y 686 de integración, en verde.** Nuevas: la invitación
   sin correo, la llave que falta y la que se borra al rechazar, y el asunto «[Pruebas]».
 - **Frontend:** `lint`, `tsc` y `next build` en verde; 196 pruebas de Vitest.
 - **E2E, sobre la base recreada y sin la prueba de Wompi: 105 en verde.** En una corrida anterior falló

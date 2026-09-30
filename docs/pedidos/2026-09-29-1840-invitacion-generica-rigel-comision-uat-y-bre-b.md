@@ -93,7 +93,7 @@ Hecho. Lo que falta es de Pardo: montar el ambiente en Railway con la guía.
     `noindex`. El Dockerfile la declara como `ARG` de build.
   - Se creó la rama `develop`. La guía de Railway está en `docs/ambiente-de-pruebas.md`.
 - **Verificación:**
-  - `./mvnw verify` completo: 451 + 686.
+  - `./mvnw verify` completo: 452 + 686.
   - E2E completos sobre una base limpia: 105 de 105.
   - `next build` y lint en verde; 196 pruebas de Vitest.
   - Revisado en pantalla: el diálogo de invitación, la invitación con Rigel, el registro sin correo
