@@ -337,7 +337,8 @@ test("[v-invitacion.1 v-invitacion.3 v-invitacion.4 ad-usuarios.2] la invitació
   await expect(invitada.getByRole("heading", { name: "Mariana, queremos que seas de los primeros profes de Orión." })).toBeVisible();
   await expect(invitada.getByText("Invitación personal · Profes fundadores")).toBeVisible();
   await expect(invitada.getByText(/Te invita/)).toContainText("el equipo de Orión");
-  await expect(invitada.getByText(/Por ser de los profes fundadores, tienes 15 %/)).toBeVisible();
+  // Sin la cifra de la comisión ni el descuento de fundador (Pardo, 29/09/2026): se ven al poner la tarifa.
+  await expect(invitada.locator("main")).not.toContainText("%");
   await invitada.getByRole("link", { name: "Aceptar la invitación" }).click();
 
   // El registro de profesor con el correo de la invitación, sin poder cambiarlo ni elegir «aprender».
