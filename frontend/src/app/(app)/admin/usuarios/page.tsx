@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Award, BadgeDollarSign, Check, Copy, Mail, RefreshCw, Search, UserCheck, UserPlus, UserX } from "lucide-react";
+import { Award, BadgeDollarSign, Check, Copy, Mail, MessageCircle, RefreshCw, Search, UserCheck, UserPlus, UserX } from "lucide-react";
 import { useState } from "react";
 import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Modal } from "@/components/Modal";
@@ -12,6 +12,7 @@ import { Badge, Boton, BotonIcono, Campo, Spinner } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type { AdminUserResponse } from "@/lib/api/types";
 import { estadoDeFundador } from "@/lib/fundador";
+import { fechaLarga } from "@/lib/format";
 import { generarClave } from "@/lib/password";
 
 type Rol = "" | "STUDENT" | "PROFESSOR" | "ADMIN";
@@ -140,58 +141,106 @@ export default function AdminUsuariosPage() {
  * ningún lado —ni su nombre ni su cargo—: la invitación la firma el equipo de Orión (Pardo,
  * 26/09/2026).
  */
+/** Lo que devuelve invitar: el enlace en claro existe solo en esta respuesta. */
+type EnlaceDeInvitacion = { url: string; expiresAt: string; emailed: boolean };
+
+/**
+ * El mensaje de WhatsApp que acompaña el enlace (Pardo, 29/09/2026: «no de todos los profes tengo el
+ * correo»). Genérico a propósito, y sin hablar de comisión: la cifra aparece cuando el profe pone su
+ * tarifa. Antes de mandarlo se puede cambiar en el mismo WhatsApp.
+ */
+function mensajeDeWhatsapp(nombre: string, fundador: boolean, url: string): string {
+  const saludo = nombre ? `Hola, ${nombre}.` : "Hola.";
+  const invitacion = fundador
+    ? "Te invito a ser de los primeros profes de Orión, la plataforma de clases de idiomas por videollamada."
+    : "Te invito a dar clases en Orión, la plataforma de clases de idiomas por videollamada.";
+  return `${saludo} ${invitacion} Crea tu cuenta y postúlate con este enlace, que es solo para ti y vence en 7 días: ${url}`;
+}
+
 function ModalInvitarProfesor({ onCerrar }: { onCerrar: () => void }) {
   const [email, setEmail] = useState("");
   const [nombre, setNombre] = useState("");
   const [fundador, setFundador] = useState(true);
-  const [enviado, setEnviado] = useState(false);
+  const [copiado, setCopiado] = useState(false);
 
   const invitar = useMutation({
     mutationFn: () =>
-      apiFetch<void>("/api/v1/admin/professors/invite", {
+      apiFetch<EnlaceDeInvitacion>("/api/v1/admin/professors/invite", {
         method: "POST",
         body: {
-          email: email.trim(),
+          email: email.trim() || undefined,
           professorName: nombre.trim() || undefined,
           founder: fundador,
         },
       }),
-    onSuccess: () => setEnviado(true),
   });
 
   const error = invitar.error instanceof ApiError ? invitar.error.message : null;
+  const enlace = invitar.data;
+  const conCorreo = email.trim() !== "";
+
+  async function copiar(url: string) {
+    await navigator.clipboard.writeText(url);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
+  }
 
   return (
     <Modal titulo="Invitar profesor" onCerrar={onCerrar}>
-      {enviado ? (
+      {enlace ? (
         <>
-          <p className="text-[13px] text-text-secondary">
-            Le enviamos la invitación a <span className="font-semibold text-text">{email.trim()}</span>. El enlace
-            vence en 7 días. Cuando cree su cuenta y envíe su postulación, la verás en Postulaciones.
+          <p className="text-[13px] leading-relaxed text-text-secondary">
+            {enlace.emailed ? (
+              <>
+                Le enviamos la invitación a <span className="font-semibold text-text">{email.trim()}</span>. También
+                puedes mandarle el enlace por WhatsApp.
+              </>
+            ) : (
+              <>Mándale este enlace por WhatsApp{nombre.trim() ? ` a ${nombre.trim()}` : ""}.</>
+            )}{" "}
+            Es solo para esa persona y vence el {fechaLarga(enlace.expiresAt)}. Cuando cree su cuenta y envíe su
+            postulación, la verás en Postulaciones.
           </p>
-          <Boton variante="primario" onClick={onCerrar} className="mt-5 h-12 w-full">
-            Entendido
+
+          <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="invite-enlace">
+            Enlace de la invitación
+          </label>
+          <Campo
+            id="invite-enlace"
+            type="text"
+            readOnly
+            value={enlace.url}
+            onFocus={(event) => event.currentTarget.select()}
+            className="mt-1.5 bg-surface-sunken text-[13px] text-text-secondary"
+          />
+
+          <div className="mt-4 grid gap-2.5">
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(mensajeDeWhatsapp(nombre.trim(), fundador, enlace.url))}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-pill bg-primary px-4 text-[14px] font-bold text-on-primary shadow-primary transition-colors hover:bg-primary-strong focus-visible:shadow-focus"
+            >
+              <MessageCircle size={17} strokeWidth={2} />
+              Enviar por WhatsApp
+            </a>
+            <Boton variante="contorno" onClick={() => void copiar(enlace.url)} className="h-11">
+              {copiado ? <Check size={16} strokeWidth={2.2} /> : <Copy size={16} strokeWidth={1.9} />}
+              {copiado ? "Copiado" : "Copiar enlace"}
+            </Boton>
+          </div>
+          <Boton variante="fantasma" onClick={onCerrar} className="mt-3 h-11 w-full">
+            Listo
           </Boton>
         </>
       ) : (
         <>
           <p className="text-[13px] text-text-secondary">
-            Le llega un correo con su invitación personal. Crea su cuenta con este correo, completa su postulación y
-            tú la apruebas.
+            Te damos un enlace personal para mandarle por WhatsApp. Si escribes su correo, también se lo enviamos
+            ahí. Crea su cuenta con el enlace, completa su postulación y tú la apruebas.
           </p>
-          <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="invite-email">
-            Correo
-          </label>
-          <Campo
-            id="invite-email"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="profesor@correo.com"
-            className="mt-1.5"
-          />
           <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="invite-nombre">
-            Nombre <span className="font-semibold text-text-muted">(opcional, para el saludo)</span>
+            Nombre <span className="font-semibold text-text-muted">(para el saludo y para saber a quién se lo mandaste)</span>
           </label>
           <Campo
             id="invite-nombre"
@@ -200,6 +249,17 @@ function ModalInvitarProfesor({ onCerrar }: { onCerrar: () => void }) {
             value={nombre}
             onChange={(event) => setNombre(event.target.value)}
             placeholder="Mariana"
+            className="mt-1.5"
+          />
+          <label className="mt-4 block text-[12.5px] font-bold text-text-secondary" htmlFor="invite-email">
+            Correo <span className="font-semibold text-text-muted">(opcional)</span>
+          </label>
+          <Campo
+            id="invite-email"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="profesor@correo.com"
             className="mt-1.5"
           />
           <p className="mt-1.5 text-[12px] text-text-muted">
@@ -231,11 +291,11 @@ function ModalInvitarProfesor({ onCerrar }: { onCerrar: () => void }) {
             </Boton>
             <Boton
               variante="primario"
-              disabled={!email.trim() || invitar.isPending}
+              disabled={(!nombre.trim() && !conCorreo) || invitar.isPending}
               onClick={() => invitar.mutate()}
               className="h-11 flex-1"
             >
-              {invitar.isPending ? "Enviando…" : "Enviar invitación"}
+              {invitar.isPending ? "Creando…" : conCorreo ? "Enviar invitación" : "Crear enlace"}
             </Boton>
           </div>
         </>

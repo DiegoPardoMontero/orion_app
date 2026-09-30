@@ -39,7 +39,8 @@ public class ProfessorInvite {
     @Column(name = "id", updatable = false)
     private UUID id;
 
-    @Column(name = "email", nullable = false, updatable = false, length = 254)
+    /** Nulo en la invitación que se manda por WhatsApp (V80): el invitado escribe su correo al registrarse. */
+    @Column(name = "email", updatable = false, length = 254)
     private String email;
 
     @Column(name = "professor_name", updatable = false, length = 80)
@@ -69,7 +70,7 @@ public class ProfessorInvite {
 
     public ProfessorInvite(String email, String professorName, UUID invitedBy, boolean founder,
                            String tokenHash, Instant expiresAt) {
-        this.email = Objects.requireNonNull(email, "email").trim().toLowerCase(Locale.ROOT);
+        this.email = email == null || email.isBlank() ? null : email.trim().toLowerCase(Locale.ROOT);
         this.professorName = professorName == null || professorName.isBlank() ? null : professorName.trim();
         this.invitedBy = invitedBy;
         this.founder = founder;
@@ -90,8 +91,16 @@ public class ProfessorInvite {
         this.usedAt = Objects.requireNonNull(now, "now");
     }
 
+    /** Una invitación sin correo sirve para el que escriba el invitado; una con correo, solo para ese. */
     public boolean isFor(String otherEmail) {
+        if (email == null) {
+            return true;
+        }
         return otherEmail != null && email.equals(otherEmail.trim().toLowerCase(Locale.ROOT));
+    }
+
+    public boolean hasEmail() {
+        return email != null;
     }
 
     public String getEmail() {

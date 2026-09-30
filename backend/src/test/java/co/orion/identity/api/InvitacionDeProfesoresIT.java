@@ -115,11 +115,27 @@ class InvitacionDeProfesoresIT extends ApiIntegrationSupport {
 
     /* ---- apoyo ---- */
 
+    @SuppressWarnings("rawtypes")
     private String invitar(String email, boolean fundador) {
-        ResponseEntity<Void> r = post(INVITAR, adminSession,
-                new InviteProfessorRequest(email, "Mariana", fundador, "directora académica"), Void.class);
-        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        ResponseEntity<Map> r = post(INVITAR, adminSession,
+                new InviteProfessorRequest(email, "Mariana", fundador, "directora académica"), Map.class);
+        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.OK);
+        // El enlace que responde al admin es el mismo que llega al correo.
+        assertThat(r.getBody().get("url")).isEqualTo(correo.enlace);
+        assertThat(r.getBody().get("emailed")).isEqualTo(true);
         return correo.enlace.substring(correo.enlace.lastIndexOf('/') + 1);
+    }
+
+    /** La invitación que se manda por WhatsApp (V80): sin correo, el enlace vuelve en la respuesta. */
+    @SuppressWarnings("rawtypes")
+    private String invitarSinCorreo(String nombre, boolean fundador) {
+        ResponseEntity<Map> r = post(INVITAR, adminSession,
+                new InviteProfessorRequest(null, nombre, fundador, null), Map.class);
+        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(r.getBody().get("emailed")).isEqualTo(false);
+        String url = r.getBody().get("url").toString();
+        assertThat(url).contains("/invitacion/");
+        return url.substring(url.lastIndexOf('/') + 1);
     }
 
     @SuppressWarnings("rawtypes")
@@ -312,6 +328,49 @@ class InvitacionDeProfesoresIT extends ApiIntegrationSupport {
         assertThat(registrarse("otra@orion.test", token).getStatusCode())
                 .isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
         assertThat(users.findByEmailIgnoreCase("otra@orion.test")).isEmpty();
+    }
+
+    /* ---- sin correo, por WhatsApp (29/09/2026) ---- */
+
+    /**
+     * De muchos profes solo se tiene el WhatsApp: el admin escribe el nombre y Orión le da el enlace.
+     * No sale ningún correo. El invitado escribe el suyo al registrarse y lo confirma como cualquiera,
+     * porque el enlace no llegó a ningún buzón que pruebe que es suyo. El enlace sirve una sola vez, y
+     * el beneficio de fundador llega al aprobarse, como en la invitación por correo.
+     */
+    @Test
+    @SuppressWarnings("rawtypes")
+    void sinCorreoElEnlaceSirveUnaVezParaElCorreoQueEscribaYTraeElBeneficio() {
+        String token = invitarSinCorreo("Mariana", true);
+
+        assertThat(correo.enlace).isNull();
+        Map vista = ver(token);
+        assertThat(vista.get("state")).isEqualTo("VALID");
+        assertThat(vista.get("email")).isNull();
+        assertThat(vista.get("professorName")).isEqualTo("Mariana");
+
+        assertThat(registrarse(CORREO, token).getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(get("/api/v1/auth/me", login(CORREO), Map.class).getBody().get("role"))
+                .isEqualTo("TEACHER_APPLICANT");
+        assertThat(users.findByEmailIgnoreCase(CORREO).orElseThrow().isEmailVerified()).isFalse();
+        assertThat(ver(token).get("state")).isEqualTo("USED");
+        assertThat(registrarse("otra@orion.test", token).getStatusCode())
+                .isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+
+        completarPostulacion(login(CORREO), CORREO);
+        aprobar(CORREO);
+        UUID id = users.findByEmailIgnoreCase(CORREO).orElseThrow().getId();
+        assertThat(profiles.findById(id).orElseThrow().founderTerms()).isNotNull();
+    }
+
+    @Test
+    @SuppressWarnings("rawtypes")
+    void sinNombreNiCorreoNoSeInvita() {
+        ResponseEntity<Map> r = post(INVITAR, adminSession,
+                new InviteProfessorRequest(null, "  ", true, null), Map.class);
+
+        assertThat(r.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+        assertThat(jdbc.queryForObject("select count(*) from professor_invites", Integer.class)).isZero();
     }
 
     /* ---- la aprobación y el beneficio ---- */

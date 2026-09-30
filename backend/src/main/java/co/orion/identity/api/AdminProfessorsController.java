@@ -55,12 +55,15 @@ public class AdminProfessorsController {
         founders.revoke(professorId, principal.user().getId());
     }
 
-    /** Invita (o reenvía la invitación a) un profe por correo. Correo con cuenta → 409. */
+    /**
+     * Invita (o reenvía la invitación a) un profe. Con correo, le llega ahí; sin correo, el admin
+     * manda el enlace por WhatsApp. Correo con cuenta → 409. Devuelve el enlace: es la única vez que
+     * existe en claro.
+     */
     @PostMapping("/invite")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void invite(@AuthenticationPrincipal OrionUserDetails principal,
-                       @Valid @RequestBody InviteProfessorRequest body) {
-        inviteService.invite(principal.user().getId(), body.email(), body.professorName(),
+    public ProfessorInviteService.InviteLink invite(@AuthenticationPrincipal OrionUserDetails principal,
+                                                    @Valid @RequestBody InviteProfessorRequest body) {
+        return inviteService.invite(principal.user().getId(), body.email(), body.professorName(),
                 body.founder() == null || body.founder());
     }
 

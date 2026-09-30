@@ -92,7 +92,8 @@ function Registro() {
   // Quien venía de reservar en un perfil sin cuenta vuelve a ese perfil (solo si viene a aprender).
   const volver = destinoSeguro(params.get("volver"));
   // Quien llega desde la pantalla de invitación (V71): la cuenta es de profesor y el correo es el de
-  // la invitación, puesto y sin poder cambiarlo. El token se consume al crear la cuenta.
+  // la invitación, puesto y sin poder cambiarlo. El token se consume al crear la cuenta. La invitación
+  // que salió por WhatsApp (V80) no trae correo: ahí la persona escribe el suyo.
   const tokenDeInvitacion = params.get("invitacion");
   const invitacion = useQuery({
     queryKey: ["invitacion", tokenDeInvitacion],
@@ -140,6 +141,7 @@ function Registro() {
 
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
+  const correoFijo = !!invitado?.email;
   // El correo de la invitación llega después del primer render: se pone en cuanto llega.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- el correo de la invitación, una vez
@@ -331,11 +333,11 @@ function Registro() {
             icono={<Mail size={18} strokeWidth={1.75} />}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            readOnly={!!invitado}
-            aria-readonly={!!invitado}
-            className={`mt-1.5 ${error ? "border-error" : ""} ${invitado ? "bg-surface-sunken text-text-secondary" : ""}`}
+            readOnly={correoFijo}
+            aria-readonly={correoFijo}
+            className={`mt-1.5 ${error ? "border-error" : ""} ${correoFijo ? "bg-surface-sunken text-text-secondary" : ""}`}
           />
-          {invitado && (
+          {correoFijo && (
             <p className="mt-1.5 text-[12px] text-text-muted">Es el correo de tu invitación: con él entras a Orión.</p>
           )}
 

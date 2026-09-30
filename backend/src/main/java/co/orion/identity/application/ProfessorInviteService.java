@@ -35,7 +35,8 @@ import co.orion.shared.time.BusinessZone;
  * cualquier aspirante. El beneficio de fundador se otorga al aprobarse.
  *
  * <p>Mismo modelo de token que la recuperación de contraseña: hash en la base, un solo uso, 7 días.
- * Reenviar invalida la anterior sin usar del mismo correo.
+ * Reenviar invalida la anterior sin usar del mismo correo. Desde el 29/09/2026 el correo es opcional:
+ * la invitación puede salir por WhatsApp, con el enlace que devuelve {@link #invite}.
  */
 @Service
 public class ProfessorInviteService {
@@ -65,28 +66,45 @@ public class ProfessorInviteService {
         this.baseUrl = baseUrl;
     }
 
+    /** El enlace recién creado: la respuesta al admin es el único sitio donde existe el token en claro. */
+    public record InviteLink(String url, Instant expiresAt, boolean emailed) {
+    }
+
     /**
-     * El admin invita a un profe por correo. Si ya hay una cuenta con ese correo no se invita: si es
-     * un profe, el beneficio de fundador se le otorga desde Usuarios.
+     * El admin invita a un profe. Con correo, le llega el enlace ahí; si ya hay una cuenta con ese
+     * correo no se invita (si es un profe, el beneficio de fundador se le otorga desde Usuarios). Sin
+     * correo (Pardo, 29/09/2026: «no de todos los profes tengo el correo»), no se manda nada: el admin
+     * copia el enlace o lo manda por WhatsApp. En los dos casos el enlace es de una sola persona.
      *
      * <p>Quién invita se guarda ({@code invited_by}) para la trazabilidad, pero no se le muestra al
      * profe: ni en el correo ni en la pantalla de la invitación sale el nombre ni el cargo de nadie,
      * la invitación es de Orión (Pardo, 26/09/2026). Por eso el cargo que antes se pedía ya no se guarda.
      */
     @Transactional
-    public void invite(UUID adminId, String email, String professorName, boolean founder) {
-        String correo = email.trim().toLowerCase(Locale.ROOT);
-        if (users.existsByEmailIgnoreCase(correo)) {
-            throw new ConflictException(
-                    "Ya existe una cuenta con ese correo. Si es un profe, dale el beneficio de fundador desde Usuarios.");
+    public InviteLink invite(UUID adminId, String email, String professorName, boolean founder) {
+        boolean conCorreo = email != null && !email.isBlank();
+        boolean conNombre = professorName != null && !professorName.isBlank();
+        if (!conCorreo && !conNombre) {
+            // Sin los dos, en Usuarios no habría forma de saber a quién se le mandó cada enlace.
+            throw new UnprocessableException("Escribe al menos el nombre del profe, o su correo.");
+        }
+        String correo = conCorreo ? email.trim().toLowerCase(Locale.ROOT) : null;
+        if (conCorreo) {
+            if (users.existsByEmailIgnoreCase(correo)) {
+                throw new ConflictException(
+                        "Ya existe una cuenta con ese correo. Si es un profe, dale el beneficio de fundador desde Usuarios.");
+            }
+            invites.deleteUnusedByEmail(correo);
         }
 
-        invites.deleteUnusedByEmail(correo);
         String rawToken = randomToken();
         ProfessorInvite invite = invites.saveAndFlush(new ProfessorInvite(correo, professorName, adminId, founder,
                 sha256Hex(rawToken), clock.instant().plus(TTL)));
-
-        mailer.sendInvite(correo, invite.getProfessorName(), baseUrl + "/invitacion/" + rawToken);
+        String url = baseUrl + "/invitacion/" + rawToken;
+        if (conCorreo) {
+            mailer.sendInvite(correo, invite.getProfessorName(), url);
+        }
+        return new InviteLink(url, invite.getExpiresAt(), conCorreo);
     }
 
     /** Lo que ve quien abre el enlace. Nunca falla: un token que no existe se muestra como vencido. */
@@ -125,8 +143,11 @@ public class ProfessorInviteService {
         }
         invite.consume(newUser.getId(), clock.instant());
         invites.save(invite);
-        // El enlace llegó a ese correo: pedirle que lo confirme otra vez es un paso de más.
-        newUser.markEmailVerified(clock.instant());
+        // El enlace llegó a ese correo: pedirle que lo confirme otra vez es un paso de más. El que
+        // llegó por WhatsApp no probó que el correo que escribió sea suyo: lo confirma como cualquiera.
+        if (invite.hasEmail()) {
+            newUser.markEmailVerified(clock.instant());
+        }
     }
 
     /**
