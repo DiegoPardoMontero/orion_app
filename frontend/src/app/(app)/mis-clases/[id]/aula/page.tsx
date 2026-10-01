@@ -235,6 +235,11 @@ function TiempoDeClase({ datos }: { datos: ClassroomResponse }) {
 /**
  * El tiempo de la clase como un amanecer que avanza: una línea que se llena de coral a durazno, con
  * una estrella en la punta. Los últimos cinco minutos, la estrella late.
+ *
+ * <p>Sobre la estrella va «¡Tu clase va aquí!» (Pardo, 01/10/2026): sola, la línea parecía algo
+ * cargando que no terminaba, y costaba darse cuenta de que era la clase. La etiqueta va encima y no
+ * debajo, porque debajo empieza la videollamada y la taparía; cerca de los bordes se ancla al lado
+ * para no salirse de la pantalla.
  */
 function BarraDeLaClase({ datos }: { datos: ClassroomResponse }) {
   const ahora = useReloj();
@@ -242,22 +247,48 @@ function BarraDeLaClase({ datos }: { datos: ClassroomResponse }) {
   const fin = new Date(datos.endsAt).getTime();
   const avance = fin > inicio ? Math.min(1, Math.max(0, (ahora - inicio) / (fin - inicio))) : 0;
   const pocos = ahora >= inicio && fin - ahora <= 5 * 60000 && ahora < fin;
+  const enCurso = avance > 0 && avance < 1;
+  const punta = `${avance * 100}%`;
+  // Centrada sobre la estrella; cerca de un borde, anclada a ese lado con 8 px de margen.
+  const etiqueta =
+    avance < 0.12
+      ? { left: `max(8px, calc(${punta} - 6px))` }
+      : avance > 0.88
+        ? { left: `min(calc(100% - 8px), calc(${punta} + 6px))`, transform: "translateX(-100%)" }
+        : { left: punta, transform: "translateX(-50%)" };
   return (
-    <div className="relative h-1 w-full bg-white/10" aria-hidden>
-      <div
-        className="h-full bg-gradient-to-r from-primary to-accent-peach transition-[width] duration-[1500ms] ease-out"
-        style={{ width: `${avance * 100}%` }}
-      />
-      {avance > 0 && avance < 1 && (
-        <span
-          className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 text-[11px] leading-none text-accent-peach drop-shadow-[0_0_6px_rgba(255,193,137,.9)] ${
-            pocos ? "animate-pulse" : ""
-          }`}
-          style={{ left: `${avance * 100}%` }}
-        >
-          ✦
-        </span>
+    <div className={`relative w-full ${enCurso ? "pt-6" : ""}`} aria-hidden>
+      {enCurso && (
+        <>
+          <span
+            className="absolute top-1 whitespace-nowrap rounded-full bg-white/10 px-2 py-0.5 text-[10.5px] font-bold leading-tight text-accent-peach"
+            style={etiqueta}
+          >
+            ¡Tu clase va aquí!
+          </span>
+          {/* La puntita que baja de la etiqueta a la estrella: las dos se leen como una sola cosa. */}
+          <span
+            className="absolute top-[18px] h-1.5 w-1.5 bg-white/10"
+            style={{ left: punta, transform: "translateX(-50%) rotate(45deg)" }}
+          />
+        </>
       )}
+      <div className="relative h-1 w-full bg-white/10">
+        <div
+          className="h-full bg-gradient-to-r from-primary to-accent-peach transition-[width] duration-[1500ms] ease-out"
+          style={{ width: `${avance * 100}%` }}
+        />
+        {enCurso && (
+          <span
+            className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 text-[11px] leading-none text-accent-peach drop-shadow-[0_0_6px_rgba(255,193,137,.9)] ${
+              pocos ? "animate-pulse" : ""
+            }`}
+            style={{ left: `${avance * 100}%` }}
+          >
+            ✦
+          </span>
+        )}
+      </div>
     </div>
   );
 }
