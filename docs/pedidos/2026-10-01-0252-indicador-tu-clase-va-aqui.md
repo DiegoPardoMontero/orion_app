@@ -6,7 +6,7 @@
 | **Canal** | Chat de Claude Code |
 | **Quién** | Pardo |
 | **Relacionado** | El aula (`frontend/src/components/aula/`) |
-| **Estado** | En curso |
+| **Estado** | Hecho |
 
 ## El pedido, tal cual
 
@@ -21,4 +21,13 @@
 
 ## Estado
 
-En curso.
+Hecho y en producción.
+
+- La etiqueta «¡Tu clase va aquí!» va sobre la estrella, con una puntita que la señala. Va encima de
+  la línea porque debajo empieza la videollamada.
+- Cerca de los bordes se ancla a ese lado, con 8 px de margen.
+- Revisado en pantalla con el aula simulada, al inicio, a la mitad y al final de la clase, a 390 y a
+  1280 px.
+- E2E completos sobre una base limpia: 105 de 105. `next build` en verde. Una corrida anterior se
+  invalidó porque el equipo se suspendió en la noche y las sesiones vencieron a mitad.
+- UAT todavía no existe, así que fue directo a `master`.
