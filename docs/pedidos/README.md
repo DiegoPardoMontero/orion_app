@@ -5,7 +5,7 @@ estado. La regla está en `CLAUDE.md` → «Registro de pedidos». Del más reci
 
 | Fecha | Pedido | Estado |
 |---|---|---|
-| 01/10/2026 10:37 | [¿Qué más nos falta?](2026-10-01-1037-que-mas-nos-falta.md) | Respondido |
+| 01/10/2026 10:37 | [¿Qué más nos falta?](2026-10-01-1037-que-mas-nos-falta.md) | En curso |
 | 01/10/2026 02:52 | [Un indicador «Tu clase va aquí» en la barra de la videollamada](2026-10-01-0252-indicador-tu-clase-va-aqui.md) | Hecho |
 | 29/09/2026 18:40 | [Invitación genérica por WhatsApp, Rigel, la comisión discreta, ambiente de pruebas y la llave Bre-B en la postulación](2026-09-29-1840-invitacion-generica-rigel-comision-uat-y-bre-b.md) | Hecho; UAT lo monta Pardo con la guía |
 | 29/09/2026 12:20 | [Los pasos desde cero para probar la fase 1 del lanzamiento, con profes](2026-09-29-1220-pasos-para-probar-la-fase-1-con-profes.md) | Hecho: guía en `docs/prueba-fase-1.md` |
