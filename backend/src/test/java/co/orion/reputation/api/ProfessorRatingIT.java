@@ -94,9 +94,17 @@ class ProfessorRatingIT extends ApiIntegrationSupport {
     }
 
     private UUID review(User student, short rating) {
+        return review(student, rating, false);
+    }
+
+    private UUID review(User student, short rating, boolean deClaseDePrueba) {
         Instant startsAt = PAST.minus(Duration.ofHours(slot++));
-        Booking booking = bookings.save(TestBookings.confirmed(student.getId(), maria.getId(),
-                startsAt, BookingModality.VIRTUAL, null, student.getId()));
+        Booking nueva = TestBookings.confirmed(student.getId(), maria.getId(),
+                startsAt, BookingModality.VIRTUAL, null, student.getId());
+        if (deClaseDePrueba) {
+            nueva.markAsTrial();
+        }
+        Booking booking = bookings.save(nueva);
         ResponseEntity<ReviewResponse> response = post(
                 "/api/v1/bookings/" + booking.getId() + "/review", login(student.getEmail()),
                 new CreateReviewRequest(rating, "Comentario de " + student.getFullName()),
@@ -147,6 +155,23 @@ class ProfessorRatingIT extends ApiIntegrationSupport {
         assertThat(search.content().get(0).ratingAvg()).isEqualTo(4.0);
 
         assertThat(publicReviews().totalElements()).isEqualTo(3);
+    }
+
+    /**
+     * La reseña de una clase de prueba gratis (Pardo, 01/10/2026): se puede dejar y se ve en la lista,
+     * pero no mueve el promedio ni el conteo que ordena el ranking.
+     */
+    @Test
+    void aTrialClassReviewIsListedButDoesNotMoveTheAverage() {
+        review(ana, (short) 5);
+        review(beatriz, (short) 4);
+        review(carlos, (short) 3);
+        review(ana, (short) 1, true);
+
+        ProfessorDetail detail = detail();
+        assertThat(detail.ratingCount()).isEqualTo(3);
+        assertThat(detail.ratingAvg()).isEqualTo(4.0);
+        assertThat(publicReviews().totalElements()).isEqualTo(4);
     }
 
     @Test

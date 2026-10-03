@@ -27,12 +27,18 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
     /**
      * El agregado sobre las reseñas VISIBLES de un profesor: promedio y conteo en una sola consulta.
      * avg() devuelve null cuando no hay filas; count() devuelve 0. La proyección lo deja explícito.
+     *
+     * <p>Sin las de clases de prueba gratis (Pardo, 01/10/2026): el estudiante la puede calificar y
+     * el profe la ve, pero no mueve sus estrellas ni el ranking. Contaban igual que una pagada, y con
+     * cuentas falsas se juntaban reseñas de 5★ sin pagar comisión (revisión de seguridad del 25/09).
      */
     @Query("""
             select avg(r.rating) as average, count(r) as total
             from Review r
             where r.professorId = :professorId
               and r.visible = true
+              and not exists (select b.id from co.orion.scheduling.domain.Booking b
+                              where b.id = r.bookingId and b.trial = true)
             """)
     RatingAggregate aggregateVisible(@Param("professorId") UUID professorId);
 
