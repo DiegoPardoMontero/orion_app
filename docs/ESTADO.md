@@ -30,6 +30,12 @@ dentro de `/cuenta`).
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots), con Rigel de protagonista.
 
 ## Verificación
+Al 03/10/2026, con la reseña de prueba fuera del promedio y las clases que caben:
+- **Backend: `./mvnw verify`, 452 unitarias y 687 de integración, en verde.**
+- **E2E sobre la base recreada: 104 en verde y 1 por tiempos.** `[p-perfil.3 e-prueba.5]` no alcanzó a
+  ver el aviso «Cambios guardados», aunque el cambio sí se guardó; repetida 3 veces, pasa las 3.
+- `next build` en verde; 196 pruebas de Vitest.
+
 Al 29/09/2026, 23:45, con la invitación por WhatsApp, la comisión discreta, la llave en la postulación y
 UAT:
 - **Backend: `./mvnw verify`, 452 unitarias y 686 de integración, en verde.** Nuevas: la invitación
