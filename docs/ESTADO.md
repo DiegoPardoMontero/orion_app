@@ -931,6 +931,15 @@ Pendiente para Pardo:
   que dictaste», y desde la decisión 4 también entran las cancelaciones tardías.
 - El manual técnico necesita esta sección.
 
+## La barra de la clase, la reseña de prueba y las clases que caben (01 al 03/10/2026)
+
+- **«¡Tu clase va aquí!»:** una etiqueta pequeña sobre la estrella de la línea de tiempo del aula,
+  con una puntita que la señala (pedido `2026-10-01-0252-…`).
+- **La reseña de una clase de prueba gratis no cuenta** en el promedio ni en el ranking, aunque se ve
+  en la lista. La V81 recalculó las métricas.
+- **«Mis horarios» dice las clases que caben** (6 a 9 PM → hasta 3), no las horas de inicio que se
+  pisan (eran 5).
+
 ## Invitación por WhatsApp, la comisión discreta, la llave en la postulación y UAT (29/09/2026, noche)
 
 Pedido de Pardo (`docs/pedidos/2026-09-29-1840-…`).
@@ -1597,6 +1606,9 @@ su test; lo que cambia el comportamiento o pide una decisión está abajo, en Pe
   `X-Content-Type-Options` y `Referrer-Policy`.
 
 ## Pendiente / bloqueos conocidos
+- **El freno de intentos fallidos del login no se activó en producción** (prueba del 02/10/2026, con
+  un correo que no existe; en local funciona). Hay que revisarlo con los registros de Railway antes de
+  abrir al público.
 - **Reservas anteriores a V20 sin idioma**: las que tenía un profesor de dos idiomas quedaron con
   `language_code` en nulo a propósito, para revisión manual. La migración deja el conteo en un
   `RAISE NOTICE`.

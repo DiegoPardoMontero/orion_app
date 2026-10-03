@@ -144,10 +144,11 @@ industria):
    alumnos le paga a Orión el 15 % de esas clases. Lo que recibe a cambio está arriba («Lo que se le
    ofrece al profe»). Es la objeción que va a oír de casi todos los profes la primera semana, y la
    respuesta es de Pardo.
-2. **Qué pasa con una clase pagada que el estudiante cancela**: saldo a favor o devolución. Abierta
-   desde el 02/09.
-3. **Si la reseña de una clase de prueba gratis cuenta en el ranking** (revisión de seguridad del
-   25/09).
+2. ~~**Qué pasa con una clase pagada que el estudiante cancela**~~. **Resuelta** (está en el código y
+   en los Términos): si cancela con más de 12 h, el valor vuelve como saldo a favor; si cancela tarde,
+   el pago va al profe.
+3. ~~**Si la reseña de una clase de prueba gratis cuenta en el ranking**~~. **Decidido el 01/10/2026:**
+   no cuenta en el promedio ni en el ranking, aunque se sigue viendo.
 4. Las sanciones siguen en modo observación: con pocos profes, nada se oculta sin que una persona lo
    mire (decisión del 02/09).
 

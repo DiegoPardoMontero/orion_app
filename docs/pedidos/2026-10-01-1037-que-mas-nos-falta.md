@@ -30,4 +30,19 @@
 
 ## Estado
 
-En curso: la prueba de la IP, la reseña de prueba fuera del promedio y el texto de los cupos.
+Hecho; queda una revisión anotada.
+
+- **La reseña de una clase de prueba gratis no cuenta en el promedio ni en el ranking** (`1c2e0af`):
+  - `ReviewRepository.aggregateVisible` deja fuera las reservas de prueba;
+  - la V81 recalcula las métricas guardadas;
+  - la reseña se sigue viendo en la lista;
+  - probado en `ProfessorRatingIT`.
+- **«Mis horarios» cuenta las clases que caben, no las horas de inicio** (`6d9af92`):
+  - «Una franja de 6 a 9 PM te deja dar hasta 3 clases, y el estudiante elige a qué hora empieza»;
+  - lo mismo en el contador de la semana, el consejo de Rigel, la vista previa al arrastrar, el
+    formulario de la franja y el aviso al abrirla.
+- **La prueba de la IP del proxy:** en los intentos del 02/10, el freno de intentos fallidos del login
+  no se activó en producción. La investigación quedó ahí y se anotó en ESTADO («Pendiente») para
+  revisarla con los registros de Railway.
+- El plan de lanzamiento queda al día: la decisión 2 (el estudiante cancela una clase pagada) ya estaba
+  resuelta, y la 3 (la reseña de prueba) se decidió hoy.
