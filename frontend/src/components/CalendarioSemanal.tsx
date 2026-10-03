@@ -15,7 +15,7 @@ import {
   aHhmm,
   aMinutos,
   bajarAlPaso,
-  cuposPorSemana,
+  clasesPorSemana,
   DURACION_MINIMA,
   FIN_DEL_DIA,
   huecoLibre,
@@ -374,8 +374,8 @@ export function CalendarioSemanal({
     top: (tramo.inicio - desde * 60) * PX_POR_MINUTO + 1,
     height: (tramo.fin - tramo.inicio) * PX_POR_MINUTO - 2,
   });
-  const cuposNuevos = (propuesta: Propuesta) =>
-    cuposPorSemana([...franjas, propuesta], duracionClase) - cuposPorSemana(franjas, duracionClase);
+  const clasesNuevas = (propuesta: Propuesta) =>
+    clasesPorSemana([...franjas, propuesta], duracionClase) - clasesPorSemana(franjas, duracionClase);
 
   return (
     <div className="rounded-card border border-border bg-surface-raised shadow-sm">
@@ -522,7 +522,7 @@ export function CalendarioSemanal({
                     {!vista.valido
                       ? "Se cruza con otra franja"
                       : `${rangoLargo(vista.tramo.inicio, vista.tramo.fin)}${
-                          vista.tipo === "crear" ? ` · +${cuposNuevos({ weekday: dia.valor, ...vista.tramo })} cupos` : ""
+                          vista.tipo === "crear" ? ` · +${clasesNuevas({ weekday: dia.valor, ...vista.tramo })} clases` : ""
                         }`}
                   </Etiqueta>
                 </div>

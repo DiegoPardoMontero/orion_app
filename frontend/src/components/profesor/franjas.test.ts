@@ -3,8 +3,8 @@ import {
   aHhmm,
   aMinutos,
   bajarAlPaso,
-  cuposDeTramo,
-  cuposPorSemana,
+  clasesDeTramo,
+  clasesPorSemana,
   horasPorSemana,
   huecoLibre,
   primeraHoraLibre,
@@ -39,12 +39,14 @@ describe("horas de pared y minutos", () => {
   });
 });
 
-describe("cupos", () => {
-  it("cuenta una clase cada media hora mientras quepa entera", () => {
-    expect(cuposDeTramo(30, 55)).toBe(0);
-    expect(cuposDeTramo(60, 55)).toBe(1);
-    expect(cuposDeTramo(90, 55)).toBe(2);
-    expect(cuposDeTramo(180, 55)).toBe(5); // 18:00–21:00 → 18, 18:30, 19, 19:30, 20
+describe("clases que caben", () => {
+  it("cuenta las clases que caben una detrás de otra, sin pisarse", () => {
+    expect(clasesDeTramo(30, 55)).toBe(0);
+    expect(clasesDeTramo(60, 55)).toBe(1);
+    expect(clasesDeTramo(90, 55)).toBe(1); // la segunda no alcanza: 18:00–18:55 y 19:00–19:55
+    expect(clasesDeTramo(120, 55)).toBe(2);
+    expect(clasesDeTramo(180, 55)).toBe(3); // 18:00–21:00 → 18, 19 y 20 (no 5 horas de inicio)
+    expect(clasesDeTramo(240, 55)).toBe(4);
   });
 
   it("une las franjas que se tocan antes de contar, y no cuenta dos veces lo que se cruza", () => {
@@ -56,8 +58,8 @@ describe("cupos", () => {
       { weekday: 1, inicio: h("19:00"), fin: h("20:00") },
       { weekday: 3, inicio: h("08:00"), fin: h("11:00") },
     ];
-    // Lunes 18–20 unido son 3 (no 1 + 1); miércoles 8–11 son 5.
-    expect(cuposPorSemana(semana, 55)).toBe(8);
+    // Lunes 18–20 unido son 2; miércoles 8–11 son 3.
+    expect(clasesPorSemana(semana, 55)).toBe(5);
     expect(horasPorSemana(semana)).toBe(5);
   });
 });

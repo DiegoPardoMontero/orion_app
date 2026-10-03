@@ -3,7 +3,7 @@
 import { Lightbulb } from "lucide-react";
 import { Rigel, type RigelPose } from "@/components/Rigel";
 import type { RuleResponse } from "@/lib/api/types";
-import { aMinutos, cuposDeTramo, cuposPorSemana, horasPorSemana, type FranjaDia } from "./franjas";
+import { aMinutos, clasesDeTramo, clasesPorSemana, horasPorSemana, type FranjaDia } from "./franjas";
 
 const INICIALES = ["L", "M", "M", "J", "V", "S", "D"];
 
@@ -11,7 +11,7 @@ const INICIALES = ["L", "M", "M", "J", "V", "S", "D"];
  * Rigel acompañando «Mis horarios» (Pardo, 27/09/2026: «que genere más motivación y esté más linda
  * visualmente»). La mascota se guarda para pantallas de marca y aquí entra por pedido expreso.
  *
- * <p>Lo que dice sale de las franjas y nada más: cuántos cupos de clase abre la semana, en cuántos
+ * <p>Lo que dice sale de las franjas y nada más: cuántas clases caben en la semana, en cuántos
  * días y cuántas horas. El consejo de abajo es eso, un consejo —«quien trabaja de día suele buscar
  * clase en la noche»—, nunca una cifra de reservas que no tenemos.
  */
@@ -30,12 +30,12 @@ export function RigelDeHorarios({
     inicio: aMinutos(regla.startTime!),
     fin: aMinutos(regla.endTime!),
   }));
-  const cupos = cuposPorSemana(franjas, duracionClase);
+  const clases = clasesPorSemana(franjas, duracionClase);
   const dias = new Set(franjas.map((franja) => franja.weekday));
   const horas = horasPorSemana(franjas);
   const vacio = franjas.length === 0;
   const pose: RigelPose = celebrando ? "celebracion" : vacio ? "saludo" : "profe";
-  const cuposDeUnaNoche = cuposDeTramo(180, duracionClase);
+  const clasesDeUnaNoche = clasesDeTramo(180, duracionClase);
 
   return (
     <section
@@ -70,17 +70,18 @@ export function RigelDeHorarios({
                 <span className="hidden lg:inline">
                   Arrastra sobre un día, desde la hora en que empiezas hasta la que terminas.{" "}
                 </span>
-                Una franja de 6 a 9 PM ya abre {cuposDeUnaNoche} cupos cada semana.
+                Una franja de 6 a 9 PM te deja dar hasta {clasesDeUnaNoche} clases, y el estudiante elige a qué
+                hora empieza.
               </p>
             </>
           ) : (
             <>
               <p className="relative mt-0.5 flex items-baseline gap-1.5 font-display font-bold leading-none text-text">
-                <span className="text-[30px] tabular-nums xl:text-[40px]">{cupos}</span>
-                <span className="text-[16px] xl:text-[18px]">{cupos === 1 ? "cupo de clase" : "cupos de clase"}</span>
+                <span className="text-[30px] tabular-nums xl:text-[40px]">{clases}</span>
+                <span className="text-[16px] xl:text-[18px]">{clases === 1 ? "clase" : "clases"}</span>
               </p>
               <p className="relative mt-1 text-[12.5px] leading-snug text-text-secondary">
-                abres cada semana, en {dias.size} {dias.size === 1 ? "día" : "días"} ·{" "}
+                caben cada semana, en {dias.size} {dias.size === 1 ? "día" : "días"} ·{" "}
                 {new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 }).format(horas)}{" "}
                 {horas === 1 ? "hora" : "horas"}
               </p>
@@ -121,8 +122,8 @@ export function RigelDeHorarios({
  * cada hora, no estadísticas de Orión: por eso dicen «suele» y no «el 60 %».
  */
 function consejoPara(franjas: FranjaDia[], duracionClase: number): string {
-  const porMediaHora = `Cada media hora que le sumas a una franja abre un cupo más: de 6 a 9 PM son ${cuposDeTramo(180, duracionClase)}; de 6 a 10 PM, ${cuposDeTramo(240, duracionClase)}.`;
-  if (franjas.length === 0) return porMediaHora;
+  const porHora = `Cada hora que le sumas a una franja es una clase más: de 6 a 9 PM caben ${clasesDeTramo(180, duracionClase)}; de 6 a 10 PM, ${clasesDeTramo(240, duracionClase)}.`;
+  if (franjas.length === 0) return porHora;
   if (!franjas.some((franja) => franja.fin > 18 * 60)) {
     return "Quien trabaja de día suele buscar clase después de las 6 PM. Una franja en la noche te abre a esas personas.";
   }
@@ -132,5 +133,5 @@ function consejoPara(franjas: FranjaDia[], duracionClase: number): string {
   if (!franjas.some((franja) => franja.inicio < 9 * 60)) {
     return "Hay quien prefiere estudiar antes de ir a trabajar. Una franja temprano, de 6 a 8 AM, llega a esas personas.";
   }
-  return porMediaHora;
+  return porHora;
 }

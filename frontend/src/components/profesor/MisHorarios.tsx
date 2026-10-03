@@ -11,8 +11,8 @@ import { RigelDeHorarios } from "@/components/profesor/RigelDeHorarios";
 import {
   aHhmm,
   aMinutos,
-  cuposDeTramo,
-  cuposPorSemana,
+  clasesDeTramo,
+  clasesPorSemana,
   FIN_DEL_DIA,
   primeraHoraLibre,
   rangoLargo,
@@ -108,13 +108,13 @@ export function MisHorarios() {
     mutationFn: async (accion: Accion): Promise<{ antes: RuleResponse | null; despues: RuleResponse | null; aviso: Aviso }> => {
       const actuales = queryClient.getQueryData<RuleResponse[]>(CLAVE_REGLAS) ?? [];
       if (accion.tipo === "crear") {
-        const mas = cuposPorSemana([...aFranjas(actuales), accion.propuesta], classMinutes) - cuposPorSemana(aFranjas(actuales), classMinutes);
+        const mas = clasesPorSemana([...aFranjas(actuales), accion.propuesta], classMinutes) - clasesPorSemana(aFranjas(actuales), classMinutes);
         const nueva = await crearRegla(accion.propuesta);
         return {
           antes: null,
           despues: nueva,
           aviso: {
-            texto: `Abriste el ${diaYRango(accion.propuesta)}${mas > 0 ? ` · +${mas} ${mas === 1 ? "cupo" : "cupos"} por semana` : ""}`,
+            texto: `Abriste el ${diaYRango(accion.propuesta)}${mas > 0 ? ` · +${mas} ${mas === 1 ? "clase" : "clases"} por semana` : ""}`,
             deshacer: { tipo: "quitar", regla: nueva },
           },
         };
@@ -474,7 +474,7 @@ function ModalFranja({
   // Los errores de solape los redacta el backend; aquí se muestran tal cual.
   const error = guardar.error ? mensajeDe(guardar.error) : null;
   const minutos = aMinutos(fin) - aMinutos(inicio);
-  const cupos = cuposDeTramo(minutos, duracionClase);
+  const clases = clasesDeTramo(minutos, duracionClase);
 
   return (
     <Modal titulo={`${regla ? "Editar franja" : "Nueva franja"} · ${nombreDelDia(weekday)}`} onCerrar={onCerrar}>
@@ -516,9 +516,9 @@ function ModalFranja({
       <p className="mt-3 text-[12.5px] text-text-secondary">
         {minutos <= 0
           ? "La hora de fin tiene que ser después de la de inicio."
-          : cupos === 0
+          : clases === 0
             ? `Una clase dura ${duracionClase} minutos: esta franja todavía no alcanza para ninguna.`
-            : `Abre ${cupos} ${cupos === 1 ? "cupo" : "cupos"} de clase cada ${nombreDelDia(weekday).toLowerCase()}: empiezan cada media hora.`}
+            : `Caben hasta ${clases} ${clases === 1 ? "clase" : "clases"} cada ${nombreDelDia(weekday).toLowerCase()}, y el estudiante elige a qué hora empieza (en punto o a la media hora).`}
       </p>
 
       {error && (

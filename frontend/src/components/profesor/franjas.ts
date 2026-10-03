@@ -72,23 +72,27 @@ export function unir(intervalos: Intervalo[]): Intervalo[] {
 }
 
 /**
- * Cuántas clases caben en un tramo continuo: arrancan cada media hora mientras la clase quepa
- * entera. 18:00–21:00 con clases de 55 da 18:00, 18:30, 19:00, 19:30 y 20:00 → 5.
+ * Cuántas clases caben en un tramo continuo, una detrás de otra y sin pisarse. Antes se contaban las
+ * horas de inicio (18:00, 18:30, 19:00…: 5 en 18:00–21:00), pero dos de esas se pisan, y en tres
+ * horas caben tres clases (Pardo, 01/10/2026: «decir las clases que caben»). Cada clase ocupa su
+ * duración redondeada a la media hora, porque la siguiente empieza en punto o a la media hora:
+ * 18:00–21:00 con clases de 55 da 18:00, 19:00 y 20:00 → 3.
  */
-export function cuposDeTramo(minutos: number, duracionClase: number): number {
+export function clasesDeTramo(minutos: number, duracionClase: number): number {
   if (minutos < duracionClase) return 0;
-  return Math.floor((minutos - duracionClase) / CADENCIA_CUPOS) + 1;
+  const periodo = Math.ceil(duracionClase / CADENCIA_CUPOS) * CADENCIA_CUPOS;
+  return Math.floor((minutos - duracionClase) / periodo) + 1;
 }
 
 /**
- * Los cupos de clase que abre un horario cada semana. Las franjas de un mismo día que se tocan se
+ * Las clases que caben en un horario cada semana. Las franjas de un mismo día que se tocan se
  * cuentan unidas, que es como las lee el cálculo de cupos: dos franjas contiguas son un solo tramo.
  */
-export function cuposPorSemana(franjas: FranjaDia[], duracionClase: number): number {
+export function clasesPorSemana(franjas: FranjaDia[], duracionClase: number): number {
   let total = 0;
   for (let dia = 1; dia <= 7; dia++) {
     for (const tramo of unir(franjas.filter((f) => f.weekday === dia))) {
-      total += cuposDeTramo(tramo.fin - tramo.inicio, duracionClase);
+      total += clasesDeTramo(tramo.fin - tramo.inicio, duracionClase);
     }
   }
   return total;
