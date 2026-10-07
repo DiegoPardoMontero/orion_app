@@ -98,5 +98,7 @@ producto**, el primero de la lista.
 
 ## Estado
 
-En curso: el `./mvnw verify` completo y a solas (uno anterior lo corrompí corriendo Maven encima),
-los e2e sobre base limpia, `next build`, y las preguntas a Pardo.
+En curso. El `./mvnw verify` completo y a solas quedó en verde (452 + 693). La sesión se cortó por el
+límite de uso antes de: los e2e sobre base limpia, el `next build` final, el push a `master`, las
+preguntas a Pardo y el correo. **Todo está en commits locales, nada en producción.** Al retomar:
+e2e → build → push → preguntar → correo.

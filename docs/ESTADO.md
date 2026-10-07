@@ -30,6 +30,16 @@ dentro de `/cuenta`).
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots), con Rigel de protagonista.
 
 ## Verificación
+Al 07/10/2026, con las dependencias al día y los arreglos de la revisión:
+- **Backend: `./mvnw verify` a solas, 452 unitarias y 693 de integración, en verde.** Nuevas: la aserción que prueba que la
+  clase se mueve, la media hora, la antelación de reprogramar, el saldo que vuelve en el retracto, el
+  reclamo de la clase gratis, la purga con certificado y liquidación, y el último admin.
+- **Frontend:** `tsc`, `eslint` (0 errores) y `next build` en verde; 196 pruebas de Vitest.
+- **E2E:** pendientes de correr sobre la base limpia (se cortó la sesión por el límite de uso), igual que `next build` final y el push. Nada de esto está en producción todavía.
+- Una corrida anterior del `verify` dio 89 errores que parecían de Boot 4.1.1 y eran míos: corrí
+  Maven encima y `target/classes` se reescribió a mitad (la regla de «nunca dos Maven» de
+  `forma-de-trabajar-el-repo`). Se repitió a solas.
+
 Al 03/10/2026, con la reseña de prueba fuera del promedio y las clases que caben:
 - **Backend: `./mvnw verify`, 452 unitarias y 687 de integración, en verde.**
 - **E2E sobre la base recreada: 104 en verde y 1 por tiempos.** `[p-perfil.3 e-prueba.5]` no alcanzó a
@@ -936,6 +946,42 @@ Pendiente para Pardo:
 - Que el abogado lea la versión 2.0 del acuerdo del profesor. Su texto dice «liquidamos las clases
   que dictaste», y desde la decisión 4 también entran las cancelaciones tardías.
 - El manual técnico necesita esta sección.
+
+## Mantenimiento y revisión de todo el código (06 al 07/10/2026)
+
+Pedido de Pardo (`docs/pedidos/2026-10-06-2247-…`): «un orden de magnitud por debajo» del
+`/code-review ultra`: tres revisores de solo lectura (dinero y clases; identidad y seguridad;
+frontend) y todo hallazgo verificado en el código antes de tocarlo.
+
+**Dependencias.** `npm audit` pasó de 5 avisos (1 crítico, la línea 16.2 de Next vía `postcss` y
+`sharp`) a **0**: Next 16.3.8, Playwright 1.63 (Chromium 1243), React Query 5.104, Tailwind 4.3.3,
+lucide 1.52 (los 109 íconos en uso siguen existiendo), tipos de React 19.3. Backend: Spring Boot
+4.1.1 y springdoc 3.1.1 (parches). No se tocaron los saltos mayores (TypeScript 7, ESLint 10, Vitest
+5, React 19.3, Boot 4.2-M2): cada uno pide su propia tarea.
+
+**Lo que destapó la revisión y se arregló:**
+- **Reprogramar nunca movió una clase.** `starts_at`/`ends_at` llevaban `updatable = false` desde el
+  primer commit: la respuesta y el correo decían la hora nueva y la fila guardaba la vieja. La prueba
+  pasaba porque contaba cupos con la fila quieta. Arreglado, con la aserción que lo prueba, y con dos
+  reglas que estaban tapadas: mover usa la antelación de reprogramar (2 h, no las 6 de reservar) y la
+  clase no se cuenta a sí misma como ocupada (correrla media hora ya se puede). Un movimiento publica
+  `BookingRescheduledEvent`: solo el correo «cambió de hora» con su .ics, nada de puntos ni saludos.
+  **Operativo:** `select count(*) from reschedule_requests where status = 'ACCEPTED'` en producción
+  dice cuántas clases se quedaron en su hora original mientras a los dos se les dijo otra.
+- **El retracto** devuelve al saldo lo que se pagó con saldo y abre la devolución de Wompi solo por lo
+  cobrado; una clase pagada solo con saldo (o la gratis) no abre una devolución imposible de cerrar.
+- **El reclamo de una clase gratis** resuelto a favor del estudiante daba 500 (abonaba $0) y quedaba
+  abierto para siempre; cierra sin saldo y con la ausencia.
+- **La purga** fallaba entera para profes con certificado anual o admins que liquidaron, ocultaron
+  reseñas o propusieron reprogramaciones: cuatro FKs sin tratar. **Un admin** ya no puede
+  desactivarse a sí mismo ni al último activo.
+- **Frontend:** la llave Bre-B guardada en la postulación refresca la postulación (si no, «Enviar»
+  seguía apagado); «Reportar un problema» espera los 15 minutos que exige el servidor; el «¿Salir de
+  la clase?» del aula es un diálogo de verdad.
+
+**Queda para decidir Pardo** (en el pedido, con opciones): archivos en Cloudinary que la purga no
+borra; corregir un correo mal escrito; la invitación por WhatsApp si se registra con Google; puntos
+y cierre tras un reclamo; `@Version`; la ausencia que deja un ensayo.
 
 ## La barra de la clase, la reseña de prueba y las clases que caben (01 al 03/10/2026)
 
