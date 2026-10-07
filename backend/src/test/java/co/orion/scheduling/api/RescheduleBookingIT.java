@@ -143,11 +143,60 @@ class RescheduleBookingIT extends ApiIntegrationSupport {
         assertThat(response.getBody().endsAt().toInstant())
                 .isEqualTo(at(WEDNESDAY, 10).plusMinutes(55).toInstant());
 
-        // El cupo viejo (9) vuelve a estar libre; el nuevo (10) queda tomado → siguen 2 libres (8 y 9).
+        // La fila de la base tiene que moverse, no solo la respuesta: con `starts_at` y `ends_at`
+        // marcados `updatable = false`, Hibernate no escribía el UPDATE y la clase se quedaba a las 9
+        // mientras los dos recibían un correo con las 10 (revisión del 06/10/2026). Con los cupos cada
+        // media hora, el 9 libre deja 8:00, 8:30 y 9:00 → 3; si la fila no se movía, eran 2.
+        assertThat(bookings.findById(id).orElseThrow().getStartsAt()).isEqualTo(at(WEDNESDAY, 10).toInstant());
         ResponseEntity<SlotsResponse> slots = get(
                 "/api/v1/professors/" + maria.getId() + "/slots?from=2026-07-15&to=2026-07-15",
                 anaSession, SlotsResponse.class);
-        assertThat(slots.getBody().slots()).hasSize(2);
+        assertThat(slots.getBody().slots()).hasSize(3);
+    }
+
+    /**
+     * Correr la clase media hora (9:00 → 9:30) era imposible: su propio horario tapaba el cupo de las
+     * 9:30. Es el movimiento más común, y nadie lo vio porque la hora nunca llegaba a la base (06/10/2026).
+     */
+    @Test
+    void aHalfHourShiftOfTheSameClassIsAccepted() {
+        UUID id = book(anaSession, WEDNESDAY, 9);
+        OffsetDateTime nueve30 = at(WEDNESDAY, 9).plusMinutes(30);
+
+        @SuppressWarnings("rawtypes")
+        ResponseEntity<Map> proposal = post(BOOKINGS + "/" + id + "/reschedule-requests",
+                anaSession, new ProposeRescheduleRequest(nueve30, null), Map.class);
+        assertThat(proposal.getStatusCode()).as("propuesta: %s", proposal.getBody()).isEqualTo(HttpStatus.CREATED);
+        ResponseEntity<BookingResponse> accepted = post("/api/v1/reschedule-requests/" + proposal.getBody().get("id") + "/accept",
+                mariaSession, null, BookingResponse.class);
+
+        assertThat(accepted.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(bookings.findById(id).orElseThrow().getStartsAt()).isEqualTo(nueve30.toInstant());
+    }
+
+    /**
+     * Mover vale con la antelación de reprogramar (2 h), no con la de reservar (6 h): aceptar una
+     * propuesta a 3 horas respondía «ya no está libre», justo la salida de quien no llega a la otra.
+     */
+    @Test
+    void aMoveThreeHoursAheadIsAcceptedWithTheRescheduleLead() {
+        // FROZEN_NOW es 12:00 en Bogotá del lunes 13/07: María abre los martes de 8 a 11, así que la
+        // clase se agenda el martes y se mueve a tres horas de "ahora"... que cae fuera de su agenda.
+        // Se agenda una franja hoy para la prueba: lunes 15:00–17:00.
+        rules.save(new co.orion.scheduling.domain.AvailabilityRule(maria.getId(), java.time.DayOfWeek.MONDAY,
+                LocalTime.of(14, 0), LocalTime.of(17, 0)));
+        LocalDate hoy = LocalDate.of(2026, 7, 13);
+        UUID id = book(anaSession, WEDNESDAY, 9);
+        OffsetDateTime enTresHoras = at(hoy, 15);
+
+        ResponseEntity<RescheduleRequestResponse> proposal = post(BOOKINGS + "/" + id + "/reschedule-requests",
+                anaSession, new ProposeRescheduleRequest(enTresHoras, null), RescheduleRequestResponse.class);
+        assertThat(proposal.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        ResponseEntity<BookingResponse> accepted = post("/api/v1/reschedule-requests/" + proposal.getBody().id() + "/accept",
+                mariaSession, null, BookingResponse.class);
+
+        assertThat(accepted.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(bookings.findById(id).orElseThrow().getStartsAt()).isEqualTo(enTresHoras.toInstant());
     }
 
     @Test

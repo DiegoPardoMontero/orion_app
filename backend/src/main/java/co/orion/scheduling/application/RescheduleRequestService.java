@@ -96,7 +96,7 @@ public class RescheduleRequestService {
 
         // El cupo tiene que existir de verdad en la agenda del profesor. Proponer una hora en la
         // que no atiende es hacerle perder el tiempo a la contraparte.
-        requireProfessorOffersSlot(booking.getProfessorId(), proposedStartsAt);
+        requireProfessorOffersSlot(booking, proposedStartsAt);
 
         RescheduleRequest request = new RescheduleRequest(bookingId, actor.getId(),
                 proposedStartsAt, proposedStartsAt.plus(SlotCalculator.CLASS_LENGTH), reason);
@@ -172,9 +172,13 @@ public class RescheduleRequestService {
         return overdue.size();
     }
 
-    private void requireProfessorOffersSlot(UUID professorId, Instant startsAt) {
+    /**
+     * El horario de la clase que se quiere mover no cuenta como ocupado: si no, correrla media hora
+     * (9:00 → 9:30) no se podía ni proponer, porque la clase de las 9 tapaba el cupo de las 9:30.
+     */
+    private void requireProfessorOffersSlot(Booking booking, Instant startsAt) {
         LocalDate date = startsAt.atZone(BusinessZone.BOGOTA).toLocalDate();
-        boolean offered = slots.openSlots(professorId, date, date).stream()
+        boolean offered = slots.openSlotsExcluding(booking.getProfessorId(), booking.getId(), date, date).stream()
                 .map(Slot::startsAt)
                 .anyMatch(slot -> slot.toInstant().equals(startsAt));
         if (!offered) {

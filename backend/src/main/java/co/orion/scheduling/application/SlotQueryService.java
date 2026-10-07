@@ -77,7 +77,16 @@ public class SlotQueryService {
      * la otra: aplicarle la antelación de reservar le cerraría las dos puertas a la vez.
      */
     public List<Slot> openSlots(UUID professorId, LocalDate from, LocalDate to) {
-        return slotsDesde(professorId, from, to, Duration.ZERO);
+        return slotsDesde(professorId, from, to, Duration.ZERO, null);
+    }
+
+    /**
+     * Los cupos libres para mover una clase concreta: su propio horario no cuenta como ocupado. Sin
+     * esto, correr una clase media hora (de 9:00 a 9:30) era imposible, porque la clase de las 9
+     * todavía tapaba el cupo de las 9:30 (revisión del 06/10/2026).
+     */
+    public List<Slot> openSlotsExcluding(UUID professorId, UUID bookingId, LocalDate from, LocalDate to) {
+        return slotsDesde(professorId, from, to, Duration.ZERO, bookingId);
     }
 
     /** La antelación mínima vigente, leída en cada consulta: es un ajuste, no una constante. */
@@ -86,6 +95,10 @@ public class SlotQueryService {
     }
 
     private List<Slot> slotsDesde(UUID professorId, LocalDate from, LocalDate to, Duration lead) {
+        return slotsDesde(professorId, from, to, lead, null);
+    }
+
+    private List<Slot> slotsDesde(UUID professorId, LocalDate from, LocalDate to, Duration lead, UUID excluding) {
         // Un profesor no visible en el marketplace no expone cupos aunque tenga reglas: lanza 404.
         profiles.ensurePublished(professorId);
         // Y un profesor no aprobado tampoco expone cupos (403): mismo gate que reservar.
@@ -98,7 +111,7 @@ public class SlotQueryService {
         return calculator.calculate(
                 rules.findByProfessorIdAndActiveTrue(professorId),
                 exceptions.findByProfessorIdAndExceptionDateBetween(professorId, start, end),
-                occupiedByBookings(professorId, start, end),
+                occupiedByBookings(professorId, start, end, excluding),
                 start,
                 end,
                 now(),
@@ -114,7 +127,8 @@ public class SlotQueryService {
      */
     private List<OccupiedInterval> occupiedByBookings(UUID professorId,
                                                       LocalDate from,
-                                                      LocalDate to) {
+                                                      LocalDate to,
+                                                      UUID excluding) {
         Instant rangeStart = from.atStartOfDay(BusinessZone.BOGOTA).toInstant();
         Instant rangeEnd = to.plusDays(1).atStartOfDay(BusinessZone.BOGOTA).toInstant();
 
@@ -122,6 +136,7 @@ public class SlotQueryService {
                 .findByProfessorIdAndStatusInAndStartsAtBetween(
                         professorId, OCCUPYING_STATUSES, rangeStart, rangeEnd)
                 .stream()
+                .filter(booking -> !booking.getId().equals(excluding))
                 .map(booking -> new OccupiedInterval(
                         booking.getStartsAt().atZone(BusinessZone.BOGOTA),
                         booking.getEndsAt().atZone(BusinessZone.BOGOTA)))

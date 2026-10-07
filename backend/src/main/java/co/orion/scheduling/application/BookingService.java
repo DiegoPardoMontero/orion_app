@@ -21,6 +21,7 @@ import co.orion.identity.persistence.UserRepository;
 import co.orion.scheduling.domain.Booking;
 import co.orion.scheduling.domain.BookingCancelledEvent;
 import co.orion.scheduling.domain.BookingCreatedEvent;
+import co.orion.scheduling.domain.BookingRescheduledEvent;
 import co.orion.scheduling.domain.BookingExpiredEvent;
 import co.orion.scheduling.domain.BookingModality;
 import co.orion.scheduling.domain.BookingStatus;
@@ -44,6 +45,8 @@ public class BookingService {
 
     /** El índice de la V62: una clase de prueba por pareja estudiante–profesor. */
     private static final String UNA_PRUEBA_POR_PAREJA = "ux_bookings_una_prueba_por_pareja";
+
+    private static final String RESCHEDULE_MIN_HOURS = "reschedule_min_hours";
 
     private final BookingRepository bookings;
     private final UserRepository users;
@@ -356,17 +359,31 @@ public class BookingService {
         }
 
         Instant newEndsAt = newStartsAt.plus(CLASS_LENGTH);
-        requireSlotIsAvailable(booking.getProfessorId(), newStartsAt);
-
-        // El cupo nuevo no solapa el viejo (cupos alineados a la hora), así que la reserva actual
-        // no cuenta; sí cuenta cualquier OTRA clase del estudiante a esa hora.
-        if (bookings.studentHasOverlappingBooking(booking.getStudentId(), newStartsAt, newEndsAt)) {
+        // Mover no es reservar: vale la antelación de reprogramar (reschedule_min_hours, 2 h), no la
+        // de reservar (6 h), que es justo la puerta que se le cierra a quien ya no llega a la otra. Y
+        // el horario actual de ESTA clase no ocupa cupo: correrla media hora se pisaba consigo misma.
+        // Antes se validaba con la regla de reservar y la clase se contaba a sí misma; nadie lo vio
+        // porque la hora nunca llegaba a la base (revisión del 06/10/2026).
+        Duration antelacion = Duration.ofHours(settings.getInt(RESCHEDULE_MIN_HOURS));
+        if (newStartsAt.isBefore(clock.instant().plus(antelacion))) {
+            throw new UnprocessableException(
+                    "Para mover una clase hacen falta al menos " + antelacion.toHours() + " horas de antelación");
+        }
+        LocalDate date = newStartsAt.atZone(BusinessZone.BOGOTA).toLocalDate();
+        boolean offered = slots.openSlotsExcluding(booking.getProfessorId(), booking.getId(), date, date).stream()
+                .map(Slot::startsAt)
+                .anyMatch(slotStart -> slotStart.toInstant().equals(newStartsAt));
+        if (!offered) {
+            throw new UnprocessableException("El cupo no está disponible");
+        }
+        if (bookings.studentHasOverlappingBookingExcept(booking.getStudentId(), booking.getId(), newStartsAt, newEndsAt)) {
             throw new UnprocessableException("El estudiante ya tiene una clase reservada a esa hora");
         }
 
+        Instant previousStartsAt = booking.getStartsAt();
         booking.reschedule(newStartsAt, newEndsAt);
         Booking saved = saveOrLoseTheRace(booking);
-        events.publishEvent(new BookingCreatedEvent(saved.getId()));
+        events.publishEvent(new BookingRescheduledEvent(saved.getId(), previousStartsAt));
         return saved;
     }
 

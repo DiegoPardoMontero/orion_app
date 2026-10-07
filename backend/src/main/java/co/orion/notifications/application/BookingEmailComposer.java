@@ -69,6 +69,55 @@ public class BookingEmailComposer {
     }
 
     /** Correo de confirmación para uno de los dos participantes. */
+    /**
+     * La clase cambió de hora porque la contraparte aceptó la propuesta. Dice la hora vieja y la nueva,
+     * y trae el .ics con la nueva: el calendario de quien lo guardó queda al día de una vez.
+     */
+    public BookingEmail rescheduled(Booking booking, User recipient, User counterpart, boolean recipientIsStudent,
+                                    java.time.Instant previousStartsAt) {
+        String language = languageOf(booking);
+        String que = language == null ? "Clase" : "Clase de " + language.toLowerCase(ES_CO);
+        String title = que + " con " + counterpart.getFullName();
+        String meetingLink = absoluto(booking.getMeetingLink());
+        String location = booking.getLocationNote() != null
+                ? booking.getLocationNote()
+                : (meetingLink != null ? meetingLink : modalityOf(booking));
+        String details = que + " en Orión con " + counterpart.getFullName() + ".";
+        String eventDetails = meetingLink != null ? details + " Únete: " + meetingLink : details;
+
+        String ics = icsGenerator.generate(
+                booking.getId(), booking.getStartsAt(), booking.getEndsAt(), clock.instant(),
+                title, eventDetails, location);
+        String calendarLink = calendarLinks.build(
+                title, booking.getStartsAt(), booking.getEndsAt(), eventDetails, location);
+
+        String antes = humanWhen(previousStartsAt);
+        String ahora = humanWhen(booking);
+        String subject = "Tu clase con " + counterpart.getFullName() + " cambió de hora";
+        String html = """
+                <p>Hola, %s.</p>
+                <p>%s aceptó el cambio: la clase ya no es %s.</p>
+                <p><strong>Nueva hora:</strong> %s</p>
+                %s
+                <p><a href="%s">Añadir a Google Calendar</a> — o abre el archivo adjunto para
+                actualizar la que ya tenías guardada.</p>
+                <p>El equipo de Orión</p>
+                """.formatted(
+                h(firstName(recipient)),
+                h(recipientIsStudent ? "Tu profe" : counterpart.getFullName()),
+                h(antes), h(ahora),
+                meetingLink != null
+                        ? "<p><strong>Sala de la clase:</strong> <a href=\"" + h(meetingLink) + "\">Unirse a la videollamada</a></p>"
+                        : "",
+                h(calendarLink));
+        String text = "Hola, " + firstName(recipient) + ".\n\n"
+                + (recipientIsStudent ? "Tu profe" : counterpart.getFullName()) + " aceptó el cambio: la clase ya no es "
+                + antes + ".\nNueva hora: " + ahora + "\n"
+                + (meetingLink != null ? "Sala de la clase: " + meetingLink + "\n" : "")
+                + "\nAñadir a Google Calendar: " + calendarLink + "\n\nEl equipo de Orión";
+        return new BookingEmail(recipient.getEmail(), subject, html, text, ics);
+    }
+
     public BookingEmail confirmation(Booking booking, User recipient, User counterpart, boolean recipientIsStudent) {
         String when = humanWhen(booking);
         String modality = modalityOf(booking);
@@ -251,6 +300,11 @@ public class BookingEmailComposer {
     private String humanWhen(Booking booking) {
         return FechasEnPalabras.dia(booking.getStartsAt()) + ", "
                 + FechasEnPalabras.franja(booking.getStartsAt(), booking.getEndsAt()) + " (hora de Colombia)";
+    }
+
+    /** La hora que tenía la clase antes de moverse: solo el inicio, que es lo que la gente recuerda. */
+    private String humanWhen(java.time.Instant startsAt) {
+        return FechasEnPalabras.dia(startsAt) + " a las " + FechasEnPalabras.hora(startsAt) + " (hora de Colombia)";
     }
 
     private String duration(Booking booking) {

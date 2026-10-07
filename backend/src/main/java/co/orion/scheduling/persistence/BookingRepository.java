@@ -196,6 +196,21 @@ public interface BookingRepository extends JpaRepository<Booking, UUID>,
                                          @Param("startsAt") Instant startsAt,
                                          @Param("endsAt") Instant endsAt);
 
+    /** Igual, sin contar la clase que se está moviendo: correrla media hora se solapa consigo misma. */
+    @Query("""
+            select count(b) > 0 from Booking b
+            where b.studentId = :studentId
+              and b.id <> :excluding
+              and b.status in (co.orion.scheduling.domain.BookingStatus.CONFIRMED,
+                               co.orion.scheduling.domain.BookingStatus.PENDING_PAYMENT)
+              and b.startsAt < :endsAt
+              and :startsAt < b.endsAt
+            """)
+    boolean studentHasOverlappingBookingExcept(@Param("studentId") UUID studentId,
+                                               @Param("excluding") UUID excluding,
+                                               @Param("startsAt") Instant startsAt,
+                                               @Param("endsAt") Instant endsAt);
+
     /**
      * Cuántas clases del mismo par se reservaron antes de esta, en estos estados. Cero: es su primera
      * clase juntos (el saludo al reservar lo dice distinto).

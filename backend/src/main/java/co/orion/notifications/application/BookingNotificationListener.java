@@ -14,6 +14,7 @@ import co.orion.identity.persistence.UserRepository;
 import co.orion.scheduling.domain.Booking;
 import co.orion.scheduling.domain.BookingCancelledEvent;
 import co.orion.scheduling.domain.BookingCreatedEvent;
+import co.orion.scheduling.domain.BookingRescheduledEvent;
 import co.orion.scheduling.persistence.BookingRepository;
 
 /**
@@ -55,6 +56,16 @@ public class BookingNotificationListener {
         participants(event.bookingId()).ifPresent(trio -> {
             send(composer.confirmation(trio.booking(), trio.student(), trio.professor(), true));
             send(composer.confirmation(trio.booking(), trio.professor(), trio.student(), false));
+        });
+    }
+
+    /** La clase se movió: los dos reciben la hora nueva con su .ics. Solo eso, nada de confirmaciones nuevas. */
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onBookingRescheduled(BookingRescheduledEvent event) {
+        participants(event.bookingId()).ifPresent(trio -> {
+            send(composer.rescheduled(trio.booking(), trio.student(), trio.professor(), true, event.previousStartsAt()));
+            send(composer.rescheduled(trio.booking(), trio.professor(), trio.student(), false, event.previousStartsAt()));
         });
     }
 

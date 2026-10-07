@@ -43,10 +43,14 @@ public class Booking {
     @Column(name = "professor_id", nullable = false, updatable = false)
     private UUID professorId;
 
-    @Column(name = "starts_at", nullable = false, updatable = false)
+    // Sin `updatable = false`: lo tenían desde la primera versión, cuando una clase no se movía, y
+    // Hibernate deja fuera del UPDATE las columnas marcadas así. Aceptar una reprogramación cambiaba
+    // la entidad en memoria y la respuesta, pero la fila seguía en la hora vieja, y los dos recibían
+    // un correo con una hora que no era (revisión del 06/10/2026). Nunca había funcionado.
+    @Column(name = "starts_at", nullable = false)
     private Instant startsAt;
 
-    @Column(name = "ends_at", nullable = false, updatable = false)
+    @Column(name = "ends_at", nullable = false)
     private Instant endsAt;
 
     @Enumerated(EnumType.STRING)
