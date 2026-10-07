@@ -170,13 +170,35 @@ class RetractoIT extends ApiIntegrationSupport {
      * mientras la pantalla dice que lo cumplimos.
      */
     @Test
-    @DisplayName("El retracto NO abona saldo: el dinero vuelve al medio de pago")
+    @DisplayName("El retracto NO abona saldo nuevo: el dinero del medio de pago vuelve por Wompi")
     void elRetractoNoAbonaSaldo() {
         UUID id = bookAndPay(9);
 
         post(retraccion(id), anaSession, null, Map.class);
 
         assertThat(credits.findAll()).isEmpty();
+    }
+
+    /**
+     * Pero el saldo que ya tenía y gastó en la clase sí vuelve a su saldo, y la devolución se abre
+     * solo por lo que puso de su bolsillo. Antes se abría por el total y el saldo se perdía (06/10/2026).
+     */
+    @SuppressWarnings("rawtypes")
+    @Test
+    @DisplayName("El saldo gastado en la clase vuelve al saldo; Wompi devuelve solo lo cobrado")
+    void elSaldoAplicadoVuelveYLaDevolucionEsPorLoCobrado() {
+        // El admin ya lo crea seed(): solo hace falta entrar con él.
+        post("/api/v1/admin/credits", login("admin@orion.test"),
+                Map.of("studentId", ana.getId(), "amountCop", 20_000, "reason", "ADMIN_ADJUSTMENT"), Map.class);
+        UUID id = bookAndPay(9);
+        long gastado = credits.findAll().stream().mapToLong(c -> c.getAmountCop() - c.getRemainingCop()).sum();
+        assertThat(gastado).isEqualTo(20_000);
+
+        post(retraccion(id), anaSession, null, Map.class);
+
+        assertThat(credits.findAll().stream().mapToLong(c -> c.getRemainingCop()).sum()).isEqualTo(20_000);
+        var devolucion = refunds.findAll().stream().filter(r -> r.getBookingId().equals(id)).findFirst().orElseThrow();
+        assertThat(devolucion.getAmountCop()).isEqualTo(RATE_COP - 20_000);
     }
 
     /** El pago congelado no puede acabar en una liquidación por un camino descuidado. */

@@ -177,8 +177,13 @@ public class PaymentLifecycleService {
                 .ifPresent(payment -> {
                     payment.refund(clock.instant());
                     payments.save(payment);
-                    credits.grant(payment.getStudentId(), payment.getAmountCop(),
-                            reason, bookingId, null, actorId);
+                    // La prueba gratis no deja nada que abonar: un saldo de $0 no existe (StudentCredit
+                    // lo rechaza) y, al fallar, el reclamo se quedaba abierto para siempre con un 500
+                    // (revisión del 06/10/2026). La ausencia del profe sí se registra, por el llamador.
+                    if (payment.getAmountCop() > 0) {
+                        credits.grant(payment.getStudentId(), payment.getAmountCop(),
+                                reason, bookingId, null, actorId);
+                    }
                     // Si esa clase ya se le había liquidado al profe, se descuenta en la siguiente.
                     payouts.onRefunded(bookingId);
                 });

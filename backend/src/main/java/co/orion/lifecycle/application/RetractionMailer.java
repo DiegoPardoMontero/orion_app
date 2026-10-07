@@ -36,15 +36,31 @@ public class RetractionMailer {
         this.users = users;
     }
 
-    public void confirmarRetracto(UUID studentId, long montoCop, Instant vence) {
+    /**
+     * Dice cada parte por su camino: lo pagado con el medio de pago lo devuelve Wompi (con su plazo
+     * legal); lo que era saldo a favor ya volvió al saldo. Si no se pagó nada con el medio de pago,
+     * no hay plazo que contar.
+     */
+    public void confirmarRetracto(UUID studentId, long cobradoCop, long saldoCop, Instant vence) {
         users.findById(studentId).ifPresent(user -> {
-            String fecha = FechasEnPalabras.fecha(LocalDate.ofInstant(vence, BusinessZone.BOGOTA));
-            String texto = "Hola, " + FechasEnPalabras.primerNombre(user.getFullName()) + ":\n\n"
-                    + "Registramos tu retracto. Cancelamos la clase y te vamos a devolver "
-                    + formato(montoCop) + " al mismo medio de pago que usaste.\n\n"
-                    + "El plazo legal para hacerlo vence el " + fecha + ". Normalmente es antes.\n\n"
-                    + "No tienes que hacer nada más.\n\nOrión";
-            enviar(user, "Tu retracto quedó registrado", texto);
+            StringBuilder texto = new StringBuilder("Hola, " + FechasEnPalabras.primerNombre(user.getFullName()) + ":\n\n"
+                    + "Registramos tu retracto y cancelamos la clase.\n\n");
+            if (cobradoCop > 0) {
+                texto.append("Te vamos a devolver ").append(formato(cobradoCop))
+                        .append(" al mismo medio de pago que usaste.");
+                if (vence != null) {
+                    texto.append(" El plazo legal para hacerlo vence el ")
+                            .append(FechasEnPalabras.fecha(LocalDate.ofInstant(vence, BusinessZone.BOGOTA)))
+                            .append(". Normalmente es antes.");
+                }
+                texto.append("\n\n");
+            }
+            if (saldoCop > 0) {
+                texto.append("Los ").append(formato(saldoCop))
+                        .append(" que pagaste con tu saldo a favor ya volvieron a tu saldo.\n\n");
+            }
+            texto.append("No tienes que hacer nada más.\n\nOrión");
+            enviar(user, "Tu retracto quedó registrado", texto.toString());
         });
     }
 

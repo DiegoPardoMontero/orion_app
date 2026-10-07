@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import co.orion.billing.application.CreditService;
 import co.orion.billing.domain.Payment;
 import co.orion.billing.domain.RefundRequest;
 import co.orion.billing.persistence.PaymentRepository;
@@ -48,6 +49,7 @@ public class RetractionService {
     private final BookingService bookingService;
     private final PaymentRepository payments;
     private final RefundRequestRepository refunds;
+    private final CreditService credits;
     private final RetractionMailer mailer;
     private final Clock clock;
 
@@ -55,12 +57,14 @@ public class RetractionService {
                              BookingService bookingService,
                              PaymentRepository payments,
                              RefundRequestRepository refunds,
+                             CreditService credits,
                              RetractionMailer mailer,
                              Clock clock) {
         this.bookings = bookings;
         this.bookingService = bookingService;
         this.payments = payments;
         this.refunds = refunds;
+        this.credits = credits;
         this.mailer = mailer;
         this.clock = clock;
     }
@@ -109,14 +113,27 @@ public class RetractionService {
         payment.startRefund();
         payments.save(payment);
 
-        RefundRequest solicitud = refunds.save(new RefundRequest(
-                bookingId, payment.getId(), studentId, RefundRequest.Reason.RETRACTO,
-                payment.getAmountCop(),
-                PlazoLegal.sumandoDiasCalendario(now, DIAS_CALENDARIO_PARA_DEVOLVER)));
+        // Lo que puso de saldo vuelve a su saldo en el acto; lo que puso de su bolsillo (chargedCop)
+        // es lo que Wompi devuelve al medio de pago. Antes la devolución se abría por el valor
+        // completo y el saldo gastado se quedaba gastado: el estudiante perdía esa parte (revisión del
+        // 06/10/2026). Una clase pagada solo con saldo, o la gratis, no abre devolución: no hay
+        // transacción que devolver y la solicitud vencía sola cada día.
+        credits.restore(payment.getId());
+        RefundRequest solicitud = null;
+        if (payment.getChargedCop() > 0) {
+            solicitud = refunds.save(new RefundRequest(
+                    bookingId, payment.getId(), studentId, RefundRequest.Reason.RETRACTO,
+                    payment.getChargedCop(),
+                    PlazoLegal.sumandoDiasCalendario(now, DIAS_CALENDARIO_PARA_DEVOLVER)));
+        } else {
+            payment.refund(now);
+            payments.save(payment);
+        }
 
         bookingService.cancelForRetraction(bookingId, studentId, now);
 
-        mailer.confirmarRetracto(studentId, payment.getAmountCop(), solicitud.getDueAt());
+        mailer.confirmarRetracto(studentId, payment.getChargedCop(), payment.getCreditAppliedCop(),
+                solicitud != null ? solicitud.getDueAt() : null);
         log.info("Retracto ejercido sobre la reserva {}: {} COP a devolver antes de {}",
                 bookingId, payment.getAmountCop(), solicitud.getDueAt());
         return solicitud;

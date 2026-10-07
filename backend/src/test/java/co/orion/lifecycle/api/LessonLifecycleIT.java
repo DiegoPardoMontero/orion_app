@@ -447,6 +447,31 @@ class LessonLifecycleIT extends ApiIntegrationSupport {
         assertThat(payoutCandidates.ofProfessor(maria.getId())).isEmpty();
     }
 
+    /**
+     * La clase de prueba gratis: resolver el reclamo a favor del estudiante quería abonarle $0 y
+     * StudentCredit lo rechazaba, así que el admin recibía un 500 y el reclamo se quedaba abierto para
+     * siempre (revisión del 06/10/2026). Ahora se cierra: sin saldo, pero con la ausencia registrada.
+     */
+    @Test
+    void unReclamoDeUnaClaseGratisSeResuelveSinAbonarNada() {
+        OffsetDateTime at = ZonedDateTime.of(WEDNESDAY, LocalTime.of(9, 0), BusinessZone.BOGOTA).toOffsetDateTime();
+        ResponseEntity<BookingResponse> creada = post(BOOKINGS, anaSession,
+                new CreateBookingRequest(maria.getId(), at, "VIRTUAL", null, null, null), BookingResponse.class);
+        UUID id = creada.getBody().id();
+        jdbc.update("update bookings set is_trial = true, status = 'CONFIRMED' where id = ?", id);
+        jdbc.update("update payments set status = 'PAID', amount_cop = 0, charged_cop = 0, credit_applied_cop = 0, "
+                + "commission_cop = 0, professor_earnings_cop = 0 where booking_id = ?", id);
+        moveClassTo(id, FROZEN_NOW.minusSeconds(16 * 60), FROZEN_NOW.plusSeconds(39 * 60));
+        UUID disputeId = openDispute(id);
+
+        resolver(disputeId, "RESOLVED_FOR_STUDENT");
+
+        assertThat(bookings.findById(id).orElseThrow().getStatus()).isEqualTo(BookingStatus.NO_SHOW_PROFESSOR);
+        assertThat(payments.findByBookingId(id).orElseThrow().getStatus()).isEqualTo(PaymentStatus.REFUNDED);
+        assertThat(credits.findUsable(ana.getId(), FROZEN_NOW)).isEmpty();
+        assertThat(absences.count()).isEqualTo(1);
+    }
+
     /** Resuelto el reclamo, la clase vuelve a un estado reclamable; no por eso se reclama otra vez. */
     @Test
     void unaClaseNoSeReclamaDosVeces() {
