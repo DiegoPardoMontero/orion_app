@@ -41,7 +41,62 @@
 - **Comprobado:** `tsc`, `eslint` (0 errores, 2 avisos previos), 196 pruebas de Vitest y `next build`
   en verde. El `./mvnw verify` completo y los e2e van al cierre, con lo que salga de la revisión.
 
+## La revisión (06/10 noche al 07/10)
+
+Tres revisores de solo lectura, en paralelo: dinero y clases; identidad y seguridad; frontend. Cada
+hallazgo se verificó en el código antes de tocarlo. Ningún crítico de seguridad; **uno crítico de
+producto**, el primero de la lista.
+
+### Arreglado, con prueba
+
+1. **Aceptar una reprogramación nunca movía la clase en la base** (`4b95680`). `starts_at` y
+   `ends_at` estaban marcados `updatable = false` desde el primer commit; Hibernate no escribía el
+   UPDATE. La respuesta y el correo decían la hora nueva; la fila guardaba la vieja, el cupo viejo
+   seguía ocupado y el nuevo, reservable. La prueba pasaba justamente porque la fila no se movía: con
+   la aserción volteada falló (`expected 15:00Z but was 14:00Z`) y con el arreglo pasa.
+   - Destapó dos reglas más: mover usaba la antelación de reservar (6 h) y no la de reprogramar
+     (2 h), y la clase se contaba a sí misma como cupo ocupado, así que correrla media hora era
+     imposible. Las dos arregladas, en proponer y en aceptar.
+   - Un movimiento publica su propio evento: solo sale el correo «cambió de hora» con su .ics, y no
+     los puntos, el saludo de Rigel ni las confirmaciones de reserva nueva.
+   - **Para Pardo (operativo):** en producción, `select count(*) from reschedule_requests where
+     status = 'ACCEPTED'`. Cada fila es una clase que se quedó en su hora original mientras a los dos
+     se les dijo otra. Si hay alguna, decidir si se les avisa.
+2. **El retracto perdía el saldo aplicado** (`0c8cf89`): abría la devolución por el total y el saldo
+   gastado se quedaba gastado. Ahora el saldo vuelve al saldo, Wompi devuelve solo lo cobrado, y una
+   clase pagada solo con saldo (o la gratis) no abre una devolución que nunca se podía cerrar.
+3. **Resolver a favor del estudiante el reclamo de una clase gratis daba 500** (`0c8cf89`): abonaba
+   $0 y `StudentCredit` lo rechaza; el reclamo quedaba abierto para siempre. Ahora cierra sin saldo y
+   con la ausencia registrada.
+4. **La purga fallaba entera (409)** para cualquier profe con certificado anual, o admin que aprobó
+   o pagó una liquidación, ocultó una reseña o propuso una reprogramación (`c213f65`): cuatro FKs
+   nunca tratadas. Es el único camino de una supresión de habeas data.
+5. **Un admin podía desactivarse a sí mismo o al último admin activo** y dejar el panel sin entrada
+   (`c213f65`); solo un UPDATE a mano lo arreglaba. Se niega, y el freno de la purga cuenta admins
+   activos, no filas.
+6. **Frontend** (`a441ea4`): guardar la llave Bre-B en la postulación no refrescaba la postulación y
+   «Enviar a revisión» seguía apagado hasta recargar (era mío, del 29/09); «Reportar un problema»
+   salía desde el minuto 0 y el servidor lo negaba 15 minutos; el «¿Salir de la clase?» del aula era
+   un velo sin rol de diálogo ni foco.
+
+### Para decidir Pardo (se le pregunta con opciones)
+
+- Borrar una cuenta no borra sus archivos en Cloudinary (CV, foto, certificados).
+- Un profe creado desde Usuarios con el correo mal escrito no puede confirmarlo nunca y, desde el
+  29/09, tampoco publicar; no hay forma de corregir un correo.
+- La invitación por WhatsApp se pierde si el invitado se registra con Google.
+- Resolver un reclamo a favor del estudiante deja los puntos y logros que la clase ya dio; resolverlo
+  a favor del profe sobre una clase aún CONFIRMED no publica el cierre (ni puntos ni «califica»).
+- Sin `@Version` en reserva y pago hay carreras de milisegundos que las constraints no cierran.
+- Un ensayo del admin puede dejarle una ausencia real al profe.
+
+### Anotado, menor
+
+- `robots.txt` sigue cerrando `/profesores`, que es público desde el 23/09.
+- Varios pasos de la postulación y «Experiencia» del perfil siguen a dos columnas en escritorio
+  (regla del 28/09: solo Mis horarios y Ayuda).
+
 ## Estado
 
-En curso: la revisión del código (tres revisores de solo lectura: dinero y clases; identidad y
-seguridad; frontend) y el `./mvnw verify` con las dependencias nuevas.
+En curso: el `./mvnw verify` completo y a solas (uno anterior lo corrompí corriendo Maven encima),
+los e2e sobre base limpia, `next build`, y las preguntas a Pardo.
