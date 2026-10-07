@@ -504,13 +504,17 @@ function TarjetaClase({
   const desdeAsistencia = esperaAsistencia
     ? momentosDeAsistencia(clase.startsAt!, clase.endsAt!, cifras.noShowReportMinutes)
     : null;
-  // El reclamo del estudiante vence un plazo después del final, marque lo que marque el profesor.
+  // El reclamo del estudiante se abre a los minutos del inicio que diga Ajustes (el profe puede estar
+  // llegando) y vence un plazo después del final, marque lo que marque el profesor.
+  const abreElReclamo =
+    !esProfesor && clase.startsAt ? Date.parse(clase.startsAt) + cifras.noShowReportMinutes * 60_000 : null;
   const venceElReclamo =
     !esProfesor && clase.endsAt
       ? new Date(clase.endsAt).getTime() + cifras.disputeReportWindowHours * 3_600_000
       : null;
   const ahora = useAhoraHasta([
     ...(desdeAsistencia ? [desdeAsistencia.asistio, desdeAsistencia.noAsistio] : []),
+    ...(abreElReclamo ? [abreElReclamo] : []),
     ...(venceElReclamo ? [venceElReclamo] : []),
   ]);
   const puedeRegistrar =
@@ -521,12 +525,15 @@ function TarjetaClase({
   // Reportar un problema: del estudiante, desde que la clase empezó y hasta que vence el plazo,
   // aunque el profesor ya haya marcado la asistencia: si marcó «no llegó» a los 15 minutos sin
   // haber entrado, quien llega al minuto 16 tiene que poder decirlo (Pardo, 29/09/2026). El backend
-  // arbitra la ventana real (desde 15 min después de empezar) y el reclamo único por clase.
+  // arbitra el reclamo único por clase. El botón sale solo cuando el servidor lo admite: antes
+  // aparecía desde el minuto 0 y respondía 422 durante un cuarto de hora (revisión del 06/10/2026).
   const puedeReportar =
     !esProfesor &&
     yaEmpezo &&
     (clase.status === "CONFIRMED" || clase.status === "COMPLETED" || clase.status === "NO_SHOW_STUDENT") &&
+    abreElReclamo !== null &&
     venceElReclamo !== null &&
+    ahora >= abreElReclamo &&
     ahora < venceElReclamo;
 
   // Un ensayo del admin no se califica: movería la reputación del profesor por una clase que no

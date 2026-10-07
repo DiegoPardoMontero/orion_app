@@ -8,6 +8,7 @@ import { apiFetch, ApiError } from "@/lib/api/fetch";
 import type { ClassroomResponse } from "@/lib/api/aula";
 import { Cargando, ErrorCarga } from "@/components/estados";
 import { Boton } from "@/components/ui";
+import { Modal } from "@/components/Modal";
 import { Wordmark } from "@/components/marca";
 import { Antesala } from "@/components/aula/Antesala";
 import { useClaseEnCurso } from "@/components/aula/ClaseEnCurso";
@@ -148,30 +149,27 @@ export default function AulaPage() {
         dejan la clase en la ventana flotante.
       */}
       {confirmandoSalida && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-night/60 px-6">
-          <div className="w-full max-w-sm rounded-card bg-surface p-6 text-center">
-            <p className="font-display text-[18px] font-bold text-text">¿Salir de la clase?</p>
-            <p className="mt-2 text-[13.5px] leading-relaxed text-text-secondary">
-              Te vas de la sala y {datos.counterpart?.firstName ?? "la otra persona"} deja de verte.
-              Puedes volver a entrar mientras la clase siga abierta. Si solo quieres mirar algo de Orión,
-              usa «Seguir en Orión»: la clase sigue en una ventana pequeña.
-            </p>
-            <div className="mt-5 grid grid-cols-2 gap-2.5">
-              <Boton variante="contorno" onClick={() => setConfirmandoSalida(false)}>
-                Seguir en clase
-              </Boton>
-              <Boton
-                variante="primario"
-                onClick={() => {
-                  salir();
-                  volverAClases();
-                }}
-              >
-                Salir
-              </Boton>
-            </div>
+        <Modal titulo="¿Salir de la clase?" onCerrar={() => setConfirmandoSalida(false)}>
+          <p className="text-[13.5px] leading-relaxed text-text-secondary">
+            Te vas de la sala y {datos.counterpart?.firstName ?? "la otra persona"} deja de verte. Puedes volver a
+            entrar mientras la clase siga abierta. Si solo quieres mirar algo de Orión, usa «Seguir en Orión»: la
+            clase sigue en una ventana pequeña.
+          </p>
+          <div className="mt-5 grid grid-cols-2 gap-2.5">
+            <Boton variante="contorno" onClick={() => setConfirmandoSalida(false)}>
+              Seguir en clase
+            </Boton>
+            <Boton
+              variante="primario"
+              onClick={() => {
+                salir();
+                volverAClases();
+              }}
+            >
+              Salir
+            </Boton>
           </div>
-        </div>
+        </Modal>
       )}
 
       {miLlamada.fase === "caida" && (

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
 import { Boton, BotonPrincipal, Campo, Segmento, Spinner } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
+import { MI_APLICACION_KEY } from "@/lib/aplicacion";
 import { useMe } from "@/lib/auth/session";
 import { fechaLarga } from "@/lib/format";
 
@@ -137,6 +138,10 @@ export function FormularioDatosDePago({
       }),
     onSuccess: (respuesta) => {
       queryClient.setQueryData(DATOS_DE_PAGO_KEY, respuesta);
+      // En la postulación, la llave es uno de los requisitos que el servidor reporta en `missing`:
+      // sin refrescarla, el paso «Pagos» se ponía en verde pero «Enviar a revisión» seguía apagado
+      // hasta recargar (revisión del 06/10/2026). En «Mi perfil» la consulta no está montada y no pasa nada.
+      void queryClient.invalidateQueries({ queryKey: MI_APLICACION_KEY });
       onListo();
     },
   });
