@@ -36,6 +36,9 @@ class AdminUsersIT extends ApiIntegrationSupport {
     @Autowired
     private TeacherApplicationRepository applications;
 
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbc;
+
     private User ana;
     private Session adminSession;
     private Session anaSession;
@@ -174,6 +177,47 @@ class AdminUsersIT extends ApiIntegrationSupport {
                 Map.of("email", "ana@orion.test", "password", PASSWORD),
                 Map.class);
         assertThat(intentoDeLogin.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    /**
+     * Desactivarse a sí mismo, o al último admin activo, dejaba Orión sin nadie que pudiera entrar al
+     * panel, y solo un UPDATE a mano en Postgres lo arreglaba (revisión del 06/10/2026).
+     */
+    @Test
+    @SuppressWarnings("rawtypes")
+    void theLastActiveAdminCannotBeDeactivated() {
+        UUID yo = users.findByEmailIgnoreCase("admin@orion.test").orElseThrow().getId();
+
+        ResponseEntity<Map> aMiMismo = patch(USERS + "/" + yo, adminSession,
+                new UpdateUserRequest(null, null, "INACTIVE"), Map.class);
+        assertThat(aMiMismo.getStatusCode().value()).isEqualTo(400);
+        assertThat(aMiMismo.getBody().get("error").toString()).contains("propia cuenta");
+
+        // Con un segundo admin activo sí se puede desactivar a ese segundo... y entonces yo soy el último.
+        UUID segundo = createUser("admin2@orion.test", "Segundo Admin", UserRole.ADMIN).getId();
+        assertThat(patch(USERS + "/" + segundo, adminSession,
+                new UpdateUserRequest(null, null, "INACTIVE"), Map.class).getStatusCode().value()).isEqualTo(200);
+        assertThat(rest.postForEntity("/api/v1/auth/login",
+                Map.of("email", "admin2@orion.test", "password", PASSWORD), Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
+        // El «único activo» lo prueba OTRO admin: a mí mismo me frena primero la regla de la propia
+        // cuenta. Se reactiva al segundo, él intenta apagarme cuando ya solo quedamos él y yo... y
+        // puede, porque él sigue activo; después se desactiva él y vuelve a intentar: ahí sí, no.
+        jdbc.update("update users set status = 'ACTIVE' where id = ?", segundo);
+        Session segundaSesion = login("admin2@orion.test");
+        jdbc.update("update users set status = 'INACTIVE' where id = ?", segundo);
+        ResponseEntity<Map> elUltimo = patch(USERS + "/" + yo, segundaSesion,
+                new UpdateUserRequest(null, null, "INACTIVE"), Map.class);
+        // La sesión del admin recién apagado puede morir antes (401) o llegar al freno (400): ambas
+        // dejan al último admin en pie, que es lo que importa.
+        assertThat(elUltimo.getStatusCode().value()).isIn(400, 401);
+        assertThat(users.findById(yo).orElseThrow().isActive()).isTrue();
+        // Y con los dos activos, el segundo no puede apagarme si soy el último que queda activo tras él.
+        jdbc.update("update users set status = 'ACTIVE' where id = ?", segundo);
+        Session otraVez = login("admin2@orion.test");
+        assertThat(patch(USERS + "/" + yo, otraVez,
+                new UpdateUserRequest(null, null, "INACTIVE"), Map.class).getStatusCode().value())
+                .as("con dos activos, apagar a uno sí se permite").isEqualTo(200);
     }
 
     @Test

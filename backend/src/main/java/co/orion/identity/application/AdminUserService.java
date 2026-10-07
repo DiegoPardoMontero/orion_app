@@ -122,9 +122,24 @@ public class AdminUserService {
 
     /** Sin cambio de rol ni de email en el MVP: son decisiones con demasiadas consecuencias. */
     @Transactional
-    public User update(UUID userId, String fullName, String whatsappPhone, String status) {
+    public User update(UUID actorId, UUID userId, String fullName, String whatsappPhone, String status) {
         User user = users.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        // Desactivar al admin que opera, o al último admin activo, dejaba Orión sin nadie que pudiera
+        // entrar al panel: la sesión moría en la siguiente petición, el login respondía «cuenta
+        // inactiva» y AdminBootstrap no hacía nada porque el admin seguía existiendo. Solo un UPDATE
+        // a mano en Postgres lo arreglaba (revisión del 06/10/2026). La purga ya se negaba; esto no.
+        if (status != null && parseStatus(status) == UserStatus.INACTIVE) {
+            if (userId.equals(actorId)) {
+                throw new BusinessRuleViolationException("No puedes desactivar tu propia cuenta.");
+            }
+            if (user.getRole() == UserRole.ADMIN && user.isActive()
+                    && users.countByRoleAndStatus(UserRole.ADMIN, UserStatus.ACTIVE) <= 1) {
+                throw new BusinessRuleViolationException(
+                        "Es el único administrador activo: desactivarlo dejaría Orión sin acceso al panel.");
+            }
+        }
 
         if (fullName != null && !fullName.isBlank()) {
             user.changeFullName(fullName.trim());

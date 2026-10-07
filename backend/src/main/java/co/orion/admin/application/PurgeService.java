@@ -19,6 +19,7 @@ import co.orion.admin.api.PurgePreview;
 import co.orion.identity.application.AdminAuditService;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
+import co.orion.identity.domain.UserStatus;
 import co.orion.identity.persistence.UserRepository;
 import co.orion.shared.error.BusinessRuleViolationException;
 import co.orion.shared.error.ResourceNotFoundException;
@@ -173,8 +174,9 @@ public class PurgeService {
                 count("select count(*) from payout_lines i join payments p on p.id = i.payment_id "
                       + "where p.student_id = ? or p.professor_id = ?", userId, userId)));
 
-        if (user.getRole() == UserRole.ADMIN && users.countByRole(UserRole.ADMIN) <= 1) {
-            warnings.add("Es el ÚNICO administrador: borrarlo te deja sin acceso al panel.");
+        if (user.getRole() == UserRole.ADMIN
+                && users.countByRoleAndStatus(UserRole.ADMIN, UserStatus.ACTIVE) <= 1) {
+            warnings.add("Es el ÚNICO administrador activo: borrarlo te deja sin acceso al panel.");
         }
         return new PurgePreview("user", user.getFullName() + " · " + user.getEmail(),
                 rows, money, warnings);
@@ -187,9 +189,10 @@ public class PurgeService {
         }
         User target = users.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
-        if (target.getRole() == UserRole.ADMIN && users.countByRole(UserRole.ADMIN) <= 1) {
+        if (target.getRole() == UserRole.ADMIN
+                && users.countByRoleAndStatus(UserRole.ADMIN, UserStatus.ACTIVE) <= 1) {
             throw new BusinessRuleViolationException(
-                    "Es el único administrador: borrarlo dejaría Orión sin acceso al panel");
+                    "Es el único administrador activo: borrarlo dejaría Orión sin acceso al panel");
         }
 
         PurgePreview preview = previewUser(userId);
@@ -257,6 +260,19 @@ public class PurgeService {
         // Las firmas ajenas: lo que este usuario decidió SOBRE otras cuentas. La decisión se
         // conserva —es historia de esa otra persona— y solo pierde el nombre de quien la tomó.
         jdbc.update("update disputes set resolved_by = null where resolved_by = ?", userId);
+        // Liquidaciones (V74) y certificados (V76): quien aprobó o pagó una liquidación ajena deja de
+        // firmarla; el certificado anual del profe que se borra se va con él, y el que ESTE admin subió
+        // para otros profes pierde solo la firma (`uploaded_by` es NOT NULL, así que se reasigna al
+        // propio profe: el PDF sigue siendo suyo). La reseña que este admin ocultó sigue oculta, sin su
+        // nombre. Faltaban las cuatro y la purga entera fallaba con 409 (revisión del 06/10/2026).
+        jdbc.update("update payouts set approved_by = null where approved_by = ?", userId);
+        jdbc.update("update payouts set paid_by = null where paid_by = ?", userId);
+        jdbc.update("delete from payout_certificates where professor_id = ?", userId);
+        jdbc.update("update payout_certificates set uploaded_by = professor_id where uploaded_by = ?", userId);
+        jdbc.update("update reviews set hidden_by = null where hidden_by = ?", userId);
+        // Las reprogramaciones que propuso (V17, `requested_by` NOT NULL): las de sus propias clases ya
+        // cayeron con las reservas; quedan las que propuso como admin sobre clases ajenas.
+        jdbc.update("delete from reschedule_requests where requested_by = ?", userId);
         jdbc.update("update professor_sanctions set created_by = null where created_by = ?", userId);
         jdbc.update("update professor_sanctions set revoked_by = null where revoked_by = ?", userId);
         jdbc.update("update teacher_applications set reviewed_by = null where reviewed_by = ?", userId);

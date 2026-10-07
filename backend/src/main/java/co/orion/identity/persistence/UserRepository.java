@@ -27,6 +27,9 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
 
     long countByRole(UserRole role);
 
+    /** Los admins que de verdad pueden entrar: un admin desactivado no cuenta para «el último». */
+    long countByRoleAndStatus(UserRole role, UserStatus status);
+
     boolean existsByEmailIgnoreCase(String email);
 
     boolean existsByRole(UserRole role);

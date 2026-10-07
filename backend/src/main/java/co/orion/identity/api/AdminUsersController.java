@@ -62,10 +62,11 @@ public class AdminUsersController {
     }
 
     @PatchMapping("/{id}")
-    public AdminUserResponse update(@PathVariable UUID id,
+    public AdminUserResponse update(@AuthenticationPrincipal OrionUserDetails principal,
+                                    @PathVariable UUID id,
                                     @Valid @RequestBody UpdateUserRequest body) {
         return AdminUserResponse.from(
-                adminUsers.update(id, body.fullName(), body.whatsappPhone(), body.status()));
+                adminUsers.update(principal.user().getId(), id, body.fullName(), body.whatsappPhone(), body.status()));
     }
 
     /** Filtro opcional: sin rol, no se filtra. */

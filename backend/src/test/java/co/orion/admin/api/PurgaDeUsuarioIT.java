@@ -100,6 +100,42 @@ class PurgaDeUsuarioIT extends ApiIntegrationSupport {
     }
 
     /**
+     * Lo que colgaron las liquidaciones (V74, V76) y las reseñas ocultas (V14): el certificado anual
+     * del profe, la firma del admin que aprobó o pagó una liquidación, la del que ocultó una reseña y
+     * las reprogramaciones que propuso. Las cuatro faltaban y el `delete from users` final tumbaba la
+     * purga entera con 409 (revisión del 06/10/2026).
+     */
+    @Test
+    void unProfeConCertificadoYUnAdminQueLiquidoTambienSeBorran() {
+        UUID segundo = users.findByEmailIgnoreCase("admin2@orion.test").orElseThrow().getId();
+        User profe = createUser("profe@orion.test", "Profe Liquidado", UserRole.PROFESSOR);
+        jdbc.update("""
+                insert into payout_certificates (professor_id, year, storage_key, content_type, uploaded_by)
+                values (?, 2025, 'certificados/prueba.pdf', 'application/pdf', ?)
+                """, profe.getId(), segundo);
+        jdbc.update("""
+                insert into payouts (professor_id, period_start, period_end, amount_cop, status, cutoff_at,
+                                     gross_cop, commission_cop, adjustments_cop, committed_pay_date,
+                                     approved_at, approved_by)
+                values (?, '2026-07-01', '2026-07-15', 0, 'APPROVED', now(), 0, 0, 0, '2026-07-20', now(), ?)
+                """, profe.getId(), segundo);
+
+        // El admin que firmó: la liquidación y el certificado del profe se quedan, sin su firma.
+        assertThat(purgar(segundo).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(users.findById(segundo)).isEmpty();
+        assertThat(jdbc.queryForObject("select approved_by from payouts where professor_id = ?",
+                UUID.class, profe.getId())).isNull();
+        assertThat(jdbc.queryForObject("select uploaded_by from payout_certificates where professor_id = ?",
+                UUID.class, profe.getId())).isEqualTo(profe.getId());
+
+        // El profe con historial de pagos: se va con su certificado y su liquidación.
+        assertThat(purgar(profe.getId()).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(users.findById(profe.getId())).isEmpty();
+        assertThat(jdbc.queryForObject("select count(*) from payout_certificates where professor_id = ?",
+                Integer.class, profe.getId())).isZero();
+    }
+
+    /**
      * Quien probó el diagnóstico tiene gasto de IA a su nombre, y el profesor que se le recomendó
      * aparece en su resultado. Las dos filas bloqueaban la purga hasta la V47.
      */
