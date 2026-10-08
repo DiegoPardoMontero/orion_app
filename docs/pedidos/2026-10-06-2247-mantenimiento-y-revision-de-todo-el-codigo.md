@@ -90,6 +90,21 @@ producto**, el primero de la lista.
 - Sin `@Version` en reserva y pago hay carreras de milisegundos que las constraints no cierran.
 - Un ensayo del admin puede dejarle una ausencia real al profe.
 
+### Decisiones de Pardo (07/10/2026, eligiendo entre opciones)
+
+- **Archivos en Cloudinary:** «Borrarlos también». La purga y el borrado de un documento destruyen
+  el archivo, para que una supresión de la Ley 1581 quede completa. Tarea aparte, con su prueba.
+- **Correo mal escrito:** «El admin lo corrige». Desde Usuarios, cambiar el correo y reenviar la
+  confirmación; el profe no lo cambia solo.
+- **Invitación por WhatsApp + registro con Google:** «Que Google también la consuma». El registro
+  social acepta el token de la invitación como el formulario.
+- **Reclamos a medias:** «Arreglar (b), dejar (a)». Resolver a favor del profe una clase aún abierta
+  debe publicar el cierre (puntos y «califica»); los puntos del estudiante tras una falta del profe
+  no se le quitan.
+- Pendientes de preguntar: `@Version` en reserva y pago, y la ausencia que deja un ensayo.
+
+Las cuatro son tareas nuevas, no parte de esta revisión: quedan anotadas para la siguiente sesión.
+
 ### Anotado, menor
 
 - `robots.txt` sigue cerrando `/profesores`, que es público desde el 23/09.
