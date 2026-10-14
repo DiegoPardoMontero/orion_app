@@ -30,12 +30,18 @@ dentro de `/cuenta`).
 - **Landing pública** en `/` (server-rendered, SEO, OG, sitemap/robots), con Rigel de protagonista.
 
 ## Verificación
+Al 14/10/2026 (la retoma tras la pausa del 08 al 14/10; `docs/plan-de-lanzamiento.md` v3):
+- **E2E sobre la base recreada y sin la prueba de Wompi: 105 en verde** (7,7 min), sobre el mismo
+  commit que subió Pardo el 08/10 (`add3313`). Era lo que la sesión del 07/10 dejó sin correr.
+- **`next build` en verde.** El backend no cambió desde el `verify` del 07/10.
+- Nada de esto se pudo comparar con producción: el commit que corre en Railway se mira en Deployments.
+
 Al 07/10/2026, con las dependencias al día y los arreglos de la revisión:
 - **Backend: `./mvnw verify` a solas, 452 unitarias y 693 de integración, en verde.** Nuevas: la aserción que prueba que la
   clase se mueve, la media hora, la antelación de reprogramar, el saldo que vuelve en el retracto, el
   reclamo de la clase gratis, la purga con certificado y liquidación, y el último admin.
 - **Frontend:** `tsc`, `eslint` (0 errores) y `next build` en verde; 196 pruebas de Vitest.
-- **E2E:** pendientes de correr sobre la base limpia (se cortó la sesión por el límite de uso), igual que `next build` final y el push. Nada de esto está en producción todavía.
+- **E2E:** quedaron pendientes ese día; corrieron el 14/10 (arriba). El push lo hizo Pardo el 08/10.
 - Una corrida anterior del `verify` dio 89 errores que parecían de Boot 4.1.1 y eran míos: corrí
   Maven encima y `target/classes` se reescribió a mitad (la regla de «nunca dos Maven» de
   `forma-de-trabajar-el-repo`). Se repitió a solas.
@@ -1658,6 +1664,15 @@ su test; lo que cambia el comportamiento o pide una decisión está abajo, en Pe
   `X-Content-Type-Options` y `Referrer-Policy`.
 
 ## Pendiente / bloqueos conocidos
+- **OpenAI apaga `gpt-4.1-nano` el 23/10/2026** (correo del 08/10). Es el valor por defecto de
+  `orion.assessment.translation.model`, la traducción en vivo de las frases de Meissa (corte de 5 s,
+  sin reintento): desde esa fecha fallaría en silencio. Candidato: `gpt-5-nano`, medido en 1–3 s el
+  22/09. Pendiente de la decisión de Pardo (pedido del 14/10).
+- **Railway tiene un límite duro de USD 10 al mes** (en 7,51 el 14/10; el ciclo cierra el 16/10).
+  Pasado el límite no se pueden crear despliegues, y cada push a `master` es uno.
+- **UAT no está montado** al 14/10 (`uat.orionidiomas.com` no resuelve): todo va a `master`.
+- **Tres perfiles de prueba de Pardo se ven en el catálogo público** (Mariana Quiroga, Valentina Ríos
+  y «Diego Pardo Test 28/09»), más «Andrés Rosero», por confirmar si es real.
 - **El freno de intentos fallidos del login no se activó en producción** (prueba del 02/10/2026, con
   un correo que no existe; en local funciona). Hay que revisarlo con los registros de Railway antes de
   abrir al público.
