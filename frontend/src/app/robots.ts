@@ -12,8 +12,9 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      // Las zonas con sesión no se indexan: ni aportan SEO ni deben salir en buscadores.
-      disallow: ["/mis-clases", "/profesores", "/disponibilidad", "/cuenta", "/perfil", "/admin"],
+      // Las zonas con sesión no se indexan: ni aportan SEO ni deben salir en buscadores. El catálogo
+      // (/profesores y cada perfil) es público desde el 23/09/2026 y sí se indexa (14/10/2026).
+      disallow: ["/mis-clases", "/disponibilidad", "/cuenta", "/perfil", "/admin"],
     },
     sitemap: `${SITE}/sitemap.xml`,
   };
