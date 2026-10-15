@@ -1,8 +1,9 @@
 # Bloque 12 · Orión para adolescentes (13 a 17 años) — PROPUESTA
 
-> 25/09/2026 · Decide: Pardo · Propone: Claude · **Estado: propuesta para el abogado. No se construye
-> nada de esto hasta que él la apruebe.** Mientras tanto, la puerta de los menores sigue cerrada
-> (CLAUDE.md: «solo para mayores de 18»).
+> 25/09/2026 · Decide: Pardo · Propone: Claude · **Estado (14/10/2026): APROBADA por el abogado tal
+> cual** (Pardo, pedido `docs/pedidos/2026-10-14-2135-…`). Entra en el primer lanzamiento, **antes de
+> abrir a estudiantes que pagan**. Las cuentas siguen siendo de mayores de 18: el adolescente es un
+> perfil bajo la cuenta del adulto.
 
 La propuesta completa, con los borradores legales y las preguntas para el abogado, está publicada
 como página: https://claude.ai/artifact/PKrHkCLJ6zCfTq7Q48RiCF
@@ -14,6 +15,24 @@ como página: https://claude.ai/artifact/PKrHkCLJ6zCfTq7Q48RiCF
    el titular: acepta, paga, reserva y habla con el profe.
 3. **Sin IA al lanzar.** Nada del adolescente va a OpenAI: ni Meissa, ni el acta ni la práctica generadas.
 4. **Sin grabación**, y el adulto confirma en cada clase que está presente o cerca.
+
+## Decisiones de Pardo (14/10/2026), que completan las del 25/09
+
+5. **Edades: de 13 a 17**, confirmado. Menores de 13 siguen fuera.
+6. **Profes habilitados: el admin verifica y lo marca en Usuarios.** El profe acepta el código de
+   conducta (con constancia, como el acuerdo del profesor) y sube dos documentos: la consulta del
+   Registro de inhabilidades por delitos sexuales contra menores (Ley 1918 de 2018) y el certificado de
+   antecedentes judiciales. El admin los revisa y enciende «Habilitado para adolescentes», con
+   **renovación anual** (la propuesta decía 6 meses; Pardo eligió un año). Vencida, el profe deja de
+   aparecer para adolescentes.
+7. **Sin franja horaria.** Cualquier cupo del profe sirve; el adulto decide. (La propuesta traía 6:00
+   a 21:00; descartada.)
+8. **Textos legales 1.2, pedidos al entrar.** Términos 1.2 y Política 1.2 con el capítulo de
+   adolescentes; la autorización del representante legal y el código de conducta como documentos
+   nuevos versionados. `pendientesAlEntrar` ya pide al entrar lo que no se ha aceptado, así que
+   publicar la 1.2 basta para que todos la acepten. **Pendiente de preguntar a Pardo:** si la Política
+   1.2 lleva también el párrafo de OpenAI, 8x8 y login social (no lo revisó el abogado) o solo lo de
+   adolescentes.
 
 ## La propuesta, en corto
 
