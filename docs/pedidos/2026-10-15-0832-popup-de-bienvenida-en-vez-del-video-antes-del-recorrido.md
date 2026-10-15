@@ -2,7 +2,7 @@
 
 ## Metadatos
 
-- **Fecha y hora:** 2026-10-15 09:05 (America/Bogota, UTC−5)
+- **Fecha y hora:** 2026-10-15 08:32 (America/Bogota, UTC−5)
 - **Canal:** chat de Claude Code
 - **Sesión:** f5bedb76
 - **Commits relacionados:** el de «the tour opens with a big ¡Bienvenido a Orión! pop-up» en `develop`, sin desplegar
