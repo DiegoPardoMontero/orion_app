@@ -9,7 +9,7 @@ import { BotonVerDocumento } from "@/components/VisorDeDocumento";
 import { TextoLegal } from "@/components/cuenta/Adolescentes";
 import { Badge, Boton, Spinner } from "@/components/ui";
 import { ApiError, apiFetch, uploadFile } from "@/lib/api/fetch";
-import type { DocumentView, TeacherApplicationView } from "@/lib/api/types";
+import type { DocumentView } from "@/lib/api/types";
 import type { HabilitacionAdolescentes } from "@/lib/adolescentes";
 
 type DocumentoLegalData = { code: string; version: string; title: string; body: string; effectiveFrom: string };
@@ -53,16 +53,12 @@ export function ClasesConAdolescentes() {
     queryKey: ["me", "profile", "minors"],
     queryFn: () => apiFetch<HabilitacionAdolescentes>("/api/v1/me/profile/minors"),
   });
-  const postulacion = useQuery({
-    queryKey: ["me", "teacher-application"],
-    queryFn: () => apiFetch<TeacherApplicationView>("/api/v1/me/teacher-application"),
-  });
   const [leyendo, setLeyendo] = useState(false);
-  const documentos = (postulacion.data?.documents ?? []) as DocumentView[];
+  // Los certificados vienen con la habilitación, no con la postulación: un profe aprobado ya no la edita.
+  const documentos = ((estado.data as { documents?: DocumentView[] } | undefined)?.documents ?? []) as DocumentView[];
 
   const refrescar = () => {
     void qc.invalidateQueries({ queryKey: ["me", "profile", "minors"] });
-    void qc.invalidateQueries({ queryKey: ["me", "teacher-application"] });
   };
 
   if (estado.isPending) return <Cargando filas={2} />;
@@ -133,11 +129,12 @@ function Paso({ listo, titulo, ayuda, children }: { listo: boolean; titulo: stri
 function Subida({ tipo, subidos, onCambio }: { tipo: string; subidos: DocumentView[]; onCambio: () => void }) {
   const input = useRef<HTMLInputElement>(null);
   const subir = useMutation({
-    mutationFn: (file: File) => uploadFile<DocumentView>("/api/v1/me/teacher-application/documents", file, { docType: tipo }),
+    // Por Mi perfil, no por la postulación: la postulación aprobada responde 409 (15/10/2026).
+    mutationFn: (file: File) => uploadFile<HabilitacionAdolescentes>("/api/v1/me/profile/minors/documents", file, { docType: tipo }),
     onSuccess: onCambio,
   });
   const borrar = useMutation({
-    mutationFn: (id: string) => apiFetch<void>(`/api/v1/me/teacher-application/documents/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => apiFetch<HabilitacionAdolescentes>(`/api/v1/me/profile/minors/documents/${id}`, { method: "DELETE" }),
     onSuccess: onCambio,
   });
   const error = subir.error instanceof ApiError ? subir.error.message : borrar.error instanceof ApiError ? borrar.error.message : null;

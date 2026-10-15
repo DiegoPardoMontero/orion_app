@@ -15,7 +15,9 @@ public record MinorsClearanceView(boolean active,
                                   boolean registryCheck,
                                   boolean backgroundCheck,
                                   /** Lo que falta, en palabras para la pantalla; vacío si ya puede habilitarse. */
-                                  List<String> missing) {
+                                  List<String> missing,
+                                  /** Los certificados subidos (consulta del Registro y antecedentes), para verlos y quitarlos. */
+                                  List<DocumentView> documents) {
 
     public boolean readyToClear() {
         return missing.isEmpty();

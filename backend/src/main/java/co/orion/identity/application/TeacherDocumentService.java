@@ -27,6 +27,12 @@ public class TeacherDocumentService {
 
     private static final long MAX_BYTES = 10L * 1024 * 1024; // 10 MB
     private static final int MAX_DOCUMENTS = 6;
+    /**
+     * Los certificados de «Clases con adolescentes» (Bloque 12) no entran en el tope de la postulación
+     * —un profe aprobado con sus seis documentos tiene que poder subirlos— y tienen el suyo, por tipo.
+     */
+    public static final List<DocumentType> MINORS_TYPES = List.of(DocumentType.REGISTRY_CHECK, DocumentType.BACKGROUND_CHECK);
+    private static final int MAX_PER_MINORS_TYPE = 3;
     private static final Duration SIGNED_URL_TTL = Duration.ofMinutes(5);
     private static final List<ApplicationStatus> OPEN = List.of(
             ApplicationStatus.DRAFT, ApplicationStatus.PENDING_REVIEW,
@@ -61,11 +67,16 @@ public class TeacherDocumentService {
         if (!type.equals("application/pdf") && !type.startsWith("image/")) {
             throw new BusinessRuleViolationException("El documento debe ser un PDF o una imagen");
         }
-        if (documents.countByUserId(userId) >= MAX_DOCUMENTS) {
+        DocumentType docType = parseDocType(docTypeName);
+        if (MINORS_TYPES.contains(docType)) {
+            if (documents.countByUserIdAndDocType(userId, docType) >= MAX_PER_MINORS_TYPE) {
+                throw new BusinessRuleViolationException(
+                        "Ya subiste " + MAX_PER_MINORS_TYPE + " archivos de este certificado: quita alguno antes de subir otro");
+            }
+        } else if (documents.countByUserIdAndDocTypeNotIn(userId, MINORS_TYPES) >= MAX_DOCUMENTS) {
             throw new BusinessRuleViolationException(
                     "No puedes subir más de " + MAX_DOCUMENTS + " documentos");
         }
-        DocumentType docType = parseDocType(docTypeName);
 
         UUID applicationId = applications
                 .findFirstByUserIdAndStatusInOrderByCreatedAtDesc(userId, OPEN)
@@ -76,6 +87,34 @@ public class TeacherDocumentService {
         TeacherDocument document = new TeacherDocument(
                 userId, applicationId, docType, safeName(fileName), storageKey, type, bytes.length);
         return documents.save(document);
+    }
+
+    /**
+     * Un certificado de «Clases con adolescentes», desde Mi perfil: no pasa por la postulación, que
+     * un profe aprobado ya no puede editar (el 409 que vieron los primeros profes, 15/10/2026).
+     */
+    @Transactional
+    public TeacherDocument uploadMinorsDocument(UUID userId, byte[] bytes, String contentType, String fileName,
+                                                String docTypeName) {
+        DocumentType docType = parseDocType(docTypeName);
+        if (!MINORS_TYPES.contains(docType)) {
+            throw new BusinessRuleViolationException("docType debe ser REGISTRY_CHECK o BACKGROUND_CHECK");
+        }
+        return upload(userId, bytes, contentType, fileName, docType.name());
+    }
+
+    /** Solo lo suyo y solo de esos dos tipos; lo demás es «no encontrado». */
+    @Transactional
+    public void deleteMinorsDocument(UUID userId, UUID documentId) {
+        TeacherDocument document = documents.findByIdAndUserId(documentId, userId)
+                .filter(d -> MINORS_TYPES.contains(d.getDocType()))
+                .orElseThrow(() -> new ResourceNotFoundException("Documento no encontrado"));
+        documents.delete(document);
+    }
+
+    @Transactional(readOnly = true)
+    public List<TeacherDocument> listMinors(UUID userId) {
+        return documents.findByUserIdAndDocTypeIn(userId, MINORS_TYPES);
     }
 
     @Transactional
@@ -119,7 +158,7 @@ public class TeacherDocumentService {
         } catch (IllegalArgumentException | NullPointerException ex) {
             throw new BusinessRuleViolationException(
                     "docType debe ser CV, TEACHING_CERTIFICATE, UNIVERSITY_DEGREE, "
-                            + "LANGUAGE_CERTIFICATION u OTHER");
+                            + "LANGUAGE_CERTIFICATION, OTHER, REGISTRY_CHECK o BACKGROUND_CHECK");
         }
     }
 

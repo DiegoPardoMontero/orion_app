@@ -12,6 +12,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import co.orion.identity.api.DocumentView;
 import co.orion.identity.api.MinorsClearanceView;
 import co.orion.identity.domain.DocumentType;
 import co.orion.identity.domain.ProfessorProfile;
@@ -125,8 +126,10 @@ public class MinorsClearanceService {
         if (!antecedentes) {
             falta.add("el certificado de antecedentes");
         }
+        List<DocumentView> subidos = documents.findByUserIdAndDocTypeIn(id, TeacherDocumentService.MINORS_TYPES).stream()
+                .map(DocumentView::of).toList();
         return new MinorsClearanceView(profile.isClearedForMinors(hoy()), profile.getMinorsClearedUntil(),
-                profile.getMinorsClearedAt(), conducta, registro, antecedentes, List.copyOf(falta));
+                profile.getMinorsClearedAt(), conducta, registro, antecedentes, List.copyOf(falta), subidos);
     }
 
     private ProfessorProfile profesor(UUID professorId) {

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/fetch";
+import type { DocumentView } from "@/lib/api/types";
 
 /**
  * Los adolescentes a cargo del adulto (Bloque 12) y la habilitación de un profe para darles clase.
@@ -24,6 +25,8 @@ export type HabilitacionAdolescentes = {
   registryCheck: boolean;
   backgroundCheck: boolean;
   missing: string[];
+  /** Los certificados subidos (consulta del Registro y antecedentes). */
+  documents: DocumentView[];
 };
 
 export const NIVELES: { code: Adolescente["selfDeclaredLevel"]; label: string }[] = [
@@ -60,6 +63,7 @@ export function habilitacionDe(h: Partial<HabilitacionAdolescentes> | null | und
     registryCheck: h.registryCheck ?? false,
     backgroundCheck: h.backgroundCheck ?? false,
     missing: h.missing ?? [],
+    documents: (h.documents ?? []) as DocumentView[],
   };
 }
 

@@ -2,6 +2,7 @@ package co.orion.identity.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -12,12 +13,22 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import co.orion.TestcontainersConfiguration;
+import co.orion.identity.application.DocumentStorage;
 import co.orion.identity.domain.DocumentType;
 import co.orion.identity.domain.ProfessorProfile;
 import co.orion.identity.domain.TeacherDocument;
@@ -65,6 +76,74 @@ class HabilitacionParaAdolescentesIT extends ApiIntegrationSupport {
         }
         sesionMaria = login("maria@orion.test");
         admin = login("admin@orion.test");
+    }
+
+    @TestConfiguration
+    static class FakeStorageConfig {
+        @Bean
+        @Primary
+        DocumentStorage documentStorage() {
+            return new DocumentStorage() {
+                @Override
+                public String upload(byte[] bytes, String contentType, UUID userId, String fileName) {
+                    return "orion/documents/" + userId + "/" + fileName;
+                }
+
+                @Override
+                public String signedUrl(String storageKey, String contentType, Duration ttl) {
+                    return "https://res.cloudinary.test/" + storageKey;
+                }
+            };
+        }
+    }
+
+    /** Sube un certificado por el endpoint de Mi perfil, como lo hace la pantalla. */
+    @SuppressWarnings("rawtypes")
+    private ResponseEntity<Map> subir(Session session, String docType, String nombre) {
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        HttpHeaders partHeaders = new HttpHeaders();
+        partHeaders.setContentType(MediaType.APPLICATION_PDF);
+        body.add("file", new HttpEntity<>(new ByteArrayResource("%PDF".getBytes()) {
+            @Override
+            public String getFilename() {
+                return nombre;
+            }
+        }, partHeaders));
+        body.add("docType", docType);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        headers.add(HttpHeaders.COOKIE, "ORION_SESSION=" + session.cookie() + "; XSRF-TOKEN=" + session.csrfToken());
+        headers.add("X-XSRF-TOKEN", session.csrfToken());
+        return rest.postForEntity("/api/v1/me/profile/minors/documents", new HttpEntity<>(body, headers), Map.class);
+    }
+
+    /**
+     * Un profe aprobado sube los dos certificados desde Mi perfil, aunque ya tenga los seis documentos
+     * de su postulación (15/10/2026: por el endpoint de la postulación recibían un 409).
+     */
+    @Test
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    @DisplayName("Un profe aprobado sube y quita los certificados desde Mi perfil, sin pasar por la postulación")
+    void subeLosCertificadosDesdeMiPerfil() {
+        for (int i = 0; i < 6; i++) {
+            documents.save(new TeacherDocument(maria.getId(), null, DocumentType.OTHER, "otro" + i + ".pdf", "o" + i, "application/pdf", 10));
+        }
+        assertThat(subir(sesionMaria, "CV", "cv.pdf").getStatusCode().value()).isEqualTo(400);
+
+        ResponseEntity<Map> registro = subir(sesionMaria, "REGISTRY_CHECK", "registro.pdf");
+        assertThat(registro.getStatusCode().value()).isEqualTo(200);
+        assertThat(registro.getBody().get("registryCheck")).isEqualTo(true);
+        ResponseEntity<Map> antecedentes = subir(sesionMaria, "BACKGROUND_CHECK", "antecedentes.pdf");
+        assertThat(antecedentes.getBody().get("backgroundCheck")).isEqualTo(true);
+        List<Map<String, Object>> subidos = (List<Map<String, Object>>) antecedentes.getBody().get("documents");
+        assertThat(subidos).extracting(d -> d.get("docType")).containsExactlyInAnyOrder("REGISTRY_CHECK", "BACKGROUND_CHECK");
+
+        // Quitar el suyo; el de otro, no existe.
+        String id = subidos.get(0).get("id").toString();
+        assertThat(delete("/api/v1/me/profile/minors/documents/" + id, login("juan@orion.test"), Map.class).getStatusCode().value()).isEqualTo(404);
+        ResponseEntity<Map> quitado = delete("/api/v1/me/profile/minors/documents/" + id, sesionMaria, Map.class);
+        assertThat(quitado.getStatusCode().value()).isEqualTo(200);
+        assertThat((List<?>) quitado.getBody().get("documents")).hasSize(1);
     }
 
     private void documentos(UUID userId) {

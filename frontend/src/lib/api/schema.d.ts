@@ -3468,6 +3468,7 @@ export interface components {
             registryCheck?: boolean;
             backgroundCheck?: boolean;
             missing?: string[];
+            documents?: components["schemas"]["DocumentView"][];
         };
         ProfileLanguage: {
             code?: string;

@@ -1,5 +1,6 @@
 package co.orion.identity.persistence;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -18,4 +19,10 @@ public interface TeacherDocumentRepository extends JpaRepository<TeacherDocument
     boolean existsByUserIdAndDocType(UUID userId, DocumentType docType);
 
     long countByUserId(UUID userId);
+
+    long countByUserIdAndDocType(UUID userId, DocumentType docType);
+
+    long countByUserIdAndDocTypeNotIn(UUID userId, Collection<DocumentType> docTypes);
+
+    List<TeacherDocument> findByUserIdAndDocTypeIn(UUID userId, Collection<DocumentType> docTypes);
 }
