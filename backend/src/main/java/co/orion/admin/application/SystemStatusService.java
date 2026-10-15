@@ -31,6 +31,8 @@ public class SystemStatusService {
     private final String wompiApiBase;
     private final String resendKey;
     private final String openAiKey;
+    private final String anthropicKey;
+    private final String textProvider;
     private final String voiceProvider;
     private final SocialProviders social;
     private final JaasProperties jaasProps;
@@ -47,6 +49,8 @@ public class SystemStatusService {
                                @Value("${orion.payments.wompi.api-base-url:}") String wompiApiBase,
                                @Value("${RESEND_API_KEY:}") String resendKey,
                                @Value("${OPENAI_API_KEY:}") String openAiKey,
+                               @Value("${ANTHROPIC_API_KEY:}") String anthropicKey,
+                               @Value("${orion.ai.text-provider:scripted}") String textProvider,
                                @Value("${orion.assessment.voice.provider:scripted}")
                                String voiceProvider) {
         this.jaas = jaas;
@@ -60,6 +64,8 @@ public class SystemStatusService {
         this.wompiApiBase = wompiApiBase;
         this.resendKey = resendKey;
         this.openAiKey = openAiKey;
+        this.anthropicKey = anthropicKey;
+        this.textProvider = textProvider;
         this.voiceProvider = voiceProvider;
     }
 
@@ -109,14 +115,15 @@ public class SystemStatusService {
                         "openai".equals(voiceProvider) ? "Conversación real" : null,
                         List.of("OPENAI_API_KEY", "ORION_VOICE_PROVIDER")),
 
-                // El acta de clase usa las mismas dos variables. Apagada no falla: el borrador lo
-                // arma una regla simple y el profesor corrige más, que es justo lo que hay que ver.
-                new Integracion("Borrador del acta (OpenAI)",
-                        hay(openAiKey) && "openai".equals(voiceProvider),
-                        "El borrador del acta lo arma una regla simple, sin IA: las notas enteras en "
-                                + "«lo que trabajaron». El profesor puede escribirla igual.",
-                        "openai".equals(voiceProvider) ? "Borrador con IA" : null,
-                        List.of("OPENAI_API_KEY", "ORION_VOICE_PROVIDER")),
+                // El texto con IA (acta, práctica, resumen del diagnóstico, traducción en vivo y
+                // revisores) va por Claude desde el 14/10/2026; OpenAI sigue siendo una opción. Apagado
+                // no falla: el acta la arma una regla simple y la práctica sale sin IA.
+                new Integracion("Texto con IA (Claude)",
+                        hay(anthropicKey) && "claude".equals(textProvider),
+                        textoSinIa(),
+                        "claude".equals(textProvider) ? "Acta, práctica, resumen del diagnóstico y traducción con Claude"
+                                : "openai".equals(textProvider) ? "El texto lo escribe OpenAI (ORION_TEXT_PROVIDER=openai)" : null,
+                        List.of("ANTHROPIC_API_KEY", "ORION_TEXT_PROVIDER")),
 
                 // Entrar con Google, Apple o Facebook: cada botón aparece solo si su proveedor está
                 // aquí encendido. Apple queda apagado hasta que se pague su programa de desarrollador.
@@ -141,6 +148,14 @@ public class SystemStatusService {
      * Por qué el diagnóstico no está listo. Se distinguen los dos casos porque se arreglan distinto,
      * y el segundo es el peligroso: con el proveedor falso la conversación ocurre y es de mentira.
      */
+    private String textoSinIa() {
+        if ("openai".equals(textProvider) && hay(openAiKey)) {
+            return "El texto con IA lo escribe OpenAI. Para pasarlo a Claude: ANTHROPIC_API_KEY y ORION_TEXT_PROVIDER=claude.";
+        }
+        return "El acta la arma una regla simple, la práctica sale sin IA, Meissa no traduce y el resultado del "
+                + "diagnóstico usa una plantilla. El profesor puede escribir el acta igual.";
+    }
+
     private String elMotivo() {
         if (!"openai".equals(voiceProvider)) {
             return "ORION_VOICE_PROVIDER no es «openai»: la conversación sería simulada, no real.";

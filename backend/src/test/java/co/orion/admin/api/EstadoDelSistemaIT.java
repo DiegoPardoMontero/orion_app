@@ -35,18 +35,18 @@ class EstadoDelSistemaIT extends ApiIntegrationSupport {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Test
-    @DisplayName("El admin ve la IA del diagnóstico y la del acta, apagadas y con su motivo y sus variables")
+    @DisplayName("El admin ve la voz del diagnóstico y el texto con IA, apagados y con su motivo y sus variables")
     void laIaSeVeApagadaConSuMotivo() {
         Map estado = get("/api/v1/admin/system/status", login("admin@orion.test"), Map.class).getBody();
         List<Map> integraciones = (List<Map>) estado.get("integraciones");
 
         assertThat(integraciones).extracting(i -> i.get("nombre"))
-                .contains("Diagnóstico de voz (OpenAI)", "Borrador del acta (OpenAI)");
-        assertThat(integraciones).filteredOn(i -> "Borrador del acta (OpenAI)".equals(i.get("nombre")))
+                .contains("Diagnóstico de voz (OpenAI)", "Texto con IA (Claude)");
+        assertThat(integraciones).filteredOn(i -> "Texto con IA (Claude)".equals(i.get("nombre")))
                 .singleElement().satisfies(i -> {
                     assertThat(i.get("configurada")).isEqualTo(false);
                     assertThat((String) i.get("siFalta")).contains("regla simple");
-                    assertThat((List<String>) i.get("variables")).contains("OPENAI_API_KEY");
+                    assertThat((List<String>) i.get("variables")).contains("ANTHROPIC_API_KEY", "ORION_TEXT_PROVIDER");
                 });
     }
 

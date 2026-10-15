@@ -18,8 +18,7 @@ import co.orion.teaching.domain.LessonNote;
  * tampoco hay IA en las actas.
  */
 @Component
-@ConditionalOnProperty(name = "orion.assessment.voice.provider", havingValue = "scripted",
-        matchIfMissing = true)
+@ConditionalOnProperty(name = "orion.ai.text-provider", havingValue = "scripted", matchIfMissing = true)
 public class DeterministicLessonNoteDrafter implements LessonNoteDrafter {
 
     private static final Pattern ENTRE_COMILLAS = Pattern.compile("[\"'“‘«]([^\"'”’»]{1,60})[\"'”’»]");

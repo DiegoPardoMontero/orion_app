@@ -22,8 +22,7 @@ import co.orion.practice.domain.PracticeItemType;
  * ordenar diálogos: eso exige inventar, y sin IA no se inventa.
  */
 @Component
-@ConditionalOnProperty(name = "orion.assessment.voice.provider", havingValue = "scripted",
-        matchIfMissing = true)
+@ConditionalOnProperty(name = "orion.ai.text-provider", havingValue = "scripted", matchIfMissing = true)
 public class GeneradorSinIa implements PracticeGenerator {
 
     private static final ObjectMapper JSON = new ObjectMapper();

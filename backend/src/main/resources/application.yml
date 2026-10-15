@@ -79,9 +79,24 @@ orion:
       # Cada 5 minutos: el plazo para pagar son 20 (platform_settings.payment_hold_minutes), así que
       # un cupo nunca queda bloqueado más de 25.
       interval-ms: ${ORION_PAYMENT_EXPIRY_INTERVAL_MS:300000}
+  # El texto con IA (14/10/2026, decisión de Pardo): el acta, la práctica, el resumen del
+  # diagnóstico, la traducción en vivo de Meissa y los revisores. `claude` en producción. Sin la
+  # variable, sigue al proveedor de voz: así un despliegue que solo tenía ORION_VOICE_PROVIDER=openai
+  # no cambia de comportamiento al desplegar esto. `scripted` no llama a nadie (pruebas y local).
+  ai:
+    text-provider: ${ORION_TEXT_PROVIDER:${ORION_VOICE_PROVIDER:scripted}}
+    claude:
+      # Lo que se lee (acta, ejercicios, resumen) y lo que tiene que volver en segundos (traducir una
+      # frase, revisar una respuesta). Los ids son los de la API de Anthropic, sin fecha.
+      quality-model: ${ORION_CLAUDE_QUALITY_MODEL:claude-opus-5-5}
+      fast-model: ${ORION_CLAUDE_FAST_MODEL:claude-haiku-5-5}
+      # Solo para pruebas: un servidor local que responde como la API.
+      base-url: ${ORION_CLAUDE_BASE_URL:}
+
   assessment:
     voice:
-      # Quién sostiene la conversación del diagnóstico.
+      # Quién sostiene la conversación del diagnóstico. La VOZ sigue en OpenAI aunque el texto pase a
+      # Claude (orion.ai.text-provider): Claude no tiene API de voz en tiempo real.
       #
       # `scripted` es un proveedor FALSO: no llama a nadie, no gasta y devuelve una sesión de
       # mentira. Es el valor por defecto a propósito —así ningún test toca la red ni el saldo, y un

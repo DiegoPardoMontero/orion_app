@@ -35,7 +35,7 @@ import co.orion.assessment.domain.AiUsageOutcome;
  * parte de la misma función, y el tope es uno por función.
  */
 @Component
-@ConditionalOnProperty(name = "orion.assessment.voice.provider", havingValue = "openai")
+@ConditionalOnProperty(name = "orion.ai.text-provider", havingValue = "openai")
 public class OpenAiTraductorDeFrases implements TraductorDeFrases {
 
     private static final Logger log = LoggerFactory.getLogger(OpenAiTraductorDeFrases.class);

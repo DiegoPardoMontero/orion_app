@@ -33,7 +33,7 @@ import co.orion.shared.text.NombreDelIdioma;
  * corta, con tope de tiempo y, si algo falla, no decide nada: manda la regla de siempre.
  */
 @Component
-@ConditionalOnProperty(name = "orion.assessment.voice.provider", havingValue = "openai")
+@ConditionalOnProperty(name = "orion.ai.text-provider", havingValue = "openai")
 public class OpenAiRevisorDeFrases implements RevisorDeFrases {
 
     private static final Logger log = LoggerFactory.getLogger(OpenAiRevisorDeFrases.class);
@@ -129,7 +129,7 @@ public class OpenAiRevisorDeFrases implements RevisorDeFrases {
         return null;
     }
 
-    private static String instrucciones(String languageCode) {
+    static String instrucciones(String languageCode) {
         try {
             String texto = new String(new ClassPathResource(PROMPT).getInputStream().readAllBytes(), StandardCharsets.UTF_8);
             return texto.lines().filter(l -> !l.startsWith("#")).reduce("", (a, b) -> a + b + "\n").trim()

@@ -12,8 +12,7 @@ import org.springframework.stereotype.Component;
  * traducir, así que en local nadie la ve.
  */
 @Component
-@ConditionalOnProperty(name = "orion.assessment.voice.provider", havingValue = "scripted",
-        matchIfMissing = true)
+@ConditionalOnProperty(name = "orion.ai.text-provider", havingValue = "scripted", matchIfMissing = true)
 public class TraductorSinRed implements TraductorDeFrases {
 
     @Override

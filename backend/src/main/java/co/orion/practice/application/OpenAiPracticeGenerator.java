@@ -49,7 +49,7 @@ import co.orion.shared.text.NombreDelIdioma;
  * la función más barata del bloque, y así se queda.
  */
 @Component
-@ConditionalOnProperty(name = "orion.assessment.voice.provider", havingValue = "openai")
+@ConditionalOnProperty(name = "orion.ai.text-provider", havingValue = "openai")
 public class OpenAiPracticeGenerator implements PracticeGenerator {
 
     private static final Logger log = LoggerFactory.getLogger(OpenAiPracticeGenerator.class);
@@ -168,6 +168,23 @@ public class OpenAiPracticeGenerator implements PracticeGenerator {
     }
 
     Map<String, Object> cuerpoDeRevision(List<Generado> generados, String languageCode) {
+        String ejercicios = ejerciciosParaRevisar(generados);
+        Map<String, Object> cuerpo = new LinkedHashMap<>();
+        cuerpo.put("model", modelo);
+        // Un poco más de razonamiento que al generar: ordenar un diálogo sin pensar es justo el error
+        // que se busca atrapar, y una revisión que se equivoca descarta ejercicios buenos.
+        cuerpo.put("reasoning_effort", "low");
+        cuerpo.put("max_completion_tokens", 2500);
+        cuerpo.put("response_format", Map.of("type", "json_object"));
+        cuerpo.put("messages", List.of(
+                Map.of("role", "system", "content",
+                        leerPrompt(REVISION).replace("{{IDIOMA}}", NombreDelIdioma.enEspanol(languageCode))),
+                Map.of("role", "user", "content", ejercicios == null ? "[]" : ejercicios)));
+        return cuerpo;
+    }
+
+    /** Los ejercicios cerrados tal como los ve el estudiante, para que el revisor los resuelva; nulo si no hay. */
+    static String ejerciciosParaRevisar(List<Generado> generados) {
         ArrayNode ejercicios = JSON.createArrayNode();
         for (int i = 0; i < generados.size(); i++) {
             Generado g = generados.get(i);
@@ -180,18 +197,7 @@ public class OpenAiPracticeGenerator implements PracticeGenerator {
             e.put("prompt", g.prompt());
             e.set("material", loQueVeElEstudiante(g));
         }
-        Map<String, Object> cuerpo = new LinkedHashMap<>();
-        cuerpo.put("model", modelo);
-        // Un poco más de razonamiento que al generar: ordenar un diálogo sin pensar es justo el error
-        // que se busca atrapar, y una revisión que se equivoca descarta ejercicios buenos.
-        cuerpo.put("reasoning_effort", "low");
-        cuerpo.put("max_completion_tokens", 2500);
-        cuerpo.put("response_format", Map.of("type", "json_object"));
-        cuerpo.put("messages", List.of(
-                Map.of("role", "system", "content",
-                        leerPrompt(REVISION).replace("{{IDIOMA}}", NombreDelIdioma.enEspanol(languageCode))),
-                Map.of("role", "user", "content", ejercicios.toString())));
-        return cuerpo;
+        return ejercicios.isEmpty() ? null : ejercicios.toString();
     }
 
     /** El payload sin las respuestas: en corregir la frase, {@code accepted} son otras correcciones. */
@@ -464,12 +470,12 @@ public class OpenAiPracticeGenerator implements PracticeGenerator {
         return null;
     }
 
-    private static String instrucciones() {
+    static String instrucciones() {
         return leerPrompt(PROMPT);
     }
 
     /** Un prompt del classpath, sin sus líneas de comentario. */
-    private static String leerPrompt(String prompt) {
+    static String leerPrompt(String prompt) {
         try {
             String texto = new String(new ClassPathResource(prompt).getInputStream().readAllBytes(), StandardCharsets.UTF_8);
             return texto.lines().filter(l -> !l.startsWith("#")).reduce("", (a, b) -> a + b + "\n").trim();

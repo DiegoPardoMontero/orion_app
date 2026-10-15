@@ -10,8 +10,7 @@ import org.springframework.stereotype.Component;
  * corre en local y en los tests, junto al proveedor de voz falso, para que ninguno toque la red.
  */
 @Component
-@ConditionalOnProperty(name = "orion.assessment.voice.provider", havingValue = "scripted",
-        matchIfMissing = true)
+@ConditionalOnProperty(name = "orion.ai.text-provider", havingValue = "scripted", matchIfMissing = true)
 public class SinResumenDeIa implements ConversationSummarizer {
 
     @Override

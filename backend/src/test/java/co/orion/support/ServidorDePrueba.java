@@ -82,6 +82,14 @@ public final class ServidorDePrueba implements AutoCloseable {
                 .replace("\n", "\\n") + "\"}}],\"usage\":{\"prompt_tokens\":100,\"completion_tokens\":20}}";
     }
 
+    /** La respuesta de la API de Claude (Messages) con un solo bloque de texto. */
+    public static String claude(String contenido) {
+        return "{\"id\":\"msg_1\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"claude\","
+                + "\"content\":[{\"type\":\"text\",\"text\":\"" + contenido.replace("\\", "\\\\").replace("\"", "\\\"")
+                .replace("\n", "\\n") + "\"}],\"stop_reason\":\"end_turn\",\"stop_sequence\":null,"
+                + "\"usage\":{\"input_tokens\":100,\"output_tokens\":20}}";
+    }
+
     public int llamadas() {
         return llamadas.get();
     }

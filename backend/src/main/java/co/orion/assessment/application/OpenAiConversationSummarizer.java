@@ -44,7 +44,7 @@ import co.orion.shared.text.NombreDelIdioma;
  * ya está esperando.
  */
 @Component
-@ConditionalOnProperty(name = "orion.assessment.voice.provider", havingValue = "openai")
+@ConditionalOnProperty(name = "orion.ai.text-provider", havingValue = "openai")
 public class OpenAiConversationSummarizer implements ConversationSummarizer {
 
     private static final Logger log = LoggerFactory.getLogger(OpenAiConversationSummarizer.class);
@@ -189,7 +189,7 @@ public class OpenAiConversationSummarizer implements ConversationSummarizer {
         return null;
     }
 
-    private static String instrucciones(String idioma) {
+    static String instrucciones(String idioma) {
         try {
             String archivo = new String(new ClassPathResource(PROMPT).getInputStream().readAllBytes(),
                     StandardCharsets.UTF_8);

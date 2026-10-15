@@ -44,7 +44,7 @@ import co.orion.teaching.domain.LessonNote;
  * solo mensaje de error técnico.
  */
 @Component
-@ConditionalOnProperty(name = "orion.assessment.voice.provider", havingValue = "openai")
+@ConditionalOnProperty(name = "orion.ai.text-provider", havingValue = "openai")
 public class OpenAiLessonNoteDrafter implements LessonNoteDrafter {
 
     private static final Logger log = LoggerFactory.getLogger(OpenAiLessonNoteDrafter.class);
@@ -254,7 +254,7 @@ public class OpenAiLessonNoteDrafter implements LessonNoteDrafter {
         return null;
     }
 
-    private static String instrucciones() {
+    static String instrucciones() {
         try {
             String archivo = new String(new ClassPathResource(PROMPT).getInputStream().readAllBytes(),
                     StandardCharsets.UTF_8);

@@ -64,6 +64,22 @@
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-database-postgresql</artifactId>
 		</dependency>
+		<!-- Claude (Anthropic): el texto con IA —acta, práctica, resumen del diagnóstico, traducción en
+		     vivo y revisores— desde el 15/10/2026 (decisión de Pardo). La voz de Meissa sigue en OpenAI. -->
+		<dependency>
+			<groupId>com.anthropic</groupId>
+			<artifactId>anthropic-java</artifactId>
+			<version>2.34.0</version>
+			<!-- El SDK habla por OkHttp; httpclient5 le llega de paso y, con él en el classpath, Spring
+			     cambia su cliente HTTP por defecto (TestRestTemplate incluido) a uno con jarra de cookies,
+			     y las sesiones de las pruebas se mezclaban (14/10/2026, 105 ITs rojas). Fuera. -->
+			<exclusions>
+				<exclusion>
+					<groupId>org.apache.httpcomponents.client5</groupId>
+					<artifactId>httpclient5</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
