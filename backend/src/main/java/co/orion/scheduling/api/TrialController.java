@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import co.orion.scheduling.application.BookingService;
@@ -27,9 +28,16 @@ public class TrialController {
         this.bookings = bookings;
     }
 
+    /**
+     * Con {@code adolescentProfileId}, la prueba de ese hijo: es una por cada hijo (Pardo, 14/10/2026),
+     * así que la de la madre y la de Sofi se miran por separado. Si el perfil no es del actor, la
+     * reserva lo rechaza después; aquí solo se consulta.
+     */
     @GetMapping("/api/v1/professors/{id}/trial")
-    public TrialResponse trial(@PathVariable UUID id, @AuthenticationPrincipal OrionUserDetails principal) {
-        BookingService.Prueba p = bookings.pruebaCon(principal.user().getId(), id);
+    public TrialResponse trial(@PathVariable UUID id,
+                               @RequestParam(required = false) UUID adolescentProfileId,
+                               @AuthenticationPrincipal OrionUserDetails principal) {
+        BookingService.Prueba p = bookings.pruebaCon(principal.user().getId(), id, adolescentProfileId);
         return new TrialResponse(p.ofrecida(), p.disponible(), p.motivo());
     }
 }

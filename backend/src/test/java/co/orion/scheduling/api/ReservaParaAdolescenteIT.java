@@ -215,4 +215,21 @@ class ReservaParaAdolescenteIT extends ApiIntegrationSupport {
         assertThat(profiles.findById(maria.getId()).orElseThrow().getMinorsClearedUntil()).isNull();
         assertThat(rest.getForEntity("/api/v1/professors?forMinor=true", PagedProfessors.class).getBody().totalElements()).isZero();
     }
+
+    @Test
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    @DisplayName("La clase de prueba es una por cada hijo: la de Sofi no gasta la de Ana, y la pantalla pregunta por cada uno")
+    void unaPruebaPorCadaHijo() {
+        jdbc.update("update professor_profiles set accepts_trial = true where user_id = ?", maria.getId());
+        String deSofi = "/api/v1/professors/" + maria.getId() + "/trial?adolescentProfileId=" + sofi;
+        String deAna = "/api/v1/professors/" + maria.getId() + "/trial";
+        assertThat(get(deSofi, ana, Map.class).getBody()).containsEntry("available", true);
+
+        Map<String, Object> prueba = new java.util.HashMap<>(reserva(maria.getId(), 9, sofi));
+        prueba.put("trial", true);
+        assertThat(post("/api/v1/bookings", ana, prueba, BookingResponse.class).getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+        assertThat(get(deSofi, ana, Map.class).getBody()).containsEntry("available", false);
+        assertThat(get(deAna, ana, Map.class).getBody()).containsEntry("available", true);
+    }
 }

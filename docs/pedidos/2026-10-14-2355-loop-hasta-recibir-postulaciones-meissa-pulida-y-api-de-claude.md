@@ -78,6 +78,12 @@ OpenAI como respaldo configurable; (4) terminar francés (probado con llaves rea
 5. **Textos legales 1.2 vigentes desde el 14/10/2026** (misma fecha para la autorización 1.0 y el
    código de conducta 1.0), publicados por el sembrador, como las versiones anteriores. Quien entre
    verá «Aceptar los nuevos acuerdos» una vez, como con la 1.1.
+6. **Los puntos de una clase de un adolescente, mientras no exista el paso 10 (00:25).** Hoy la clase
+   dictada «para Sofi» le suma los 25 puntos al libro del adulto, porque la reserva es suya y el paso 10
+   (puntos propios por hijo) es la última pieza del bloque. Contradice la decisión 10 solo en apariencia:
+   no hay estudiantes abiertos todavía, y el paso 10 moverá esos puntos al perfil del hijo (columna
+   `adolescent_profile_id` en `point_events`, el total del adulto deja de contarlos). Lo dejo escrito
+   para que lo leas, no para que lo descubras.
 
 ## Lo hecho durante la noche (se va completando)
 

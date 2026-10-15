@@ -121,10 +121,13 @@ export default function AgendaProfesorPage() {
 
   // La clase de prueba con este profe —gratis, V65—: si la ofrece y si a este estudiante le toca
   // (es una por pareja, y para conocerse). Solo lo pregunta un estudiante.
+  // Y con un hijo elegido, la prueba de ese hijo: es una por cada uno (14/10/2026).
   const prueba = useQuery({
-    queryKey: ["professor", id, "trial"],
+    queryKey: ["professor", id, "trial", paraQuien],
     queryFn: () =>
-      apiFetch<{ offered: boolean; available: boolean; reason: string | null }>(`/api/v1/professors/${id}/trial`),
+      apiFetch<{ offered: boolean; available: boolean; reason: string | null }>(
+        `/api/v1/professors/${id}/trial${paraQuien ? `?adolescentProfileId=${paraQuien}` : ""}`,
+      ),
     enabled: me?.role === "STUDENT",
   });
   const pruebaDisponible = prueba.data?.available === true;

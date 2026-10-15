@@ -39,32 +39,36 @@ export function Adolescentes() {
 
       {perfiles.data && perfiles.data.length > 0 && (
         <ul className="mt-4 grid gap-2.5">
+          {/* A 390 px el nombre, el sello y los dos botones no caben en una línea: en el celular los
+              botones bajan a una segunda fila; en escritorio todo va en una. */}
           {perfiles.data.map((p) => (
-            <li key={p.id} className="flex items-center gap-3 rounded-base border border-border px-4 py-3">
+            <li key={p.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-base border border-border px-4 py-3">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-lavender-soft text-[#5E4A8A]">
                 <UserRound size={18} strokeWidth={1.75} />
               </span>
-              <span className="min-w-0 flex-1">
+              <span className="min-w-0 flex-1 basis-40">
                 <span className="block font-semibold text-text">
-                  {p.firstName} <span className="font-normal text-text-secondary">· {p.age} años</span>
+                  {p.firstName} <span className="whitespace-nowrap font-normal text-text-secondary">· {p.age} años</span>
                 </span>
                 <span className="block truncate text-[12.5px] text-text-secondary">
                   {NIVELES.find((n) => n.code === p.selfDeclaredLevel)?.label ?? "Sin nivel"}
                   {p.motivation ? ` · ${p.motivation}` : ""}
                 </span>
               </span>
-              <Badge tono="menta">
-                <ShieldCheck size={12} strokeWidth={2.4} /> Autorizado
-              </Badge>
-              <Boton variante="contorno" className="h-9 px-3" onClick={() => setEditando(p)}>Editar</Boton>
-              <button
-                type="button"
-                aria-label={`Revocar la autorización de ${p.firstName}`}
-                onClick={() => setRevocando(p)}
-                className="flex h-9 w-9 items-center justify-center rounded-full text-text-muted hover:bg-surface-sunken hover:text-error focus-visible:shadow-focus"
-              >
-                <Trash2 size={16} strokeWidth={1.75} />
-              </button>
+              <span className="flex w-full items-center justify-end gap-2 sm:w-auto">
+                <Badge tono="menta">
+                  <ShieldCheck size={12} strokeWidth={2.4} /> Autorizado
+                </Badge>
+                <Boton variante="contorno" className="h-9 px-3" onClick={() => setEditando(p)}>Editar</Boton>
+                <button
+                  type="button"
+                  aria-label={`Revocar la autorización de ${p.firstName}`}
+                  onClick={() => setRevocando(p)}
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-text-muted hover:bg-surface-sunken hover:text-error focus-visible:shadow-focus"
+                >
+                  <Trash2 size={16} strokeWidth={1.75} />
+                </button>
+              </span>
             </li>
           ))}
         </ul>

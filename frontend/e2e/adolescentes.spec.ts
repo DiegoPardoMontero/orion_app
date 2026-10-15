@@ -20,10 +20,17 @@ test("[a-cuenta.1 a-reservar.1 a-clases.1] la madre crea el perfil de Sofi, rese
   const maria = idDe(SEMILLA.maria.email);
   // María queda habilitada: código aceptado, dos documentos y el interruptor del admin, como en producción.
   sqlLocal(`insert into agreement_acceptances (user_id, document_code, version, accepted_at) values ('${maria}', 'MINORS_CODE_OF_CONDUCT', '1.0', now()) on conflict do nothing`);
-  sqlLocal(`insert into teacher_documents (user_id, doc_type, file_name, storage_key, content_type, size_bytes) values ('${maria}', 'REGISTRY_CHECK', 'registro.pdf', 'e2e/registro', 'application/pdf', 10), ('${maria}', 'BACKGROUND_CHECK', 'antecedentes.pdf', 'e2e/antecedentes', 'application/pdf', 10)`);
+  // Sin índice único por (user_id, doc_type): se insertan solo si no están, para poder repetir la corrida.
+  sqlLocal(`insert into teacher_documents (user_id, doc_type, file_name, storage_key, content_type, size_bytes) select '${maria}', 'REGISTRY_CHECK', 'registro.pdf', 'e2e/registro', 'application/pdf', 10 where not exists (select 1 from teacher_documents where user_id = '${maria}' and doc_type = 'REGISTRY_CHECK')`);
+  sqlLocal(`insert into teacher_documents (user_id, doc_type, file_name, storage_key, content_type, size_bytes) select '${maria}', 'BACKGROUND_CHECK', 'antecedentes.pdf', 'e2e/antecedentes', 'application/pdf', 10 where not exists (select 1 from teacher_documents where user_id = '${maria}' and doc_type = 'BACKGROUND_CHECK')`);
   sqlLocal(`update professor_profiles set minors_cleared_until = current_date + 365, minors_cleared_at = now() where user_id = '${maria}'`);
 
   await estudianteNueva(page, "Madre de Sofi");
+  // «Primera reserva» se enciende encima de la página cuando le llega el logro, no en un momento
+  // fijo: el manejador lo cierra en cuanto aparezca, esté donde esté la prueba.
+  await page.addLocatorHandler(page.getByRole("dialog").filter({ hasText: "Primera reserva" }), async (d) => {
+    await d.getByRole("button", { name: "Seguir" }).click();
+  });
 
   // En Cuenta → Mi ficha y mis datos: «Adolescentes a mi cargo».
   await page.goto("/cuenta?seccion=ficha");
@@ -34,8 +41,9 @@ test("[a-cuenta.1 a-reservar.1 a-clases.1] la madre crea el perfil de Sofi, rese
   await page.getByRole("button", { name: "Seguir" }).click();
   await expect(page.getByRole("dialog")).toContainText("Autorización del representante legal");
   await expect(page.getByText(/padre, madre o tutor legal/).first()).toBeVisible();
-  await page.getByText(/Declaro que soy el padre, la madre o el tutor legal/).click();
-  await page.getByText(/Hablé con Sofi/).click();
+  // Por rol: el texto legal y la casilla dicen las dos «Declaro que soy el padre…».
+  await page.getByRole("checkbox", { name: /Declaro que soy el padre, la madre o el tutor legal de Sofi/ }).check();
+  await page.getByRole("checkbox", { name: /Hablé con Sofi/ }).check();
   await page.getByRole("button", { name: "Autorizar y crear el perfil" }).click();
   await expect(page.getByText(/Sofi · 1[3-7] años/)).toBeVisible();
   await expect(page.getByText("Autorizado")).toBeVisible();
@@ -51,25 +59,29 @@ test("[a-cuenta.1 a-reservar.1 a-clases.1] la madre crea el perfil de Sofi, rese
   await expect(page.getByText(/Habilitado por Orión para clases con adolescentes/)).toBeVisible();
   await page.getByRole("button", { name: /^Para Sofi/ }).click();
   await page.locator("main [aria-label='Horarios del día'] button").first().click();
-  await page.getByRole("button", { name: /Confirmar reserva|Continuar al pago/ }).click();
-  await expect(page).toHaveURL(/\/mis-clases|\/pago\//, { timeout: 20_000 });
+  // La de prueba, gratis: en local no hay Wompi, y además es la regla que importa (una por cada hijo).
+  await page.getByRole("button", { name: /^Clase de prueba/ }).click();
+  await page.getByRole("button", { name: /Confirmar reserva/ }).click();
+  await expect(page).toHaveURL(/\/mis-clases/, { timeout: 20_000 });
+  await expect(page.locator("main li").filter({ hasText: "Para Sofi" }).first()).toBeVisible();
 
-  if (/\/mis-clases/.test(page.url())) {
-    await expect(page.locator("main li").filter({ hasText: "Para Sofi" }).first()).toBeVisible();
-  } else {
-    // La clase de María se paga: la reserva existe aunque espere el pago, y dice para quién es.
-    const reservas = sqlLocal(`select count(*) from bookings where adolescent_profile_id is not null and professor_id = '${maria}'`);
-    expect(Number(reservas)).toBeGreaterThan(0);
-  }
+  // Una prueba por cada hijo (decisión 9 del 14/10): Sofi ya usó la suya con María; la madre conserva la propia.
+  await page.goto(`/profesores/${maria}`);
+  await page.getByRole("button", { name: /^Para Sofi/ }).click();
+  await page.locator("main [aria-label='Horarios del día'] button").first().click();
+  await expect(page.getByText("Total a pagar")).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Clase de prueba/ })).toHaveCount(0);
+  await page.getByRole("button", { name: "Para mí" }).click();
+  await expect(page.getByRole("button", { name: /^Clase de prueba/ })).toBeVisible();
 
   // El buscador para un adolescente solo trae a María.
   await page.goto("/profesores");
   await page.getByRole("button", { name: /Filtros/ }).first().click().catch(() => undefined);
   const toggle = page.getByRole("switch", { name: "Para un adolescente" }).first();
-  if (await toggle.isVisible().catch(() => false)) {
-    await toggle.click();
-    await expect(page.getByText(/María/).first()).toBeVisible();
-  }
+  await expect(toggle).toBeVisible();
+  await toggle.click();
+  await expect(page.getByText(/María/).first()).toBeVisible();
+  await expect(page.locator("main").getByText("Juan Torres")).toHaveCount(0);
 });
 
 test("[p-perfil.9] el profe ve «Clases con adolescentes» en su perfil, con los tres pasos", async ({ page }) => {
