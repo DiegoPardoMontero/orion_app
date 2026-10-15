@@ -34,6 +34,13 @@ como página: https://claude.ai/artifact/PKrHkCLJ6zCfTq7Q48RiCF
    también el párrafo de OpenAI, 8x8 y login social, sin revisión del abogado, por decisión de Pardo
    («las dos cosas, publicar ya»); se le manda al abogado para la siguiente ronda.
 
+9. **Prueba gratis: una por cada hijo** (14/10, 23:20). El índice `ux_bookings_una_prueba_por_pareja`
+   cuenta también el perfil del adolescente.
+10. **Puntos propios por hijo, visibles solo al adulto** (14/10, 23:20). Cada perfil de adolescente
+    lleva puntos, racha y logros; se ven dentro de la cuenta del adulto y nunca en público. Se
+    construye después del núcleo (perfiles, autorización, habilitación, reserva, aula): es la última
+    pieza del bloque.
+
 ## La propuesta, en corto
 
 - **Cuenta familiar**: perfiles de adolescente dentro de la cuenta del adulto, con nombre de pila, año de

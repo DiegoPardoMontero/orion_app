@@ -66,6 +66,11 @@ práctica; menores de edad con autorización del representante legal.
    el párrafo de OpenAI, 8x8 y el login social, y se publica sin que el abogado haya visto ese
    párrafo. Claude lo recomendó en contra (el párrafo de datos no tiene revisión jurídica); Pardo lo
    reafirmó eligiendo la opción. Queda anotado para que el abogado lo lea en la siguiente ronda.
+10. **Clase de prueba gratis con adolescentes (23:20):** «Una por cada hijo». El índice único de la
+    prueba pasa a contar el perfil del adolescente.
+11. **Gamificación de los hijos (23:20):** «Puntos propios por hijo, visibles solo al adulto». Cada
+    perfil de adolescente lleva su contador, su racha y sus logros dentro de la cuenta del adulto;
+    nada público. Pardo acepta que es más trabajo (una semana más).
 
 ## Estado
 

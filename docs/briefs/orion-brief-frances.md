@@ -40,9 +40,12 @@ francés de los profes. Casi toda la interfaz ya es condicional al número de id
    «Inglés» se actualizan (los e2e del profe eligen el botón «Inglés»: siguen funcionando porque el
    botón sigue existiendo; se añade un caso que agrega francés).
 5. **Sitemap**: `/idiomas/FR`.
-6. **Pruebas**: `V82` en un IT que publica un profe de francés y lo encuentra el buscador filtrando por
-   FR; `SignalExtractorTest` con una frase en francés con acentos que **no** cuenta como español; e2e:
-   un profe agrega francés en Mi perfil y un visitante lo ve en `/idiomas/FR`.
+6. **Pruebas** (lo que quedó hecho el 14/10): `CatalogoDeIdiomasIT` comprueba que el catálogo
+   público devuelve inglés y francés, y no español (es la V82); `ProfessorSearchIT` ya filtraba por
+   FR; `SignalExtractorTest` tiene la frase en francés con acentos que **no** cuenta como español;
+   los 105 e2e corren sobre la base con la V82. **Pendiente:** un e2e en que un profe agrega francés
+   en Mi perfil y un visitante lo ve en `/idiomas/FR`, y la prueba de Meissa, el acta y la práctica
+   en francés con la llave real.
 
 ## Fuera
 
