@@ -119,7 +119,8 @@ OpenAI como respaldo configurable; (4) terminar francés (probado con llaves rea
 ## Estado
 
 **Hecho lo de la noche (15/10, 07:05):** todo en master (`95636a5`), `verify` en verde (468 unitarias +
-718 de integración), 107 e2e sobre base limpia, correo de resumen enviado. **Queda para Pardo:** la
+718 de integración), 107 e2e sobre base limpia (segunda corrida a las 07:05, ya con el arreglo de la
+prueba por hijo) y 199 vitest, correo de resumen enviado. **Queda para Pardo:** la
 llave nueva de OpenAI, las dos variables de Railway para encender Claude, revisar las seis decisiones de
 arriba (en especial la 5, la transcripción, y la 6, los puntos del adolescente). **Queda del Bloque 12:**
 pasos 10 y 11, que no se empezaron: con el tiempo que había, medio paso 10 sin pruebas era peor que
