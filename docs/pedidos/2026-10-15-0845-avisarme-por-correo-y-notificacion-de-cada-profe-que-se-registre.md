@@ -5,7 +5,7 @@
 - **Fecha y hora:** 2026-10-15 08:45 (America/Bogota, UTC−5)
 - **Canal:** chat de Claude Code
 - **Sesión:** f5bedb76
-- **Commits relacionados:** (se completan)
+- **Commits relacionados:** `e8df8a1` (en `develop`, sin desplegar)
 - **Contexto:** el correo de invitación a profes **ya se envió**; las postulaciones pueden llegar en
   cualquier momento, con usuarios reales en producción.
 

@@ -5,7 +5,7 @@
 - **Fecha y hora:** 2026-10-15 08:32 (America/Bogota, UTC−5)
 - **Canal:** chat de Claude Code
 - **Sesión:** f5bedb76
-- **Commits relacionados:** el de «the tour opens with a big ¡Bienvenido a Orión! pop-up» en `develop`, sin desplegar
+- **Commits relacionados:** `012d779` y `6062333` (en `develop`, sin desplegar)
 
 ## El pedido exacto
 

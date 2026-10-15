@@ -5,7 +5,7 @@
 - **Fecha y hora:** 2026-10-15 09:10 (America/Bogota, UTC−5)
 - **Canal:** chat de Claude Code (mensaje enviado mientras se trabajaba el lote del 15/10)
 - **Sesión:** f5bedb76
-- **Commits relacionados:** (se completan; va en `develop`, sin desplegar)
+- **Commits relacionados:** `f3134b2` (en `develop`, sin desplegar)
 - **Contexto:** producción con usuarios reales; ya se están registrando aspirantes a profesor.
 
 ## El pedido exacto
@@ -40,4 +40,4 @@ solución es no depender del emoji: banderas en SVG.
 
 ## Estado
 
-**En curso en `develop`**; se cierra con el lote del 15/10.
+**Hecho en `develop`, sin desplegar.** Capturas revisadas a 390 px: la puerta de Meissa, el catálogo, el perfil del profe y el indicativo del WhatsApp muestran la bandera como imagen.

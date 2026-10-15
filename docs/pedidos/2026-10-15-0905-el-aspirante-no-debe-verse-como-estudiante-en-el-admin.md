@@ -5,7 +5,7 @@
 - **Fecha y hora:** 2026-10-15 09:05 (America/Bogota, UTC−5)
 - **Canal:** chat de Claude Code
 - **Sesión:** f5bedb76
-- **Commits relacionados:** (se completan; va en `develop`, sin desplegar)
+- **Commits relacionados:** `4d8da65` (en `develop`, sin desplegar)
 
 ## El pedido exacto
 

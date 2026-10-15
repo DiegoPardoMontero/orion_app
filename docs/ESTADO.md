@@ -953,6 +953,34 @@ Pendiente para Pardo:
   que dictaste», y desde la decisión 4 también entran las cancelaciones tardías.
 - El manual técnico necesita esta sección.
 
+## La mañana del 15/10/2026: el lote de `develop` con usuarios reales en producción
+
+Pardo pidió seis cosas entre las 08:14 y las 09:10 con la regla «YA ESTOY MANEJANDO USUARIOS REALES, NO
+tumbes prod»: todo se construyó en la rama `develop` y **no se despliega hasta que él lo autorice**
+(`docs/pedidos/2026-10-15-*`). Sin migraciones nuevas; una dependencia nueva en el frontend (`flag-icons`).
+
+- **Textos «inglés y francés»** donde todavía decía solo inglés (portada, FAQ de Meissa, ejemplos,
+  cierre de la práctica); fuera la pregunta frecuente «Mi tarifa está en cero».
+- **Enlaces oficiales** de la Policía Nacional en «Clases con adolescentes» (consulta de
+  inhabilidades y antecedentes judiciales). Los dos certificados siguen opcionales (decisión de Pardo).
+- **Previsualizador de documentos** (`VisorDeDocumento`): `GET /me/teacher-documents/{id}/content` y
+  `/admin/teachers/{userId}/documents/{docId}/content` sirven los bytes por Orión con la sesión
+  (`DocumentStorage.download`, que sigue el 302 de Cloudinary); PDF en marco, imagen en línea, siempre
+  con «Abrir en otra pestaña» y «Descargar». En local solo se vio el aviso de «no podemos abrir» (sin
+  Cloudinary): **lo primero que hay que probar en producción.** De paso, el ensayo del admin toma el
+  idioma del profe en vez de inglés fijo.
+- **El pop-up «¡Bienvenido a Orión!»** es la primera pantalla del recorrido la primera vez (amanecer,
+  constelación, logotipo, Rigel, «Empezar»); el video queda apagado mientras el ajuste
+  `professor_welcome_video_url` esté vacío.
+- **Avisos de profes nuevos:** `TeacherApplicationStartedEvent` al abrir la postulación por primera
+  vez → correo al equipo (admins + `ORION_ALERTS_TO`, por defecto diegopardomontero@gmail.com) y
+  notificación en la campana del admin; al enviarla, notificación además del correo que ya había.
+- **El aspirante en Usuarios** se ve como «Aspirante a profesor», con su filtro; «Estudiantes» ya no
+  lo incluye (`AdminUserResponse.teacherApplicant`, `role=TEACHER_APPLICANT`).
+- **Banderas como SVG** en todo (`<Bandera>`, `codigoDeBandera`): Windows pintaba «GB» y «FR».
+- Verificado el 15/10 a las 09:40: `verify` 1192 en verde, 107 e2e sobre base limpia, 199 vitest,
+  capturas revisadas a 390 y 1280 px.
+
 ## La noche del 14 al 15/10/2026: Claude, adolescentes (Bloque 12) y Meissa
 
 Pedido `docs/pedidos/2026-10-14-2355-…` («en loop hasta las 8am»). Cada decisión tomada sin Pardo está
