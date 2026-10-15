@@ -5,6 +5,7 @@ estado. La regla está en `CLAUDE.md` → «Registro de pedidos». Del más reci
 
 | Fecha | Pedido | Estado |
 |---|---|---|
+| 14/10/2026 21:35 | [Fundador por invitación, fundador desde el admin, francés y niños](2026-10-14-2135-fundador-por-invitacion-fundador-desde-admin-frances-y-ninos.md) | En curso: 8 decisiones tomadas |
 | 14/10/2026 18:47 | [Retomar el proyecto y lanzar pronto](2026-10-14-1847-retomar-el-proyecto-y-lanzar-pronto.md) | Hecho: plan v3; 5 decisiones pendientes |
 | 06/10/2026 22:47 | [Mantenimiento y revisión de todo el código](2026-10-06-2247-mantenimiento-y-revision-de-todo-el-codigo.md) | En curso |
 | 01/10/2026 10:37 | [¿Qué más nos falta?](2026-10-01-1037-que-mas-nos-falta.md) | Hecho; un pendiente de seguridad anotado |
