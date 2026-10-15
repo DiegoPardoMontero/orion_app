@@ -5,12 +5,12 @@ estado. La regla está en `CLAUDE.md` → «Registro de pedidos». Del más reci
 
 | Fecha | Pedido | Estado |
 |---|---|---|
-| 15/10/2026 08:32 | [Pop-up de «¡Bienvenido a Orión!» en vez del video, antes del recorrido](2026-10-15-0832-popup-de-bienvenida-en-vez-del-video-antes-del-recorrido.md) | Hecho en `develop`, sin desplegar |
-| 15/10/2026 09:10 | [Las banderas salen como «GB» o «FR» en Windows](2026-10-15-0910-las-banderas-salen-como-gb-o-fr-en-windows.md) | Hecho en `develop`, sin desplegar |
-| 15/10/2026 09:05 | [En el admin, quien se postula se ve como «Aspirante a profesor»](2026-10-15-0905-el-aspirante-no-debe-verse-como-estudiante-en-el-admin.md) | Hecho en `develop`, sin desplegar |
-| 15/10/2026 08:45 | [Avisar a Pardo, por correo y notificación, de cada profe que se registre](2026-10-15-0845-avisarme-por-correo-y-notificacion-de-cada-profe-que-se-registre.md) | Hecho en `develop`, sin desplegar |
-| 15/10/2026 08:40 | [Quitar la pregunta frecuente «Tu tarifa está en cero»](2026-10-15-0840-quitar-la-pregunta-frecuente-tu-tarifa-esta-en-cero.md) | Hecho en `develop` (`8033bce`), sin desplegar |
-| 15/10/2026 08:14 | [«Francés e inglés» en todo, certificados obligatorios, enlaces y previsualizador](2026-10-15-0814-frances-e-ingles-documentos-obligatorios-links-y-previsualizador.md) | Listo en `develop`; espera la autorización de Pardo para desplegar |
+| 15/10/2026 08:32 | [Pop-up de «¡Bienvenido a Orión!» en vez del video, antes del recorrido](2026-10-15-0832-popup-de-bienvenida-en-vez-del-video-antes-del-recorrido.md) | Desplegado el 15/10 09:44 |
+| 15/10/2026 09:10 | [Las banderas salen como «GB» o «FR» en Windows](2026-10-15-0910-las-banderas-salen-como-gb-o-fr-en-windows.md) | Desplegado el 15/10 09:44 |
+| 15/10/2026 09:05 | [En el admin, quien se postula se ve como «Aspirante a profesor»](2026-10-15-0905-el-aspirante-no-debe-verse-como-estudiante-en-el-admin.md) | Desplegado el 15/10 09:44 |
+| 15/10/2026 08:45 | [Avisar a Pardo, por correo y notificación, de cada profe que se registre](2026-10-15-0845-avisarme-por-correo-y-notificacion-de-cada-profe-que-se-registre.md) | Desplegado el 15/10 09:44 |
+| 15/10/2026 08:40 | [Quitar la pregunta frecuente «Tu tarifa está en cero»](2026-10-15-0840-quitar-la-pregunta-frecuente-tu-tarifa-esta-en-cero.md) | Desplegado el 15/10 09:44 |
+| 15/10/2026 08:14 | [«Francés e inglés» en todo, certificados obligatorios, enlaces y previsualizador](2026-10-15-0814-frances-e-ingles-documentos-obligatorios-links-y-previsualizador.md) | Desplegado el 15/10 09:44 |
 | 14/10/2026 23:55 | [En loop hasta recibir postulaciones, Meissa muy pulida y la API de Claude](2026-10-14-2355-loop-hasta-recibir-postulaciones-meissa-pulida-y-api-de-claude.md) | Hecho; quedan pasos 10 y 11 del Bloque 12 |
 | 14/10/2026 22:30 | [«Mi cuenta» antes que «Mi trabajo» en la barra lateral del profe](2026-10-14-2230-mi-cuenta-antes-que-mi-trabajo-en-la-sidebar.md) | Hecho |
 | 14/10/2026 21:35 | [Fundador por invitación, fundador desde el admin, francés y niños](2026-10-14-2135-fundador-por-invitacion-fundador-desde-admin-frances-y-ninos.md) | En curso: 8 decisiones tomadas |

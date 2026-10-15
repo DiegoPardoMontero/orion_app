@@ -83,7 +83,12 @@ autorice, tras el aviso de «listo».
 **09:20:** «Dale, me mandas el correo entonces, pero lo más pronto posible que puedas terminar todo,
 mejor.» → el aviso de «listo» va por correo a diegopardomontero@gmail.com, además del chat.
 
+**09:44, Pardo:** «Adelante, despliega, intenta que sea lo más rápido posible y avísame cuando
+terminaste.» → `master` avanzó a `c57c2e4` (fast-forward de `develop`) y se hizo push a las 09:44:55;
+Railway despliega solo.
+
 ## Estado
 
-**Listo en `develop`, sin desplegar.** Cuando Pardo diga, se hace merge a `master` y push; Railway lo
+**Desplegado** (push a `master` 15/10 09:44). Pendiente de que Pardo abra un documento real en el
+previsualizador. Cuando Pardo diga, se hace merge a `master` y push; Railway lo
 despliega. Lo primero que hay que mirar en producción es el previsualizador con un documento real.
