@@ -89,13 +89,7 @@ export const NAV_BY_ROLE: Record<Role, NavGroup[]> = {
         { href: "/mensajes", label: "Mensajes" },
       ],
     },
-    {
-      titulo: "Mi trabajo",
-      items: [
-        { href: "/ganancias", label: "Ganancias" },
-        { href: "/desempeno", label: "Desempeño" },
-      ],
-    },
+    // «Mi cuenta» antes que «Mi trabajo» (Pardo, 14/10/2026): el profe llega antes a lo suyo.
     {
       titulo: "Mi cuenta",
       items: [
@@ -104,6 +98,13 @@ export const NAV_BY_ROLE: Record<Role, NavGroup[]> = {
         // Su enlace para compartir, a la vista (24/09/2026): dentro del perfil nadie lo encontraba.
         { href: "/invitar", label: "Invitar estudiantes" },
         { href: "/ayuda", label: "Ayuda" },
+      ],
+    },
+    {
+      titulo: "Mi trabajo",
+      items: [
+        { href: "/ganancias", label: "Ganancias" },
+        { href: "/desempeno", label: "Desempeño" },
       ],
     },
   ],

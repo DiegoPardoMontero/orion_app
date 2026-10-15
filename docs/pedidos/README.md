@@ -5,6 +5,7 @@ estado. La regla está en `CLAUDE.md` → «Registro de pedidos». Del más reci
 
 | Fecha | Pedido | Estado |
 |---|---|---|
+| 14/10/2026 22:30 | [«Mi cuenta» antes que «Mi trabajo» en la barra lateral del profe](2026-10-14-2230-mi-cuenta-antes-que-mi-trabajo-en-la-sidebar.md) | En curso |
 | 14/10/2026 21:35 | [Fundador por invitación, fundador desde el admin, francés y niños](2026-10-14-2135-fundador-por-invitacion-fundador-desde-admin-frances-y-ninos.md) | En curso: 8 decisiones tomadas |
 | 14/10/2026 18:47 | [Retomar el proyecto y lanzar pronto](2026-10-14-1847-retomar-el-proyecto-y-lanzar-pronto.md) | Hecho: plan v3; 5 decisiones pendientes |
 | 06/10/2026 22:47 | [Mantenimiento y revisión de todo el código](2026-10-06-2247-mantenimiento-y-revision-de-todo-el-codigo.md) | En curso |
