@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { vozDelIdioma } from "@/lib/idiomas";
 
 /**
- * La voz en inglés del dispositivo, para los ejercicios de escucha. Es la síntesis de voz del
+ * La voz del dispositivo en el idioma de la clase (inglés o francés), para los ejercicios de escucha. Es la síntesis de voz del
  * navegador: no cuesta nada y no sale de la máquina del estudiante. La contracara es que no todos
  * los dispositivos traen una voz en inglés; ahí el ejercicio se puede saltar sin que cuente.
  *
@@ -9,7 +10,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * empieza en `null` —todavía no se sabe— y se decide en cuanto llegan o, si no llegan, al segundo y
  * medio.
  */
-export function useVozEnIngles() {
+export function useVozDelIdioma(codigo: string | null | undefined) {
+  const { prefijo, preferido } = vozDelIdioma(codigo);
   const [voz, setVoz] = useState<SpeechSynthesisVoice | null | undefined>(undefined);
   const [hablando, setHablando] = useState(false);
   const vivo = useRef(true);
@@ -21,11 +23,11 @@ export function useVozEnIngles() {
       return () => clearTimeout(t);
     }
     const elegir = () => {
-      const voces = window.speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().startsWith("en"));
+      const voces = window.speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().startsWith(prefijo));
       if (voces.length === 0) return false;
-      // Primero una de EE. UU. y, entre ellas, la local (suena igual sin red).
+      // Primero la variante preferida (EE. UU., Francia) y, entre ellas, la local (suena igual sin red).
       const preferida =
-        voces.find((v) => v.lang === "en-US" && v.localService) ?? voces.find((v) => v.lang === "en-US") ?? voces[0];
+        voces.find((v) => v.lang === preferido && v.localService) ?? voces.find((v) => v.lang === preferido) ?? voces[0];
       if (vivo.current) setVoz(preferida);
       return true;
     };
@@ -43,7 +45,7 @@ export function useVozEnIngles() {
       window.clearTimeout(limite);
       window.speechSynthesis.cancel();
     };
-  }, []);
+  }, [prefijo, preferido]);
 
   const hablar = useCallback(
     (texto: string, lento = false) => {

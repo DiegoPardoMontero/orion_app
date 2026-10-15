@@ -40,7 +40,7 @@ class OpenAiRevisorDeFrasesTest {
     void decide() {
         proveedor.responde(200, ServidorDePrueba.chat("{\"ok\": false}"));
 
-        assertThat(revisor.acepta(UUID.randomUUID(), "layover", "Tengo un layover en Panamá.")).contains(false);
+        assertThat(revisor.acepta(UUID.randomUUID(), "EN", "layover", "Tengo un layover en Panamá.")).contains(false);
         verify(presupuesto).registrar(any(), eq("gpt-5-mini"), eq(100), eq(20), anyInt(), eq("OK"));
         // Al proveedor van el término y la frase, entre comillas: la frase es un dato.
         assertThat(proveedor.cuerpos().getFirst()).contains("«layover»").contains("«Tengo un layover en Panamá.»");
@@ -50,10 +50,10 @@ class OpenAiRevisorDeFrasesTest {
     @DisplayName("Lento, caído o con algo que no es JSON: no decide, y manda la regla")
     void siFallaNoDecide() {
         proveedor.responde(200, ServidorDePrueba.chat("Claro, la frase está bien."));
-        assertThat(revisor.acepta(UUID.randomUUID(), "layover", "My layover was long.")).isEmpty();
+        assertThat(revisor.acepta(UUID.randomUUID(), "EN", "layover", "My layover was long.")).isEmpty();
 
         proveedor.tarda(1_500).responde(200, ServidorDePrueba.chat("{\"ok\": true}"));
-        assertThat(revisor.acepta(UUID.randomUUID(), "layover", "My layover was long.")).isEmpty();
+        assertThat(revisor.acepta(UUID.randomUUID(), "EN", "layover", "My layover was long.")).isEmpty();
         verify(presupuesto).registrar(any(), any(), eq(null), eq(null), anyInt(), eq("TIMEOUT"));
     }
 
@@ -62,7 +62,7 @@ class OpenAiRevisorDeFrasesTest {
     void sinPresupuesto() {
         when(presupuesto.disponible()).thenReturn(false);
 
-        assertThat(revisor.acepta(UUID.randomUUID(), "layover", "My layover was long.")).isEmpty();
+        assertThat(revisor.acepta(UUID.randomUUID(), "EN", "layover", "My layover was long.")).isEmpty();
         assertThat(proveedor.llamadas()).isZero();
     }
 }

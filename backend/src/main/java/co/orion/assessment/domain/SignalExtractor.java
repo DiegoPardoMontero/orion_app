@@ -52,6 +52,9 @@ public final class SignalExtractor {
             "and", "but", "or", "because", "so", "that", "which", "if", "when", "to", "of", "for",
             "with", "in", "on", "at", "the", "a", "an", "my", "your", "is", "was", "i", "it");
 
+    private static final Pattern ACENTOS_DEL_ESPANOL = Pattern.compile("[ñáéíóúü¿¡]", Pattern.CASE_INSENSITIVE);
+    private static final Pattern ACENTOS_QUE_EL_FRANCES_NO_TIENE = Pattern.compile("[ñáíóú¿¡]", Pattern.CASE_INSENSITIVE);
+
     /** Palabras funcionales del español. Su presencia en un turno delata el cambio de idioma. */
     private static final Set<String> ESPANOL = Set.of(
             "que", "como", "pero", "porque", "para", "con", "una", "uno", "los", "las", "del",
@@ -116,7 +119,10 @@ public final class SignalExtractor {
         if (vacio(transcripcion) || "ES".equalsIgnoreCase(idiomaEvaluado)) {
             return false;
         }
-        if (Pattern.compile("[ñáéíóúü¿¡]", Pattern.CASE_INSENSITIVE).matcher(transcripcion).find()) {
+        // En francés «é» y «ü» son francés («été», «Noël»): solo delatan español los signos que el
+        // francés no usa. Para el inglés, cualquier acento del español sirve (V82, 14/10/2026).
+        Pattern acentos = "FR".equalsIgnoreCase(idiomaEvaluado) ? ACENTOS_QUE_EL_FRANCES_NO_TIENE : ACENTOS_DEL_ESPANOL;
+        if (acentos.matcher(transcripcion).find()) {
             return true;
         }
         long funcionales = palabras(transcripcion).stream()

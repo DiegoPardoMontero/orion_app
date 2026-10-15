@@ -28,9 +28,9 @@ import { SITE_URL } from "@/lib/config";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Enseña en Orión · Construye tu agenda de clases de inglés",
+    title: "Enseña en Orión · Construye tu agenda de clases de inglés o francés",
     description:
-      "Publica tu perfil de profesor de inglés, define tus horarios y recibe estudiantes reales. Tú pones la tarifa, sin cuotas por adelantado.",
+      "Publica tu perfil de profesor de inglés o francés, define tus horarios y recibe estudiantes reales. Tú pones la tarifa, sin cuotas por adelantado.",
     alternates: { canonical: "/ensena-con-orion" },
     openGraph: {
       title: "Enseña en Orión",
@@ -51,7 +51,7 @@ const BENEFICIOS = [
   {
     icono: Users,
     titulo: "Estudiantes reales",
-    texto: "Tu perfil aparece en el buscador de Orión y en su página de inglés. Sin buscar clientes por tu cuenta.",
+    texto: "Tu perfil aparece en el buscador de Orión y en la página de tu idioma. Sin buscar clientes por tu cuenta.",
   },
   {
     icono: Wallet,
@@ -103,7 +103,7 @@ export default function EnsenaConOrionPage() {
             url: `${SITE_URL}/ensena-con-orion`,
             inLanguage: "es-CO",
             description:
-              "Propuesta para profesores de inglés: publica tu perfil, define tus horarios y recibe estudiantes.",
+              "Propuesta para profesores de inglés y francés: publica tu perfil, define tus horarios y recibe estudiantes.",
             publisher: {
               "@type": "Organization",
               name: "Orión Idiomas",
@@ -122,10 +122,10 @@ export default function EnsenaConOrionPage() {
           <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-center">
             <div>
               <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-on-primary/80">
-                Para profesores de inglés
+                Para profesores de inglés y francés
               </p>
               <h1 className="mt-3 max-w-[20ch] font-display text-[32px] font-bold leading-[1.1] text-on-primary lg:text-[48px]">
-                Enseña inglés. Construye tu agenda en Orión.
+                Enseña inglés o francés. Construye tu agenda en Orión.
               </h1>
               <p className="mt-4 max-w-[52ch] text-[15px] leading-relaxed text-on-primary/85 lg:text-[17px]">
                 Publica tu perfil, define tus horarios y recibe estudiantes reales que quieren

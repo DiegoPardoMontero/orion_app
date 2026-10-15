@@ -9,6 +9,8 @@ import type { GoalResponse } from "@/lib/api/types";
 import { dias, useCifras } from "@/lib/cifras";
 import { AvisoError } from "@/components/estados";
 import { Boton } from "@/components/ui";
+import type { LanguageResponse } from "@/lib/api/types";
+import { nombreDelIdioma } from "@/lib/idiomas";
 
 /**
  * La puerta de entrada: para qué quieres el idioma, y el permiso para usar tu voz.
@@ -37,10 +39,11 @@ export function Puerta({
   nombreDelLead: string | null;
   empezando: boolean;
   error: string | null;
-  onListo: (objetivos: string[]) => void;
+  onListo: (objetivos: string[], idioma: string) => void;
 }) {
   const cifras = useCifras();
   const [objetivos, setObjetivos] = useState<string[]>([]);
+  const [idioma, setIdioma] = useState("EN");
   const [nombre, setNombre] = useState("");
   const [mayor, setMayor] = useState(false);
   const [voz, setVoz] = useState(false);
@@ -50,11 +53,18 @@ export function Puerta({
     queryFn: () => apiFetch<GoalResponse[]>("/api/v1/catalog/goals"),
     staleTime: 5 * 60_000,
   });
+  // Los idiomas que Orión enseña hoy (inglés y francés desde la V82). Con uno solo no se pregunta.
+  const idiomas = useQuery({
+    queryKey: ["catalog", "languages"],
+    queryFn: () => apiFetch<LanguageResponse[]>("/api/v1/catalog/languages"),
+    staleTime: 5 * 60_000,
+  });
+  const variosIdiomas = (idiomas.data ?? []).length > 1;
 
   // Con cuenta: la autorización de voz de siempre.
   const consentir = useMutation({
     mutationFn: () => apiFetch("/api/v1/me/voice-consent", { method: "POST", body: {} }),
-    onSuccess: () => onListo(objetivos),
+    onSuccess: () => onListo(objetivos, idioma),
   });
 
   // Sin cuenta: el lead, con su nombre y sus dos declaraciones.
@@ -65,7 +75,7 @@ export function Puerta({
         body: { firstName: nombre.trim(), adult: mayor, acceptsVoice: voz },
         redirectOn401: false,
       }),
-    onSuccess: () => onListo(objetivos),
+    onSuccess: () => onListo(objetivos, idioma),
   });
 
   const conocido = sinCuenta && nombreDelLead != null;
@@ -74,7 +84,7 @@ export function Puerta({
   const ocupado = empezando || consentir.isPending || presentarse.isPending;
 
   const empezar = () => {
-    if (conocido) onListo(objetivos);
+    if (conocido) onListo(objetivos, idioma);
     else if (nuevo) presentarse.mutate();
     else consentir.mutate();
   };
@@ -111,8 +121,39 @@ export function Puerta({
         </label>
       )}
 
+      {variosIdiomas && (
+        <section className="mt-5">
+          <h2 className="text-[14px] font-bold text-text">¿Qué idioma quieres practicar?</h2>
+          <div className="mt-2.5 flex flex-wrap gap-2" role="radiogroup" aria-label="Idioma del diagnóstico">
+            {(idiomas.data ?? []).map((lengua) => {
+              const codigo = lengua.code ?? "";
+              const activo = idioma === codigo;
+              return (
+                <button
+                  key={codigo}
+                  type="button"
+                  role="radio"
+                  aria-checked={activo}
+                  onClick={() => setIdioma(codigo)}
+                  className={`min-h-11 rounded-pill px-4 text-[13.5px] font-semibold transition-colors focus-visible:shadow-focus ${
+                    activo
+                      ? "bg-primary text-on-primary"
+                      : "bg-surface-sunken text-text-secondary hover:bg-border/60 hover:text-text"
+                  }`}
+                >
+                  {lengua.flagEmoji && <span aria-hidden="true">{lengua.flagEmoji} </span>}
+                  {lengua.nameEs}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       <section className="mt-5">
-        <h2 className="text-[14px] font-bold text-text">¿Para qué quieres el inglés?</h2>
+        <h2 className="text-[14px] font-bold text-text">
+          ¿Para qué quieres el {nombreDelIdioma(idioma)}?
+        </h2>
         <p className="mt-0.5 text-[12.5px] text-text-secondary">
           Opcional. No cambia tu resultado: cambia con quién te conviene empezar.
         </p>

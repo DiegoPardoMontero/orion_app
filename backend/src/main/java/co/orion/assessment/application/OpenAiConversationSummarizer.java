@@ -25,6 +25,7 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
 import co.orion.assessment.domain.AiUsageOutcome;
+import co.orion.shared.text.NombreDelIdioma;
 
 /**
  * El resumen personalizado, escrito por un modelo de texto de OpenAI a partir de la transcripción.
@@ -49,7 +50,7 @@ public class OpenAiConversationSummarizer implements ConversationSummarizer {
     private static final Logger log = LoggerFactory.getLogger(OpenAiConversationSummarizer.class);
 
     static final String NAME = "openai-text";
-    static final String PROMPT = "prompts/assessment-summary-v1.txt";
+    static final String PROMPT = "prompts/assessment-summary-v2.txt";
     static final int LARGO_MAXIMO = 480;
 
     private static final String ENDPOINT = "https://api.openai.com/v1/chat/completions";
@@ -126,7 +127,7 @@ public class OpenAiConversationSummarizer implements ConversationSummarizer {
         Map<String, Object> cuerpo = new LinkedHashMap<>();
         cuerpo.put("model", model);
         cuerpo.put("messages", List.of(
-                Map.of("role", "system", "content", instrucciones()),
+                Map.of("role", "system", "content", instrucciones(pedido.idioma())),
                 Map.of("role", "user", "content", conversacion(pedido))));
         // Tope de salida: el razonamiento también cuenta aquí, y un resumen de tres frases no
         // necesita más. Sin él, una respuesta desbocada se pagaría entera.
@@ -188,13 +189,14 @@ public class OpenAiConversationSummarizer implements ConversationSummarizer {
         return null;
     }
 
-    private static String instrucciones() {
+    private static String instrucciones(String idioma) {
         try {
             String archivo = new String(new ClassPathResource(PROMPT).getInputStream().readAllBytes(),
                     StandardCharsets.UTF_8);
             return archivo.lines().filter(l -> !l.startsWith("#"))
                     .reduce(new StringBuilder(), (sb, l) -> sb.append(l).append('\n'), (a, b) -> a)
-                    .toString().trim();
+                    .toString().trim()
+                    .replace("{{IDIOMA}}", NombreDelIdioma.enEspanol(idioma));
         } catch (IOException ex) {
             throw new UncheckedIOException("No se pudo leer " + PROMPT, ex);
         }

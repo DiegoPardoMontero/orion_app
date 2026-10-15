@@ -62,6 +62,10 @@ práctica; menores de edad con autorización del representante legal.
    de adolescentes y, en la Política, OpenAI, 8x8 y el login social; se arregla de paso que publicar
    una versión nueva sí pida aceptarla (cláusula 15).
 8. **Franja horaria para adolescentes:** «Sin franja: cualquier cupo del profe».
+9. **Política 1.2 (22:55):** «Las dos cosas, publicar ya». La 1.2 lleva el capítulo de adolescentes **y**
+   el párrafo de OpenAI, 8x8 y el login social, y se publica sin que el abogado haya visto ese
+   párrafo. Claude lo recomendó en contra (el párrafo de datos no tiene revisión jurídica); Pardo lo
+   reafirmó eligiendo la opción. Queda anotado para que el abogado lo lea en la siguiente ronda.
 
 ## Estado
 

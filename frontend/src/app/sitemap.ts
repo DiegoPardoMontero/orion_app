@@ -9,9 +9,9 @@ import { SITE_URL } from "@/lib/config";
  * `robots.ts` y no aportarían SEO). Lo que sí es público: la portada, las landings por idioma y
  * "Enseña en Orión". Cada idioma activo del catálogo tiene landing propia (/idiomas/{code}).
  */
-// Solo los idiomas que Orión enseña hoy. Anunciar en el sitemap una landing de francés que ya no
-// lleva a ningún profesor es pedirle a Google que indexe una página vacía.
-const IDIOMAS_PUBLICOS = ["EN"];
+// Solo los idiomas que Orión enseña hoy: inglés y, desde la V82 (14/10/2026), francés. Anunciar una
+// landing de un idioma apagado es pedirle a Google que indexe una página vacía.
+const IDIOMAS_PUBLICOS = ["EN", "FR"];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const idiomas: MetadataRoute.Sitemap = IDIOMAS_PUBLICOS.map((code) => ({

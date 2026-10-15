@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { NOMBRE_DE_CATEGORIA, type CategoriaDeEjercicio } from "@/lib/practica";
+import { useIdiomaDeLaClase } from "@/components/practica/IdiomaDeLaClase";
 
 /**
  * Las piezas de la pantalla de ejercicio (handoff `design_handoff_orion_practica`, §9). Todas salen
@@ -453,15 +454,16 @@ export function Reproducir({
   );
 }
 
-/** Sin voz en inglés (§9.5): el reproductor se cambia por este aviso y se puede saltar. */
+/** Sin voz en el idioma de la clase (§9.5): el reproductor se cambia por este aviso y se puede saltar. */
 export function SinVoz() {
+  const idioma = useIdiomaDeLaClase();
   return (
     <div role="note" className="flex items-start gap-3.5 rounded-tarjeta bg-shown-bg px-[18px] py-4">
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-lavanda-ink" aria-hidden>
         <VolumeX size={20} strokeWidth={1.75} />
       </span>
       <span className="flex flex-col gap-1">
-        <strong className="text-[16px]">Tu dispositivo no tiene voz en inglés</strong>
+        <strong className="text-[16px]">Tu dispositivo no tiene voz en {idioma}</strong>
         <span className="text-[14px] leading-[1.5] text-ink-2">Puedes saltar este ejercicio. No cuenta como error.</span>
       </span>
     </div>

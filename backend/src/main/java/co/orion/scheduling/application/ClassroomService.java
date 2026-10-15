@@ -115,6 +115,7 @@ public class ClassroomService {
 
         return new ClassroomResponse(
                 estado,
+                booking.getLanguageCode(),
                 enBogota(booking.getStartsAt()),
                 enBogota(booking.getEndsAt()),
                 enBogota(abre),

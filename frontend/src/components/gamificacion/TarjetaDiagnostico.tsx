@@ -40,7 +40,7 @@ export function TarjetaDiagnostico() {
         <Sparkles size={22} strokeWidth={1.9} className="shrink-0 text-accent-peach" />
         <span className="min-w-0 flex-1">
           <span className="block font-display text-[16px] font-bold">
-            Prueba tu inglés en {minutos(cifras.assessmentMinutes)}
+            Prueba tu idioma en {minutos(cifras.assessmentMinutes)}
           </span>
           <span className="mt-0.5 block text-[13px] text-text-on-night/80">
             Una conversación con Meissa, sin examen; puedes hablarle en español. Al final te recomienda

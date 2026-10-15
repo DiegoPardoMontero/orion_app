@@ -41,6 +41,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import co.orion.practice.domain.Evaluador;
 import co.orion.practice.domain.PracticeCategory;
 import co.orion.practice.domain.PracticeItemType;
+import co.orion.shared.text.NombreDelIdioma;
 
 /**
  * La práctica con {@code gpt-5-mini}, en JSON estricto. La salida no se cree: pasa por
@@ -54,7 +55,7 @@ public class OpenAiPracticeGenerator implements PracticeGenerator {
     private static final Logger log = LoggerFactory.getLogger(OpenAiPracticeGenerator.class);
     private static final ObjectMapper JSON = new ObjectMapper();
     static final String PROMPT = "prompts/practice-v7.txt";
-    static final String REVISION = "prompts/practice-check-v2.txt";
+    static final String REVISION = "prompts/practice-check-v3.txt";
 
     /** Los que tienen una sola respuesta correcta: los que la revisión puede resolver y comparar. */
     private static final Set<PracticeItemType> CERRADOS = EnumSet.of(PracticeItemType.FILL_BLANK,
@@ -128,7 +129,7 @@ public class OpenAiPracticeGenerator implements PracticeGenerator {
         List<Generado> generados = leer(contenido(respuesta));
         presupuesto.registrar(estudianteId, modelo, tokens(respuesta, "prompt_tokens"),
                 tokens(respuesta, "completion_tokens"), ms(inicio), generados.isEmpty() ? "INVALID_OUTPUT" : "OK");
-        return revisados(estudianteId, generados);
+        return revisados(estudianteId, material.languageCode(), generados);
     }
 
     /**
@@ -141,7 +142,7 @@ public class OpenAiPracticeGenerator implements PracticeGenerator {
      * <p>Si la revisión falla, los ejercicios siguen sin revisar: es una mejora, no una puerta, y un
      * set no se pierde porque la segunda llamada no respondió.
      */
-    List<Generado> revisados(UUID estudianteId, List<Generado> generados) {
+    List<Generado> revisados(UUID estudianteId, String languageCode, List<Generado> generados) {
         if (generados.stream().noneMatch(g -> CERRADOS.contains(g.tipo()))) {
             return generados;
         }
@@ -151,7 +152,7 @@ public class OpenAiPracticeGenerator implements PracticeGenerator {
             respuesta = http.post().uri(endpoint)
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(cuerpoDeRevision(generados))
+                    .body(cuerpoDeRevision(generados, languageCode))
                     .retrieve()
                     .body(Map.class);
         } catch (RuntimeException ex) {
@@ -166,7 +167,7 @@ public class OpenAiPracticeGenerator implements PracticeGenerator {
         return aplicarRevision(generados, respuestas);
     }
 
-    Map<String, Object> cuerpoDeRevision(List<Generado> generados) {
+    Map<String, Object> cuerpoDeRevision(List<Generado> generados, String languageCode) {
         ArrayNode ejercicios = JSON.createArrayNode();
         for (int i = 0; i < generados.size(); i++) {
             Generado g = generados.get(i);
@@ -187,7 +188,8 @@ public class OpenAiPracticeGenerator implements PracticeGenerator {
         cuerpo.put("max_completion_tokens", 2500);
         cuerpo.put("response_format", Map.of("type", "json_object"));
         cuerpo.put("messages", List.of(
-                Map.of("role", "system", "content", leerPrompt(REVISION)),
+                Map.of("role", "system", "content",
+                        leerPrompt(REVISION).replace("{{IDIOMA}}", NombreDelIdioma.enEspanol(languageCode))),
                 Map.of("role", "user", "content", ejercicios.toString())));
         return cuerpo;
     }

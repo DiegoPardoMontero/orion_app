@@ -46,7 +46,7 @@ export default function InvitarPage() {
   const enlace = corto.data?.slug ? `${origen}/p/${corto.data.slug}` : `${origen}/profesores/${me.id}`;
   const p = perfil.data;
   const prueba = p?.acceptsTrial ? " La primera clase, de prueba, es gratis." : "";
-  const mensajeInicial = `¡Hola! Ya doy clases de inglés en Orión. Ahí ves mi perfil y reservas tu clase conmigo en un minuto.${prueba}`;
+  const mensajeInicial = `¡Hola! Ya doy clases en Orión. Ahí ves mi perfil y reservas tu clase conmigo en un minuto.${prueba}`;
 
   return (
     <Invitar
@@ -95,7 +95,7 @@ function Invitar({
     { nombre: "Telegram", href: `https://t.me/share/url?url=${u}&text=${t}`, icono: <Send size={18} strokeWidth={1.9} /> },
     {
       nombre: "Correo",
-      href: `mailto:?subject=${encodeURIComponent("Clases de inglés conmigo en Orión")}&body=${encodeURIComponent(completo)}`,
+      href: `mailto:?subject=${encodeURIComponent("Clases conmigo en Orión")}&body=${encodeURIComponent(completo)}`,
       icono: <Mail size={18} strokeWidth={1.9} />,
     },
   ];

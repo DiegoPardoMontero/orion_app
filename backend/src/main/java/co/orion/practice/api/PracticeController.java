@@ -129,7 +129,7 @@ public class PracticeController {
                     PracticeSet s = c.set();
                     List<PracticeItem> ej = c.ejercicios();
                     String estudiante = users.findById(s.getStudentId()).map(u -> u.getFullName()).orElse(null);
-                    return ResponseEntity.ok(new PracticaDelActa(s.getId(), s.getStatus().name(), s.getItemCount(),
+                    return ResponseEntity.ok(new PracticaDelActa(s.getId(), s.getStatus().name(), s.getLanguageCode(), s.getItemCount(),
                             bogota(s.getExpiresAt()), bogota(s.getCompletedAt()), estudiante,
                             (int) ej.stream().filter(PracticeItem::alPrimerIntento).count(),
                             (int) ej.stream().filter(PracticeItem::alSegundoIntento).count(),
@@ -173,7 +173,7 @@ public class PracticeController {
     }
 
     /** El set de un acta con su resumen: cuántos al primer intento, al segundo, mostrados y saltados. */
-    public record PracticaDelActa(UUID id, String status, int itemCount, ZonedDateTime expiresAt,
+    public record PracticaDelActa(UUID id, String status, String languageCode, int itemCount, ZonedDateTime expiresAt,
                                   ZonedDateTime completedAt, String studentName, int firstTry, int secondTry,
                                   int shown, int skipped, List<EjercicioDelActa> items) {
     }
@@ -210,7 +210,7 @@ public class PracticeController {
                            String explanation, String expected, String answer) {
     }
 
-    public record SetView(UUID id, String status, UUID lessonNoteId, String bookingId, ZonedDateTime classStartsAt,
+    public record SetView(UUID id, String status, String languageCode, UUID lessonNoteId, String bookingId, ZonedDateTime classStartsAt,
                           String professorName, String workedOn, int vocabularyCount, Integer estimatedMinutes,
                           int itemCount, int correctCount, ZonedDateTime expiresAt, ZonedDateTime completedAt,
                           List<ItemView> items, boolean perfect) {
@@ -230,7 +230,7 @@ public class PracticeController {
         PracticeSet s = c.set();
         Material m = material(s);
         String profe = users.findById(s.getProfessorId()).map(u -> u.getFullName()).orElse(null);
-        return new SetView(s.getId(), s.getStatus().name(), s.getLessonNoteId(), m == null ? null : m.bookingId(),
+        return new SetView(s.getId(), s.getStatus().name(), s.getLanguageCode(), s.getLessonNoteId(), m == null ? null : m.bookingId(),
                 m == null || m.classStartsAt() == null ? null
                         : ZonedDateTime.ofInstant(java.time.Instant.parse(m.classStartsAt()), BusinessZone.BOGOTA),
                 profe, m == null ? null : m.workedOn(), m == null ? 0 : m.vocabulary().size(),

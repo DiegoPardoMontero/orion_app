@@ -44,6 +44,7 @@ export default function DiagnosticoPage() {
   const [fase, setFase] = useState<Fase>("puerta");
   const [sesion, setSesion] = useState<DiagnosticoIniciado | null>(null);
   const [objetivos, setObjetivos] = useState<string[]>([]);
+  const [idioma, setIdioma] = useState("EN");
   const [resultado, setResultado] = useState<Diagnostico | null>(null);
 
   const me = useQuery({
@@ -62,10 +63,10 @@ export default function DiagnosticoPage() {
   });
 
   const empezar = useMutation({
-    mutationFn: (metas: string[]) =>
+    mutationFn: ({ metas, idioma }: { metas: string[]; idioma: string }) =>
       apiFetch<DiagnosticoIniciado>("/api/v1/assessments", {
         method: "POST",
-        body: { languageCode: "EN", goals: metas },
+        body: { languageCode: idioma, goals: metas },
         ...SIN_REDIRIGIR,
       }),
     onSuccess: (iniciada) => {
@@ -114,7 +115,7 @@ export default function DiagnosticoPage() {
             .catch(() => undefined)
             .finally(() => router.push("/diagnostico"));
         }}
-        onReintentar={() => empezar.mutate(objetivos)}
+        onReintentar={() => empezar.mutate({ metas: objetivos, idioma })}
       />
     );
   }
@@ -198,9 +199,10 @@ export default function DiagnosticoPage() {
         nombreDelLead={lead.data?.firstName ?? null}
         empezando={empezar.isPending}
         error={bloqueado}
-        onListo={(metas) => {
+        onListo={(metas, elegido) => {
           setObjetivos(metas);
-          empezar.mutate(metas);
+          setIdioma(elegido);
+          empezar.mutate({ metas, idioma: elegido });
         }}
       />
     </>

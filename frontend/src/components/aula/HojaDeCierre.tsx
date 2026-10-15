@@ -11,6 +11,7 @@ import { momentosDeAsistencia, useAhoraHasta } from "@/components/aula/asistenci
 import type { ClassroomResponse } from "@/lib/api/aula";
 import { useCifras } from "@/lib/cifras";
 import { horaBogota, rangoHoras } from "@/lib/format";
+import { nombreDelIdioma } from "@/lib/idiomas";
 
 const VALOR: Record<number, string> = {
   1: "Mejorable",
@@ -109,7 +110,7 @@ function CierreEstudiante({
     <>
       <div className="bg-[linear-gradient(135deg,#2e1e4e_0%,#7a4a8c_55%,#e8764f_100%)] px-6 py-7 text-text-on-night">
         <p className="font-display text-h2 font-bold">
-          Hablaste {minutos} {minutos === 1 ? "minuto" : "minutos"} en inglés.
+          Hablaste {minutos} {minutos === 1 ? "minuto" : "minutos"} en {nombreDelIdioma(datos.languageCode)}.
         </p>
         <p className="mt-1 text-[13px] opacity-85">{rangoHoras(datos.startsAt, datos.endsAt)}</p>
       </div>

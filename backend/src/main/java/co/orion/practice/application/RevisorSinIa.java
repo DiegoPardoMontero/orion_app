@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 public class RevisorSinIa implements RevisorDeFrases {
 
     @Override
-    public Optional<Boolean> acepta(UUID estudianteId, String termino, String frase) {
+    public Optional<Boolean> acepta(UUID estudianteId, String languageCode, String termino, String frase) {
         return Optional.empty();
     }
 }

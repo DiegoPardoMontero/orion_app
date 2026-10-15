@@ -1,6 +1,7 @@
 /**
  * Las dos preguntas del buscador de la portada (Sofía, 23/09/2026): para qué y cuándo. El idioma no
- * se pregunta: hoy Orión solo enseña inglés, y un filtro con una sola opción no es un filtro.
+ * se pregunta: con un solo idioma activo un filtro con una sola opción no es un filtro; con inglés y
+ * francés (V82) el idioma se elige en el buscador de /profesores.
  *
  * <p>Cada opción es un filtro real del directorio: «Trabajo» son los objetivos de negocios y de
  * entrevistas, y «Fin de semana» son sábado y domingo en el filtro de días.

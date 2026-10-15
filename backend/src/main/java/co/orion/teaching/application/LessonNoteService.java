@@ -36,6 +36,7 @@ import co.orion.teaching.domain.LessonNoteStatus;
 import co.orion.teaching.domain.LessonVocabulary;
 import co.orion.teaching.persistence.LessonNoteRepository;
 import co.orion.teaching.persistence.LessonVocabularyRepository;
+import co.orion.shared.text.NombreDelIdioma;
 
 /**
  * El acta de clase (Bloque 10, Parte A): del crudo del profesor al acta que lee el estudiante.
@@ -294,7 +295,7 @@ public class LessonNoteService {
         String nivel = perfil.map(StudentProfile::getSelfDeclaredLevel).map(Enum::name).orElse(null);
         String objetivo = perfil.map(StudentProfile::getMotivation).map(t -> TextoParaIa.unaLinea(t, 280)).orElse(null);
         return new LessonNoteDrafter.Contexto(profesor.getId(), crudo, nombre,
-                "EN".equalsIgnoreCase(b.getLanguageCode()) || b.getLanguageCode() == null ? "inglés" : b.getLanguageCode(),
+                NombreDelIdioma.enEspanol(b.getLanguageCode()),
                 nivel, objetivo);
     }
 

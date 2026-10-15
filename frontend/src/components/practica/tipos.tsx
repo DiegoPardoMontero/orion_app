@@ -9,7 +9,8 @@ import {
   unirFichas,
   type Ejercicio,
 } from "@/lib/practica";
-import type { useVozEnIngles } from "@/lib/voz";
+import type { useVozDelIdioma } from "@/lib/voz";
+import { useIdiomaDeLaClase } from "@/components/practica/IdiomaDeLaClase";
 import {
   BurbujaEllos,
   BurbujaTu,
@@ -38,7 +39,7 @@ import {
 
 export type Fase = "inicial" | "interactuando" | "enviando" | "correcto" | "casi" | "mostrada" | "sinvoz" | "saltado";
 
-export type Voz = ReturnType<typeof useVozEnIngles>;
+export type Voz = ReturnType<typeof useVozDelIdioma>;
 
 export type PropsTipo = {
   item: Ejercicio;
@@ -100,6 +101,7 @@ export function Parejas({
   /** Cualquier toque saca de «casi». */
   onTocar: () => void;
 }) {
+  const idiomaDeLaClase = useIdiomaDeLaClase();
   const p = leerPayload<{ terms?: string[]; meanings?: string[] }>(item);
   const terminos = p.terms ?? [];
   const significados = p.meanings ?? [];
@@ -196,7 +198,7 @@ export function Parejas({
 
   return (
     <div className="grid grid-cols-2 gap-2.5">
-      <div role="group" aria-label="Palabras en inglés" className="flex flex-col gap-2.5">
+      <div role="group" aria-label={`Palabras en ${idiomaDeLaClase}`} className="flex flex-col gap-2.5">
         {terminos.map((t, i) => tarjeta("L", t, i))}
       </div>
       <div role="group" aria-label="Significados en español" className="flex flex-col gap-2.5">

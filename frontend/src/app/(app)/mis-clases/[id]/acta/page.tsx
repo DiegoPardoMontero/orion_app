@@ -671,7 +671,7 @@ function Vocabulario({ palabras, onCambio }: { palabras: Palabra[]; onCambio: (p
               }
               if (e.key === "Escape") setAgregando(false);
             }}
-            placeholder="La palabra, en inglés"
+            placeholder="La palabra, en el idioma de la clase"
             className="min-h-11 min-w-0 flex-1 rounded-pill border-[1.5px] border-line bg-white px-4 text-[14px] outline-none focus:border-2 focus:border-noche"
           />
           <Boton variante="fantasma" onClick={agregar} aria-label="Agregar la palabra">

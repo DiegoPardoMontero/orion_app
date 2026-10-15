@@ -28,7 +28,7 @@ import { minutos, minutosEnLetras } from "@/lib/cifras";
 export async function generateMetadata(): Promise<Metadata> {
   const duracion = await minutosDelDiagnostico();
   return {
-    title: `Prueba tu inglés en ${minutos(duracion)} · Orión`,
+    title: `Prueba tu inglés o tu francés en ${minutos(duracion)} · Orión`,
     description: `Una conversación de ${minutosEnLetras(duracion)} con Meissa, sin cuenta y sin examen. Recibe tu Confidence Score, un resumen de lo que contaste y tres profesores elegidos para ti. Gratis.`,
     alternates: { canonical: "/diagnostico" },
   };
@@ -63,7 +63,7 @@ export default async function DiagnosticoPage() {
 
         <div className="relative mt-auto hidden lg:block">
           <h1 className="max-w-[14ch] font-display text-[40px] font-bold leading-[1.08] text-on-primary">
-            Prueba tu inglés hablando.
+            Prueba tu inglés o tu francés hablando.
           </h1>
           <p className="mt-3 text-[15px] text-on-primary/80">
             {EnLetras} de conversación, si quieres. Sin cuenta, sin tarjeta, sin nota.
@@ -78,8 +78,8 @@ export default async function DiagnosticoPage() {
           </h2>
           <p className="mt-2 text-[15px] leading-relaxed text-text-secondary">
             Es voluntario y no es un examen. <strong className="text-text">Puedes hablarle en español</strong>:
-            es solo para que te conozca, entienda tu contexto y por qué quieres aprender inglés. Si te
-            animas en inglés, también vale.
+            es solo para que te conozca, entienda tu contexto y por qué quieres aprender el idioma. Si te
+            animas en el idioma, también vale.
           </p>
 
           <p className="mt-5 flex items-start gap-3 rounded-[16px] border border-border bg-surface-raised p-4 text-[13px] leading-relaxed text-[#5E4E6B]">

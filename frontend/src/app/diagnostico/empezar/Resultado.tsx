@@ -11,6 +11,7 @@ import { BotonesSociales } from "@/components/BotonesSociales";
 import { Cargando } from "@/components/estados";
 import { Meissa } from "@/components/Meissa";
 import { tarifaClase } from "@/lib/format";
+import { nombreDelIdioma } from "@/lib/idiomas";
 
 /**
  * El resultado: lo que contaste, dónde estás y con quién seguir. En una pantalla corta.
@@ -111,7 +112,7 @@ function animo(diagnostico: Diagnostico) {
   if (diagnostico.mode === "FROM_ZERO") {
     return `Conversaste ${minutos} con Meissa. Ese es el primer paso, y el más difícil.`;
   }
-  return `Hablaste ${minutos} en inglés con alguien que no conocías. Eso ya es un gran paso.`;
+  return `Hablaste ${minutos} en ${nombreDelIdioma(diagnostico.languageCode)} con alguien que no conocías. Eso ya es un gran paso.`;
 }
 
 function minutosEnPalabras(segundos: number | null) {

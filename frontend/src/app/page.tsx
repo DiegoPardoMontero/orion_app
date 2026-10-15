@@ -42,16 +42,16 @@ import { esGratis, tarifaClase } from "@/lib/format";
 export const metadata: Metadata = {
   // «Orión Idiomas», igual que en la pantalla de consentimiento de Google: la verificación de marca
   // compara ese nombre con el de la página principal (Google lo rechazó el 23/09/2026 por no coincidir).
-  title: "Orión Idiomas · Encuentra tu profesor de inglés",
+  title: "Orión Idiomas · Encuentra tu profesor de inglés o francés",
   description:
-    "Clases de inglés en vivo, uno a uno, con profesores verificados. Empieza con un diagnóstico gratis, elige con quién y cuándo, y paga solo la clase que reservas.",
+    "Clases de inglés y francés en vivo, uno a uno, con profesores verificados. Empieza con un diagnóstico gratis, elige con quién y cuándo, y paga solo la clase que reservas.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Orión Idiomas · Encuentra tu profesor de inglés",
+    title: "Orión Idiomas · Encuentra tu profesor de inglés o francés",
     description:
-      "Profesores de inglés verificados. Clases en vivo, a tu ritmo, sin permanencia ni renovación automática.",
+      "Profesores de inglés y francés verificados. Clases en vivo, a tu ritmo, sin permanencia ni renovación automática.",
     type: "website",
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Orión, clases de inglés en vivo" }],
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Orión, clases de inglés y francés en vivo" }],
   },
 };
 
@@ -217,7 +217,7 @@ export default async function PortadaPage() {
                 "@id": `${SITE_URL}/#organization`,
                 name: "Orión Idiomas",
                 url: SITE_URL,
-                description: "Clases de inglés en vivo, uno a uno, con profesores verificados.",
+                description: "Clases de inglés y francés en vivo, uno a uno, con profesores verificados.",
                 sameAs: REDES_SOCIALES.map((red) => red.url),
               },
               {
@@ -245,7 +245,7 @@ export default async function PortadaPage() {
                 Encuentra tu profesor. Aprende a tu manera.
               </h1>
               <p className="mt-4 max-w-[46ch] text-[16px] leading-relaxed text-on-primary/90 lg:text-[19px]">
-                Clases de inglés en vivo con profesores reales. Tú eliges con quién, cuándo y a qué ritmo.
+                Clases de inglés y francés en vivo con profesores reales. Tú eliges con quién, cuándo y a qué ritmo.
               </p>
 
               {/* Una acción grande y una secundaria: el diagnóstico es el primer paso que Orión
@@ -312,11 +312,11 @@ export default async function PortadaPage() {
             <div>
               <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-primary-strong">Qué es Orión Idiomas</p>
               <h2 id="que-es-titulo" className="mt-3 text-balance font-display text-[28px] font-bold leading-[1.1] lg:text-[38px]">
-                Tu academia de inglés en línea, con profesores de verdad.
+                Tu academia de idiomas en línea, con profesores de verdad.
               </h2>
               <p className="mt-4 max-w-[52ch] text-[15.5px] leading-relaxed text-text-secondary lg:text-[16.5px]">
                 <strong className="font-semibold text-text">Orión Idiomas</strong> es una plataforma en línea para
-                aprender inglés con clases en vivo, uno a uno. Haces un diagnóstico gratis, eliges profesor según tu
+                aprender inglés o francés con clases en vivo, uno a uno. Haces un diagnóstico gratis, eliges profesor según tu
                 objetivo y tu horario, reservas y pagas cada clase, y la tomas por videollamada.
               </p>
             </div>

@@ -98,6 +98,14 @@ class SignalExtractorTest {
     }
 
     @Test
+    @DisplayName("En francés, los acentos del francés no son español; los del español, sí")
+    void enFrancesLosAcentosDelFrancesNoCuentan() {
+        assertThat(SignalExtractor.nativeSwitch("J'ai été à Noël chez ma mère, c'était très bien", "FR")).isFalse();
+        assertThat(SignalExtractor.nativeSwitch("¿Puedo responder en español?", "FR")).isTrue();
+        assertThat(SignalExtractor.nativeSwitch("pues como que no entiendo", "FR")).isTrue();
+    }
+
+    @Test
     void enUnaClaseDeEspanolHablarEspanolNoEsRendirse() {
             assertThat(SignalExtractor.nativeSwitch("pues como que no entiendo", "ES")).isFalse();
     }

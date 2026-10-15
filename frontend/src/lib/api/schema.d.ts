@@ -3626,6 +3626,7 @@ export interface components {
             /** Format: uuid */
             id?: string;
             status?: string;
+            languageCode?: string;
             /** Format: uuid */
             lessonNoteId?: string;
             bookingId?: string;
@@ -4417,6 +4418,7 @@ export interface components {
             /** Format: uuid */
             id?: string;
             status?: string;
+            languageCode?: string;
             /** Format: int32 */
             itemCount?: number;
             /** Format: date-time */
@@ -4912,6 +4914,7 @@ export interface components {
         };
         ClassroomResponse: {
             state?: string;
+            languageCode?: string;
             /** Format: date-time */
             startsAt?: string;
             /** Format: date-time */

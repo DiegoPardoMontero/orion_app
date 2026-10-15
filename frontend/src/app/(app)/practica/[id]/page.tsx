@@ -12,6 +12,7 @@ import { EstadoDelSet, Inicio } from "@/components/practica/Portada";
 import { apiFetch } from "@/lib/api/fetch";
 import { misPuntosKey } from "@/lib/puntos";
 import type { Ejercicio, SetDePractica } from "@/lib/practica";
+import { IdiomaDeLaClase } from "@/components/practica/IdiomaDeLaClase";
 
 /**
  * Practicar entre clases (Bloque 10, Parte B; rediseño del handoff `design_handoff_orion_practica`).
@@ -98,13 +99,15 @@ function Contenido() {
       return <Cierre set={s} />;
     default:
       return (
-        <Juego
-          set={s}
-          onItem={alItem}
-          onTerminar={() => completar.mutate()}
-          terminando={completar.isPending}
-          errorAlTerminar={completar.error?.message ?? null}
-        />
+        <IdiomaDeLaClase value={s.languageCode ?? "EN"}>
+          <Juego
+            set={s}
+            onItem={alItem}
+            onTerminar={() => completar.mutate()}
+            terminando={completar.isPending}
+            errorAlTerminar={completar.error?.message ?? null}
+          />
+        </IdiomaDeLaClase>
       );
   }
 }

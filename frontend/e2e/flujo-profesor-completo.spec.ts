@@ -374,7 +374,7 @@ test("un profesor nuevo: de «Enseña con Orión» a su primera clase dictada, c
     // ---------------------------------------------------------------- 1
     await paso("1. El visitante llega por «Enseña con Orión», crea su cuenta de profesor y confirma el correo", async () => {
       await p.goto("/ensena-con-orion");
-      await expect(p.getByRole("heading", { name: "Enseña inglés. Construye tu agenda en Orión." })).toBeVisible();
+      await expect(p.getByRole("heading", { name: "Enseña inglés o francés. Construye tu agenda en Orión." })).toBeVisible();
       await revisarPantalla(p, "profe", "ensena-con-orion");
       await p.getByRole("link", { name: /Crea tu cuenta y postúlate/ }).first().click();
       await expect(p).toHaveURL(/\/registro\?rol=profesor/);

@@ -101,7 +101,7 @@ const base = (c: PublicFigures): Record<"estudiante" | "profesor" | "general", P
   general: [
     {
       p: "¿Qué es Orión?",
-      r: "Una academia de inglés en línea: eliges profesor, reservas la hora que te sirve y tomas la clase por videollamada. Sin paquetes ni matrícula.",
+      r: "Una academia de idiomas en línea (inglés y francés): eliges profesor, reservas la hora que te sirve y tomas la clase por videollamada. Sin paquetes ni matrícula.",
     },
     {
       p: "¿Las clases son presenciales o virtuales?",

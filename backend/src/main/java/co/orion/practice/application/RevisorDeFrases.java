@@ -11,5 +11,6 @@ import java.util.UUID;
  */
 public interface RevisorDeFrases {
 
-    Optional<Boolean> acepta(UUID estudianteId, String termino, String frase);
+    /** @param languageCode el idioma de la clase: la frase tiene que estar en ese idioma */
+    Optional<Boolean> acepta(UUID estudianteId, String languageCode, String termino, String frase);
 }

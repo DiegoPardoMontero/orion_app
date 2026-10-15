@@ -273,7 +273,7 @@ public class AssessmentService {
         List<AssessmentTurn> delUsuario = todos.stream().filter(AssessmentTurn::isUser).toList();
 
         int segundos = (int) Duration.between(evaluacion.getStartedAt(), clock.instant()).toSeconds();
-        String resumen = resumen(quien, metas, todos);
+        String resumen = resumen(quien, evaluacion.getLanguageCode(), metas, todos);
         String nivel;
 
         // Dos turnos seguidos en el idioma propio: la rama en español. Misma regla que el guion. Desde
@@ -316,7 +316,7 @@ public class AssessmentService {
      * Lo que contó y por qué Orión le sirve para eso. Lo escribe la IA si hay presupuesto y la
      * salida pasa la revisión; si no, la plantilla. El resultado nunca espera por esto.
      */
-    private String resumen(Evaluado quien, List<String> metas, List<AssessmentTurn> todos) {
+    private String resumen(Evaluado quien, String idioma, List<String> metas, List<AssessmentTurn> todos) {
         String nombre = quien.nombreDePila();
         Map<String, String> nombreDeMeta = objetivosDelCatalogo.findByActiveTrueOrderByDisplayOrderAsc()
                 .stream().collect(Collectors.toMap(TeachingGoal::getCode, TeachingGoal::getNameEs,
@@ -326,7 +326,7 @@ public class AssessmentService {
 
         if (budget.disponible()) {
             Optional<String> escrito = resumidor.resumir(new ConversationSummarizer.Pedido(
-                    quien.actorId(), nombre, nombres,
+                    quien.actorId(), idioma, nombre, nombres,
                     todos.stream()
                             .map(t -> new ConversationSummarizer.Turno(!t.isUser(), t.getTranscript()))
                             .toList()));

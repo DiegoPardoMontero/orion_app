@@ -8,6 +8,8 @@
 export type EstadoDelAula = "CLOSED" | "OPEN" | "STARTED" | "ENDED";
 
 export type ClassroomResponse = {
+  /** El idioma de la clase (EN, FR). */
+  languageCode?: string | null;
   state: EstadoDelAula;
   startsAt: string;
   endsAt: string;

@@ -26,7 +26,7 @@ export const NOMBRE_DE_CATEGORIA: Record<CategoriaDeEjercicio, string> = {
   TU_TURNO: "Tu turno",
 };
 
-/** Los que suenan con la voz del dispositivo: sin voz en inglés, se pueden saltar. */
+/** Los que suenan con la voz del dispositivo: sin voz en el idioma de la clase, se pueden saltar. */
 export const SE_OYEN: TipoDeEjercicio[] = ["LISTEN_CHOOSE", "DICTATION"];
 
 export type Ejercicio = {
@@ -40,7 +40,7 @@ export type Ejercicio = {
   attempts: number;
   correct: boolean | null;
   closed: boolean;
-  /** Saltado porque el dispositivo no tenía voz en inglés: cerrado, pero ni acierto ni fallo. */
+  /** Saltado porque el dispositivo no tenía voz en el idioma: cerrado, pero ni acierto ni fallo. */
   skipped: boolean;
   /** La pista del «Casi…»: llega tras un fallo, con el ejercicio abierto. */
   hint: string | null;
@@ -52,6 +52,8 @@ export type Ejercicio = {
 
 export type SetDePractica = {
   id: string;
+  /** El idioma de la clase (EN, FR): los textos lo nombran y la voz del dispositivo lo busca. */
+  languageCode?: string | null;
   /** PENDING: el acta ya salió y la práctica se está generando (tarda cerca de un minuto). */
   status: "PENDING" | "READY" | "IN_PROGRESS" | "COMPLETED" | "EXPIRED";
   lessonNoteId: string;
@@ -110,6 +112,7 @@ export type EjercicioDelActa = {
 
 export type PracticaDelActa = {
   id: string;
+  languageCode?: string | null;
   status: "PENDING" | "READY" | "IN_PROGRESS" | "COMPLETED" | "EXPIRED" | "FAILED";
   itemCount: number;
   expiresAt: string;
@@ -287,7 +290,7 @@ export function rachaDe(estrellas: EstrellaDelEjercicio[]): number {
 export const TEXTO_RACHA: Record<number, string> = { 3: "¡Tres seguidas!", 4: "¡Cuatro seguidas!", 5: "¡Las cinco seguidas!" };
 
 /** La instrucción de cada tipo, la que dice Rigel (o Meissa) al empezar. */
-export function instruccionDe(e: Ejercicio): string {
+export function instruccionDe(e: Ejercicio, idioma = "inglés"): string {
   switch (e.type) {
     case "MATCH_MEANING":
       return "Une cada palabra con su significado.";
@@ -298,7 +301,7 @@ export function instruccionDe(e: Ejercicio): string {
     case "SPOT_ERROR":
       return "Toca la palabra que está mal.";
     case "BUILD_SENTENCE":
-      return "Arma la frase en inglés tocando las fichas en orden.";
+      return `Arma la frase en ${idioma} tocando las fichas en orden.`;
     case "ORDER_DIALOGUE":
       return "Pon la conversación en orden. Arrastra o usa las flechas.";
     case "CHOOSE_REPLY":
@@ -309,7 +312,7 @@ export function instruccionDe(e: Ejercicio): string {
       return "Escúchame y escribe la frase.";
     case "WRITE_SENTENCE": {
       const termino = leerPayload<{ term?: string }>(e).term;
-      return termino ? `Escribe una frase tuya con «${termino}».` : "Escribe una frase tuya en inglés.";
+      return termino ? `Escribe una frase tuya con «${termino}».` : `Escribe una frase tuya en ${idioma}.`;
     }
   }
 }

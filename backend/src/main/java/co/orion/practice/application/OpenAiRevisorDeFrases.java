@@ -25,6 +25,7 @@ import org.springframework.web.client.RestClient;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import co.orion.shared.text.NombreDelIdioma;
 
 /**
  * «Tu frase», revisada por {@code gpt-5-mini}: si es inglés con sentido y usa el término. Es la
@@ -37,7 +38,7 @@ public class OpenAiRevisorDeFrases implements RevisorDeFrases {
 
     private static final Logger log = LoggerFactory.getLogger(OpenAiRevisorDeFrases.class);
     private static final ObjectMapper JSON = new ObjectMapper();
-    static final String PROMPT = "prompts/practice-sentence-check-v1.txt";
+    static final String PROMPT = "prompts/practice-sentence-check-v2.txt";
 
     private final RestClient http;
     private final String apiKey;
@@ -62,7 +63,7 @@ public class OpenAiRevisorDeFrases implements RevisorDeFrases {
     }
 
     @Override
-    public Optional<Boolean> acepta(UUID estudianteId, String termino, String frase) {
+    public Optional<Boolean> acepta(UUID estudianteId, String languageCode, String termino, String frase) {
         if (apiKey.isBlank() || !presupuesto.disponible()) {
             return Optional.empty();
         }
@@ -72,7 +73,7 @@ public class OpenAiRevisorDeFrases implements RevisorDeFrases {
             respuesta = http.post().uri(endpoint)
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(cuerpo(termino, frase))
+                    .body(cuerpo(languageCode, termino, frase))
                     .retrieve()
                     .body(Map.class);
         } catch (RuntimeException ex) {
@@ -87,14 +88,14 @@ public class OpenAiRevisorDeFrases implements RevisorDeFrases {
         return veredicto;
     }
 
-    Map<String, Object> cuerpo(String termino, String frase) {
+    Map<String, Object> cuerpo(String languageCode, String termino, String frase) {
         Map<String, Object> cuerpo = new LinkedHashMap<>();
         cuerpo.put("model", modelo);
         cuerpo.put("reasoning_effort", "minimal");
         cuerpo.put("max_completion_tokens", 300);
         cuerpo.put("response_format", Map.of("type", "json_object"));
         cuerpo.put("messages", List.of(
-                Map.of("role", "system", "content", instrucciones()),
+                Map.of("role", "system", "content", instrucciones(languageCode)),
                 Map.of("role", "user", "content", "Término: «" + termino + "»\nFrase del estudiante: «" + frase + "»")));
         return cuerpo;
     }
@@ -128,10 +129,11 @@ public class OpenAiRevisorDeFrases implements RevisorDeFrases {
         return null;
     }
 
-    private static String instrucciones() {
+    private static String instrucciones(String languageCode) {
         try {
             String texto = new String(new ClassPathResource(PROMPT).getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-            return texto.lines().filter(l -> !l.startsWith("#")).reduce("", (a, b) -> a + b + "\n").trim();
+            return texto.lines().filter(l -> !l.startsWith("#")).reduce("", (a, b) -> a + b + "\n").trim()
+                    .replace("{{IDIOMA}}", NombreDelIdioma.enEspanol(languageCode));
         } catch (IOException ex) {
             throw new UncheckedIOException("No se pudo leer la revisión de frases", ex);
         }

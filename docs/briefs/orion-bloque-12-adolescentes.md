@@ -30,9 +30,9 @@ como página: https://claude.ai/artifact/PKrHkCLJ6zCfTq7Q48RiCF
 8. **Textos legales 1.2, pedidos al entrar.** Términos 1.2 y Política 1.2 con el capítulo de
    adolescentes; la autorización del representante legal y el código de conducta como documentos
    nuevos versionados. `pendientesAlEntrar` ya pide al entrar lo que no se ha aceptado, así que
-   publicar la 1.2 basta para que todos la acepten. **Pendiente de preguntar a Pardo:** si la Política
-   1.2 lleva también el párrafo de OpenAI, 8x8 y login social (no lo revisó el abogado) o solo lo de
-   adolescentes.
+   publicar la 1.2 basta para que todos la acepten. **Decidido (14/10, 22:55):** la Política 1.2 lleva
+   también el párrafo de OpenAI, 8x8 y login social, sin revisión del abogado, por decisión de Pardo
+   («las dos cosas, publicar ya»); se le manda al abogado para la siguiente ronda.
 
 ## La propuesta, en corto
 

@@ -17,6 +17,8 @@ import java.time.ZonedDateTime;
 public record ClassroomResponse(
         /** CLOSED (aún no), OPEN (ya se puede entrar), STARTED (la clase corre), ENDED (se acabó). */
         String state,
+        /** El idioma de la clase (EN, FR): la hoja de cierre lo nombra. */
+        String languageCode,
         ZonedDateTime startsAt,
         ZonedDateTime endsAt,
         /** Desde cuándo se puede entrar: diez minutos antes de la hora. */

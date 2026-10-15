@@ -265,7 +265,7 @@ function ResultadoEjercicio({ ejercicio: e }: { ejercicio: EjercicioDelActa }) {
           <span className="text-[12px] font-bold text-ink-3">Lo que respondió</span>
           {intentos.length === 0 && (
             <span className="text-[14px] text-ink-2">
-              {r === "saltado" ? "Lo saltó: su dispositivo no tenía voz en inglés." : "Todavía nada."}
+              {r === "saltado" ? "Lo saltó: su dispositivo no tenía voz en el idioma de la clase." : "Todavía nada."}
             </span>
           )}
           {intentos.map((i, k) => (
@@ -320,7 +320,7 @@ function loQueVio(e: EjercicioDelActa): string {
       return `«${unirFichas(leerPayload<{ tokens?: string[] }>(e).tokens ?? [])}» — tocar la palabra que está mal`;
     case "BUILD_SENTENCE": {
       const p = leerPayload<{ guide?: string }>(e);
-      return p.guide ? `Armar en inglés «${p.guide}»` : "Armar una frase con fichas";
+      return p.guide ? `Armar «${p.guide}» con fichas` : "Armar una frase con fichas";
     }
     case "CHOOSE_REPLY": {
       const p = leerPayload<{ from?: string; message?: string }>(e);

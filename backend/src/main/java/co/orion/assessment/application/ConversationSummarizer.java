@@ -23,7 +23,8 @@ public interface ConversationSummarizer {
      * @param objetivos    los objetivos que marcó antes de empezar, con su nombre en español
      * @param turnos       la conversación entera, en orden
      */
-    record Pedido(UUID actorId, String nombreDePila, List<String> objetivos, List<Turno> turnos) {
+    /** @param idioma el código del idioma evaluado (EN, FR): el resumen lo nombra */
+    record Pedido(UUID actorId, String idioma, String nombreDePila, List<String> objetivos, List<Turno> turnos) {
     }
 
     /** @param deMeissa si lo dijo Meissa; si no, lo dijo la persona */

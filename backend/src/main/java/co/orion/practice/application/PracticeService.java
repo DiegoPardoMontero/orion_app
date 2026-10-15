@@ -245,7 +245,7 @@ public class PracticeService {
         set.empezar(clock.instant());
         int max = settings.getInt("practice_max_attempts");
         boolean correcto = ejercicio.getItemType() == PracticeItemType.WRITE_SENTENCE
-                ? fraseAceptada(estudiante, ejercicio, respuesta)
+                ? fraseAceptada(estudiante, set.getLanguageCode(), ejercicio, respuesta)
                 : Evaluador.esCorrecta(ejercicio.getItemType(), ejercicio.getPayload(), ejercicio.getExpected(), respuesta);
         ejercicio.responder(recortar(respuesta), correcto, max, clock.instant());
         items.save(ejercicio);
@@ -337,10 +337,10 @@ public class PracticeService {
     }
 
     /**
-     * «Tu frase»: la revisa la IA —inglés con sentido que usa el término o una flexión—, y si no hay
+     * «Tu frase»: la revisa la IA —el idioma de la clase con sentido, usando el término o una flexión—, y si no hay
      * quién revise, la regla de siempre (el término, en una frase de cuatro palabras o más).
      */
-    private boolean fraseAceptada(User estudiante, PracticeItem ejercicio, String respuesta) {
+    private boolean fraseAceptada(User estudiante, String languageCode, PracticeItem ejercicio, String respuesta) {
         boolean porRegla = Evaluador.esCorrecta(PracticeItemType.WRITE_SENTENCE, ejercicio.getPayload(), null, respuesta);
         if (respuesta == null || respuesta.isBlank()) {
             return false;
@@ -351,7 +351,7 @@ public class PracticeService {
         } catch (JsonProcessingException ex) {
             return porRegla;
         }
-        return revisor.acepta(estudiante.getId(), termino, recortar(respuesta)).orElse(porRegla);
+        return revisor.acepta(estudiante.getId(), languageCode, termino, recortar(respuesta)).orElse(porRegla);
     }
 
     /** Cuántos intentos tiene cada ejercicio (ajuste {@code practice_max_attempts}). */

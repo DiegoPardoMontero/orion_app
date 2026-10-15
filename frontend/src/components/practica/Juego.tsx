@@ -25,7 +25,9 @@ import {
   type SetDePractica,
 } from "@/lib/practica";
 import { useCerrarConEscape } from "@/lib/useCerrarConEscape";
-import { useVozEnIngles } from "@/lib/voz";
+import { useVozDelIdioma } from "@/lib/voz";
+import { nombreDelIdioma } from "@/lib/idiomas";
+import { useCodigoDeLaClase } from "@/components/practica/IdiomaDeLaClase";
 import { Constelacion, formaDe } from "./Constelacion";
 import { BotonPrincipal, BotonSecundario, ChipCategoria, PanelRespuesta, Racha } from "./piezas";
 import {
@@ -253,7 +255,7 @@ const TEXTO_MEISSA: Partial<Record<Fase, string>> = {
   correcto: "¡Bien oído!",
   casi: "Te la digo otra vez, más despacio.",
   mostrada: "Así suena. Repítela conmigo.",
-  sinvoz: "Tu dispositivo no me deja hablar en inglés.",
+  sinvoz: "Tu dispositivo no me deja hablar en el idioma de tu clase.",
   saltado: "Sin problema. Seguimos.",
 };
 const ESTADO_MEISSA: Record<Fase, MeissaEstado> = {
@@ -280,7 +282,9 @@ function Pantalla({
   onItem: (item: Ejercicio) => void;
   onSeguir: () => void;
 }) {
-  const voz = useVozEnIngles();
+  const codigoDeLaClase = useCodigoDeLaClase();
+  const voz = useVozDelIdioma(codigoDeLaClase);
+  const idioma = nombreDelIdioma(codigoDeLaClase);
   const seOye = SE_OYEN.includes(item.type);
   const [respuesta, setRespuesta] = useState<string | null>(null);
   const [tocado, setTocado] = useState(false);
@@ -409,12 +413,12 @@ function Pantalla({
   if (seOye) {
     // Mientras suena, Meissa dice lo que pronuncia. En el dictado no: sería darle la respuesta.
     if (voz.hablando && (fase === "inicial" || fase === "interactuando" || fase === "casi")) {
-      burbuja = item.type === "LISTEN_CHOOSE" ? `«${dice}»` : "Te la digo en inglés. Escucha bien.";
+      burbuja = item.type === "LISTEN_CHOOSE" ? `«${dice}»` : `Te la digo en ${idioma}. Escucha bien.`;
     } else {
-      burbuja = TEXTO_MEISSA[fase] ?? instruccionDe(item);
+      burbuja = TEXTO_MEISSA[fase] ?? instruccionDe(item, idioma);
     }
   } else {
-    burbuja = TEXTO_RIGEL[fase] ?? instruccionDe(item);
+    burbuja = TEXTO_RIGEL[fase] ?? instruccionDe(item, idioma);
   }
   const personaje = seOye ? (
     <Meissa estado={voz.hablando ? "habla" : ESTADO_MEISSA[fase]} decorativo className="h-auto w-[72px] shrink-0 lg:w-[176px]" />

@@ -52,7 +52,7 @@ class OpenAiConversationSummarizerTest {
     @Test
     @DisplayName("Al proveedor solo le llega el nombre de pila, los objetivos y la conversación")
     void loQueVeElProveedor() {
-        Pedido pedido = new Pedido(UUID.randomUUID(), "Ana", List.of("Trabajo"),
+        Pedido pedido = new Pedido(UUID.randomUUID(), "EN", "Ana", List.of("Trabajo"),
                 List.of(new Turno(true, "Hi Ana! How's your day?"),
                         new Turno(false, "Good, I'm at home."),
                         new Turno(false, "  ")));
@@ -70,7 +70,7 @@ class OpenAiConversationSummarizerTest {
     @Test
     @DisplayName("Pide razonamiento mínimo y pone tope a la salida")
     void elCuerpo() {
-        Map<String, Object> cuerpo = resumidor.cuerpo(new Pedido(UUID.randomUUID(), "Ana",
+        Map<String, Object> cuerpo = resumidor.cuerpo(new Pedido(UUID.randomUUID(), "EN", "Ana",
                 List.of(), List.of()));
 
         assertThat(cuerpo).containsEntry("model", "gpt-5-mini")
