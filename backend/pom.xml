@@ -78,6 +78,13 @@
 					<groupId>org.apache.httpcomponents.client5</groupId>
 					<artifactId>httpclient5</artifactId>
 				</exclusion>
+				<!-- Trae swagger-annotations 2.2.31 (el artefacto viejo, mismos paquetes que el
+				     swagger-annotations-jakarta 2.2.55 de springdoc): con los dos, /v3/api-docs daba 500
+				     por un NoSuchMethodError. El SDK no lo necesita para hablar con la API. -->
+				<exclusion>
+					<groupId>io.swagger.core.v3</groupId>
+					<artifactId>swagger-annotations</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 		<dependency>
