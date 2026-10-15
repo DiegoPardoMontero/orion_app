@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import co.orion.identity.application.AdminUserService;
 import co.orion.identity.application.FounderService;
 import co.orion.identity.domain.User;
+import co.orion.identity.domain.SignupIntent;
 import co.orion.identity.domain.UserRole;
 import co.orion.shared.error.BusinessRuleViolationException;
 import co.orion.shared.security.OrionUserDetails;
@@ -42,7 +43,13 @@ public class AdminUsersController {
     @GetMapping
     public List<AdminUserResponse> list(@RequestParam(required = false) String role,
                                         @RequestParam(required = false) String q) {
-        List<User> encontrados = adminUsers.search(parseRole(role), q);
+        // «Aspirantes a profesor» son estudiantes que vinieron a enseñar; «Estudiantes», los que vinieron
+        // a aprender. Así ninguno de los dos filtros mezcla a los otros (Pardo, 15/10/2026).
+        List<User> encontrados = "TEACHER_APPLICANT".equalsIgnoreCase(role == null ? "" : role.trim())
+                ? adminUsers.search(UserRole.STUDENT, SignupIntent.TEACH, q)
+                : parseRole(role) == UserRole.STUDENT
+                        ? adminUsers.search(UserRole.STUDENT, SignupIntent.LEARN, q)
+                        : adminUsers.search(parseRole(role), q);
         // El beneficio de fundador de cada profe de la lista, en una sola consulta.
         List<UUID> profes = encontrados.stream()
                 .filter(u -> u.getRole() == UserRole.PROFESSOR).map(User::getId).toList();
@@ -84,7 +91,7 @@ public class AdminUsersController {
         try {
             return UserRole.valueOf(role.trim().toUpperCase());
         } catch (IllegalArgumentException ex) {
-            throw new BusinessRuleViolationException("role debe ser STUDENT, PROFESSOR o ADMIN");
+            throw new BusinessRuleViolationException("role debe ser STUDENT, TEACHER_APPLICANT, PROFESSOR o ADMIN");
         }
     }
 }

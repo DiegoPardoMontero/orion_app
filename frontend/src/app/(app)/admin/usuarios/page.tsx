@@ -16,7 +16,7 @@ import { estadoDeAdolescentes, habilitacionDe, type HabilitacionAdolescentes } f
 import { fechaLarga } from "@/lib/format";
 import { generarClave } from "@/lib/password";
 
-type Rol = "" | "STUDENT" | "PROFESSOR" | "ADMIN";
+type Rol = "" | "STUDENT" | "TEACHER_APPLICANT" | "PROFESSOR" | "ADMIN";
 
 const ETIQUETA_ROL: Record<string, string> = {
   STUDENT: "Estudiante",
@@ -28,6 +28,8 @@ const ETIQUETA_ROL: Record<string, string> = {
 const FILTROS_ROL: { valor: Rol; etiqueta: string }[] = [
   { valor: "", etiqueta: "Todos" },
   { valor: "STUDENT", etiqueta: "Estudiantes" },
+  // Quien entró por «Quiero enseñar» y aún no está aprobado: nunca entre los estudiantes (15/10/2026).
+  { valor: "TEACHER_APPLICANT", etiqueta: "Aspirantes a profesor" },
   { valor: "PROFESSOR", etiqueta: "Profesores" },
   { valor: "ADMIN", etiqueta: "Admins" },
 ];
@@ -349,10 +351,16 @@ function FilaUsuario({ usuario }: { usuario: AdminUserResponse }) {
         <span className="flex flex-wrap gap-1.5">
           <Badge
             tono={
-              usuario.role === "PROFESSOR" ? "lavanda" : usuario.role === "ADMIN" ? "coral" : "menta"
+              usuario.teacherApplicant
+                ? "melocoton"
+                : usuario.role === "PROFESSOR"
+                  ? "lavanda"
+                  : usuario.role === "ADMIN"
+                    ? "coral"
+                    : "menta"
             }
           >
-            {ETIQUETA_ROL[usuario.role ?? ""] ?? usuario.role}
+            {usuario.teacherApplicant ? "Aspirante a profesor" : (ETIQUETA_ROL[usuario.role ?? ""] ?? usuario.role)}
           </Badge>
           <Badge tono={activo ? "menta" : "melocoton"}>{activo ? "Activo" : "Inactivo"}</Badge>
         </span>

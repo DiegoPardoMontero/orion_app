@@ -20,6 +20,7 @@ import co.orion.identity.domain.ProfessorProfile;
 import co.orion.identity.domain.TeacherApplication;
 import co.orion.identity.domain.TeacherApplicationEvent;
 import co.orion.identity.domain.User;
+import co.orion.identity.domain.SignupIntent;
 import co.orion.identity.domain.UserRole;
 import co.orion.identity.domain.UserStatus;
 import co.orion.identity.persistence.ProfessorProfileRepository;
@@ -62,12 +63,23 @@ public class AdminUserService {
 
     @Transactional(readOnly = true)
     public List<User> search(UserRole role, String query) {
+        return search(role, null, query);
+    }
+
+    /**
+     * Con {@code intent}, solo los de esa intención: {@code (STUDENT, TEACH)} son los aspirantes a profesor
+     * y {@code (STUDENT, LEARN)} los estudiantes de verdad. Sin ella, todos los del rol.
+     */
+    public List<User> search(UserRole role, SignupIntent intent, String query) {
         String q = (query == null || query.isBlank()) ? null : query.trim().toLowerCase();
 
         Specification<User> filtros = (root, criteriaQuery, cb) -> {
             List<Predicate> condiciones = new ArrayList<>();
             if (role != null) {
                 condiciones.add(cb.equal(root.get("role"), role));
+            }
+            if (intent != null) {
+                condiciones.add(cb.equal(root.get("signupIntent"), intent));
             }
             if (q != null) {
                 String patron = "%" + q + "%";

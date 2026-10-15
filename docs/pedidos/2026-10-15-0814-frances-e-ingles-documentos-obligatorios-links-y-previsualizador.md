@@ -72,6 +72,14 @@ imágenes en la pantalla, y el enlace al archivo); (5) todo en `develop`, sin pu
   Cloudinary real **no** se pudo probar en local (el secreto solo está en Railway): en local
   muestra el aviso «No podemos abrir documentos en este momento».
 
+## Pardo, 09:15
+
+> Cuando puedas hacer push y despliegue (me importa sobre todo el video de bienvenida para los profes) y bueno estaría perfecto que arregles lo demás, pero avisame cuando todo esté listo para hacer un despliegue y yo te autorizo.
+
+Lo que más le importa es el pop-up de bienvenida de los profes (pedido de las 08:32). El lote de
+`develop` del 15/10 (08:14, 08:32, 08:40, 08:45, 09:05 y 09:10) se despliega entero cuando él lo
+autorice, tras el aviso de «listo».
+
 ## Estado
 
 **Listo en `develop`, sin desplegar.** Cuando Pardo diga, se hace merge a `master` y push; Railway lo

@@ -51,6 +51,10 @@ class AdminUsersIT extends ApiIntegrationSupport {
         ana = createUser("ana@orion.test", "Ana Ramírez", UserRole.STUDENT);
         createUser("maria@orion.test", "María Gómez", UserRole.PROFESSOR);
         createUser("admin@orion.test", "Orion Admin", UserRole.ADMIN);
+        // Un aspirante: entró por «Quiero enseñar», sigue siendo STUDENT en la base.
+        User aspirante = createUser("aspi@orion.test", "Aspi Rante", UserRole.STUDENT);
+        aspirante.intendsToTeach();
+        users.save(aspirante);
 
         adminSession = login("admin@orion.test");
         anaSession = login("ana@orion.test");
@@ -61,7 +65,25 @@ class AdminUsersIT extends ApiIntegrationSupport {
         ResponseEntity<AdminUserResponse[]> response = get(USERS, adminSession, AdminUserResponse[].class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).hasSize(3);
+        assertThat(response.getBody()).hasSize(4);
+    }
+
+    @Test
+    void anApplicantIsNotShownAsAStudent() {
+        AdminUserResponse[] todos = get(USERS, adminSession, AdminUserResponse[].class).getBody();
+        assertThat(todos).filteredOn(u -> u.email().equals("aspi@orion.test")).singleElement()
+                .satisfies(u -> {
+                    assertThat(u.teacherApplicant()).isTrue();
+                    assertThat(u.role()).isEqualTo("STUDENT");
+                });
+        assertThat(todos).filteredOn(u -> u.email().equals("ana@orion.test")).singleElement()
+                .satisfies(u -> assertThat(u.teacherApplicant()).isFalse());
+
+        AdminUserResponse[] aspirantes = get(USERS + "?role=TEACHER_APPLICANT", adminSession, AdminUserResponse[].class).getBody();
+        assertThat(aspirantes).extracting(AdminUserResponse::email).containsExactly("aspi@orion.test");
+
+        AdminUserResponse[] estudiantes = get(USERS + "?role=STUDENT", adminSession, AdminUserResponse[].class).getBody();
+        assertThat(estudiantes).extracting(AdminUserResponse::email).containsExactly("ana@orion.test");
     }
 
     @Test
@@ -76,7 +98,7 @@ class AdminUsersIT extends ApiIntegrationSupport {
     @Test
     void searchesByNameOrEmail() {
         assertThat(get(USERS + "?q=ramírez", adminSession, AdminUserResponse[].class).getBody()).hasSize(1);
-        assertThat(get(USERS + "?q=ORION.TEST", adminSession, AdminUserResponse[].class).getBody()).hasSize(3);
+        assertThat(get(USERS + "?q=ORION.TEST", adminSession, AdminUserResponse[].class).getBody()).hasSize(4);
         assertThat(get(USERS + "?q=nadie", adminSession, AdminUserResponse[].class).getBody()).isEmpty();
     }
 

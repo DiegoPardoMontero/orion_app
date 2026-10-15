@@ -4233,6 +4233,7 @@ export interface components {
             fullName?: string;
             whatsappPhone?: string;
             role?: string;
+            teacherApplicant?: boolean;
             status?: string;
             emailVerified?: boolean;
             founder?: components["schemas"]["FounderView"];
