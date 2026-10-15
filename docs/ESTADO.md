@@ -1681,6 +1681,11 @@ su test; lo que cambia el comportamiento o pide una decisión está abajo, en Pe
   Probado en `EnsayoDelActaIT`.
 - **`@Version` en reserva y pago**: Pardo decidió el 14/10 dejarlo para después del lanzamiento; con
   decenas de usuarios la carrera de milisegundos es teórica y las constraints cierran lo grave.
+- **Francés y adolescentes entran en el primer lanzamiento** (decisión de Pardo y Sofía, 14/10/2026;
+  pedido de las 21:35). Francés: reabrir la V42. Adolescentes: Bloque 12, aprobado por el abogado tal
+  cual, con las decisiones del 14/10 en el pedido. El párrafo «dos puertas cerradas» de CLAUDE.md
+  cambia cuando adolescentes salga: las cuentas siguen siendo de mayores de 18; el adolescente es un
+  perfil bajo la cuenta del adulto.
 - **El freno de intentos fallidos del login no se activó en producción** (prueba del 02/10/2026, con
   un correo que no existe; en local funciona). Hay que revisarlo con los registros de Railway antes de
   abrir al público.

@@ -43,9 +43,9 @@ Features: ninguna nueva. Es una lectura de estado y un plan de retoma.
 
 1. ✅ Traductor de Meissa en `gpt-5-nano` (`16a643a`; verify 453 + 700 en verde; subido).
 2. ✅ El reclamo de un ensayo no deja ausencia al profe (`EnsayoDelActaIT` 9/9).
-3. ⏳ La invitación por WhatsApp se consume también al registrarse con Google.
-4. ⏳ El admin corrige un correo mal escrito y reenvía la confirmación.
-5. ⏳ `robots.txt` abre `/profesores`.
+3. ✅ La invitación por WhatsApp se consume también al registrarse con Google (`7c66664`; verify 453 + 703).
+4. ✅ El admin corrige un correo sin confirmar y la confirmación va al nuevo (`70b2d9f`; `AdminUsersIT` 14/14).
+5. ✅ `robots.txt` abre `/profesores` (`f6f4f44`).
 
 ## Estado
 

@@ -43,25 +43,38 @@ cual estaba.
 3. **Wompi facturó** (factura WO680298, 02/10). No es un problema; es un costo fijo que entra en el
    punto de equilibrio y hasta ahora no se había contado.
 
-## Semana 0 (14 al 18/10): cerrar la casa y arreglar lo que muerde al invitar
+## Lo que cambió el 14/10 por la noche (pedido de las 21:35)
 
-El objetivo de la semana es poder invitar al primer profe real el lunes 19/10 sin que nada le falle.
+Pardo y Sofía deciden que el primer lanzamiento es **con inglés y francés** y que **incluye
+adolescentes (13 a 17)**, con la propuesta del Bloque 12 **aprobada por el abogado tal cual**. Orden
+elegido: **profes ya, con francés; adolescentes antes de abrir a estudiantes.** El francés entra en la
+semana 0; adolescentes ocupa las semanas 1 y 2 en paralelo con el reclutamiento. El fundador por
+invitación ya funciona (se otorga al aprobar) y el botón «Hacer fundador» ya existe en Usuarios.
+
+## Semana 0 (14 al 18/10): cerrar la casa, arreglar lo que muerde al invitar y reabrir el francés
+
+El objetivo de la semana es poder invitar al primer profe real, de inglés o de francés, el lunes 19/10
+sin que nada le falle.
 
 **Claude, en este orden** (cada paso con su prueba, `verify` en verde y un commit):
-1. Los e2e sobre base limpia y el push de lo del 07/10 **después** de que Pardo suba el límite de
-   Railway.
-2. `gpt-5-nano` como traductor de Meissa (ver arriba).
-3. **La invitación por WhatsApp se consume también al registrarse con Google** (decisión del 07/10).
-   Hoy, si el invitado entra con Google, pierde la invitación y el 15 % de fundador.
-4. **El admin corrige un correo mal escrito y reenvía la confirmación** (decisión del 07/10). Hoy
-   un profe creado desde Usuarios con el correo mal no puede confirmarlo ni publicar nunca.
-5. `robots.txt` abre `/profesores`.
-6. Las dos tareas restantes del 07/10 van **después** de abrir a estudiantes, porque solo muerden ahí:
+1. ✅ Los e2e sobre base limpia (105 en verde) y el push de lo del 07/10.
+2. ✅ `gpt-5-nano` como traductor de Meissa.
+3. ✅ **La invitación por WhatsApp se consume también al registrarse con Google.**
+4. ✅ **El admin corrige un correo mal escrito y reenvía la confirmación.**
+5. ✅ `robots.txt` abre `/profesores`.
+6. ✅ El reclamo de un ensayo no deja ausencia al profe (decisión del 14/10).
+7. **Francés** (`docs/briefs/orion-brief-frances.md`): FR activo en la base, selectores en la
+   postulación, el perfil y el buscador, textos «inglés y francés», Meissa, acta y práctica en
+   francés probadas con la llave real, `/idiomas/FR` en el sitemap.
+8. Las dos tareas restantes del 07/10 van **después** de abrir a estudiantes, porque solo muerden ahí:
    la purga borra también los archivos de Cloudinary, y resolver un reclamo a favor del profe sobre
-   una clase aún abierta publica el cierre.
+   una clase aún abierta publica el cierre. `@Version` queda para después del lanzamiento.
 
 **Pardo** (todo es configuración en paneles; el detalle está en `docs/cerrar-la-casa.md`):
-- Railway: subir el límite de gasto y mirar en Deployments qué commit corre.
+- **Una llave nueva de OpenAI en `~/.orion/openai-key`** (la local venció) y comprobar en Sistema que
+  la de producción siga viva: sin ella no se puede probar Meissa en francés, y si producción usa la
+  misma, el diagnóstico ya está caído.
+- ✅ Railway: límite subido (14/10). Falta mirar en Deployments qué commit corre.
 - Administración → Sistema: todas las integraciones encendidas; «Pagos (Wompi)» debe decir
   **Producción**, no SANDBOX (`WOMPI_API_BASE_URL`).
 - El webhook de JaaS (sin él la antesala dice «aún no ha entrado» en cada clase real).
@@ -77,7 +90,13 @@ El objetivo de la semana es poder invitar al primer profe real el lunes 19/10 si
 **Sofía:** leer el texto del resultado del diagnóstico y la página «Enseña con Orión»: es lo primero
 que va a ver cada profe invitado.
 
-## Semanas 1 y 2 (19/10 al 1/11): los profes fundadores
+## Semanas 1 y 2 (19/10 al 1/11): los profes fundadores, y adolescentes en construcción
+
+**Adolescentes (Bloque 12, aprobado por el abogado el 14/10):** cuenta familiar bajo el adulto, sin
+usuario propio, sin IA ni grabación; autorización del representante legal con constancia; profes
+habilitados por el admin tras revisar el código de conducta, la consulta del Registro de inhabilidades
+(Ley 1918) y los antecedentes, con renovación anual; sin franja horaria; textos legales 1.2 que se
+piden al entrar. Tiene que estar listo **antes de que entre el primer estudiante que paga**.
 
 - **Meta:** 10 a 15 candidatos, para llegar a 8–10 publicados a comienzos de noviembre. Dónde
   buscarlos y qué ofrecerles no cambió: está en la versión 2 (al final).
