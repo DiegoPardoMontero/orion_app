@@ -102,6 +102,23 @@ public class EmailTeacherApplicationMailer implements TeacherApplicationMailer {
         }
     }
 
+    @Override
+    public void sendStartedToTeam(List<String> toEmails, String applicantName, String applicantEmail) {
+        String usuarios = baseUrl + "/admin/usuarios";
+        String nombre = applicantName == null || applicantName.isBlank() ? "Un profe nuevo" : applicantName.trim();
+        String subject = "Profe nuevo en Orión: " + nombre;
+        String text = nombre + " (" + applicantEmail + ") creó su cuenta y abrió su postulación a profesor.\n\n"
+                + "Todavía no la envía; cuando lo haga te llega otro correo. Si en unos días no avanza, escríbele.\n\n"
+                + "Usuarios: " + usuarios + "\nOrión";
+        String html = "<p><strong>" + escape(nombre) + "</strong> (" + escape(applicantEmail)
+                + ") creó su cuenta y abrió su postulación a profesor.</p>"
+                + "<p>Todavía no la envía; cuando lo haga te llega otro correo. Si en unos días no avanza, escríbele.</p>"
+                + "<p><a href=\"" + usuarios + "\">Ver en Usuarios</a><br>Orión</p>";
+        for (String to : toEmails) {
+            send(to, subject, text, html);
+        }
+    }
+
     private void send(String toEmail, String subject, String text, String html) {
         try {
             transport.send(OutgoingEmail.plain(toEmail, subject, text, html));

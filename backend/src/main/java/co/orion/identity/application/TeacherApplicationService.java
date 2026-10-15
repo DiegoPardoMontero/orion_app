@@ -134,6 +134,9 @@ public class TeacherApplicationService {
             TeacherApplication created = applications.saveAndFlush(new TeacherApplication(userId));
             events.save(new TeacherApplicationEvent(
                     created.getId(), ApplicationEventType.CREATED, userId, null));
+            // Un profe nuevo: el equipo se entera en el acto, antes de que envíe nada.
+            users.findById(userId).ifPresent(u -> publisher.publishEvent(
+                    new TeacherApplicationStartedEvent(created.getId(), userId, u.getFullName(), u.getEmail())));
             return created;
         });
         return toView(userId, application);

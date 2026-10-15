@@ -51,6 +51,14 @@ class TeacherApplicationFlowIT extends ApiIntegrationSupport {
         volatile String rejectedNote;
         volatile List<String> team;
         volatile Boolean teamResubmitted;
+        volatile List<String> startedTeam;
+        volatile String startedEmail;
+
+        @Override
+        public void sendStartedToTeam(List<String> toEmails, String applicantName, String applicantEmail) {
+            this.startedTeam = toEmails;
+            this.startedEmail = applicantEmail;
+        }
 
         @Override
         public void sendSubmittedToTeam(List<String> toEmails, String applicantName, UUID applicationId,
@@ -124,6 +132,8 @@ class TeacherApplicationFlowIT extends ApiIntegrationSupport {
         mailer.rejectedNote = null;
         mailer.team = null;
         mailer.teamResubmitted = null;
+        mailer.startedTeam = null;
+        mailer.startedEmail = null;
     }
 
     // --- helpers ---
@@ -286,11 +296,20 @@ class TeacherApplicationFlowIT extends ApiIntegrationSupport {
     @Test
     void requestingChangesSendsItBackAndItCanBeResubmitted() {
         String id = draftId();
+        // Un profe nuevo (15/10/2026): el equipo y el correo de alertas se enteran al abrir la postulación,
+        // y el admin lo ve en su campana.
+        assertThat(mailer.startedTeam).containsExactlyInAnyOrder("admin@orion.test", "admin2@orion.test", "alertas@orion.test");
+        assertThat(mailer.startedEmail).isEqualTo("aspirante@orion.test");
+        assertThat(get("/api/v1/me/notifications", adminSession, Map[].class).getBody())
+                .anySatisfy(n -> assertThat(n).containsEntry("type", "TEACHER_APPLICANT_REGISTERED"));
         completeProfile();
         post(SUBMIT, aspirantSession, null, Map.class);
         // Al equipo le llega el aviso: el plan de lanzamiento pide revisarlas el mismo día.
-        assertThat(mailer.team).containsExactlyInAnyOrder("admin@orion.test", "admin2@orion.test");
+        assertThat(mailer.team).containsExactlyInAnyOrder("admin@orion.test", "admin2@orion.test", "alertas@orion.test");
         assertThat(mailer.teamResubmitted).isFalse();
+        assertThat(get("/api/v1/me/notifications", adminSession, Map[].class).getBody())
+                .anySatisfy(n -> assertThat(n).containsEntry("type", "TEACHER_APPLICATION_SUBMITTED")
+                        .containsEntry("linkPath", "/admin/aplicaciones/" + id));
         post(ADMIN + "/" + id + "/start-review", adminSession, null, Void.class);
 
         assertThat(post(ADMIN + "/" + id + "/request-changes", adminSession,
