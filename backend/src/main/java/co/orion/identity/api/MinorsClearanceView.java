@@ -19,7 +19,8 @@ public record MinorsClearanceView(boolean active,
                                   /** Los certificados subidos (consulta del Registro y antecedentes), para verlos y quitarlos. */
                                   List<DocumentView> documents) {
 
+    /** Lo único que bloquea al admin es el código de conducta; los certificados se ven, no bloquean (15/10/2026). */
     public boolean readyToClear() {
-        return missing.isEmpty();
+        return conductAccepted;
     }
 }

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ import co.orion.identity.domain.ProfessorProfile;
 import co.orion.identity.domain.User;
 import co.orion.identity.persistence.ProfessorProfileRepository;
 import co.orion.identity.persistence.TeacherDocumentRepository;
+import co.orion.identity.persistence.UserRepository;
 import co.orion.legal.application.LegalDocumentService;
 import co.orion.legal.domain.LegalDocumentCode;
 import co.orion.shared.error.BusinessRuleViolationException;
@@ -38,17 +40,23 @@ public class MinorsClearanceService {
     private final TeacherDocumentRepository documents;
     private final LegalDocumentService legal;
     private final AdminAuditService audit;
+    private final UserRepository users;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
 
     public MinorsClearanceService(ProfessorProfileRepository profiles,
                                   TeacherDocumentRepository documents,
                                   LegalDocumentService legal,
                                   AdminAuditService audit,
+                                  UserRepository users,
+                                  ApplicationEventPublisher events,
                                   Clock clock) {
         this.profiles = profiles;
         this.documents = documents;
         this.legal = legal;
         this.audit = audit;
+        this.users = users;
+        this.events = events;
         this.clock = clock;
     }
 
@@ -75,20 +83,31 @@ public class MinorsClearanceService {
         return view(profile);
     }
 
-    /** El admin la enciende, solo si no falta nada, por un año desde hoy. */
+    /**
+     * El admin la enciende por un año desde hoy. Solo exige el código de conducta, que es del propio
+     * profe y que el admin no puede aceptar por él; los dos certificados se ven pero no bloquean (Pardo,
+     * 15/10/2026: «puedo habilitarlo desde el administrador sin que esto lo bloquee»). El profe se entera
+     * por correo y por su campana.
+     */
     @Transactional
     public MinorsClearanceView grant(UUID professorId, UUID adminId) {
         ProfessorProfile profile = profesor(professorId);
         MinorsClearanceView antes = view(profile);
         if (!antes.readyToClear()) {
             throw new BusinessRuleViolationException(
-                    "Todavía no se puede habilitar: falta " + String.join(", ", antes.missing()) + ".");
+                    "Todavía no se puede habilitar: el profe no ha aceptado el código de conducta para clases con menores.");
         }
         profile.clearForMinors(hoy(), adminId, clock.instant());
         profiles.save(profile);
         audit.record(adminId, "GRANT_MINORS_CLEARANCE", "professor_profile", professorId,
                 "{\"until\":\"" + profile.getMinorsClearedUntil() + "\"}");
+        users.findById(professorId).ifPresent(u -> events.publishEvent(new MinorsClearanceGrantedEvent(
+                professorId, u.getEmail(), primerNombre(u.getFullName()), profile.getMinorsClearedUntil())));
         return view(profile);
+    }
+
+    private static String primerNombre(String fullName) {
+        return fullName == null ? "" : fullName.trim().split("\\s+")[0];
     }
 
     @Transactional

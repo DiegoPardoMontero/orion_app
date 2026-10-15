@@ -438,9 +438,11 @@ function BotonAdolescentes({ profesorId, habilitacion, nombre }: { profesorId: s
                 </li>
               ))}
               <li className="mt-1 text-[12.5px] text-text-muted">
-                {habilitacion.missing.length === 0
-                  ? "Revisa los dos documentos en su postulación antes de encenderla. Queda vigente un año."
-                  : `Falta ${habilitacion.missing.join(", ")}. El profe lo completa desde Mi perfil → Clases con adolescentes.`}
+                {!habilitacion.conductAccepted
+                  ? "Falta que acepte el código de conducta: lo hace desde Mi perfil → Clases con adolescentes, y sin eso no se puede habilitar."
+                  : habilitacion.missing.length === 0
+                    ? "Revisa los dos documentos en su postulación antes de encenderla. Queda vigente un año."
+                    : `Falta ${habilitacion.missing.join(", ")}. Puedes habilitarlo igual; el profe los sube desde Mi perfil → Clases con adolescentes. Queda vigente un año y se le avisa por correo y por su campana.`}
               </li>
             </ul>
           )}
@@ -449,7 +451,7 @@ function BotonAdolescentes({ profesorId, habilitacion, nombre }: { profesorId: s
             <Boton variante="contorno" onClick={() => setAbierto(false)} className="h-11 flex-1">Cancelar</Boton>
             <Boton
               variante={habilitacion.active ? "peligro" : "primario"}
-              disabled={cambiar.isPending || (!habilitacion.active && habilitacion.missing.length > 0)}
+              disabled={cambiar.isPending || (!habilitacion.active && !habilitacion.conductAccepted)}
               onClick={() => cambiar.mutate()}
               className="h-11 flex-1"
             >

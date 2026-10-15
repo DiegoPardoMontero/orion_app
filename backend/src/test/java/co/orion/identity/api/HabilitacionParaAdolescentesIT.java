@@ -3,6 +3,7 @@ package co.orion.identity.api;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -29,6 +30,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import co.orion.TestcontainersConfiguration;
 import co.orion.identity.application.DocumentStorage;
+import co.orion.identity.application.MinorsClearanceMailer;
 import co.orion.identity.domain.DocumentType;
 import co.orion.identity.domain.ProfessorProfile;
 import co.orion.identity.domain.TeacherDocument;
@@ -78,8 +80,26 @@ class HabilitacionParaAdolescentesIT extends ApiIntegrationSupport {
         admin = login("admin@orion.test");
     }
 
+    static class CapturingMinorsMailer implements MinorsClearanceMailer {
+        volatile String granted;
+
+        @Override
+        public void sendGranted(String toEmail, String firstName, LocalDate until) {
+            this.granted = toEmail;
+        }
+    }
+
+    @Autowired
+    private CapturingMinorsMailer mailer;
+
     @TestConfiguration
     static class FakeStorageConfig {
+        @Bean
+        @Primary
+        CapturingMinorsMailer minorsMailer() {
+            return new CapturingMinorsMailer();
+        }
+
         @Bean
         @Primary
         DocumentStorage documentStorage() {
@@ -165,12 +185,18 @@ class HabilitacionParaAdolescentesIT extends ApiIntegrationSupport {
 
         assertThat(post("/api/v1/me/profile/minors/conduct", sesionMaria, null, MinorsClearanceView.class)
                 .getBody().conductAccepted()).isTrue();
-        documentos(maria.getId());
 
+        // Sin los certificados el admin puede habilitar igual (Pardo, 15/10/2026); siguen listados como faltantes.
         ResponseEntity<MinorsClearanceView> habilitada = post("/api/v1/admin/professors/" + maria.getId() + "/minors",
                 admin, null, MinorsClearanceView.class);
         assertThat(habilitada.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(habilitada.getBody().active()).isTrue();
+        assertThat(habilitada.getBody().missing()).hasSize(2);
+        // Y el profe se entera: correo y campana.
+        assertThat(mailer.granted).isEqualTo("maria@orion.test");
+        assertThat(get("/api/v1/me/notifications", sesionMaria, Map[].class).getBody())
+                .anySatisfy(n -> assertThat(n).containsEntry("type", "MINORS_CLEARED"));
+        documentos(maria.getId());
         assertThat(habilitada.getBody().clearedUntil()).isAfter(java.time.LocalDate.now().plusMonths(11));
 
         // Se ve en su perfil, en el público y en Usuarios.

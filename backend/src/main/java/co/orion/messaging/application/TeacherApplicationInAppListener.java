@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import co.orion.identity.application.MinorsClearanceGrantedEvent;
 import co.orion.identity.application.TeacherApplicationStartedEvent;
 import co.orion.identity.application.TeacherApplicationSubmittedEvent;
 import co.orion.identity.domain.UserRole;
@@ -50,6 +51,20 @@ public class TeacherApplicationInAppListener {
                 event.resubmitted() ? nombre + " reenvió su postulación" : "Nueva postulación de " + nombre,
                 event.resubmitted() ? "Hizo los cambios que pediste. Revísala hoy." : "Cuanto antes la revises, antes puede dar clases.",
                 "/admin/aplicaciones/" + event.applicationId());
+    }
+
+    /** Al profe: ya aparece para adolescentes (15/10/2026). */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void onMinorsGranted(MinorsClearanceGrantedEvent event) {
+        try {
+            notifications.create(event.professorId(), "MINORS_CLEARED",
+                    "Ya puedes dar clase a adolescentes",
+                    "El equipo de Orión te habilitó para estudiantes de 13 a 17 años. Desde hoy apareces cuando una familia busca profe para un adolescente.",
+                    "/perfil");
+        } catch (RuntimeException ex) {
+            log.error("No se pudo avisar al profe {} de su habilitación para adolescentes.", event.professorId(), ex);
+        }
     }
 
     private void aLosAdmins(String tipo, String titulo, String cuerpo, String ruta) {
