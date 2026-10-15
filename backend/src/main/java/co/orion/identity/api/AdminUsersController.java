@@ -66,7 +66,8 @@ public class AdminUsersController {
                                     @PathVariable UUID id,
                                     @Valid @RequestBody UpdateUserRequest body) {
         return AdminUserResponse.from(
-                adminUsers.update(principal.user().getId(), id, body.fullName(), body.whatsappPhone(), body.status()));
+                adminUsers.update(principal.user().getId(), id, body.fullName(), body.whatsappPhone(), body.status(),
+                        body.email()));
     }
 
     /** Filtro opcional: sin rol, no se filtra. */

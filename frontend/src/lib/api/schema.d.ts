@@ -3760,7 +3760,9 @@ export interface components {
         CreateRuleRequest: {
             /** Format: int32 */
             weekday?: number;
+            /** Format: time-local */
             startTime: string;
+            /** Format: time-local */
             endTime: string;
         };
         RuleResponse: {
@@ -3768,14 +3770,18 @@ export interface components {
             id?: string;
             /** Format: int32 */
             weekday?: number;
+            /** Format: time-local */
             startTime?: string;
+            /** Format: time-local */
             endTime?: string;
             active?: boolean;
         };
         CreateExceptionRequest: {
             /** Format: date */
             date: string;
+            /** Format: time-local */
             startTime?: string;
+            /** Format: time-local */
             endTime?: string;
             reason?: string;
         };
@@ -3784,7 +3790,9 @@ export interface components {
             id?: string;
             /** Format: date */
             date?: string;
+            /** Format: time-local */
             startTime?: string;
+            /** Format: time-local */
             endTime?: string;
             reason?: string;
         };
@@ -3930,6 +3938,7 @@ export interface components {
             acceptsTerms?: boolean;
             acceptsDataPolicy?: boolean;
             wantsToTeach?: boolean;
+            inviteToken?: string;
         };
         UserResponse: {
             /** Format: uuid */
@@ -4057,6 +4066,7 @@ export interface components {
             whatsappPhone?: string;
             role?: string;
             status?: string;
+            emailVerified?: boolean;
             founder?: components["schemas"]["FounderView"];
         };
         ReviewDecisionRequest: {
@@ -4124,10 +4134,16 @@ export interface components {
         };
         InviteProfessorRequest: {
             /** Format: email */
-            email: string;
+            email?: string;
             professorName?: string;
             founder?: boolean;
             inviterTitle?: string;
+        };
+        InviteLink: {
+            url?: string;
+            /** Format: date-time */
+            expiresAt?: string;
+            emailed?: boolean;
         };
         LineView: {
             kind?: string;
@@ -4233,6 +4249,8 @@ export interface components {
             fullName?: string;
             whatsappPhone?: string;
             status?: string;
+            /** Format: email */
+            email?: string;
         };
         StudentPointsResponse: {
             /** Format: int64 */
@@ -7643,12 +7661,14 @@ export interface operations {
             };
         };
         responses: {
-            /** @description No Content */
-            204: {
+            /** @description OK */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "*/*": components["schemas"]["InviteLink"];
+                };
             };
         };
     };

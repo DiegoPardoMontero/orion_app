@@ -10,6 +10,8 @@ public record AdminUserResponse(UUID id,
                                 String whatsappPhone,
                                 String role,
                                 String status,
+                                /** Si alguien confirmó ese correo. Sin confirmar, el admin lo puede corregir. */
+                                boolean emailVerified,
                                 /** El beneficio de profe fundador, o {@code null} si no lo tiene. */
                                 FounderView founder) {
 
@@ -25,6 +27,7 @@ public record AdminUserResponse(UUID id,
                 user.getWhatsappPhone(),
                 user.getRole().name(),
                 user.getStatus().name(),
+                user.isEmailVerified(),
                 founder);
     }
 }

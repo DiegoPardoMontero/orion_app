@@ -327,6 +327,9 @@ function FilaUsuario({ usuario }: { usuario: AdminUserResponse }) {
         <span className="block font-semibold text-text">{usuario.fullName}</span>
         {/* El correo entero, partido donde haga falta: cortado con «…» no se puede copiar ni leer. */}
         <span className="block break-all text-text-secondary">{usuario.email}</span>
+        {!usuario.emailVerified && (
+          <span className="mt-0.5 block text-[11.5px] font-medium text-warning">Correo sin confirmar</span>
+        )}
         {usuario.role === "PROFESSOR" && (
           <span className="mt-0.5 block text-[11.5px] font-medium text-text-muted">{estadoDeFundador(usuario.founder)}</span>
         )}
@@ -356,6 +359,9 @@ function FilaUsuario({ usuario }: { usuario: AdminUserResponse }) {
           >
             {activo ? <UserX size={17} strokeWidth={1.75} /> : <UserCheck size={17} strokeWidth={1.75} />}
           </BotonIcono>
+          {!usuario.emailVerified && usuario.role !== "ADMIN" && (
+            <BotonCorreo usuarioId={usuario.id!} actual={usuario.email ?? ""} />
+          )}
           {usuario.role === "PROFESSOR" && <BotonTarifa profesorId={usuario.id!} />}
           {usuario.role === "PROFESSOR" && <BotonFundador profesorId={usuario.id!} esFundador={!!usuario.founder} />}
           {/* Inactivar oculta; borrar destruye. Son cosas distintas y por eso conviven. */}
@@ -418,6 +424,73 @@ function BotonFundador({ profesorId, esFundador }: { profesorId: string; esFunda
  * reserva entero —cupo, confirmación, correo, calendario— sin mover dinero por la pasarela. El
  * propio profesor no puede ponerlo: su formulario conserva el piso de $20.000.
  */
+/**
+ * Corrige un correo que nadie ha confirmado (14/10/2026). El caso real: el admin creó al profe con el
+ * correo mal escrito y la confirmación nunca le llegó; sin ella no podía publicar. Un correo ya
+ * confirmado es de su dueño y el botón no aparece.
+ */
+function BotonCorreo({ usuarioId, actual }: { usuarioId: string; actual: string }) {
+  const [abierto, setAbierto] = useState(false);
+
+  return (
+    <>
+      <BotonIcono etiqueta="Corregir el correo" onClick={() => setAbierto(true)}>
+        <Mail size={17} strokeWidth={1.75} />
+      </BotonIcono>
+      {abierto && <ModalCorreo usuarioId={usuarioId} actual={actual} onCerrar={() => setAbierto(false)} />}
+    </>
+  );
+}
+
+function ModalCorreo({ usuarioId, actual, onCerrar }: { usuarioId: string; actual: string; onCerrar: () => void }) {
+  const queryClient = useQueryClient();
+  const [valor, setValor] = useState(actual);
+
+  const guardar = useMutation({
+    mutationFn: (email: string) =>
+      apiFetch<AdminUserResponse>(`/api/v1/admin/users/${usuarioId}`, { method: "PATCH", body: { email } }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      onCerrar();
+    },
+  });
+
+  const limpio = valor.trim().toLowerCase();
+  const valido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(limpio) && limpio !== actual.toLowerCase();
+  const error = guardar.error instanceof ApiError ? guardar.error.message : null;
+
+  return (
+    <Modal titulo="Corregir el correo" onCerrar={onCerrar}>
+      <p className="text-[13px] text-text-secondary">
+        Nadie ha confirmado <strong className="break-all">{actual}</strong>. Al corregirlo, le enviamos la
+        confirmación al correo nuevo y el enlace anterior deja de valer.
+      </p>
+      <Campo
+        type="email"
+        autoFocus
+        autoComplete="off"
+        value={valor}
+        onChange={(event) => setValor(event.target.value)}
+        className="mt-3"
+        aria-label="Correo corregido"
+      />
+      {error && (
+        <div className="mt-3">
+          <AvisoError mensaje={error} />
+        </div>
+      )}
+      <div className="mt-5 flex gap-2.5">
+        <Boton variante="contorno" onClick={onCerrar} className="h-10 flex-1">
+          Cancelar
+        </Boton>
+        <Boton disabled={!valido || guardar.isPending} onClick={() => guardar.mutate(limpio)} className="h-10 flex-1">
+          {guardar.isPending ? <Spinner /> : "Guardar y reenviar"}
+        </Boton>
+      </div>
+    </Modal>
+  );
+}
+
 function BotonTarifa({ profesorId }: { profesorId: string }) {
   const [abierto, setAbierto] = useState(false);
 

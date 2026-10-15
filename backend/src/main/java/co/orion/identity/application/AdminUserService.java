@@ -41,6 +41,7 @@ public class AdminUserService {
     private final TeacherApplicationRepository applications;
     private final TeacherApplicationEventRepository applicationEvents;
     private final PasswordEncoder passwordEncoder;
+    private final EmailVerificationService verificacion;
     private final Clock clock;
 
     public AdminUserService(UserRepository users,
@@ -48,12 +49,14 @@ public class AdminUserService {
                             TeacherApplicationRepository applications,
                             TeacherApplicationEventRepository applicationEvents,
                             PasswordEncoder passwordEncoder,
+                            EmailVerificationService verificacion,
                             Clock clock) {
         this.users = users;
         this.profiles = profiles;
         this.applications = applications;
         this.applicationEvents = applicationEvents;
         this.passwordEncoder = passwordEncoder;
+        this.verificacion = verificacion;
         this.clock = clock;
     }
 
@@ -120,11 +123,40 @@ public class AdminUserService {
         return saved;
     }
 
-    /** Sin cambio de rol ni de email en el MVP: son decisiones con demasiadas consecuencias. */
+    /** El PATCH sin correo: el de siempre. */
     @Transactional
     public User update(UUID actorId, UUID userId, String fullName, String whatsappPhone, String status) {
+        return update(actorId, userId, fullName, whatsappPhone, status, null);
+    }
+
+    /**
+     * Sin cambio de rol: es una decisión con demasiadas consecuencias. El correo sí se puede
+     * corregir, pero solo mientras nadie lo haya confirmado (decisión de Pardo, 07/10/2026): el
+     * profe creado desde Usuarios con el correo mal escrito no podía confirmarlo ni publicar nunca.
+     * Un correo confirmado es de su dueño y el panel no lo toca. Al corregirlo, la confirmación se
+     * vuelve a enviar al correo nuevo y el enlace viejo deja de valer.
+     */
+    @Transactional
+    public User update(UUID actorId, UUID userId, String fullName, String whatsappPhone, String status,
+                       String email) {
         User user = users.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        boolean correoCorregido = false;
+        if (email != null && !email.isBlank()) {
+            String nuevo = email.trim().toLowerCase();
+            if (!nuevo.equals(user.getEmail())) {
+                if (user.isEmailVerified()) {
+                    throw new BusinessRuleViolationException(
+                            "Ese correo ya está confirmado por su dueño: solo se corrige un correo sin confirmar.");
+                }
+                if (users.existsByEmailIgnoreCase(nuevo)) {
+                    throw new ConflictException("Ya existe una cuenta con ese correo");
+                }
+                user.changeEmail(nuevo);
+                correoCorregido = true;
+            }
+        }
 
         // Desactivar al admin que opera, o al último admin activo, dejaba Orión sin nadie que pudiera
         // entrar al panel: la sesión moría en la siguiente petición, el login respondía «cuenta
@@ -153,7 +185,17 @@ public class AdminUserService {
                 case INACTIVE -> user.deactivate();
             }
         }
-        return users.save(user);
+        User saved;
+        try {
+            saved = users.saveAndFlush(user);
+        } catch (DataIntegrityViolationException ex) {
+            // El UNIQUE del correo es el árbitro final entre el chequeo y el UPDATE.
+            throw new ConflictException("Ya existe una cuenta con ese correo");
+        }
+        if (correoCorregido) {
+            verificacion.send(saved.getId());
+        }
+        return saved;
     }
 
     private UserStatus parseStatus(String status) {

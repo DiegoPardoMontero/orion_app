@@ -220,6 +220,42 @@ class AdminUsersIT extends ApiIntegrationSupport {
                 .as("con dos activos, apagar a uno sí se permite").isEqualTo(200);
     }
 
+    /**
+     * El profe creado desde Usuarios con el correo mal escrito no podía confirmarlo ni publicar
+     * (revisión del 07/10/2026; Pardo: «el admin lo corrige»). Corregirlo manda la confirmación al
+     * correo nuevo y deja sin valor el enlace viejo. Un correo ya confirmado no se toca desde el panel.
+     */
+    @Test
+    @SuppressWarnings("rawtypes")
+    void theAdminCorrectsAMistypedEmailAndTheConfirmationGoesToTheNewOne() {
+        UUID id = post(USERS, adminSession,
+                new CreateUserRequest("profe@orion.tset", "Profe Nuevo", null, "PROFESSOR", PASSWORD),
+                AdminUserResponse.class).getBody().id();
+
+        ResponseEntity<AdminUserResponse> corregido = patch(USERS + "/" + id, adminSession,
+                new UpdateUserRequest(null, null, null, "Profe@orion.test"), AdminUserResponse.class);
+
+        assertThat(corregido.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(corregido.getBody().email()).isEqualTo("profe@orion.test");
+        assertThat(corregido.getBody().emailVerified()).isFalse();
+        // El enlace vivo es el del correo nuevo; los anteriores quedaron usados.
+        assertThat(jdbc.queryForList("select email from email_verification_tokens where user_id = ? and used_at is null",
+                String.class, id)).containsExactly("profe@orion.test");
+        assertThat(login("profe@orion.test").cookie()).isNotBlank();
+
+        // Un correo ya confirmado es de su dueño: el panel no lo cambia.
+        ResponseEntity<Map> confirmado = patch(USERS + "/" + ana.getId(), adminSession,
+                new UpdateUserRequest(null, null, null, "otra@orion.test"), Map.class);
+        assertThat(confirmado.getStatusCode().value()).isEqualTo(400);
+        assertThat(confirmado.getBody().get("error").toString()).contains("confirmado");
+        assertThat(users.findById(ana.getId()).orElseThrow().getEmail()).isEqualTo("ana@orion.test");
+
+        // Y no se puede pisar el correo de otra cuenta.
+        ResponseEntity<Map> repetido = patch(USERS + "/" + id, adminSession,
+                new UpdateUserRequest(null, null, null, "maria@orion.test"), Map.class);
+        assertThat(repetido.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    }
+
     @Test
     void updatesNameAndPhone() {
         ResponseEntity<AdminUserResponse> response = patch(
