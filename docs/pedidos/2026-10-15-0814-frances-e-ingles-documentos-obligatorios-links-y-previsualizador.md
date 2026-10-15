@@ -6,7 +6,7 @@
 - **Canal:** chat de Claude Code
 - **Sesión:** f5bedb76
 - **Briefs relacionados:** `docs/briefs/orion-brief-frances.md`, `docs/briefs/orion-bloque-12-adolescentes.md`
-- **Commits relacionados:** (se completan a medida que avanza)
+- **Commits relacionados:** `8033bce` (textos), `b51e693` (enlaces), `1115d89` (previsualizador y el ensayo en el idioma del profe); todos en `develop`
 - **Regla nueva de Pardo:** «YA ESTOY MANEJANDO USUARIOS REALES, NO tumbes prod y avísame cuando estos
   cambios estén listos antes de hacer despliegue.» → nada se sube a `master` (Railway despliega
   `master`) hasta que él lo diga; el trabajo va en la rama `develop`.
@@ -55,6 +55,24 @@ imágenes en la pantalla, y el enlace al archivo); (5) todo en `develop`, sin pu
   `https://inhabilidades.policia.gov.co:8080/`
 - Consulta de antecedentes judiciales, Policía Nacional: `https://antecedentes.policia.gov.co:7005/WebJudicial/`
 
+## Lo hecho (15/10, 08:15–09:00)
+
+- **Textos:** la portada («Por qué ahora» y la misión), la pregunta frecuente de Meissa, los
+  ejemplos del titular del profe y de la motivación del estudiante, y el cierre de la práctica ya
+  nombran los dos idiomas. Las cifras del 2,2 % y el 24 % se quedan: su fuente habla de inglés.
+- **Documentos:** siguen siendo opcionales (respuesta 1). En «Clases con adolescentes» cada uno lleva
+  el enlace oficial de la Policía Nacional. **Para Pardo y el abogado:** el formulario de inhabilidades
+  pide nombre y NIT de la *empresa consultante*; está pensado para que una entidad consulte a un
+  candidato, así que un profe que se consulte a sí mismo puede tener fricción.
+- **Previsualizador:** el profe (postulación y «Clases con adolescentes») y el admin (revisión de la
+  postulación) ven el PDF o la imagen dentro de Orión, con «Abrir en otra pestaña» y «Descargar». Los
+  bytes pasan por el backend con la sesión; el enlace de Cloudinary no sale del servidor.
+- **De paso:** el ensayo del admin tomaba siempre inglés; ahora toma el primer idioma del profe.
+- **Probado en local:** `verify` completo, tsc, lint, vitest y los e2e. El previsualizador con
+  Cloudinary real **no** se pudo probar en local (el secreto solo está en Railway): en local
+  muestra el aviso «No podemos abrir documentos en este momento».
+
 ## Estado
 
-**En curso.** Registrado; se trabaja en `develop`.
+**Listo en `develop`, sin desplegar.** Cuando Pardo diga, se hace merge a `master` y push; Railway lo
+despliega. Lo primero que hay que mirar en producción es el previsualizador con un documento real.

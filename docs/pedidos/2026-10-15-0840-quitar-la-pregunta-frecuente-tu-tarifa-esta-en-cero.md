@@ -5,7 +5,7 @@
 - **Fecha y hora:** 2026-10-15 08:40 (America/Bogota, UTC−5)
 - **Canal:** chat de Claude Code (mensaje enviado mientras se trabajaba el pedido de las 08:14)
 - **Sesión:** f5bedb76
-- **Commits relacionados:** (se completa al hacerlo; va en `develop`, sin desplegar, como el pedido de las 08:14)
+- **Commits relacionados:** `8033bce` (en `develop`, sin desplegar, como el pedido de las 08:14)
 
 ## El pedido exacto
 
@@ -19,4 +19,4 @@
 
 ## Estado
 
-**En curso**, dentro del lote de `develop` del 15/10.
+**Hecho** en `develop` (`8033bce`). Se despliega con el lote de las 08:14 cuando Pardo lo diga.

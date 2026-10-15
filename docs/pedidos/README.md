@@ -5,6 +5,7 @@ estado. La regla está en `CLAUDE.md` → «Registro de pedidos». Del más reci
 
 | Fecha | Pedido | Estado |
 |---|---|---|
+| 15/10/2026 08:40 | [Quitar la pregunta frecuente «Tu tarifa está en cero»](2026-10-15-0840-quitar-la-pregunta-frecuente-tu-tarifa-esta-en-cero.md) | Hecho en `develop` (`8033bce`), sin desplegar |
 | 15/10/2026 08:14 | [«Francés e inglés» en todo, certificados obligatorios, enlaces y previsualizador](2026-10-15-0814-frances-e-ingles-documentos-obligatorios-links-y-previsualizador.md) | En curso |
 | 14/10/2026 23:55 | [En loop hasta recibir postulaciones, Meissa muy pulida y la API de Claude](2026-10-14-2355-loop-hasta-recibir-postulaciones-meissa-pulida-y-api-de-claude.md) | Hecho; quedan pasos 10 y 11 del Bloque 12 |
 | 14/10/2026 22:30 | [«Mi cuenta» antes que «Mi trabajo» en la barra lateral del profe](2026-10-14-2230-mi-cuenta-antes-que-mi-trabajo-en-la-sidebar.md) | Hecho |
