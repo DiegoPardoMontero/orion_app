@@ -63,9 +63,9 @@ sin que nada le falle.
 4. ✅ **El admin corrige un correo mal escrito y reenvía la confirmación.**
 5. ✅ `robots.txt` abre `/profesores`.
 6. ✅ El reclamo de un ensayo no deja ausencia al profe (decisión del 14/10).
-7. **Francés** (`docs/briefs/orion-brief-frances.md`): FR activo en la base, selectores en la
-   postulación, el perfil y el buscador, textos «inglés y francés», Meissa, acta y práctica en
-   francés probadas con la llave real, `/idiomas/FR` en el sitemap.
+7. ✅ **Francés** (`docs/briefs/orion-brief-frances.md`, commit `304a9fc`): FR activo, la puerta del
+   diagnóstico pregunta el idioma, Meissa, acta y práctica lo nombran, textos «inglés y francés»,
+   `/idiomas/FR` en el sitemap. **Falta** probarlo con la llave real de OpenAI (la local venció).
 8. Las dos tareas restantes del 07/10 van **después** de abrir a estudiantes, porque solo muerden ahí:
    la purga borra también los archivos de Cloudinary, y resolver un reclamo a favor del profe sobre
    una clase aún abierta publica el cierre. `@Version` queda para después del lanzamiento.

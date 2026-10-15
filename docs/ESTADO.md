@@ -953,6 +953,32 @@ Pendiente para Pardo:
   que dictaste», y desde la decisión 4 también entran las cancelaciones tardías.
 - El manual técnico necesita esta sección.
 
+## La retoma del 14/10/2026: semana 0, francés y la barra del profe
+
+Pedidos `2026-10-14-1847-…`, `…-2135-…` y `…-2230-…`; plan v3 en `docs/plan-de-lanzamiento.md`.
+
+**Semana 0 (todo subido a `master`):** el traductor en vivo de Meissa en `gpt-5-nano` (OpenAI apaga
+`gpt-4.1-nano` el 23/10); el reclamo de un ensayo del admin no deja ausencia al profe
+(`DisputeResolved` distingue «a favor del estudiante» de «ausencia registrada»); la invitación de
+profesor se consume también al registrarse con Google (`inviteToken` en `/auth/social/complete`, el
+token viaja en `sessionStorage`); el admin corrige un correo **sin confirmar** desde Usuarios y la
+confirmación va al nuevo (`PATCH /admin/users/{id}` con `email`; «Correo sin confirmar» en la fila);
+`robots.txt` abre `/profesores`.
+
+**Francés (V82, brief `docs/briefs/orion-brief-frances.md`):** FR activo en `languages`; la
+postulación, Mi perfil y el buscador ya leían el catálogo, así que los selectores aparecen solos; la
+puerta del diagnóstico pregunta el idioma (solo si hay más de uno) y lo manda; `NombreDelIdioma`
+(`shared/text`) da el nombre a Meissa, al resumen, al acta y a la práctica, cuyos prompts pasan a
+`assessment-summary-v2`, `practice-check-v3` y `practice-sentence-check-v2` con `{{IDIOMA}}`;
+`SignalExtractor.nativeSwitch` no toma los acentos del francés por español (`[ñáíóú¿¡]` en FR); la
+práctica (`SetView`, `PracticaDelActa`) y el aula (`ClassroomResponse`) exponen `languageCode`, y el
+frontend lo usa para los textos y para la voz del dispositivo (`useVozDelIdioma`, contexto
+`IdiomaDeLaClase`); la portada, «Enseña con Orión», el diagnóstico y el login dicen «inglés y
+francés» (títulos y descripciones; el relato queda para Sofía); el sitemap lista `/idiomas/FR`.
+**Pendiente:** probar Meissa, el acta y la práctica en francés con la llave real (la local venció).
+
+**La barra lateral del profe** muestra «Mi cuenta» antes que «Mi trabajo» (pedido de las 22:30).
+
 ## Mantenimiento y revisión de todo el código (06 al 07/10/2026)
 
 Pedido de Pardo (`docs/pedidos/2026-10-06-2247-…`): «un orden de magnitud por debajo» del

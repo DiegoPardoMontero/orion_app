@@ -69,5 +69,5 @@ práctica; menores de edad con autorización del representante legal.
 
 ## Estado
 
-**En curso.** Primero termina la semana 0 (el admin corrige un correo), luego el francés (brief
-`docs/briefs/orion-brief-frances.md`), luego adolescentes (Bloque 12 con las decisiones de hoy).
+**En curso.** Semana 0 terminada. **Francés hecho** (`304a9fc`; falta probar Meissa, acta y práctica
+en francés con la llave real). Sigue adolescentes (Bloque 12 con las decisiones de hoy).

@@ -6,7 +6,7 @@
 - **Canal:** chat de Claude Code
 - **Sesión:** f5bedb76
 - **Briefs relacionados:** —
-- **Commits relacionados:** (se completa al terminar)
+- **Commits relacionados:** `e0fadf8`
 
 ## El pedido exacto
 
@@ -21,4 +21,4 @@ Feature: solo el orden de las dos secciones en la barra lateral del profesor. Na
 
 ## Estado
 
-**En curso.**
+**Hecho** (`e0fadf8`): el orden en `NAV_BY_ROLE.PROFESSOR` es Enseñar → Mi cuenta → Mi trabajo.
