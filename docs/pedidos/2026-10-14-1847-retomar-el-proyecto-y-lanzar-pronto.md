@@ -45,7 +45,16 @@ Features: ninguna nueva. Es una lectura de estado y un plan de retoma.
 correo enviado. El commit de documentación queda en local hasta que Pardo suba el límite de Railway
 (cada push es un despliegue).
 
-### Decisiones pendientes de Pardo
+### Decisiones de Pardo (14/10/2026, 19:05, eligiendo entre opciones)
+
+- **Railway:** «Ya lo subí, haz push».
+- **Traductor de Meissa:** «Sí, gpt-5-nano».
+- **Pendientes del 07/10:** «(a) después, (b) ahora»: `@Version` queda anotado para después del
+  lanzamiento; la ausencia que deja un ensayo del admin se arregla en la semana 0.
+- **Catálogo:** «Los ocultas tú desde Mi perfil»: Pardo apaga «Perfil visible» de sus tres cuentas de
+  prueba; Andrés Rosero es real y se queda.
+
+### Las preguntas, tal como se hicieron
 
 1. Confirmar que suba el límite de Railway antes de que Claude haga push.
 2. Cambiar el traductor de Meissa a `gpt-5-nano` antes del 23/10 (sí / otro modelo).
