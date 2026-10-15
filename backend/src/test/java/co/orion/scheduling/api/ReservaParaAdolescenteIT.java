@@ -84,6 +84,9 @@ class ReservaParaAdolescenteIT extends ApiIntegrationSupport {
         // El reloj está congelado en julio y los textos de adolescentes rigen desde octubre: aquí se
         // adelantan para que la autorización y el código tengan versión vigente.
         jdbc.update("update legal_documents set effective_from = date '2026-01-01' where code in ('GUARDIAN_AUTHORIZATION', 'MINORS_CODE_OF_CONDUCT')");
+        // El reporte de seguridad deja un ticket y su mensaje, que apuntan al usuario: fuera antes.
+        jdbc.update("delete from support_messages");
+        jdbc.update("delete from support_tickets");
         bookings.deleteAll();
         jdbc.update("delete from guardian_authorizations");
         jdbc.update("delete from adolescent_profiles");
