@@ -91,4 +91,22 @@ test("[p-perfil.9] el profe ve «Clases con adolescentes» en su perfil, con los
   await expect(page.getByText("Aceptar el código de conducta para clases con menores")).toBeVisible();
   await expect(page.getByText("Consulta del Registro de inhabilidades")).toBeVisible();
   await expect(page.getByText("Certificado de antecedentes judiciales")).toBeVisible();
+
+  // Los enlaces oficiales (15/10/2026): uno por certificado, a la Policía Nacional, en otra pestaña.
+  const enlaces = page.getByRole("link", { name: "Consultar en la Policía Nacional" });
+  await expect(enlaces).toHaveCount(2);
+  await expect(enlaces.nth(0)).toHaveAttribute("href", "https://inhabilidades.policia.gov.co:8080/");
+  await expect(enlaces.nth(1)).toHaveAttribute("href", "https://antecedentes.policia.gov.co:7005/WebJudicial/");
+  await expect(enlaces.nth(0)).toHaveAttribute("target", "_blank");
+
+  // El previsualizador: con el documento de la semilla (sin Cloudinary local) dice que no puede abrirlo,
+  // y deja los dos enlaces de salida. Con Cloudinary real muestra el archivo.
+  const ver = page.getByRole("button", { name: /^Ver / }).first();
+  if (await ver.isVisible().catch(() => false)) {
+    await ver.click();
+    const visor = page.getByRole("dialog");
+    await expect(visor.getByRole("link", { name: "Abrir en otra pestaña" })).toBeVisible();
+    await expect(visor.getByRole("link", { name: "Descargar" })).toBeVisible();
+    await expect(visor.getByText(/No podemos abrir documentos en este momento|No pudimos abrir el documento/)).toBeVisible({ timeout: 15_000 });
+  }
 });

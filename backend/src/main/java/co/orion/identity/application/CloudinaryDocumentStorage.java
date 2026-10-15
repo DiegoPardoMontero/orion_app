@@ -12,6 +12,7 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
@@ -46,9 +47,17 @@ public class CloudinaryDocumentStorage implements DocumentStorage {
     private static final Logger log = LoggerFactory.getLogger(CloudinaryDocumentStorage.class);
 
     private final RestClient http = RestClient.builder().requestFactory(conTiempos()).build();
+    /** La API de Cloudinary; solo la prueba unitaria la apunta a un servidor local. */
+    private final String apiBase;
 
+    @Autowired
     public CloudinaryDocumentStorage(Clock clock, @Value("${CLOUDINARY_URL:}") String cloudinaryUrl) {
+        this(clock, cloudinaryUrl, "https://api.cloudinary.com");
+    }
+
+    CloudinaryDocumentStorage(Clock clock, String cloudinaryUrl, String apiBase) {
         this.clock = clock;
+        this.apiBase = apiBase;
         String cloud = "";
         String key = "";
         String secret = "";
@@ -146,7 +155,7 @@ public class CloudinaryDocumentStorage implements DocumentStorage {
                 + apiSecret;
         String signature = sha1Hex(toSign);
 
-        return "https://api.cloudinary.com/v1_1/" + cloudName + "/image/download"
+        return apiBase + "/v1_1/" + cloudName + "/image/download"
                 + "?api_key=" + enc(apiKey)
                 + "&expires_at=" + expiresAt
                 + "&format=" + enc(format)
@@ -188,6 +197,25 @@ public class CloudinaryDocumentStorage implements DocumentStorage {
             return hex.toString();
         } catch (NoSuchAlgorithmException ex) {
             throw new IllegalStateException("SHA-1 no disponible", ex);
+        }
+    }
+
+    /**
+     * El endpoint de descarga responde 302 hacia el CDN; {@code HttpURLConnection} sigue la
+     * redirección solo (mismo protocolo), y de ahí vuelven los bytes.
+     */
+    @Override
+    public byte[] download(String storageKey, String contentType) {
+        String url = signedUrl(storageKey, contentType, Duration.ofMinutes(2));
+        try {
+            byte[] bytes = http.get().uri(URI.create(url)).retrieve().body(byte[].class);
+            if (bytes == null) {
+                throw new ServiceUnavailableException("No podemos abrir documentos en este momento. Inténtalo más tarde.");
+            }
+            return bytes;
+        } catch (RestClientException ex) {
+            log.warn("Cloudinary no entregó el documento {}: {}", storageKey, ex.getMessage());
+            throw new ServiceUnavailableException("No podemos abrir documentos en este momento. Inténtalo más tarde.");
         }
     }
 

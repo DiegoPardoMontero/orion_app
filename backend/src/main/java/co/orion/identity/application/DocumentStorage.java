@@ -1,6 +1,8 @@
 package co.orion.identity.application;
 
 import java.time.Duration;
+
+import co.orion.shared.error.ServiceUnavailableException;
 import java.util.UUID;
 
 /**
@@ -20,4 +22,14 @@ public interface DocumentStorage {
      * {@code public_id} que guardamos no lleva extensión, y sin ella el enlace no resuelve.
      */
     String signedUrl(String storageKey, String contentType, Duration ttl);
+
+    /**
+     * Los bytes del documento, para servirlos desde Orión con la sesión de quien lo mira: así el
+     * previsualizador no depende de que el navegador acepte una URL ajena, y el enlace de Cloudinary
+     * nunca sale del servidor. Por defecto no está disponible: los dobles de prueba que no lo
+     * necesitan no tienen que implementarlo.
+     */
+    default byte[] download(String storageKey, String contentType) {
+        throw new ServiceUnavailableException("No podemos abrir documentos en este momento. Inténtalo más tarde.");
+    }
 }

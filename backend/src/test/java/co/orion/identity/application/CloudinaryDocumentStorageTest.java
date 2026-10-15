@@ -12,6 +12,9 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import com.sun.net.httpserver.HttpServer;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -128,6 +131,61 @@ class CloudinaryDocumentStorageTest {
             return hex.toString();
         } catch (Exception ex) {
             throw new IllegalStateException(ex);
+        }
+    }
+
+    /**
+     * Lo que no se puede probar contra Cloudinary se prueba contra un servidor local que imita su
+     * forma: el endpoint de descarga responde 302 hacia el CDN, y del CDN vuelven los bytes. Si el
+     * cliente no siguiera la redirección, el previsualizador mostraría un documento vacío.
+     */
+    @Test
+    void theDownloadFollowsTheRedirectToTheCdn() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        byte[] pdf = "%PDF-1.4 de prueba".getBytes(StandardCharsets.UTF_8);
+        server.createContext("/v1_1/sifqjzh1/image/download", ex -> {
+            ex.getResponseHeaders().add("Location", "http://127.0.0.1:" + server.getAddress().getPort() + "/cdn/archivo.pdf");
+            ex.sendResponseHeaders(302, -1);
+            ex.close();
+        });
+        server.createContext("/cdn/archivo.pdf", ex -> {
+            ex.getResponseHeaders().add("Content-Type", "application/pdf");
+            ex.sendResponseHeaders(200, pdf.length);
+            try (OutputStream out = ex.getResponseBody()) {
+                out.write(pdf);
+            }
+        });
+        server.start();
+        try {
+            CloudinaryDocumentStorage local = new CloudinaryDocumentStorage(
+                    Clock.fixed(AHORA, ZoneOffset.UTC),
+                    "cloudinary://123456789:" + SECRETO + "@sifqjzh1",
+                    "http://127.0.0.1:" + server.getAddress().getPort());
+
+            assertThat(local.download(KEY, "application/pdf")).isEqualTo(pdf);
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void theDownloadSaysSoWhenTheCdnFails() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/", ex -> {
+            ex.sendResponseHeaders(500, -1);
+            ex.close();
+        });
+        server.start();
+        try {
+            CloudinaryDocumentStorage local = new CloudinaryDocumentStorage(
+                    Clock.fixed(AHORA, ZoneOffset.UTC),
+                    "cloudinary://123456789:" + SECRETO + "@sifqjzh1",
+                    "http://127.0.0.1:" + server.getAddress().getPort());
+
+            assertThatThrownBy(() -> local.download(KEY, "application/pdf"))
+                    .isInstanceOf(ServiceUnavailableException.class);
+        } finally {
+            server.stop(0);
         }
     }
 }

@@ -3,6 +3,7 @@ package co.orion.scheduling.application;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -10,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
+import co.orion.identity.persistence.ProfessorLanguageRepository;
 import co.orion.identity.persistence.UserRepository;
 import co.orion.scheduling.domain.Booking;
 import co.orion.scheduling.domain.BookingModality;
@@ -37,21 +39,33 @@ import co.orion.shared.time.ClassLength;
 @Service
 public class TestClassService {
 
-    private static final String IDIOMA_DEL_ENSAYO = "EN";
+    /** Si el profe aún no marcó idioma, el ensayo sale en inglés, que es lo que había antes del francés (V82). */
+    private static final String IDIOMA_POR_DEFECTO = "EN";
 
     private final BookingRepository bookings;
     private final UserRepository users;
+    private final ProfessorLanguageRepository languages;
     private final MeetingLinkProvider meetingLinks;
     private final Clock clock;
 
     public TestClassService(BookingRepository bookings,
                             UserRepository users,
+                            ProfessorLanguageRepository languages,
                             MeetingLinkProvider meetingLinks,
                             Clock clock) {
         this.bookings = bookings;
         this.users = users;
+        this.languages = languages;
         this.meetingLinks = meetingLinks;
         this.clock = clock;
+    }
+
+    /** El idioma del ensayo es el del profe (el primero que enseña): un profe de francés ensaya en francés. */
+    private String idiomaDe(UUID professorId) {
+        return languages.findByProfessorId(professorId).stream()
+                .map(l -> l.getLanguageCode())
+                .findFirst()
+                .orElse(IDIOMA_POR_DEFECTO);
     }
 
     @Transactional
@@ -83,7 +97,7 @@ public class TestClassService {
      *
      * <p>Nace COMPLETED en un solo INSERT. El índice único del cupo mira solo las clases confirmadas
      * y las que esperan pago, así que el ensayo no choca con la clase real que el profesor tenga a
-     * esa hora. El idioma es inglés, el único que Orión enseña (V42): el acta y la práctica lo
+     * esa hora. El idioma es el del profe (inglés o francés): el acta y la práctica lo
      * guardan. Igual que la otra, no publica eventos: nadie recibe correos de una clase que no fue.
      */
     @Transactional
@@ -100,7 +114,7 @@ public class TestClassService {
         Instant fin = ahora.truncatedTo(ChronoUnit.MINUTES);
         Instant inicio = fin.minus(ClassLength.DURATION);
         Booking booking = new Booking(pareja.student().getId(), pareja.professor().getId(),
-                inicio, fin, BookingModality.VIRTUAL, null, IDIOMA_DEL_ENSAYO, admin.getId(), inicio);
+                inicio, fin, BookingModality.VIRTUAL, null, idiomaDe(pareja.professor().getId()), admin.getId(), inicio);
         booking.markAsRehearsal();
         booking.confirmPayment();
         booking.closeWithAttendance(true, ahora);

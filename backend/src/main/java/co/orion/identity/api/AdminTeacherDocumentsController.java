@@ -1,6 +1,8 @@
 package co.orion.identity.api;
 
 import java.util.Map;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestParam;
 import java.util.UUID;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -37,5 +39,17 @@ public class AdminTeacherDocumentsController {
         audit.record(principal.user().getId(), "VIEW_DOCUMENT", "teacher_document", docId,
                 "{\"owner\":\"" + userId + "\"}");
         return Map.of("url", signed.url());
+    }
+
+    /** Los bytes, para el previsualizador del admin. Misma bitácora que la URL firmada. */
+    @GetMapping("/{userId}/documents/{docId}/content")
+    public ResponseEntity<byte[]> content(@AuthenticationPrincipal OrionUserDetails principal,
+                                          @PathVariable UUID userId,
+                                          @PathVariable UUID docId,
+                                          @RequestParam(defaultValue = "false") boolean descargar) {
+        TeacherDocumentService.Contenido contenido = documents.contentForAdmin(userId, docId);
+        audit.record(principal.user().getId(), "VIEW_DOCUMENT", "teacher_document", docId,
+                "{\"owner\":\"" + userId + "\"}");
+        return DocumentoEnLinea.respuesta(contenido, descargar);
     }
 }

@@ -98,6 +98,21 @@ public class TeacherDocumentService {
     public record SignedDocument(TeacherDocument document, String url) {
     }
 
+    /** Un documento con sus bytes, para servirlo en línea (previsualizador) o como descarga. */
+    public record Contenido(TeacherDocument document, byte[] bytes) {
+    }
+
+    /** El dueño abre lo suyo: un id que no es suyo es «no encontrado», no «prohibido». */
+    public Contenido contentForOwner(UUID userId, UUID documentId) {
+        TeacherDocument document = documents.findByIdAndUserId(documentId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Documento no encontrado"));
+        return new Contenido(document, storage.download(document.getStorageKey(), document.getContentType()));
+    }
+
+    public Contenido contentForAdmin(UUID ownerId, UUID documentId) {
+        return contentForOwner(ownerId, documentId);
+    }
+
     private DocumentType parseDocType(String name) {
         try {
             return DocumentType.valueOf(name.trim().toUpperCase());

@@ -2,6 +2,7 @@ package co.orion.identity.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
@@ -51,6 +52,11 @@ class TeacherDocumentIT extends ApiIntegrationSupport {
                 @Override
                 public String signedUrl(String storageKey, String contentType, Duration ttl) {
                     return "https://res.cloudinary.test/" + storageKey + "?firmada";
+                }
+
+                @Override
+                public byte[] download(String storageKey, String contentType) {
+                    return "%PDF-falso".getBytes(StandardCharsets.UTF_8);
                 }
             };
         }
@@ -153,5 +159,42 @@ class TeacherDocumentIT extends ApiIntegrationSupport {
                 studentSession, Map.class);
 
         assertThat(res.getStatusCode().value()).isEqualTo(403);
+    }
+
+    @Test
+    void theOwnerOpensTheirDocumentInlineWithItsRealType() {
+        UUID docId = uploadCv(profA);
+
+        ResponseEntity<byte[]> res = get("/api/v1/me/teacher-documents/" + docId + "/content", profA, byte[].class);
+
+        assertThat(res.getStatusCode().value()).isEqualTo(200);
+        assertThat(res.getHeaders().getContentType().toString()).startsWith("application/pdf");
+        assertThat(res.getHeaders().getFirst("Content-Disposition")).startsWith("inline").contains("cv.pdf");
+        assertThat(res.getHeaders().getFirst("Cache-Control")).contains("no-store");
+        assertThat(new String(res.getBody(), StandardCharsets.UTF_8)).isEqualTo("%PDF-falso");
+
+        ResponseEntity<byte[]> descarga = get("/api/v1/me/teacher-documents/" + docId + "/content?descargar=true", profA, byte[].class);
+        assertThat(descarga.getHeaders().getFirst("Content-Disposition")).startsWith("attachment");
+    }
+
+    @Test
+    void anotherProfessorCannotOpenIt() {
+        UUID docId = uploadCv(profA);
+        assertThat(get("/api/v1/me/teacher-documents/" + docId + "/content", profB, byte[].class).getStatusCode().value())
+                .isEqualTo(404);
+    }
+
+    @Test
+    void theAdminOpensItAndItLeavesAnAuditTrail() {
+        UUID docId = uploadCv(profA);
+
+        ResponseEntity<byte[]> res = get("/api/v1/admin/teachers/" + profAId + "/documents/" + docId + "/content",
+                adminSession, byte[].class);
+
+        assertThat(res.getStatusCode().value()).isEqualTo(200);
+        assertThat(res.getHeaders().getFirst("Content-Disposition")).startsWith("inline");
+        assertThat(auditLogs.findByActionAndEntityId("VIEW_DOCUMENT", docId)).hasSize(1);
+        assertThat(get("/api/v1/admin/teachers/" + profAId + "/documents/" + docId + "/content", studentSession, byte[].class)
+                .getStatusCode().value()).isEqualTo(403);
     }
 }

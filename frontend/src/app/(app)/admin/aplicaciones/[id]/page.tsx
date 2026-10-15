@@ -6,7 +6,6 @@ import {
   Award,
   BadgeCheck,
   Check,
-  ExternalLink,
   FileText,
   GraduationCap,
   MapPin,
@@ -21,6 +20,7 @@ import { useState, type ReactNode } from "react";
 import { Avatar } from "@/components/Avatar";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
 import { Modal } from "@/components/Modal";
+import { BotonVerDocumento } from "@/components/VisorDeDocumento";
 import { Badge, Boton, Segmento } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type {
@@ -332,7 +332,7 @@ function DatosEnviados({
                     <span className="block text-[11px] text-text-muted">{etiquetaDocumento(doc.docType)}</span>
                   </span>
                 </span>
-                <VerDocumento userId={data.application?.userId ?? ""} docId={doc.id ?? ""} />
+                <BotonVerDocumento nombre={doc.fileName ?? ""} contentType={doc.contentType ?? ""} url={`/api/v1/admin/teachers/${data.application?.userId ?? ""}/documents/${doc.id ?? ""}/content`} />
               </li>
             ))}
           </ul>
@@ -341,28 +341,6 @@ function DatosEnviados({
         )}
       </Bloque>
     </div>
-  );
-}
-
-function VerDocumento({ userId, docId }: { userId: string; docId: string }) {
-  const abrir = useMutation({
-    mutationFn: () =>
-      apiFetch<{ url: string }>(`/api/v1/admin/teachers/${userId}/documents/${docId}/url`),
-    onSuccess: (res) => {
-      if (res.url) window.open(res.url, "_blank", "noopener,noreferrer");
-    },
-  });
-
-  return (
-    <button
-      type="button"
-      onClick={() => abrir.mutate()}
-      disabled={abrir.isPending}
-      className="inline-flex shrink-0 items-center gap-1.5 rounded-pill border-[1.5px] border-border px-3.5 py-2 text-[12.5px] font-bold text-text transition-colors hover:bg-surface-raised focus-visible:shadow-focus disabled:opacity-60"
-    >
-      <ExternalLink size={14} strokeWidth={2} />
-      {abrir.isPending ? "Abriendo…" : "Ver documento"}
-    </button>
   );
 }
 
