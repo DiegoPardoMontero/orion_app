@@ -98,6 +98,8 @@ test("[p-perfil.9] el profe ve «Clases con adolescentes» en su perfil, con los
   await expect(enlaces.nth(0)).toHaveAttribute("href", "https://inhabilidades.policia.gov.co:8080/");
   await expect(enlaces.nth(1)).toHaveAttribute("href", "https://antecedentes.policia.gov.co:7005/WebJudicial/");
   await expect(enlaces.nth(0)).toHaveAttribute("target", "_blank");
+  // Y lo que el formulario pide (15/10/2026): la empresa consultante y su NIT.
+  await expect(page.getByText(/empresa consultante escribe «Orion Idiomas» y como NIT 1013576324-1/)).toBeVisible();
 
   // El previsualizador: con el documento de la semilla (sin Cloudinary local) dice que no puede abrirlo,
   // y deja los dos enlaces de salida. Con Cloudinary real muestra el archivo.

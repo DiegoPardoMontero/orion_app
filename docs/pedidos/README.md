@@ -6,6 +6,7 @@ estado. La regla está en `CLAUDE.md` → «Registro de pedidos». Del más reci
 | Fecha | Pedido | Estado |
 |---|---|---|
 | 15/10/2026 08:32 | [Pop-up de «¡Bienvenido a Orión!» en vez del video, antes del recorrido](2026-10-15-0832-popup-de-bienvenida-en-vez-del-video-antes-del-recorrido.md) | Desplegado el 15/10 09:44 |
+| 15/10/2026 14:35 | [El NIT y el nombre de la empresa para la consulta de inhabilidades](2026-10-15-1435-texto-con-el-nit-y-el-nombre-para-la-consulta-de-inhabilidades.md) | Listo en `develop`; espera el visto bueno para desplegar |
 | 15/10/2026 10:10 | [Habilitar para adolescentes sin exigir los certificados, y avisar al profe](2026-10-15-1010-certificados-opcionales-para-habilitar-desde-el-admin-y-avisar-al-profe.md) | Desplegado el 15/10 13:59 |
 | 15/10/2026 09:55 | [Los profes no pueden subir los certificados de adolescentes](2026-10-15-0955-los-profes-no-pueden-subir-los-documentos-de-adolescentes.md) | Desplegado el 15/10 13:59 |
 | 15/10/2026 09:10 | [Las banderas salen como «GB» o «FR» en Windows](2026-10-15-0910-las-banderas-salen-como-gb-o-fr-en-windows.md) | Desplegado el 15/10 09:44 |

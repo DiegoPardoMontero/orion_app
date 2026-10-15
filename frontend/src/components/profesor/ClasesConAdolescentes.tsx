@@ -25,6 +25,8 @@ export const DOCUMENTOS: {
   ayuda: string;
   clave: "registryCheck" | "backgroundCheck";
   enlace: { href: string; texto: string };
+  /** Lo que el formulario oficial pide y el profe no sabría: se muestra siempre, debajo del enlace. */
+  nota?: string;
 }[] = [
   {
     tipo: "REGISTRY_CHECK",
@@ -32,6 +34,8 @@ export const DOCUMENTOS: {
     ayuda: "El certificado de la Policía Nacional (Ley 1918 de 2018), en PDF o foto. Se saca en línea en minutos.",
     clave: "registryCheck",
     enlace: { href: "https://inhabilidades.policia.gov.co:8080/", texto: "Consultar en la Policía Nacional" },
+    // El formulario pregunta por la empresa que consulta (Pardo, 15/10/2026): Orión es la empresa.
+    nota: "En el formulario, como empresa consultante escribe «Orion Idiomas» y como NIT 1013576324-1.",
   },
   {
     tipo: "BACKGROUND_CHECK",
@@ -101,6 +105,7 @@ export function ClasesConAdolescentes() {
             >
               <ExternalLink size={13} strokeWidth={2.2} /> {d.enlace.texto}
             </a>
+            {d.nota && <p className="mb-2 text-[12.5px] leading-relaxed text-text-secondary">{d.nota}</p>}
             <Subida tipo={d.tipo} subidos={documentos.filter((x) => x.docType === d.tipo)} onCambio={refrescar} />
           </Paso>
         ))}
