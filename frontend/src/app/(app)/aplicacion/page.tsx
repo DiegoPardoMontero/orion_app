@@ -27,6 +27,7 @@ import { bordeSegun, ContadorPalabras } from "@/components/ContadorPalabras";
 import { CuerpoLegal } from "@/components/DocumentoLegal";
 import { DiscoIdioma } from "@/components/DiscoIdioma";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
+import { BotonVerDocumento } from "@/components/VisorDeDocumento";
 import { DatosDePago, useDatosDePago } from "@/components/profesor/DatosDePago";
 import { Rigel } from "@/components/Rigel";
 import { SelectorDeCiudad } from "@/components/SelectorDeCiudad";
@@ -445,7 +446,7 @@ function Wizard({
                 maxLength={120}
                 value={headline}
                 onChange={(e) => setHeadline(e.target.value)}
-                placeholder="Ej.: Conversación en inglés para adultos que ya estudiaron"
+                placeholder="Ej.: Conversación en inglés o francés para adultos que ya estudiaron"
                 aria-describedby="headline-contador"
                 aria-invalid={!!errorDe("headline") || undefined}
                 className={`mt-1.5 ${errorDe("headline") ? "border-error" : bordeSegun(estadoDelTitular)}`}
@@ -974,7 +975,10 @@ function SubidorDocumento({
         <ul className="mt-3 space-y-2">
           {docs.map((doc) => (
             <li key={doc.id} className="flex items-center justify-between gap-3 rounded-base bg-surface-sunken px-3.5 py-2.5">
-              <span className="min-w-0 break-all text-[12.5px] font-semibold text-text">{doc.fileName}</span>
+              <span className="min-w-0 flex-1 break-all text-[12.5px] font-semibold text-text">{doc.fileName}</span>
+              {doc.id && (
+                <BotonVerDocumento nombre={doc.fileName ?? ""} contentType={doc.contentType ?? ""} url={`/api/v1/me/teacher-documents/${doc.id}/content`} compacto />
+              )}
               <button
                 type="button"
                 aria-label={`Borrar ${doc.fileName}`}
@@ -1202,6 +1206,9 @@ function Revision({
                     <FileText size={15} strokeWidth={1.9} className="mt-0.5 shrink-0 text-text-muted" />
                     <span className="min-w-0 flex-1 break-all font-semibold text-text">{doc.fileName}</span>
                     <span className="shrink-0 text-[11.5px] text-text-muted">{etiquetaDocumento(doc.docType)}</span>
+                    {doc.id && (
+                      <BotonVerDocumento nombre={doc.fileName ?? ""} contentType={doc.contentType ?? ""} url={`/api/v1/me/teacher-documents/${doc.id}/content`} compacto />
+                    )}
                   </li>
                 ))}
               </ul>

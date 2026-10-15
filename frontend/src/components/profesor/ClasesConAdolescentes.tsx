@@ -2,9 +2,10 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
-import { Check, ShieldCheck, Upload } from "lucide-react";
+import { Check, ExternalLink, ShieldCheck, Upload } from "lucide-react";
 import { AvisoError, Cargando } from "@/components/estados";
 import { Modal } from "@/components/Modal";
+import { BotonVerDocumento } from "@/components/VisorDeDocumento";
 import { TextoLegal } from "@/components/cuenta/Adolescentes";
 import { Badge, Boton, Spinner } from "@/components/ui";
 import { ApiError, apiFetch, uploadFile } from "@/lib/api/fetch";
@@ -13,18 +14,31 @@ import type { HabilitacionAdolescentes } from "@/lib/adolescentes";
 
 type DocumentoLegalData = { code: string; version: string; title: string; body: string; effectiveFrom: string };
 
-const DOCUMENTOS: { tipo: "REGISTRY_CHECK" | "BACKGROUND_CHECK"; titulo: string; ayuda: string; clave: "registryCheck" | "backgroundCheck" }[] = [
+/**
+ * Los dos certificados, cada uno con el enlace a la página oficial donde se consulta (pedido de Pardo
+ * del 15/10/2026: que nadie tenga que buscarla en Google). Las dos son de la Policía Nacional y se
+ * verificaron el 15/10/2026.
+ */
+export const DOCUMENTOS: {
+  tipo: "REGISTRY_CHECK" | "BACKGROUND_CHECK";
+  titulo: string;
+  ayuda: string;
+  clave: "registryCheck" | "backgroundCheck";
+  enlace: { href: string; texto: string };
+}[] = [
   {
     tipo: "REGISTRY_CHECK",
     titulo: "Consulta del Registro de inhabilidades",
     ayuda: "El certificado de la Policía Nacional (Ley 1918 de 2018), en PDF o foto. Se saca en línea en minutos.",
     clave: "registryCheck",
+    enlace: { href: "https://inhabilidades.policia.gov.co:8080/", texto: "Consultar en la Policía Nacional" },
   },
   {
     tipo: "BACKGROUND_CHECK",
     titulo: "Certificado de antecedentes judiciales",
     ayuda: "El de la Policía Nacional, vigente, en PDF o foto.",
     clave: "backgroundCheck",
+    enlace: { href: "https://antecedentes.policia.gov.co:7005/WebJudicial/", texto: "Consultar en la Policía Nacional" },
   },
 ];
 
@@ -83,6 +97,14 @@ export function ClasesConAdolescentes() {
         </Paso>
         {DOCUMENTOS.map((d) => (
           <Paso key={d.tipo} listo={h[d.clave]} titulo={d.titulo} ayuda={d.ayuda}>
+            <a
+              href={d.enlace.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mb-2 inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary underline-offset-2 hover:underline focus-visible:shadow-focus"
+            >
+              <ExternalLink size={13} strokeWidth={2.2} /> {d.enlace.texto}
+            </a>
             <Subida tipo={d.tipo} subidos={documentos.filter((x) => x.docType === d.tipo)} onCambio={refrescar} />
           </Paso>
         ))}
@@ -123,7 +145,8 @@ function Subida({ tipo, subidos, onCambio }: { tipo: string; subidos: DocumentVi
     <div className="grid gap-2">
       {subidos.map((d) => (
         <div key={d.id} className="flex items-center justify-between gap-2 text-[13px]">
-          <span className="truncate text-text">{d.fileName}</span>
+          <span className="min-w-0 flex-1 truncate text-text">{d.fileName}</span>
+          {d.id && <BotonVerDocumento nombre={d.fileName ?? ""} contentType={d.contentType ?? ""} url={`/api/v1/me/teacher-documents/${d.id}/content`} compacto />}
           <button type="button" onClick={() => d.id && borrar.mutate(d.id)} className="shrink-0 text-text-muted underline underline-offset-2 hover:text-error">
             Quitar
           </button>
