@@ -59,6 +59,30 @@ como página: https://claude.ai/artifact/PKrHkCLJ6zCfTq7Q48RiCF
 - **Textos legales**: capítulo en Términos y Política, autorización del representante y código de
   conducta del profe (borradores en la página).
 
+## Cómo se construye (plan del 14/10/2026, noche)
+
+El principio que ordena todo: **la reserva sigue siendo del adulto.** `bookings.student_id` es el
+representante legal; el adolescente es una columna más (`adolescent_profile_id`, nula para los
+adultos). Así pagos, saldo, reclamos, retracto, reseñas, mensajes y liquidaciones no cambian: todos
+cuelgan de `student_id`. Lo del menor son tres puertas en el servidor y una capa de pantallas.
+
+| Paso | Qué | Dónde |
+|---|---|---|
+| 1 | **V83**: `adolescent_profiles` (id, guardian_user_id, first_name, birth_year con CHECK de 13–17 al crear, self_declared_level, motivation, created_at, closed_at); `guardian_authorizations` (adolescent_profile_id, document_version, heard_confirmed, ip, user_agent, accepted_at, revoked_at); `bookings.adolescent_profile_id`; `professor_profiles.minors_cleared_until/at/by`; `teacher_documents.doc_type` admite `REGISTRY_CHECK` y `BACKGROUND_CHECK`; `legal_documents.code` admite `GUARDIAN_AUTHORIZATION` y `MINORS_CODE_OF_CONDUCT`; el índice de la prueba gratis cuenta el perfil | `identity`, `scheduling`, `legal` |
+| 2 | **Perfiles y autorización**: `GET/POST/PATCH/DELETE /api/v1/me/adolescents`; crear exige aceptar la autorización (versión vigente) y «fue escuchado»; borrar = revocar + supresión de lo suyo (lo de pagos se queda); `AdolescentProfileIT` | `identity` |
+| 3 | **Profes habilitados**: el profe sube los dos documentos y acepta el código de conducta (`legal_acceptances`); el admin ve los tres en Usuarios y enciende «Habilitado para adolescentes» (`POST/DELETE /api/v1/admin/professors/{id}/minors`), vigente un año; el perfil público dice si está habilitado; `HabilitacionParaAdolescentesIT` | `identity`, `admin` |
+| 4 | **Las tres puertas**: buscador `?forMinor=true` solo devuelve habilitados vigentes; `BookingService.create` con `adolescentProfileId` comprueba que el perfil es del actor, que la autorización está viva, que el profe está habilitado y que el perfil sigue con menos de 18; el aula no entrega el token de una clase de adolescente hasta que el adulto confirma «estoy presente o cerca» (`POST /bookings/{id}/classroom/guardian-present`, `guardian_present_confirmed_at`) | `identity`, `scheduling` |
+| 5 | **Sin IA**: `PracticeListener` genera con `GeneradorSinIa` cuando la reserva tiene perfil; el borrador por IA y el dictado del acta responden 422 para esas clases (el profe la escribe a mano); nada del menor sale a OpenAI | `practice`, `teaching` |
+| 6 | **Lo que ve cada uno**: Mis clases dice «Para <nombre>»; el profe ve el perfil del adolescente (nombre, año, nivel, objetivo) en `/estudiantes/[id]` y en la antesala; los avisos, mensajes y reseñas siguen con el adulto; el nombre del menor no aparece en ninguna reseña pública | `scheduling`, `messaging`, `reputation` |
+| 7 | **Pantallas**: en `/cuenta`, «Adolescentes a mi cargo» (crear con la autorización en pantalla aparte, editar, revocar); al reservar, «¿Para quién es la clase?» cuando hay perfiles y el profe está habilitado; en Usuarios, el interruptor y los documentos; en Mi perfil del profe, la sección «Clases con adolescentes» con los documentos y el código | frontend |
+| 8 | **Textos legales 1.2** (`terms-1.2.md`, `privacy-1.2.md`, `guardian-authorization-1.0.md`, `minors-code-of-conduct-1.0.md`), publicados por migración con la fecha; `pendientesAlEntrar` se encarga de pedirlos; `PoliticaDeTratamientoTest` apunta a la 1.2 | `legal` |
+| 9 | **Seguridad**: «Reportar un problema de seguridad» para el adulto en la clase y en los mensajes → ticket de soporte con prioridad máxima, inhabilitación inmediata del profe para menores y alerta al admin | `support`, `identity` |
+| 10 | **Puntos propios por hijo** (decisión 10): contador, racha y logros por perfil, visibles solo al adulto | `engagement` |
+| 11 | **Al cumplir 18 y la portada**: aviso al adulto; una sección para familias en la portada cuando todo lo anterior esté en producción | `engagement`, frontend |
+
+Fuera del plan hasta que lo pida Pardo: menores de 13, usuario propio del adolescente, IA con sus
+datos, grabación.
+
 ## Fuera
 
 Menores de 13, usuario propio del adolescente, IA con sus datos y grabación de clases.
