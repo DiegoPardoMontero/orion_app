@@ -979,7 +979,13 @@ tumbes prod»: todo se construyó en la rama `develop` y **no se despliega hasta
   lo incluye (`AdminUserResponse.teacherApplicant`, `role=TEACHER_APPLICANT`).
 - **Banderas como SVG** en todo (`<Bandera>`, `codigoDeBandera`): Windows pintaba «GB» y «FR».
 - Verificado el 15/10 a las 09:40: `verify` 1192 en verde, 107 e2e sobre base limpia, 199 vitest,
-  capturas revisadas a 390 y 1280 px.
+  capturas revisadas a 390 y 1280 px. **Desplegado a las 09:44.**
+- **La tarde (13:59):** los profes reales no podían subir los dos certificados (la sección los mandaba
+  por el endpoint de la postulación, que un profe aprobado ya no edita → 409). Ahora van por
+  `POST/DELETE /me/profile/minors/documents`, fuera del tope de seis, y la habilitación trae los archivos
+  (`1012726`). Y el admin habilita para adolescentes **sin** los certificados —solo exige el código de
+  conducta—; al habilitar, el profe recibe correo y notificación `MINORS_CLEARED` (`1eb69f8`). Verify
+  1193 y 107 e2e en verde después del despliegue.
 
 ## La noche del 14 al 15/10/2026: Claude, adolescentes (Bloque 12) y Meissa
 

@@ -6,8 +6,8 @@ estado. La regla está en `CLAUDE.md` → «Registro de pedidos». Del más reci
 | Fecha | Pedido | Estado |
 |---|---|---|
 | 15/10/2026 08:32 | [Pop-up de «¡Bienvenido a Orión!» en vez del video, antes del recorrido](2026-10-15-0832-popup-de-bienvenida-en-vez-del-video-antes-del-recorrido.md) | Desplegado el 15/10 09:44 |
-| 15/10/2026 10:10 | [Habilitar para adolescentes sin exigir los certificados, y avisar al profe](2026-10-15-1010-certificados-opcionales-para-habilitar-desde-el-admin-y-avisar-al-profe.md) | En curso |
-| 15/10/2026 09:55 | [Los profes no pueden subir los certificados de adolescentes](2026-10-15-0955-los-profes-no-pueden-subir-los-documentos-de-adolescentes.md) | En curso |
+| 15/10/2026 10:10 | [Habilitar para adolescentes sin exigir los certificados, y avisar al profe](2026-10-15-1010-certificados-opcionales-para-habilitar-desde-el-admin-y-avisar-al-profe.md) | Desplegado el 15/10 13:59 |
+| 15/10/2026 09:55 | [Los profes no pueden subir los certificados de adolescentes](2026-10-15-0955-los-profes-no-pueden-subir-los-documentos-de-adolescentes.md) | Desplegado el 15/10 13:59 |
 | 15/10/2026 09:10 | [Las banderas salen como «GB» o «FR» en Windows](2026-10-15-0910-las-banderas-salen-como-gb-o-fr-en-windows.md) | Desplegado el 15/10 09:44 |
 | 15/10/2026 09:05 | [En el admin, quien se postula se ve como «Aspirante a profesor»](2026-10-15-0905-el-aspirante-no-debe-verse-como-estudiante-en-el-admin.md) | Desplegado el 15/10 09:44 |
 | 15/10/2026 08:45 | [Avisar a Pardo, por correo y notificación, de cada profe que se registre](2026-10-15-0845-avisarme-por-correo-y-notificacion-de-cada-profe-que-se-registre.md) | Desplegado el 15/10 09:44 |

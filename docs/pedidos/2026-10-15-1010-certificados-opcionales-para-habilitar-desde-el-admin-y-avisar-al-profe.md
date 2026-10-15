@@ -5,7 +5,7 @@
 - **Fecha y hora:** 2026-10-15 10:10 (America/Bogota, UTC−5)
 - **Canal:** chat de Claude Code
 - **Sesión:** f5bedb76
-- **Commits relacionados:** (se completan)
+- **Commits relacionados:** `1eb69f8`; desplegado a `master` el 15/10 a las 13:59 con la autorización de Pardo («Sí, hagamos ese despliegue»), con las pruebas de integración del tema en verde y el verify completo corriendo después
 
 ## El pedido exacto
 

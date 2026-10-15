@@ -5,7 +5,7 @@
 - **Fecha y hora:** 2026-10-15 09:55 (America/Bogota, UTC−5)
 - **Canal:** chat de Claude Code
 - **Sesión:** f5bedb76
-- **Commits relacionados:** (se completan)
+- **Commits relacionados:** `1012726`; desplegado a `master` el 15/10 a las 13:59 con la autorización de Pardo («Sí, hagamos ese despliegue»), con las pruebas de integración del tema en verde y el verify completo corriendo después
 - **Contexto:** producción con profes reales reportando el fallo.
 
 ## El pedido exacto
@@ -40,4 +40,4 @@ por postulación también podía bloquear a un profe que ya los tuviera todos.
 
 ## Estado
 
-**En curso.**
+**Desplegado** (15/10 13:59).
