@@ -26,9 +26,10 @@ import co.orion.assessment.domain.AiUsageOutcome;
  * La traducción con un modelo de texto pequeño de OpenAI, la misma llave del diagnóstico.
  *
  * <p><strong>Rápida o nada.</strong> La frase tiene que aparecer mientras Meissa todavía la está
- * diciendo, así que el corte es de cinco segundos. El modelo es {@code gpt-4.1-nano}, sin
- * razonamiento: medido el 22/09/2026, ~1 s por frase, contra 1–3 s de {@code gpt-5-nano} con
- * razonamiento mínimo. Una traducción que llega tarde ya no sirve: se descarta sin reintentar.
+ * diciendo, así que el corte es de cinco segundos. El modelo es {@code gpt-5-nano} con razonamiento
+ * mínimo: medido el 22/09/2026 en 1–3 s por frase, dentro del corte. Hasta el 14/10/2026 era
+ * {@code gpt-4.1-nano} (~1 s, sin razonamiento), pero OpenAI lo apaga el 23/10/2026. Una traducción
+ * que llega tarde ya no sirve: se descarta sin reintentar.
  *
  * <p>Cuesta del orden de un peso por diagnóstico, y se carga al mismo presupuesto que la voz: es
  * parte de la misma función, y el tope es uno por función.
@@ -57,8 +58,8 @@ public class OpenAiTraductorDeFrases implements TraductorDeFrases {
 
     public OpenAiTraductorDeFrases(
             @Value("${OPENAI_API_KEY:}") String apiKey,
-            @Value("${orion.assessment.translation.model:gpt-4.1-nano}") String model,
-            @Value("${orion.assessment.translation.reasoning-effort:}") String reasoningEffort,
+            @Value("${orion.assessment.translation.model:gpt-5-nano}") String model,
+            @Value("${orion.assessment.translation.reasoning-effort:minimal}") String reasoningEffort,
             @Value("${orion.assessment.translation.endpoint:https://api.openai.com/v1/chat/completions}") String endpoint,
             @Value("${orion.assessment.translation.timeout-seconds:5}") int corteSegundos,
             AiUsageRecorder uso) {
@@ -114,6 +115,7 @@ public class OpenAiTraductorDeFrases implements TraductorDeFrases {
                 Map.of("role", "user", "content", frase)));
         // Una frase traducida no necesita más; el razonamiento también cuenta en este tope.
         cuerpo.put("max_completion_tokens", 400);
+        // Vacío para un modelo sin razonamiento: el campo lo rechazan.
         if (!reasoningEffort.isBlank()) {
             cuerpo.put("reasoning_effort", reasoningEffort);
         }

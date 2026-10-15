@@ -19,7 +19,7 @@ class OpenAiTraductorDeFrasesTest {
 
     private final ServidorDePrueba proveedor = new ServidorDePrueba();
     private final AiUsageRecorder uso = mock(AiUsageRecorder.class);
-    private final OpenAiTraductorDeFrases traductor = new OpenAiTraductorDeFrases("sk-test", "gpt-4.1-nano", "",
+    private final OpenAiTraductorDeFrases traductor = new OpenAiTraductorDeFrases("sk-test", "gpt-5-nano", "minimal",
             proveedor.url("/v1/chat/completions"), 1, uso);
 
     @AfterEach
@@ -28,14 +28,26 @@ class OpenAiTraductorDeFrasesTest {
     }
 
     @Test
-    @DisplayName("Responde bien: la traducción, su fila OK, y sin razonamiento para el modelo nano")
+    @DisplayName("Responde bien: la traducción, su fila OK, y gpt-5-nano con razonamiento mínimo")
     void traduce() {
         proveedor.responde(200, ServidorDePrueba.chat("¿Cuál fue el último error difícil que arreglaste?"));
 
         assertThat(traductor.alEspanol(null, "What was the last tricky bug you fixed?"))
                 .contains("¿Cuál fue el último error difícil que arreglaste?");
-        verify(uso).texto(any(), eq(OpenAiTraductorDeFrases.NAME), eq("gpt-4.1-nano"), eq(100), eq(20), anyInt(),
+        verify(uso).texto(any(), eq(OpenAiTraductorDeFrases.NAME), eq("gpt-5-nano"), eq(100), eq(20), anyInt(),
                 eq(AiUsageOutcome.OK));
+        assertThat(proveedor.cuerpos().getFirst()).contains("\"model\":\"gpt-5-nano\"")
+                .contains("\"reasoning_effort\":\"minimal\"");
+    }
+
+    @Test
+    @DisplayName("Un modelo sin razonamiento (esfuerzo vacío) no manda el campo, que ese modelo rechaza")
+    void sinRazonamiento() {
+        OpenAiTraductorDeFrases clasico = new OpenAiTraductorDeFrases("sk-test", "gpt-4.1-nano", "",
+                proveedor.url("/v1/chat/completions"), 1, uso);
+        proveedor.responde(200, ServidorDePrueba.chat("¡Hola!"));
+
+        assertThat(clasico.alEspanol(null, "Hi!")).contains("¡Hola!");
         assertThat(proveedor.cuerpos().getFirst()).contains("gpt-4.1-nano").doesNotContain("reasoning_effort");
     }
 

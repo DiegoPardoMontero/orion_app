@@ -671,7 +671,7 @@ con las decisiones que tomó Pardo.
   dice, la espera y el cierre. Rigel ya no aparece en el diagnóstico.
 - **Subtítulo y traducción** (23/09): el subtítulo se limpia al empezar cada turno de Meissa y
   la pregunta queda escrita mientras respondes; el contador dice «Pregunta N de 6». Debajo, la
-  **traducción al español frase por frase mientras habla**, con `gpt-4.1-nano` (~1 s por frase,
+  **traducción al español frase por frase mientras habla**, con `gpt-5-nano` desde el 14/10/2026 (antes `gpt-4.1-nano`, que OpenAI apaga el 23/10; ~1 s por frase,
   del orden de un peso por diagnóstico, cargado al presupuesto del diagnóstico), ocultable y
   recordado en el navegador. Solo para el dueño de un diagnóstico vivo y con tope de 80 frases;
   la rama en español no se traduce. Antes el subtítulo acumulaba la conversación entera: por
@@ -1664,10 +1664,11 @@ su test; lo que cambia el comportamiento o pide una decisión está abajo, en Pe
   `X-Content-Type-Options` y `Referrer-Policy`.
 
 ## Pendiente / bloqueos conocidos
-- **OpenAI apaga `gpt-4.1-nano` el 23/10/2026** (correo del 08/10). Es el valor por defecto de
-  `orion.assessment.translation.model`, la traducción en vivo de las frases de Meissa (corte de 5 s,
-  sin reintento): desde esa fecha fallaría en silencio. Candidato: `gpt-5-nano`, medido en 1–3 s el
-  22/09. Pendiente de la decisión de Pardo (pedido del 14/10).
+- ~~OpenAI apaga `gpt-4.1-nano` el 23/10/2026~~ **Resuelto el 14/10**: la traducción en vivo de
+  Meissa usa `gpt-5-nano` con razonamiento mínimo (decisión de Pardo). Queda por comprobar en
+  producción que ninguna variable `ORION_*`/`orion.assessment.translation.*` de Railway fije el
+  modelo viejo, y que la llave de OpenAI de producción siga viva: **la local (`~/.orion/openai-key`)
+  está vencida** desde antes del 14/10 («Your API key has expired»).
 - **Railway tiene un límite duro de USD 10 al mes** (en 7,51 el 14/10; el ciclo cierra el 16/10).
   Pasado el límite no se pueden crear despliegues, y cada push a `master` es uno.
 - **UAT no está montado** al 14/10 (`uat.orionidiomas.com` no resuelve): todo va a `master`.
