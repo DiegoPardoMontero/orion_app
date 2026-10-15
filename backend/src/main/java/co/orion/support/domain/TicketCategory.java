@@ -24,6 +24,12 @@ public enum TicketCategory {
     PAGO("Un pago o una devolución", Plazo.ninguno()),
     CLASE("Un problema con una clase", Plazo.ninguno()),
     CUENTA("Mi cuenta o mi perfil", Plazo.ninguno()),
+    /**
+     * El reporte de seguridad de un adulto sobre la clase de su adolescente (Bloque 12). No lo elige
+     * nadie en el formulario de Ayuda: lo abre el botón de la clase, y al abrirse el profe queda
+     * inhabilitado para menores de inmediato mientras el equipo revisa.
+     */
+    SEGURIDAD_MENOR("Un problema de seguridad en una clase con un adolescente", Plazo.ninguno()),
     OTRO("Otra cosa", Plazo.ninguno());
 
     private final String etiqueta;

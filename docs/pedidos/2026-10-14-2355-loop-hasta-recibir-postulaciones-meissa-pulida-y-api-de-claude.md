@@ -83,9 +83,10 @@ OpenAI como respaldo configurable; (4) terminar francés (probado con llaves rea
 
 - **Claude** (`f2731d4`): acta, práctica, resumen del diagnóstico, traducción en vivo y revisores, con
   pruebas contra un servidor de mentira. En Railway: `ANTHROPIC_API_KEY` + `ORION_TEXT_PROVIDER=claude`.
-- **Bloque 12, pasos 1 a 5** (`64833d2`, `d31b0c7`): la base, los perfiles con autorización, la
-  habilitación de profes, las tres puertas y el apagado de la IA. Falta el frontend (paso 7) y los
-  pasos 9 a 11.
+- **Bloque 12, pasos 1 a 9** (`64833d2`, `d31b0c7`, `e47c19b` y el reporte de seguridad): la base,
+  los perfiles con autorización, la habilitación de profes, las tres puertas, el apagado de la IA,
+  todas las pantallas (Cuenta, perfil del profe, reservar «para», Mis clases, antesala, Usuarios,
+  buscador) y el reporte de seguridad. Faltan los puntos por hijo (10) y lo de los 18 años (11).
 - **Meissa, primera ronda de pulido** (sin la llave de OpenAI, todo lo que no necesita voz real):
   - **Interrupciones de verdad:** si la persona habla encima de Meissa, se cancela la respuesta y se
     vacía el audio pendiente (`response.cancel` + `output_audio_buffer.clear`). Antes, por WebRTC el

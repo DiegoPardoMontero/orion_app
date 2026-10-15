@@ -30,6 +30,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import co.orion.TestcontainersConfiguration;
 import co.orion.identity.api.AdolescentProfileResponse;
+import co.orion.identity.api.PagedProfessors;
 import co.orion.identity.domain.DocumentType;
 import co.orion.identity.domain.ProfessorProfile;
 import co.orion.identity.domain.TeacherDocument;
@@ -189,5 +190,26 @@ class ReservaParaAdolescenteIT extends ApiIntegrationSupport {
                 Map.of("rawInput", "Trabajamos los colores y los días de la semana."), Map.class);
         assertThat(borrador.getStatusCode().value()).isEqualTo(422);
         assertThat(borrador.getBody().get("error").toString()).contains("adolescentes");
+    }
+
+    @Test
+    @SuppressWarnings("rawtypes")
+    @DisplayName("El reporte de seguridad abre el ticket, inhabilita al profe para menores y solo lo hace el adulto")
+    void reporteDeSeguridad() {
+        UUID id = post("/api/v1/bookings", ana, reserva(maria.getId(), 9, sofi), BookingResponse.class).getBody().id();
+
+        ResponseEntity<Map> otro = post("/api/v1/bookings/" + id + "/safety-report", sesionMaria,
+                Map.of("body", "Pasó algo raro en la clase de hoy."), Map.class);
+        assertThat(otro.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+
+        ResponseEntity<Map> reporte = post("/api/v1/bookings/" + id + "/safety-report", ana,
+                Map.of("body", "El profesor le pidió a Sofi su número de celular."), Map.class);
+        assertThat(reporte.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        String codigo = reporte.getBody().get("code").toString();
+        assertThat(codigo).startsWith("ORN-");
+        assertThat(jdbc.queryForObject("select category from support_tickets where code = ?", String.class, codigo))
+                .isEqualTo("SEGURIDAD_MENOR");
+        assertThat(profiles.findById(maria.getId()).orElseThrow().getMinorsClearedUntil()).isNull();
+        assertThat(rest.getForEntity("/api/v1/professors?forMinor=true", PagedProfessors.class).getBody().totalElements()).isZero();
     }
 }

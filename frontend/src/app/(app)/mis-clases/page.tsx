@@ -14,6 +14,7 @@ import {
   UserPlus,
   Video,
   X,
+  ShieldAlert,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -24,7 +25,7 @@ import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Modal } from "@/components/Modal";
 import { SelectorEstrellas } from "@/components/Rating";
 import { Rigel } from "@/components/Rigel";
-import { Badge, Boton, BotonPrincipal, Segmento, Tarjeta } from "@/components/ui";
+import { Badge, Boton, BotonPrincipal, Segmento, Tarjeta, Spinner } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type { ConversationSummary, MyBookingResponse } from "@/lib/api/types";
 import type { EntradaDeActa, ResumenDeActas } from "@/lib/actas";
@@ -463,6 +464,7 @@ function TarjetaClase({
 }) {
   const [cancelando, setCancelando] = useState(false);
   const [reportando, setReportando] = useState(false);
+  const [seguridad, setSeguridad] = useState(false);
   const [registrando, setRegistrando] = useState(false);
   const [calificando, setCalificando] = useState(false);
   // Sin flag de "ya reseñada" en el DTO: se recuerda localmente al calificar (o al chocar con el 409
@@ -755,6 +757,19 @@ function TarjetaClase({
             </Boton>
           )}
 
+          {/* La clase de un adolescente (Bloque 12): el adulto tiene además el reporte de seguridad, desde
+              que la reserva existe. Abre un ticket urgente e inhabilita al profe para menores de inmediato. */}
+          {!esProfesor && clase.adolescentFirstName && clase.status !== "CANCELLED_BY_STUDENT" && clase.status !== "CANCELLED_BY_PROFESSOR" && (
+            <Boton
+              variante="contorno"
+              onClick={() => setSeguridad(true)}
+              className="h-10 flex-1 basis-[230px] border-error text-error hover:bg-error/5 sm:flex-none sm:basis-auto"
+            >
+              <ShieldAlert size={15} strokeWidth={1.75} />
+              Reportar un problema de seguridad
+            </Boton>
+          )}
+
           {puedeRegistrar && (
             <Boton variante="tinta" onClick={() => setRegistrando(true)} className="h-10 flex-1 sm:flex-none">
               Registrar asistencia
@@ -795,6 +810,7 @@ function TarjetaClase({
 
       {cancelando && <ModalCancelar clase={clase} onCerrar={() => setCancelando(false)} />}
       {reportando && <ModalReportar clase={clase} onCerrar={() => setReportando(false)} />}
+      {seguridad && <ModalSeguridad clase={clase} onCerrar={() => setSeguridad(false)} />}
       {registrando && <ModalAsistencia clase={clase} onCerrar={() => setRegistrando(false)} />}
       {calificando && (
         <ModalCalificar
@@ -1153,6 +1169,64 @@ const MOTIVOS_RECLAMO = [
  * El reclamo del estudiante. Es su única vía para que una clase que no ocurrió no se dé por dictada
  * y su dinero no se libere solo: mientras el reclamo está abierto, esa plata no se mueve.
  */
+/**
+ * El reporte de seguridad del adulto en la clase de su adolescente (Bloque 12). Al enviarlo, el equipo
+ * recibe la alerta y el profe queda inhabilitado para menores mientras se revisa; la familia recibe
+ * respuesta en menos de 24 horas.
+ */
+function ModalSeguridad({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar: () => void }) {
+  const queryClient = useQueryClient();
+  const [texto, setTexto] = useState("");
+  const [codigo, setCodigo] = useState<string | null>(null);
+  const enviar = useMutation({
+    mutationFn: () =>
+      apiFetch<{ code: string }>(`/api/v1/bookings/${clase.id}/safety-report`, { method: "POST", body: { body: texto.trim() } }),
+    onSuccess: (r) => {
+      setCodigo(r.code);
+      void queryClient.invalidateQueries({ queryKey: ["support"] });
+    },
+  });
+  const error = enviar.error instanceof ApiError ? enviar.error.message : null;
+  return (
+    <Modal titulo="Reportar un problema de seguridad" onCerrar={onCerrar}>
+      {codigo ? (
+        <div>
+          <p className="text-[14.5px] font-semibold text-text">Lo recibimos. Gracias por decirlo.</p>
+          <p className="mt-2 text-[13.5px] leading-relaxed text-text-secondary">
+            Tu reporte es el <span className="font-mono font-semibold">{codigo}</span>. El profesor quedó inhabilitado
+            para dar clase a adolescentes mientras revisamos, y te contactamos en menos de 24 horas. Si hay
+            peligro inmediato, llama a la línea 123.
+          </p>
+          <Boton onClick={onCerrar} className="mt-5 h-11 w-full">Entendido</Boton>
+        </div>
+      ) : (
+        <div>
+          <p className="text-[13.5px] leading-relaxed text-text-secondary">
+            Para algo que te preocupe del profesor con {clase.adolescentFirstName}: un contacto fuera de Orión, un
+            comentario fuera de lugar, cualquier cosa que no esté bien. Cuéntanos qué pasó.
+          </p>
+          <textarea
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            rows={4}
+            maxLength={4000}
+            autoFocus
+            className="mt-3 w-full rounded-base border-[1.5px] border-border bg-surface-raised px-4 py-3 text-[15px]"
+            aria-label="Qué pasó"
+          />
+          {error && <div className="mt-3"><AvisoError mensaje={error} /></div>}
+          <div className="mt-4 flex gap-2.5">
+            <Boton variante="contorno" onClick={onCerrar} className="h-11 flex-1">Cancelar</Boton>
+            <Boton variante="peligro" disabled={texto.trim().length < 10 || enviar.isPending} onClick={() => enviar.mutate()} className="h-11 flex-1">
+              {enviar.isPending ? <Spinner /> : "Enviar el reporte"}
+            </Boton>
+          </div>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
 function ModalReportar({ clase, onCerrar }: { clase: MyBookingResponse; onCerrar: () => void }) {
   const queryClient = useQueryClient();
   const [motivo, setMotivo] = useState(MOTIVOS_RECLAMO[0].codigo);

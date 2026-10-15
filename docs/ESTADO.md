@@ -990,8 +990,12 @@ brief `docs/briefs/orion-bloque-12-adolescentes.md`, aprobado por el abogado):
 - **Textos legales 1.2** vigentes desde el 14/10: Términos y Política con el capítulo de adolescentes
   (la Política además nombra a OpenAI, 8x8 y el login social, sin revisión del abogado por decisión de
   Pardo), la autorización del representante 1.0 y el código de conducta 1.0.
-- **Pendiente del bloque:** el reporte de seguridad (paso 9), los puntos propios por hijo (10), el aviso
-  al cumplir 18 y la sección de familias en la portada (11).
+- **Reporte de seguridad** (paso 9): «Reportar un problema de seguridad» en la clase de un adolescente
+  (Mis clases, solo el adulto) → `POST /bookings/{id}/safety-report` abre un ticket `SEGURIDAD_MENOR`,
+  inhabilita al profe para menores de inmediato y manda la alerta al equipo (`ORION_ALERTS_TO`); la
+  familia recibe respuesta en menos de 24 h. La evidencia no se borra.
+- **Pendiente del bloque:** los puntos propios por hijo (10), el aviso al cumplir 18 y la sección de
+  familias en la portada (11).
 - Pruebas: `AdolescentProfileIT`, `HabilitacionParaAdolescentesIT`, `ReservaParaAdolescenteIT`,
   `PoliticaDeTratamientoTest` (1.2) y el e2e `adolescentes.spec.ts`.
 

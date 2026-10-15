@@ -93,7 +93,7 @@ que va a ver cada profe invitado.
 ## Semanas 1 y 2 (19/10 al 1/11): los profes fundadores, y adolescentes en construcción
 
 **Adolescentes (Bloque 12, aprobado por el abogado el 14/10; pasos 1 a 8 construidos la noche del
-14 al 15/10, faltan el reporte de seguridad, los puntos por hijo y lo de los 18 años):** cuenta familiar bajo el adulto, sin
+14 al 15/10, faltan los puntos por hijo y lo de los 18 años):** cuenta familiar bajo el adulto, sin
 usuario propio, sin IA ni grabación; autorización del representante legal con constancia; profes
 habilitados por el admin tras revisar el código de conducta, la consulta del Registro de inhabilidades
 (Ley 1918) y los antecedentes, con renovación anual; sin franja horaria; textos legales 1.2 que se
