@@ -1,6 +1,7 @@
 package co.orion.identity.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
 import java.util.List;
@@ -26,6 +27,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import co.orion.identity.application.RegistrationService;
+import co.orion.identity.application.SocialLoginService;
+import co.orion.identity.domain.SocialProvider;
+import co.orion.shared.error.UnprocessableException;
+import co.orion.shared.security.OrionUserDetails;
 import co.orion.TestcontainersConfiguration;
 import co.orion.identity.application.DocumentStorage;
 import co.orion.identity.application.ProfessorInviteMailer;
@@ -99,12 +105,19 @@ class InvitacionDeProfesoresIT extends ApiIntegrationSupport {
     @Autowired
     private JdbcTemplate jdbc;
 
+    @Autowired
+    private SocialLoginService social;
+
+    @Autowired
+    private RegistrationService registro;
+
     private Session adminSession;
     private User admin;
 
     @BeforeEach
     void seed() {
         jdbc.update("delete from professor_invites");
+        jdbc.update("delete from social_identities");
         applications.deleteAll();
         profiles.deleteAll();
         users.deleteAll();
@@ -362,6 +375,48 @@ class InvitacionDeProfesoresIT extends ApiIntegrationSupport {
         aprobar(CORREO);
         UUID id = users.findByEmailIgnoreCase(CORREO).orElseThrow().getId();
         assertThat(profiles.findById(id).orElseThrow().founderTerms()).isNotNull();
+    }
+
+    /**
+     * La invitada por WhatsApp toca «Continuar con Google» en vez de escribir una contraseña. Sin el
+     * token, la cuenta que Google crea no tenía cómo ligarse a la invitación (no hay correo que
+     * cruzar) y el 15 % de fundador se perdía en silencio (revisión del 07/10/2026; Pardo: «que Google
+     * también la consuma»).
+     */
+    @Test
+    @SuppressWarnings("rawtypes")
+    void laInvitacionPorWhatsappTambienSeConsumeAlEntrarConGoogle() {
+        String token = invitarSinCorreo("Mariana", true);
+
+        User creada = social.completar(
+                new SocialLoginService.PerfilSocial(SocialProvider.GOOGLE, "g-inv", CORREO, true, "Mariana Ruiz"),
+                "Mariana Ruiz", "+573001112244", false, token, registro);
+
+        assertThat(UserResponse.from(new OrionUserDetails(creada)).role()).isEqualTo("TEACHER_APPLICANT");
+        assertThat(ver(token).get("state")).isEqualTo("USED");
+        assertThat(registrarse("otra@orion.test", token).getStatusCode())
+                .isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+
+        // La cuenta de Google no tiene contraseña utilizable; para seguir por la API se le pone una.
+        jdbc.update("update users set password_hash = ?, password_set = true where id = ?",
+                passwordEncoder.encode(PASSWORD), creada.getId());
+        completarPostulacion(login(CORREO), CORREO);
+        aprobar(CORREO);
+        assertThat(profiles.findById(creada.getId()).orElseThrow().founderTerms()).isNotNull();
+    }
+
+    /** La invitación con correo exige ese correo también por Google: con otro, no se crea nada. */
+    @Test
+    void conGoogleYOtroCorreoLaInvitacionNoSirveYNoSeCreaLaCuenta() {
+        String token = invitar(CORREO, true);
+
+        assertThatThrownBy(() -> social.completar(
+                new SocialLoginService.PerfilSocial(SocialProvider.GOOGLE, "g-otra", "otra@orion.test", true, "Otra"),
+                "Otra Persona", "+573001112244", false, token, registro))
+                .isInstanceOf(UnprocessableException.class)
+                .hasMessageContaining("otro correo");
+        assertThat(users.findByEmailIgnoreCase("otra@orion.test")).isEmpty();
+        assertThat(ver(token).get("state")).isEqualTo("VALID");
     }
 
     @Test

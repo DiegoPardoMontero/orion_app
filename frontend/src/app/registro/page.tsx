@@ -289,12 +289,21 @@ function Registro() {
 
           {/* En las dos pestañas: desde «Quiero enseñar», la intención viaja con la ida al
               proveedor y la cuenta nace como aspirante a profesor, como con contraseña. */}
-          {/* Con invitación, solo correo y contraseña: una cuenta de Google podría traer otro correo. */}
-          {!conInvitacion && (
-            <div className="mt-5">
-              <BotonesSociales ensenar={intencion === "ensenar"} />
-            </div>
-          )}
+          {/* Con invitación también (14/10/2026): el token viaja con la ida al proveedor y la invitación
+              se consume al completar la cuenta. Si la invitación trae correo, Google tiene que traer ese
+              mismo correo; el servidor lo exige y lo dice. */}
+          <div className="mt-5">
+            {conInvitacion && invitado?.email && (
+              <p className="mb-3 text-[13px] leading-relaxed text-text-secondary">
+                Si continúas con Google, usa la cuenta de <strong>{invitado.email}</strong>: la invitación es
+                para ese correo.
+              </p>
+            )}
+            <BotonesSociales
+              ensenar={intencion === "ensenar"}
+              invitacion={conInvitacion ? (tokenDeInvitacion ?? undefined) : undefined}
+            />
+          </div>
 
           <label
             className="mt-6 block text-[12px] font-bold uppercase tracking-[0.04em] text-text-secondary"

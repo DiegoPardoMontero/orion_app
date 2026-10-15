@@ -61,6 +61,21 @@ public class RegistrationService {
     @Transactional
     public User registerFromProvider(String fullName, String email, String whatsappPhone, boolean emailVerified,
                                      boolean wantsToTeach) {
+        return registerFromProvider(fullName, email, whatsappPhone, emailVerified, wantsToTeach, null);
+    }
+
+    /**
+     * @param inviteToken el enlace de una invitación de profesor, si la persona llegó por él y luego
+     *                    eligió «Continuar con Google». La invitación por WhatsApp no trae correo, así
+     *                    que sin el token no había forma de ligarla a la cuenta que Google crea y el
+     *                    beneficio de fundador se perdía (decisión de Pardo, 07/10/2026). Se consume
+     *                    en la misma transacción: una invitación vencida o de otro correo deshace el
+     *                    alta entera, igual que con contraseña.
+     */
+    @Transactional
+    public User registerFromProvider(String fullName, String email, String whatsappPhone, boolean emailVerified,
+                                     boolean wantsToTeach, String inviteToken) {
+        boolean porInvitacion = inviteToken != null && !inviteToken.isBlank();
         if (users.existsByEmailIgnoreCase(email)) {
             throw new ConflictException("Ya existe una cuenta con ese correo");
         }
@@ -76,13 +91,15 @@ public class RegistrationService {
         }
         // Quien llegó por «Quiero enseñar» entra por la misma puerta que con contraseña: su cuenta
         // es de estudiante y su intención, enseñar, así que aterriza en su postulación.
-        if (wantsToTeach) {
+        if (wantsToTeach || porInvitacion) {
             user.intendsToTeach();
         }
         try {
             User creado = users.saveAndFlush(user);
             studentProfiles.createFor(creado);
-            if (invites.consumeByEmail(creado)) {
+            if (porInvitacion) {
+                invites.consume(inviteToken, creado);
+            } else if (invites.consumeByEmail(creado)) {
                 creado.intendsToTeach();
             }
             return creado;

@@ -82,7 +82,7 @@ public class SocialAuthController {
         PerfilSocial perfil = pendiente(http);
 
         User creado = servicio.completar(perfil, body.fullName().trim(), body.whatsappPhone(),
-                Boolean.TRUE.equals(body.wantsToTeach()), registro);
+                Boolean.TRUE.equals(body.wantsToTeach()), body.inviteToken(), registro);
         legal.record(creado.getId(), LegalDocumentCode.TERMS,
                 http.getRemoteAddr(), http.getHeader("User-Agent"));
         legal.record(creado.getId(), LegalDocumentCode.PRIVACY,
@@ -122,6 +122,8 @@ public class SocialAuthController {
             boolean acceptsDataPolicy,
             // Si llegó desde «Quiero enseñar». Objeto y no primitivo: sin el campo —un frontend de
             // antes del cambio— es el alta de siempre, de estudiante, y no un 400.
-            Boolean wantsToTeach) {
+            Boolean wantsToTeach,
+            /** El token de la invitación de profesor, si llegó por ella y eligió el proveedor (14/10/2026). */
+            @Size(max = 100) String inviteToken) {
     }
 }

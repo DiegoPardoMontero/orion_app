@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, ApiError } from "@/lib/api/fetch";
-import { destinoAlEntrar, INTENCION_KEY } from "@/lib/auth/roles";
+import { destinoAlEntrar, INTENCION_KEY, INVITACION_KEY } from "@/lib/auth/roles";
 import type { Me } from "@/lib/auth/session";
 import { Consentimiento } from "@/components/Consentimiento";
 import { AvisoError, Cargando } from "@/components/estados";
@@ -72,12 +72,15 @@ export default function CompletarRegistroPage() {
           acceptsDataPolicy: datos,
           // «Quiero enseñar»: nace como aspirante y aterriza en su postulación.
           wantsToTeach: intencion === "ensenar",
+          // La invitación de profesor con la que llegó a /registro, si la hubo: se consume aquí.
+          inviteToken: tokenDeInvitacion(),
         },
         redirectOn401: false,
       }),
     onSuccess: (me) => {
       try {
         window.sessionStorage.removeItem(INTENCION_KEY);
+        window.sessionStorage.removeItem(INVITACION_KEY);
       } catch {
         // Sin almacenamiento no había nada guardado.
       }
@@ -212,6 +215,14 @@ export default function CompletarRegistroPage() {
       )}
     </main>
   );
+}
+
+function tokenDeInvitacion(): string | undefined {
+  try {
+    return window.sessionStorage.getItem(INVITACION_KEY) ?? undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function vieneAEnsenar(): boolean {

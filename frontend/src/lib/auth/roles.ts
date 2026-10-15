@@ -17,6 +17,12 @@ export const DESDE_KEY = "orion:desde";
  * pestaña, y sin esto crearía una cuenta de estudiante en vez de un aspirante a profesor.
  */
 export const INTENCION_KEY = "orion:intencion";
+/**
+ * El token de la invitación de profesor con el que se llegó a /registro, guardado mientras el navegador
+ * va y vuelve del proveedor: /registro/completar lo manda y la invitación se consume como con
+ * contraseña. Sin esto, la invitada por WhatsApp que elegía Google perdía el 15 % de fundadora.
+ */
+export const INVITACION_KEY = "orion:invitacion";
 
 /**
  * A dónde llega alguien al entrar o crear su cuenta. Quien viene del resultado del diagnóstico

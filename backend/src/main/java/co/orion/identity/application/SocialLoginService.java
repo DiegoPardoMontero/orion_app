@@ -111,11 +111,18 @@ public class SocialLoginService {
     @Transactional
     public User completar(PerfilSocial perfil, String nombre, String whatsapp, boolean quiereEnsenar,
                           RegistrationService registro) {
+        return completar(perfil, nombre, whatsapp, quiereEnsenar, null, registro);
+    }
+
+    /** Con {@code inviteToken}, la invitación de profesor se consume como en el alta con contraseña. */
+    @Transactional
+    public User completar(PerfilSocial perfil, String nombre, String whatsapp, boolean quiereEnsenar,
+                          String inviteToken, RegistrationService registro) {
         if (identidades.findByProviderAndSubject(perfil.proveedor(), perfil.sujeto()).isPresent()) {
             throw new ConflictException("Esta cuenta ya está vinculada. Entra de nuevo.");
         }
         User creado = registro.registerFromProvider(nombre, perfil.correo(), whatsapp, perfil.correoVerificado(),
-                quiereEnsenar);
+                quiereEnsenar, inviteToken);
         vincular(creado, perfil);
         return creado;
     }

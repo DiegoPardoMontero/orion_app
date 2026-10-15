@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, useSyncExternalStore } from "react";
 import { apiFetch } from "@/lib/api/fetch";
 import { esNavegadorDeApp } from "@/lib/navegador";
-import { DESDE_KEY, INTENCION_KEY } from "@/lib/auth/roles";
+import { DESDE_KEY, INTENCION_KEY, INVITACION_KEY } from "@/lib/auth/roles";
 
 type Proveedor = "google" | "microsoft" | "apple" | "facebook";
 
@@ -24,6 +24,7 @@ export function BotonesSociales({
   desde,
   separador = "o con tu correo",
   ensenar,
+  invitacion,
 }: {
   desde?: string;
   separador?: string;
@@ -32,6 +33,8 @@ export function BotonesSociales({
    * prop (el login, el diagnóstico) no se toca lo guardado: /registro/completar deja elegir.
    */
   ensenar?: boolean;
+  /** El token de la invitación de profesor, si se llegó por ella: viaja en sessionStorage hasta /registro/completar. */
+  invitacion?: string;
 }) {
   const { data } = useQuery({
     queryKey: ["auth", "social", "providers"],
@@ -58,6 +61,8 @@ export function BotonesSociales({
     try {
       if (origen) window.sessionStorage.setItem(DESDE_KEY, origen);
       if (ensenar !== undefined) window.sessionStorage.setItem(INTENCION_KEY, ensenar ? "ensenar" : "aprender");
+      if (invitacion) window.sessionStorage.setItem(INVITACION_KEY, invitacion);
+      else window.sessionStorage.removeItem(INVITACION_KEY);
     } catch {
       // Sin almacenamiento: al volver entra al inicio de su rol. No es motivo para no dejarle entrar.
     }
