@@ -7,7 +7,8 @@
 - **Sesión:** f5bedb76
 - **Briefs relacionados:** `docs/plan-de-lanzamiento.md` (v3), `docs/briefs/orion-brief-frances.md`,
   `docs/briefs/orion-bloque-12-adolescentes.md`, `docs/prueba-fase-1.md`
-- **Commits relacionados:** (se completan a medida que avanza)
+- **Commits relacionados:** `f2731d4` (Claude), `89ab07b` (swagger), `64833d2`, `d31b0c7`, `e47c19b`, `754887a`,
+  `352cdd2`, `19c9b62` (Bloque 12 y Meissa)
 
 ## El pedido exacto
 
@@ -109,6 +110,12 @@ OpenAI como respaldo configurable; (4) terminar francés (probado con llaves rea
   - **Pendiente con la llave real:** el guion v6 (tono, ritmo, cierre, francés), medir latencias y
     probar el francés hablado.
 
+- **Verificación de la madrugada (00:10–01:00):** `next build` en verde; e2e completo sobre base limpia,
+  107 de 107 (el único rojo era un selector del spec nuevo, corregido); el spec de adolescentes reserva
+  la prueba gratis para Sofi y comprueba que la madre conserva la suya, lo que destapó que la pantalla
+  preguntaba la disponibilidad de la prueba sin decir para qué hijo (`19c9b62`); capturas de las diez
+  pantallas nuevas a 390 y 1280 px, con un desborde de la fila del adolescente a 390 px arreglado.
+
 ## Estado
 
-**En curso.** Preguntas a Pardo (abajo) antes de dormir; el loop sigue con sus respuestas.
+**En curso.** Pardo duerme; el loop sigue solo hasta las 8:00 y termina con el correo de resumen.

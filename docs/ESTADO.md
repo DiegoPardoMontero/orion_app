@@ -996,8 +996,14 @@ brief `docs/briefs/orion-bloque-12-adolescentes.md`, aprobado por el abogado):
   familia recibe respuesta en menos de 24 h. La evidencia no se borra.
 - **Pendiente del bloque:** los puntos propios por hijo (10), el aviso al cumplir 18 y la sección de
   familias en la portada (11).
-- Pruebas: `AdolescentProfileIT`, `HabilitacionParaAdolescentesIT`, `ReservaParaAdolescenteIT`,
-  `PoliticaDeTratamientoTest` (1.2) y el e2e `adolescentes.spec.ts`.
+- **La prueba gratis, una por cada hijo, también en la pantalla** (`19c9b62`): `GET /professors/{id}/trial`
+  acepta `adolescentProfileId`, y el perfil del profe lo pregunta por el hijo elegido; antes la madre que
+  ya había usado la suya no veía la de Sofi, y al revés.
+- Pruebas: `AdolescentProfileIT`, `HabilitacionParaAdolescentesIT`, `ReservaParaAdolescenteIT` (con la
+  prueba por hijo), `PoliticaDeTratamientoTest` (1.2) y el e2e `adolescentes.spec.ts` (la madre crea el
+  perfil, reserva la prueba gratis para Sofi, la ve en Mis clases, conserva la propia; el buscador para
+  un adolescente solo trae a María). Corrida completa del 15/10 a las 00:10 sobre base limpia: 107 e2e
+  en verde; capturas de las pantallas nuevas revisadas a 390 y 1280 px.
 
 **Meissa, primera ronda de pulido** (`e47c19b`): la interrupción corta de verdad (`response.cancel` +
 `output_audio_buffer.clear`), el micrófono negado/ausente/ocupado y la caída de la conexión tienen
