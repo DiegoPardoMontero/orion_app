@@ -115,8 +115,8 @@ class AcuerdoDelProfesorIT extends ApiIntegrationSupport {
 
         post("/api/v1/me/legal/accept", sesion, Map.of("documents", List.of("TERMS", "PRIVACY")), Void.class);
 
-        assertThat(jdbc.queryForList("select document_code || ' ' || version from agreement_acceptances where user_id = ? and version = '1.1' order by 1",
-                String.class, ana.getId())).containsExactly("PRIVACY 1.1", "TERMS 1.1");
+        assertThat(jdbc.queryForList("select document_code || ' ' || version from agreement_acceptances where user_id = ? and version = '1.2' order by 1",
+                String.class, ana.getId())).containsExactly("PRIVACY 1.2", "TERMS 1.2");
         assertThat(get("/api/v1/me/legal/pending", sesion, Map.class).getBody())
                 .containsEntry("documents", List.of());
     }

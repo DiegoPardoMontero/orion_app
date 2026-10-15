@@ -92,6 +92,17 @@ public class Booking {
     private boolean trial;
 
     /**
+     * Para quién es la clase cuando no es para el titular: el perfil de un adolescente bajo su cuenta
+     * (Bloque 12, V83). Nulo para los adultos. La reserva sigue siendo del adulto (student_id).
+     */
+    @Column(name = "adolescent_profile_id", updatable = false)
+    private UUID adolescentProfileId;
+
+    /** El adulto confirmó que está presente o cerca: sin esto, el aula de un adolescente no abre. */
+    @Column(name = "guardian_present_confirmed_at")
+    private Instant guardianPresentConfirmedAt;
+
+    /**
      * Hasta cuándo se le guarda el cupo al estudiante mientras paga. Solo tiene sentido en
      * PENDING_PAYMENT: al confirmar se borra, porque una clase pagada ya no vence.
      */
@@ -412,5 +423,28 @@ public class Booking {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    /** Solo al crear: para quién es la clase. */
+    public void forAdolescent(UUID adolescentProfileId) {
+        this.adolescentProfileId = Objects.requireNonNull(adolescentProfileId, "adolescentProfileId");
+    }
+
+    public boolean isForAdolescent() {
+        return adolescentProfileId != null;
+    }
+
+    public UUID getAdolescentProfileId() {
+        return adolescentProfileId;
+    }
+
+    public void confirmGuardianPresent(Instant when) {
+        if (guardianPresentConfirmedAt == null) {
+            guardianPresentConfirmedAt = Objects.requireNonNull(when, "when");
+        }
+    }
+
+    public Instant getGuardianPresentConfirmedAt() {
+        return guardianPresentConfirmedAt;
     }
 }

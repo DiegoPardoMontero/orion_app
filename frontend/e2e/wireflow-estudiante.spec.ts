@@ -534,7 +534,7 @@ test("[e-pasadas.3 ad-reclamos.1] reportar un problema de una clase llega a los 
   await adminCtx.close();
 });
 
-test("[e-acuerdos.1 e-acuerdos.2 e-acuerdos.3] quien aceptó los Términos 1.0 acepta la 1.1 al entrar", async ({ page }) => {
+test("[e-acuerdos.1 e-acuerdos.2 e-acuerdos.3] quien aceptó los Términos 1.0 acepta la 1.2 al entrar", async ({ page }) => {
   const { email } = await estudianteNueva(page, "Acuerdos Nuevos");
   // Como una cuenta de antes del 26/09/2026: aceptó la 1.0 de los Términos y de la Política.
   const deElla = `user_id = (select id from users where email = '${email}')`;
@@ -545,7 +545,7 @@ test("[e-acuerdos.1 e-acuerdos.2 e-acuerdos.3] quien aceptó los Términos 1.0 a
   const acuerdos = page.getByRole("dialog", { name: "Acepta los nuevos acuerdos" });
   await expect(acuerdos.getByText(/Términos y condiciones/).first()).toBeVisible({ timeout: 20_000 });
   await expect(acuerdos.getByText(/Política de tratamiento de la información/).first()).toBeVisible();
-  await expect(acuerdos.getByText("· versión 1.1")).toHaveCount(2);
+  await expect(acuerdos.getByText("· versión 1.2")).toHaveCount(2);
   // No se cierra: ni con Escape ni con un «Ahora no».
   await page.keyboard.press("Escape");
   await expect(acuerdos).toBeVisible();
@@ -557,7 +557,7 @@ test("[e-acuerdos.1 e-acuerdos.2 e-acuerdos.3] quien aceptó los Términos 1.0 a
   await aceptar.click();
   await expect(acuerdos).toBeHidden();
 
-  expect(sqlLocal(`select count(*) from agreement_acceptances where version = '1.1' and ${deElla}`)).toBe("2");
+  expect(sqlLocal(`select count(*) from agreement_acceptances where version = '1.2' and ${deElla}`)).toBe("2");
   await page.reload();
   await page.waitForLoadState("networkidle");
   await expect(page.getByRole("dialog", { name: "Acepta los nuevos acuerdos" })).toHaveCount(0);

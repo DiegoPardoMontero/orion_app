@@ -36,7 +36,7 @@ class PoliticaDeTratamientoTest {
     @Test
     @DisplayName("La Política lleva las seis secciones del art. 13 del Decreto 1377 de 2013")
     void laPoliticaLlevaLasSeisSecciones() {
-        String politica = leer("legal/privacy-1.1.md");
+        String politica = leer("legal/privacy-1.2.md");
 
         // 1. Identidad y datos de contacto del responsable.
         assertThat(politica).contains("Responsable del tratamiento", "{{domicilio}}", "{{correo}}");
@@ -53,18 +53,42 @@ class PoliticaDeTratamientoTest {
     }
 
     @Test
-    @DisplayName("La Política dice que Orión no acepta menores y por qué")
-    void laPoliticaCierraLaPuertaALosMenores() {
-        String politica = leer("legal/privacy-1.1.md");
+    @DisplayName("La Política: cuentas solo de mayores de 18, y los adolescentes con la autorización del representante")
+    void laPoliticaTrataALosAdolescentesConAutorizacion() {
+        String politica = leer("legal/privacy-1.2.md");
 
         assertThat(politica).contains("solo para mayores de 18 años");
         assertThat(politica).contains("artículo 7 de la Ley 1581");
+        assertThat(politica).contains("artículo 12 del Decreto 1377 de 2013");
+        assertThat(politica).contains("13 a 17 años", "representante legal", "ser escuchado");
+        assertThat(politica).contains("Nada de un adolescente se envía a OpenAI");
+    }
+
+    @Test
+    @DisplayName("La Política 1.2 nombra a OpenAI, a 8x8 y lo que se toma al entrar con Google (pendiente desde el 22/09)")
+    void laPoliticaNombraALosEncargadosQueFaltaban() {
+        String politica = leer("legal/privacy-1.2.md");
+
+        assertThat(politica).contains("OpenAI", "8x8", "Google, Microsoft, Facebook o Apple");
+        assertThat(politica).contains("el audio no se guarda");
+    }
+
+    @Test
+    @DisplayName("La autorización del representante y el código de conducta dicen lo que la propuesta aprobada promete")
+    void losDocumentosDeAdolescentes() {
+        String autorizacion = leer("legal/guardian-authorization-1.0.md");
+        assertThat(autorizacion).contains("padre, madre o tutor legal", "13 a 17 años", "fue escuchado",
+                "{{responsable}}", "{{correo}}", "{{vigencia}}");
+        assertThat(autorizacion).contains("No grabará sus clases", "No usará inteligencia artificial");
+
+        String codigo = leer("legal/minors-code-of-conduct-1.0.md");
+        assertThat(codigo).contains("Ley 1918 de 2018", "antecedentes", "solo dentro de Orión", "{{vigencia}}");
     }
 
     @Test
     @DisplayName("Los Términos publican la identidad que exige el art. 50 de la Ley 1480")
     void losTerminosPublicanLaIdentidadDelProveedor() {
-        String terminos = leer("legal/terms-1.1.md");
+        String terminos = leer("legal/terms-1.2.md");
 
         assertThat(terminos).contains("{{responsable}}", "{{documento}}", "{{domicilio}}",
                 "{{correo}}");
@@ -80,7 +104,7 @@ class PoliticaDeTratamientoTest {
     @Test
     @DisplayName("Los Términos explican el retracto con su plazo, su excepción y su devolución")
     void losTerminosExplicanElRetracto() {
-        String terminos = leer("legal/terms-1.1.md");
+        String terminos = leer("legal/terms-1.2.md");
 
         assertThat(terminos).contains("artículo 47 de la Ley 1480 de 2011");
         assertThat(terminos).contains("cinco (5) días hábiles");
@@ -99,7 +123,7 @@ class PoliticaDeTratamientoTest {
     @Test
     @DisplayName("Los Términos describen la política de cancelación tal como la ejecuta el código")
     void losTerminosDescribenLaPoliticaDeCancelacion() {
-        String terminos = leer("legal/terms-1.1.md");
+        String terminos = leer("legal/terms-1.2.md");
 
         assertThat(terminos).contains("**Cancelar se puede siempre**");
         // La cifra no se escribe en la cláusula: se cita el ajuste, y `LegalDocumentService` la
@@ -114,7 +138,7 @@ class PoliticaDeTratamientoTest {
     @Test
     @DisplayName("Los Términos dicen que Orión es un portal de contacto y qué implica")
     void losTerminosDicenQueEsUnPortalDeContacto() {
-        String terminos = leer("legal/terms-1.1.md");
+        String terminos = leer("legal/terms-1.2.md");
 
         assertThat(terminos).contains("portal de contacto");
         assertThat(terminos).contains("artículo 53 de la Ley 1480 de 2011");
@@ -129,7 +153,7 @@ class PoliticaDeTratamientoTest {
     @Test
     @DisplayName("Los Términos no renuncian a los derechos del consumidor")
     void losTerminosNoRenuncianADerechos() {
-        String terminos = leer("legal/terms-1.1.md");
+        String terminos = leer("legal/terms-1.2.md");
 
         assertThat(terminos).contains(
                 "Nada en estos Términos limita, renuncia ni condiciona los derechos que la ley te "

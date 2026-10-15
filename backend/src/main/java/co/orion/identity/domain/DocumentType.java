@@ -6,5 +6,9 @@ public enum DocumentType {
     TEACHING_CERTIFICATE,
     UNIVERSITY_DEGREE,
     LANGUAGE_CERTIFICATION,
+    /** La consulta del Registro de inhabilidades por delitos sexuales contra menores (Ley 1918 de 2018), para la habilitación con adolescentes. */
+    REGISTRY_CHECK,
+    /** El certificado de antecedentes judiciales, para la misma habilitación. */
+    BACKGROUND_CHECK,
     OTHER
 }

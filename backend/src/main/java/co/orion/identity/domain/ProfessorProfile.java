@@ -1,6 +1,7 @@
 package co.orion.identity.domain;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -97,6 +98,20 @@ public class ProfessorProfile {
      * el inicio y el fin se fijan con la primera clase pagada, por un UPDATE condicional en
      * ProfessorProfileRepository y nunca desde la entidad.
      */
+    /**
+     * Habilitado para dar clase a adolescentes hasta esta fecha (Bloque 12). Lo enciende el admin tras
+     * revisar el código de conducta, la consulta del Registro de inhabilidades y los antecedentes;
+     * vence al año. Nulo o vencido, el profe no aparece para un perfil de adolescente.
+     */
+    @Column(name = "minors_cleared_until")
+    private LocalDate minorsClearedUntil;
+
+    @Column(name = "minors_cleared_at")
+    private Instant minorsClearedAt;
+
+    @Column(name = "minors_cleared_by")
+    private UUID minorsClearedBy;
+
     @Column(name = "founder_rate_bps")
     private Integer founderRateBps;
 
@@ -315,5 +330,34 @@ public class ProfessorProfile {
 
     public Instant getFounderGrantedAt() {
         return founderGrantedAt;
+    }
+
+    /** El admin lo habilita para adolescentes por un año desde hoy (Pardo, 14/10/2026). */
+    public void clearForMinors(LocalDate today, UUID adminId, Instant now) {
+        this.minorsClearedUntil = today.plusYears(1);
+        this.minorsClearedAt = now;
+        this.minorsClearedBy = adminId;
+    }
+
+    public void revokeMinorsClearance() {
+        this.minorsClearedUntil = null;
+        this.minorsClearedAt = null;
+        this.minorsClearedBy = null;
+    }
+
+    public boolean isClearedForMinors(LocalDate today) {
+        return minorsClearedUntil != null && !today.isAfter(minorsClearedUntil);
+    }
+
+    public LocalDate getMinorsClearedUntil() {
+        return minorsClearedUntil;
+    }
+
+    public Instant getMinorsClearedAt() {
+        return minorsClearedAt;
+    }
+
+    public UUID getMinorsClearedBy() {
+        return minorsClearedBy;
     }
 }

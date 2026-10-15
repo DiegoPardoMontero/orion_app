@@ -55,6 +55,21 @@ public class LegalDocumentSeeder implements ApplicationRunner {
             // Con el mandato de recaudo (Anexo A del brief de liquidaciones, aprobado por Pardo).
             new Documento(LegalDocumentCode.TEACHER_AGREEMENT, "2.0", "Acuerdo del profesor",
                     "legal/teacher-agreement-2.0.md", LocalDate.of(2026, 9, 25)),
+            // Bloque 12 (14/10/2026): adolescentes de 13 a 17 bajo la cuenta del adulto, con la propuesta
+            // aprobada por el abogado. La Política 1.2 lleva además el párrafo de OpenAI, 8x8 y el login
+            // social, que el abogado NO revisó: salió así por decisión de Pardo del 14/10 a las 22:55
+            // («las dos cosas, publicar ya»); se le manda en la siguiente ronda.
+            new Documento(LegalDocumentCode.TERMS, "1.2", "Términos y condiciones",
+                    "legal/terms-1.2.md", LocalDate.of(2026, 10, 14)),
+            new Documento(LegalDocumentCode.PRIVACY, "1.2",
+                    "Política de tratamiento de la información",
+                    "legal/privacy-1.2.md", LocalDate.of(2026, 10, 14)),
+            new Documento(LegalDocumentCode.GUARDIAN_AUTHORIZATION, "1.0",
+                    "Autorización del representante legal",
+                    "legal/guardian-authorization-1.0.md", LocalDate.of(2026, 10, 14)),
+            new Documento(LegalDocumentCode.MINORS_CODE_OF_CONDUCT, "1.0",
+                    "Código de conducta para clases con adolescentes",
+                    "legal/minors-code-of-conduct-1.0.md", LocalDate.of(2026, 10, 14)),
     };
 
     private final LegalDocumentRepository documents;

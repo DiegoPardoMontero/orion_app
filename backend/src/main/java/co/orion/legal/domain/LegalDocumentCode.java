@@ -16,5 +16,13 @@ public enum LegalDocumentCode {
      * El acuerdo del profesor. Desde la 2.0 lleva el mandato de recaudo: Orión recibe el dinero de
      * las clases por cuenta del profe (brief de liquidaciones, decisión de Pardo del 25/09/2026).
      */
-    TEACHER_AGREEMENT
+    TEACHER_AGREEMENT,
+    /**
+     * La autorización del representante legal para tratar los datos de un adolescente (Bloque 12).
+     * La acepta el adulto al crear cada perfil; su constancia va en {@code guardian_authorizations},
+     * no en las aceptaciones por usuario, porque es por hijo.
+     */
+    GUARDIAN_AUTHORIZATION,
+    /** El código de conducta del profesor para clases con menores (Bloque 12). Lo acepta quien pide la habilitación. */
+    MINORS_CODE_OF_CONDUCT
 }
