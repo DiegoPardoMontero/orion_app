@@ -8,7 +8,7 @@ import { EstrellaRating } from "@/components/Rating";
 import type { ProfessorCard } from "@/lib/api/types";
 import { esGratis, tarifaClase } from "@/lib/format";
 import { etiquetaNivel } from "@/lib/i18n";
-import { paisConBandera } from "@/lib/paises";
+import { CiudadYPais } from "@/components/Bandera";
 
 /**
  * La tarjeta de un profe en el buscador de profesores. Vive aparte porque el profe también la ve en
@@ -22,7 +22,7 @@ export function TarjetaProfesor({
   /** En la vista previa del propio profe: la misma tarjeta, pero «Ver agenda» no lleva a ningún lado. */
   vistaPrevia?: boolean;
 }) {
-  const ubicacion = [profesor.city, paisConBandera(profesor.countryCode)].filter(Boolean).join(", ");
+  const ubicacion = profesor.city || profesor.countryCode ? <CiudadYPais city={profesor.city} countryCode={profesor.countryCode} /> : null;
 
   return (
     <div className="flex h-full flex-col rounded-card bg-surface-raised p-5 shadow-md transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-lg">

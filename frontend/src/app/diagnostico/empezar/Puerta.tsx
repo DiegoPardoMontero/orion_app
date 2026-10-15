@@ -7,6 +7,7 @@ import { Mic, ShieldCheck } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/api/fetch";
 import type { GoalResponse } from "@/lib/api/types";
 import { dias, useCifras } from "@/lib/cifras";
+import { Bandera } from "@/components/Bandera";
 import { AvisoError } from "@/components/estados";
 import { Boton } from "@/components/ui";
 import type { LanguageResponse } from "@/lib/api/types";
@@ -141,7 +142,7 @@ export function Puerta({
                       : "bg-surface-sunken text-text-secondary hover:bg-border/60 hover:text-text"
                   }`}
                 >
-                  {lengua.flagEmoji && <span aria-hidden="true">{lengua.flagEmoji} </span>}
+                  <Bandera pais={lengua.flagEmoji} className="mr-1.5" />
                   {lengua.nameEs}
                 </button>
               );

@@ -54,7 +54,8 @@ export function BuscadorHero({
         placeholder="Cualquiera"
         opciones={languages.map((l) => ({
           valor: l.code ?? "",
-          etiqueta: `${l.flagEmoji ? `${l.flagEmoji} ` : ""}${l.nameEs ?? l.code ?? ""}`,
+          // Sin bandera: un <option> solo admite texto, y el emoji salía como «GB» en Windows.
+          etiqueta: l.nameEs ?? l.code ?? "",
         }))}
       />
       <Selector

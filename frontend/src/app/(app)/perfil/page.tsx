@@ -46,7 +46,7 @@ import { etiquetaNivel, NIVELES } from "@/lib/i18n";
 import { estadoBio, estadoTitular } from "@/lib/perfil-profesor";
 import { minutos, useCifras } from "@/lib/cifras";
 import { conMiles, posicionTrasCifras, soloDigitos } from "@/lib/tarifa";
-import { paisConBandera } from "@/lib/paises";
+import { CiudadYPais } from "@/components/Bandera";
 import { SelectorDePais } from "@/components/SelectorDePais";
 import { SelectorDeCiudad } from "@/components/SelectorDeCiudad";
 import { Modal } from "@/components/Modal";
@@ -369,7 +369,7 @@ function CamposDelPerfil({ inicial }: { inicial: ProfileResponse }) {
     goals,
   };
 
-  const ubicacion = [city.trim(), paisConBandera(countryCode)].filter(Boolean).join(", ");
+  const ubicacion: ReactNode = city.trim() || countryCode ? <CiudadYPais city={city} countryCode={countryCode} /> : null;
 
   return (
     <>
@@ -730,7 +730,7 @@ function Portada({
 }: {
   inicial: ProfileResponse;
   titular: string;
-  ubicacion: string;
+  ubicacion: ReactNode;
   idiomas: { code: string; nombre: string }[];
   onVistaPrevia: () => void;
 }) {

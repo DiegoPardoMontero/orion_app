@@ -18,6 +18,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { Avatar } from "@/components/Avatar";
+import { Bandera, CiudadYPais } from "@/components/Bandera";
 import { AvisoError, Cargando, ErrorCarga } from "@/components/estados";
 import { Modal } from "@/components/Modal";
 import { BotonVerDocumento } from "@/components/VisorDeDocumento";
@@ -30,7 +31,6 @@ import type {
 import { estadoAplicacionAdmin, etiquetaDocumento, etiquetaEvento } from "@/lib/aplicacion";
 import { fechaCorta, horaBogota, precioCop } from "@/lib/format";
 import { etiquetaNivel, etiquetaObjetivo } from "@/lib/i18n";
-import { paisConBandera } from "@/lib/paises";
 
 type Tab = "enviados" | "publico";
 
@@ -277,7 +277,7 @@ function DatosEnviados({
             {perfil.languages.map((l) => (
               <li key={l.code} className="text-[13.5px]">
                 <span className="font-bold text-text">
-                  {l.flagEmoji ? `${l.flagEmoji} ` : ""}
+                  <Bandera pais={l.flagEmoji} className="mr-1.5" />
                   {l.nameEs ?? l.code}
                 </span>
                 {l.isNative && <span className="ml-1.5 text-[11.5px] font-bold text-primary-strong">· Nativo</span>}
@@ -309,7 +309,7 @@ function DatosEnviados({
       </Bloque>
 
       <Bloque titulo="Experiencia">
-        <Dato etiqueta="Ciudad" valor={[perfil.city, paisConBandera(perfil.countryCode)].filter(Boolean).join(", ") || undefined} />
+        <Dato etiqueta="Ciudad" valor={perfil.city || perfil.countryCode ? <CiudadYPais city={perfil.city} countryCode={perfil.countryCode} /> : undefined} />
         <Dato
           etiqueta="Años de experiencia"
           valor={perfil.yearsExperience != null ? String(perfil.yearsExperience) : undefined}
@@ -389,7 +389,7 @@ function PerfilPublico({
             {perfil.languages.map((l) => (
               <li key={l.code} className="rounded-base bg-surface-sunken p-3">
                 <p className="flex items-center gap-1.5 text-[14px] font-bold text-text">
-                  {l.flagEmoji && <span aria-hidden="true">{l.flagEmoji}</span>}
+                  <Bandera pais={l.flagEmoji} />
                   {l.nameEs ?? l.code}
                   {l.isNative && (
                     <span className="rounded-pill bg-primary-soft px-2 py-px text-[10.5px] font-bold text-primary-strong">Nativo</span>
@@ -428,7 +428,7 @@ function PerfilPublico({
           {(perfil.city || perfil.countryCode) && (
             <div className="flex items-start gap-2 text-text-secondary">
               <MapPin size={15} strokeWidth={1.75} className="mt-0.5 shrink-0 text-text-muted" />
-              <dd>{[perfil.city, paisConBandera(perfil.countryCode)].filter(Boolean).join(", ")}</dd>
+              <dd><CiudadYPais city={perfil.city} countryCode={perfil.countryCode} /></dd>
             </div>
           )}
           {perfil.yearsExperience != null && perfil.yearsExperience > 0 && (
@@ -494,7 +494,7 @@ function Bloque({ titulo, children }: { titulo: string; children: ReactNode }) {
   );
 }
 
-function Dato({ etiqueta, valor, multilinea }: { etiqueta: string; valor?: string; multilinea?: boolean }) {
+function Dato({ etiqueta, valor, multilinea }: { etiqueta: string; valor?: ReactNode; multilinea?: boolean }) {
   return (
     <div className="mb-2.5 last:mb-0">
       <p className="text-[11.5px] font-bold text-text-muted">{etiqueta}</p>

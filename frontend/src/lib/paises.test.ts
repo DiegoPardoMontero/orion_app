@@ -1,15 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { banderaDe, FRECUENTES, paisConBandera, paises } from "./paises";
+import { codigoDeBandera, FRECUENTES, nombreDePais, paises } from "./paises";
 
 describe("los países de la lista", () => {
-  it("la bandera sale del código", () => {
-    expect(banderaDe("CO")).toBe("🇨🇴");
-    expect(banderaDe("co")).toBe("");
+  it("el código sale de un código o de un emoji de bandera", () => {
+    expect(codigoDeBandera("CO")).toBe("CO");
+    expect(codigoDeBandera("co")).toBe("CO");
+    expect(codigoDeBandera("🇨🇴")).toBe("CO");
+    expect(codigoDeBandera("🇬🇧")).toBe("GB");
+    expect(codigoDeBandera("✦")).toBe("");
+    expect(codigoDeBandera(null)).toBe("");
   });
 
-  it("se muestran con bandera y nombre en español", () => {
-    expect(paisConBandera("co")).toBe("🇨🇴 Colombia");
-    expect(paisConBandera(null)).toBe("");
+  it("el nombre va en español", () => {
+    expect(nombreDePais("CO")).toBe("Colombia");
   });
 
   it("Colombia va primero y después vienen todos, sin repetir", () => {

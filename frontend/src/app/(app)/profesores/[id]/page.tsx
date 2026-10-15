@@ -63,7 +63,7 @@ import { etiquetaNivel, etiquetaObjetivo } from "@/lib/i18n";
 import { aplicarSaldo } from "@/lib/saldo";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import { minutos, useCifras } from "@/lib/cifras";
-import { paisConBandera } from "@/lib/paises";
+import { CiudadYPais } from "@/components/Bandera";
 import { useAdolescentes } from "@/lib/adolescentes";
 
 export default function AgendaProfesorPage() {
@@ -612,7 +612,7 @@ export default function AgendaProfesorPage() {
               {(detalle.city || detalle.countryCode) && (
                 <div className="flex items-start gap-2 text-text-secondary">
                   <MapPin size={15} strokeWidth={1.75} className="mt-0.5 shrink-0 text-text-muted" />
-                  <dd>{[detalle.city, paisConBandera(detalle.countryCode)].filter(Boolean).join(", ")}</dd>
+                  <dd><CiudadYPais city={detalle.city} countryCode={detalle.countryCode} /></dd>
                 </div>
               )}
               {detalle.yearsExperience != null && detalle.yearsExperience > 0 && (

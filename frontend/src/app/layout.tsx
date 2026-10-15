@@ -3,6 +3,7 @@ import { Bricolage_Grotesque, Figtree } from "next/font/google";
 import { FranjaDePruebas } from "@/components/FranjaDePruebas";
 import { InstalarApp } from "@/components/InstalarApp";
 import { ES_PRUEBAS } from "@/lib/config";
+import "flag-icons/css/flag-icons.min.css";
 import "./globals.css";
 import { Providers } from "./providers";
 

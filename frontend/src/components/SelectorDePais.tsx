@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { Bandera } from "@/components/Bandera";
 import { Buscador } from "@/components/Buscador";
 import { paises } from "@/lib/paises";
 
@@ -23,7 +24,7 @@ export function SelectorDePais({
   disabled?: boolean;
 }) {
   const opciones = useMemo(
-    () => paises().map((p) => ({ valor: p.code, etiqueta: p.nombre, prefijo: p.bandera })),
+    () => paises().map((p) => ({ valor: p.code, etiqueta: p.nombre, prefijo: <Bandera pais={p.code} /> })),
     [],
   );
   return (

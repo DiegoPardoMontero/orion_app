@@ -22,6 +22,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Avatar } from "@/components/Avatar";
+import { Bandera, CiudadYPais } from "@/components/Bandera";
 import { CambiarFoto } from "@/components/CambiarFoto";
 import { bordeSegun, ContadorPalabras } from "@/components/ContadorPalabras";
 import { CuerpoLegal } from "@/components/DocumentoLegal";
@@ -59,7 +60,6 @@ import {
 } from "@/lib/aplicacion";
 import { useMe } from "@/lib/auth/session";
 import { etiquetaNivel, etiquetaObjetivo, NIVELES } from "@/lib/i18n";
-import { paisConBandera } from "@/lib/paises";
 import { estadoBio, estadoTitular } from "@/lib/perfil-profesor";
 
 type LangEdit = { code: string; isNative: boolean; levels: string[] };
@@ -356,7 +356,6 @@ function Wizard({
 
   const catalogoIdioma = (code: string) => languages.data?.find((l) => l.code === code);
   const nombreIdioma = (code: string) => catalogoIdioma(code)?.nameEs ?? code;
-  const banderaIdioma = (code: string) => catalogoIdioma(code)?.flagEmoji ?? "";
   const disponibles = useMemo(
     () => (languages.data ?? []).filter((l) => !langs.some((x) => x.code === l.code)),
     [languages.data, langs],
@@ -505,7 +504,7 @@ function Wizard({
                       >
                         <div className="flex items-center justify-between gap-3">
                           <p className="flex items-center gap-1.5 text-[14px] font-bold text-text">
-                            {banderaIdioma(lang.code) && <span aria-hidden="true">{banderaIdioma(lang.code)}</span>}
+                            <Bandera pais={catalogoIdioma(lang.code)?.flagEmoji} />
                             {nombreIdioma(lang.code)}
                           </p>
                           <button
@@ -1112,7 +1111,7 @@ function Revision({
   const acuerdo = useAcuerdoDelProfesor();
   const documentos = vista.documents ?? [];
   const anios = aniosDeExperiencia(d.yearsExperience);
-  const lugar = [d.city.trim(), paisConBandera(d.countryCode)].filter(Boolean).join(", ");
+  const lugar = d.city.trim() ? <CiudadYPais city={d.city} countryCode={d.countryCode} /> : "";
 
   return (
     <div className="space-y-6">
@@ -1181,7 +1180,7 @@ function Revision({
             </div>
           </SeccionRevision>
           <SeccionRevision titulo="Experiencia" faltas={faltas[2]} onEditar={() => onEditar(2)}>
-            <DatoRevision etiqueta="Lugar" valor={d.city.trim() ? lugar : ""} />
+            <DatoRevision etiqueta="Lugar" valor={lugar} />
             <DatoRevision
               etiqueta="Años de experiencia"
               valor={anios == null ? "" : anios === 0 ? "Estoy empezando" : `${anios} ${anios === 1 ? "año" : "años"}`}
@@ -1303,7 +1302,7 @@ function SeccionRevision({
   );
 }
 
-function DatoRevision({ etiqueta, valor, largo = false }: { etiqueta: string; valor: string; largo?: boolean }) {
+function DatoRevision({ etiqueta, valor, largo = false }: { etiqueta: string; valor: ReactNode; largo?: boolean }) {
   return (
     <div>
       <p className="text-[12px] font-bold text-text-secondary">{etiqueta}</p>

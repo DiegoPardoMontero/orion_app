@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
+import { Bandera } from "@/components/Bandera";
 import { useState } from "react";
 import { componerE164, leerNumero, PAISES, parseTelefono, whatsappValido } from "@/lib/phone";
 
@@ -54,14 +55,19 @@ export function PhoneInput({
             setDial(event.target.value);
             emitir(event.target.value, local);
           }}
-          className="h-[52px] appearance-none rounded-base border-[1.5px] border-border bg-surface-raised pl-3.5 pr-9 text-[15px] font-semibold text-text transition-[border-color,box-shadow] focus:border-primary focus:shadow-focus focus:outline-none"
+          className="h-[52px] appearance-none rounded-base border-[1.5px] border-border bg-surface-raised pl-11 pr-9 text-[15px] font-semibold text-text transition-[border-color,box-shadow] focus:border-primary focus:shadow-focus focus:outline-none"
         >
+          {/* Un <option> solo admite texto: el código y el indicativo. La bandera va encima, como imagen. */}
           {PAISES.map((p) => (
             <option key={p.code} value={p.dial}>
-              {p.flag} +{p.dial}
+              {p.code} +{p.dial}
             </option>
           ))}
         </select>
+        <Bandera
+          pais={PAISES.find((p) => p.dial === dial)?.code}
+          className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[15px]"
+        />
         <ChevronDown
           size={16}
           strokeWidth={1.75}

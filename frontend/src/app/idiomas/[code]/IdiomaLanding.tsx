@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
+import { Bandera } from "@/components/Bandera";
 import { Cargando } from "@/components/estados";
 import { Constelacion, Wordmark } from "@/components/marca";
 import { apiFetch } from "@/lib/api/fetch";
@@ -43,7 +44,7 @@ export function IdiomaLanding({ codigo }: { codigo: string }) {
             <Wordmark className="text-[17px] text-on-primary" />
           </Link>
           <h1 className="mt-6 max-w-[18ch] font-display text-[34px] font-bold leading-[1.08] text-on-primary lg:text-[52px]">
-            Aprende {idioma?.flagEmoji ? `${idioma.flagEmoji} ` : ""}
+            Aprende <Bandera pais={idioma?.flagEmoji} className="mr-2 text-[0.8em]" />
             {nombre} con profesores reales
           </h1>
           <p className="mt-4 max-w-[48ch] text-[15px] leading-relaxed text-on-primary/85 lg:text-[17px]">

@@ -3,15 +3,15 @@
  * parseo de un E.164 a país + número local. Separada del componente para poder testearla sin React.
  */
 export const PAISES = [
-  { code: "CO", flag: "🇨🇴", dial: "57" },
-  { code: "MX", flag: "🇲🇽", dial: "52" },
-  { code: "AR", flag: "🇦🇷", dial: "54" },
-  { code: "CL", flag: "🇨🇱", dial: "56" },
-  { code: "PE", flag: "🇵🇪", dial: "51" },
-  { code: "EC", flag: "🇪🇨", dial: "593" },
-  { code: "VE", flag: "🇻🇪", dial: "58" },
-  { code: "US", flag: "🇺🇸", dial: "1" },
-  { code: "ES", flag: "🇪🇸", dial: "34" },
+  { code: "CO", dial: "57" },
+  { code: "MX", dial: "52" },
+  { code: "AR", dial: "54" },
+  { code: "CL", dial: "56" },
+  { code: "PE", dial: "51" },
+  { code: "EC", dial: "593" },
+  { code: "VE", dial: "58" },
+  { code: "US", dial: "1" },
+  { code: "ES", dial: "34" },
 ];
 
 // Indicativos más largos primero, para que "+593" gane sobre "+59"/"+5".
