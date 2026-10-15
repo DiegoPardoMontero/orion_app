@@ -39,6 +39,14 @@ Features: ninguna nueva. Es una lectura de estado y un plan de retoma.
 - `docs/plan-de-lanzamiento.md` **versión 3**: semanas re-ancladas en el 14/10, lo nuevo con fecha,
   el orden de trabajo de Claude y la lista de Pardo, y las decisiones abiertas.
 
+### Semana 0, lo de Claude (en marcha la misma noche)
+
+1. ✅ Traductor de Meissa en `gpt-5-nano` (`16a643a`; verify 453 + 700 en verde; subido).
+2. ✅ El reclamo de un ensayo no deja ausencia al profe (`EnsayoDelActaIT` 9/9).
+3. ⏳ La invitación por WhatsApp se consume también al registrarse con Google.
+4. ⏳ El admin corrige un correo mal escrito y reenvía la confirmación.
+5. ⏳ `robots.txt` abre `/profesores`.
+
 ## Estado
 
 **Hecho; pendiente de las respuestas de Pardo.** Plan v3 escrito, ESTADO al día, e2e en verde,

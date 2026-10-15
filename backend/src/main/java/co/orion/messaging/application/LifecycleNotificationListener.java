@@ -115,19 +115,28 @@ public class LifecycleNotificationListener {
                 bookings.findById(dispute.getBookingId()).ifPresent(booking -> {
                     notifications.create(booking.getStudentId(), "DISPUTE_RESOLVED",
                             "Resolvimos tu reclamo",
-                            event.absenceRecorded()
+                            event.favoursStudent()
                                     ? "Te devolvimos el valor de la clase como saldo a favor."
                                     : "Revisamos el caso y la clase quedó registrada como dictada.",
                             "/saldo");
                     notifications.create(booking.getProfessorId(), "DISPUTE_RESOLVED",
                             "Se resolvió el reclamo de una clase",
-                            event.absenceRecorded()
-                                    ? "Quedó registrada como ausencia. Puedes ver el detalle en tu desempeño."
-                                    : "La clase quedó como dictada y tu pago sigue su curso.",
+                            textoAlProfesor(event),
                             // Cada texto lleva adonde dice: la ausencia se ve en el desempeño, el pago
                             // en las ganancias.
                             event.absenceRecorded() ? "/desempeno" : "/ganancias");
                 })));
+    }
+
+    private static String textoAlProfesor(DisputeResolved event) {
+        if (event.absenceRecorded()) {
+            return "Quedó registrada como ausencia. Puedes ver el detalle en tu desempeño.";
+        }
+        if (event.favoursStudent()) {
+            // Solo pasa con el ensayo del admin: el reclamo prosperó y aun así no cuenta.
+            return "Era un ensayo: no cuenta en tu historial ni en tus pagos.";
+        }
+        return "La clase quedó como dictada y tu pago sigue su curso.";
     }
 
     /** El hecho ya ocurrió y está guardado: que falle un aviso no puede deshacerlo. */

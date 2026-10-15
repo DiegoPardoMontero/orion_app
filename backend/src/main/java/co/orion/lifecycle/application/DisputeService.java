@@ -155,11 +155,12 @@ public class DisputeService {
         booking.resolveReview(lessonHeld, studentWasAbsent, now);
         bookings.save(booking);
 
+        boolean absenceRecorded = false;
         if (lessonHeld) {
             payments.releaseDisputed(booking.getId());
         } else {
             payments.refundDisputed(booking.getId(), CreditReason.DISPUTE_RESOLVED, admin.getId());
-            recordAbsence(booking, dispute, now);
+            absenceRecorded = recordAbsence(booking, dispute, now);
         }
 
         try {
@@ -168,7 +169,7 @@ public class DisputeService {
             throw new UnprocessableException(ex.getMessage());
         }
         Dispute resolved = disputes.save(dispute);
-        events.publishEvent(new DisputeResolved(resolved.getId(), booking.getProfessorId(), !lessonHeld));
+        events.publishEvent(new DisputeResolved(resolved.getId(), booking.getProfessorId(), !lessonHeld, absenceRecorded));
         return resolved;
     }
 
@@ -209,14 +210,23 @@ public class DisputeService {
         }
     }
 
-    private void recordAbsence(Booking booking, Dispute dispute, Instant now) {
+    /** Devuelve si la falta quedó escrita: el ensayo del admin y la clase que ya tenía una, no. */
+    private boolean recordAbsence(Booking booking, Dispute dispute, Instant now) {
+        // El ensayo del admin no es trabajo del profesor: ni suma ni resta en su historial (la misma
+        // regla que la cancelación tardía). Sin esto, ensayar un reclamo le dejaba una falta real.
+        if (booking.isRehearsal()) {
+            log.info("El reclamo del ensayo {} se resolvió a favor del estudiante sin registrar ausencia",
+                    booking.getId());
+            return false;
+        }
         if (absences.existsByBookingId(booking.getId())) {
-            return;   // una clase produce como mucho una ausencia
+            return false;   // una clase produce como mucho una ausencia
         }
         absences.save(new ProfessorAbsence(booking.getProfessorId(), booking.getId(),
                 dispute.getId(), AbsenceKind.NO_SHOW, booking.getStartsAt()));
         log.info("Ausencia registrada del profesor {} por la clase {}",
                 booking.getProfessorId(), booking.getId());
+        return true;
     }
 
     /**

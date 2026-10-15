@@ -22,8 +22,11 @@ import co.orion.TestcontainersConfiguration;
 import co.orion.billing.persistence.PaymentRepository;
 import co.orion.identity.domain.User;
 import co.orion.identity.domain.UserRole;
+import co.orion.messaging.persistence.NotificationRepository;
+import co.orion.reputation.persistence.ProfessorSanctionRepository;
 import co.orion.scheduling.domain.BookingStatus;
 import co.orion.scheduling.persistence.BookingRepository;
+import co.orion.scheduling.persistence.ProfessorAbsenceRepository;
 import co.orion.support.ApiIntegrationSupport;
 import co.orion.teaching.application.LessonNoteNudgeJob;
 
@@ -53,9 +56,19 @@ class EnsayoDelActaIT extends ApiIntegrationSupport {
     @Autowired
     private LessonNoteNudgeJob recordatorio;
 
+    @Autowired
+    private ProfessorAbsenceRepository ausencias;
+
+    @Autowired
+    private ProfessorSanctionRepository sanciones;
+
+    @Autowired
+    private NotificationRepository avisos;
+
     private User maria;
     private Session admin;
     private Session sesionMaria;
+    private Session sesionAna;
 
     @BeforeEach
     void seed() {
@@ -66,6 +79,7 @@ class EnsayoDelActaIT extends ApiIntegrationSupport {
         maria = createUser("maria@orion.test", "María Gómez", UserRole.PROFESSOR);
         admin = login("admin@orion.test");
         sesionMaria = login("maria@orion.test");
+        sesionAna = login("ana@orion.test");
     }
 
     @AfterEach
@@ -73,6 +87,8 @@ class EnsayoDelActaIT extends ApiIntegrationSupport {
         jdbc.update("update platform_settings set value = '60' where key = 'lesson_note_nudge_minutes'");
         jdbc.update("delete from practice_sets");
         jdbc.update("delete from lesson_notes");
+        jdbc.update("delete from professor_absences");
+        jdbc.update("delete from disputes");
         bookings.deleteAll();
     }
 
@@ -208,5 +224,34 @@ class EnsayoDelActaIT extends ApiIntegrationSupport {
         assertThat(r.getStatusCode()).isIn(HttpStatus.FORBIDDEN, HttpStatus.UNAUTHORIZED);
         assertThat(get("/api/v1/admin/system/rehearsals", sesionMaria, Map.class).getStatusCode())
                 .isIn(HttpStatus.FORBIDDEN, HttpStatus.UNAUTHORIZED);
+    }
+
+    /**
+     * Ensayar el reclamo no puede costarle nada al profesor. El ensayo nace dictado hace una hora,
+     * así que está dentro del plazo de reclamar; resolverlo a favor del estudiante cierra la clase
+     * como NO_SHOW_PROFESSOR, pero no escribe la ausencia ni propone sanción, y el aviso al profe
+     * dice que era un ensayo (decisión de Pardo, 14/10/2026).
+     */
+    @Test
+    @DisplayName("Un reclamo sobre el ensayo, resuelto a favor del estudiante, no le deja una ausencia al profe")
+    @SuppressWarnings("rawtypes")
+    void elReclamoDelEnsayoNoDejaAusencia() {
+        UUID id = ensayar();
+
+        ResponseEntity<Map> reclamo = post("/api/v1/bookings/" + id + "/report-problem", sesionAna,
+                Map.of("reason", "PROFESSOR_NO_SHOW", "description", "Ensayo del reclamo"), Map.class);
+        assertThat(reclamo.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        ResponseEntity<Map> resuelto = post("/api/v1/admin/disputes/" + reclamo.getBody().get("id") + "/resolve",
+                admin, Map.of("outcome", "RESOLVED_FOR_STUDENT", "note", "Ensayo"), Map.class);
+        assertThat(resuelto.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        assertThat(bookings.findById(id).orElseThrow().getStatus()).isEqualTo(BookingStatus.NO_SHOW_PROFESSOR);
+        assertThat(ausencias.findAll()).isEmpty();
+        assertThat(sanciones.findAll()).isEmpty();
+        assertThat(payments.findAll()).isEmpty();
+        assertThat(avisos.findByUserIdOrderByCreatedAtDesc(maria.getId()))
+                .filteredOn(a -> "DISPUTE_RESOLVED".equals(a.getType()))
+                .singleElement()
+                .satisfies(a -> assertThat(a.getBody()).contains("Era un ensayo"));
     }
 }

@@ -1674,6 +1674,13 @@ su test; lo que cambia el comportamiento o pide una decisión está abajo, en Pe
 - **UAT no está montado** al 14/10 (`uat.orionidiomas.com` no resuelve): todo va a `master`.
 - **Tres perfiles de prueba de Pardo se ven en el catálogo público** (Mariana Quiroga, Valentina Ríos
   y «Diego Pardo Test 28/09»), más «Andrés Rosero», por confirmar si es real.
+- ~~Un ensayo del admin puede dejarle una ausencia real al profe~~ **Resuelto el 14/10** (decisión de
+  Pardo): resolver a favor del estudiante el reclamo de un ensayo cierra la clase pero no escribe la
+  ausencia ni propone sanción, y el aviso al profe dice que era un ensayo. La cancelación tardía ya
+  los ignoraba. `DisputeResolved` distingue ahora «a favor del estudiante» de «ausencia registrada».
+  Probado en `EnsayoDelActaIT`.
+- **`@Version` en reserva y pago**: Pardo decidió el 14/10 dejarlo para después del lanzamiento; con
+  decenas de usuarios la carrera de milisegundos es teórica y las constraints cierran lo grave.
 - **El freno de intentos fallidos del login no se activó en producción** (prueba del 02/10/2026, con
   un correo que no existe; en local funciona). Hay que revisarlo con los registros de Railway antes de
   abrir al público.
