@@ -239,7 +239,7 @@ function loQueLogro(i: Ejercicio): string | null {
     case "SPOT_ERROR":
       return `Cazaste el error de «${unirFichas(p.tokens ?? []).replace(/[.!?]+$/, "")}».`;
     case "BUILD_SENTENCE":
-      return i.expected ? `Armaste «${unirFichas(JSON.parse(i.expected) as string[])}».` : "Armaste la frase en inglés.";
+      return i.expected ? `Armaste «${unirFichas(JSON.parse(i.expected) as string[])}».` : "Armaste la frase.";
     case "ORDER_DIALOGUE":
       return "Pusiste la conversación en orden.";
     case "CHOOSE_REPLY":

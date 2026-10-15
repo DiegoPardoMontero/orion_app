@@ -344,7 +344,7 @@ function Formulario({
         maxLength={280}
         value={motivacion}
         onChange={(e) => setMotivacion(e.target.value)}
-        placeholder="Quiero poder presentar una entrevista de trabajo en inglés."
+        placeholder="Quiero presentar una entrevista de trabajo en inglés, o viajar a Francia y defenderme en francés."
         className="mt-1.5 w-full rounded-base border-[1.5px] border-border bg-surface px-4 py-3 text-[14px] leading-relaxed outline-none placeholder:text-text-muted focus-visible:border-primary focus-visible:shadow-focus"
       />
       <p className="mt-1 text-right text-[11.5px] tabular-nums text-text-muted">

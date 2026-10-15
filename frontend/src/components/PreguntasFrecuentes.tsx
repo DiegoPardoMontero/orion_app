@@ -93,10 +93,6 @@ const base = (c: PublicFigures): Record<"estudiante" | "profesor" | "general", P
       p: "¿Cómo abro mis horarios?",
       r: "En «Perfil» → «Mis horarios» defines franjas semanales que se repiten, y bloqueas las fechas en que no puedes. Los cupos salen cada media hora y nunca se ofrecen horas ya empezadas.",
     },
-    {
-      p: "Mi tarifa está en cero. ¿Qué significa?",
-      r: "Que Orión dejó tus clases gratis por ahora. Se muestran como «Gratis» y se reservan sin pagar.",
-    },
   ],
   general: [
     {
@@ -160,7 +156,7 @@ export const preguntas = (c: PublicFigures): Record<Lista, Pregunta[]> => {
       },
       {
         p: "¿Qué es el diagnóstico inicial y es obligatorio?",
-        r: `Una conversación de ${minutos(c.assessmentMinutes)} con Meissa, gratis y sin crear cuenta. Puedes hablarle en español: es solo para que te conozca, entienda tu contexto y por qué quieres aprender inglés. Al terminar ves tu punto de partida y tienes tres profesores elegidos por lo que contaste. No es obligatorio: puedes crear tu cuenta y reservar sin hacerlo, y hacerlo después desde tu perfil.`,
+        r: `Una conversación de ${minutos(c.assessmentMinutes)} con Meissa, gratis y sin crear cuenta. Puedes hablarle en español: es solo para que te conozca, entienda tu contexto y por qué quieres aprender el idioma. Al terminar ves tu punto de partida y tienes tres profesores elegidos por lo que contaste. No es obligatorio: puedes crear tu cuenta y reservar sin hacerlo, y hacerlo después desde tu perfil.`,
       },
       {
         p: "¿Qué es el Método ORION™?",

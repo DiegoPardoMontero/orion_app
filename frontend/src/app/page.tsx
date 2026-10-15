@@ -381,7 +381,7 @@ export default async function PortadaPage() {
               aumenta hasta en 24 % tu probabilidad de conseguir un trabajo mejor pagado.
             </p>
             <p className="mt-3 max-w-[56ch] text-[15.5px] leading-relaxed text-text-on-night/85">
-              Ahí está tu ventaja. Aprender inglés no es un gasto: es de las decisiones que más rápido mueven tu
+              Ahí está tu ventaja. Aprender inglés o francés no es un gasto: es de las decisiones que más rápido mueven tu
               carrera y tu salario.
             </p>
             <p className="mt-5 text-[11.5px] italic leading-relaxed text-text-on-night/55">
@@ -563,12 +563,12 @@ export default async function PortadaPage() {
             {/* Textos de Sofía (25/09/2026). */}
             <div className="max-w-[52ch] text-[16px] leading-relaxed text-text-on-night/85 lg:text-[18px]">
               <p>
-                Cada persona aprende inglés por una razón distinta: una entrevista, un ascenso, una mudanza. Por eso
+                Cada persona aprende un idioma por una razón distinta: una entrevista, un ascenso, una mudanza. Por eso
                 en Orión no hay un programa único: hay profesores profesionales que adaptan su clase a lo que tú
                 necesitas.
               </p>
               <p className="mt-4 font-bold text-text-on-night">
-                Nuestra misión es que aprender inglés te lleve a tu meta, y que enseñarlo sea un trabajo bien pagado
+                Nuestra misión es que aprender inglés o francés te lleve a tu meta, y que enseñarlos sea un trabajo bien pagado
                 y con condiciones propias.
               </p>
             </div>

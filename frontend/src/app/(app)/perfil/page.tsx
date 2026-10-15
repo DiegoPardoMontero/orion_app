@@ -462,7 +462,7 @@ function CamposDelPerfil({ inicial }: { inicial: ProfileResponse }) {
             maxLength={120}
             value={headline}
             onChange={(event) => setHeadline(event.target.value)}
-            placeholder="Ej.: Conversación en inglés para adultos que ya estudiaron"
+            placeholder="Ej.: Conversación en inglés o francés para adultos que ya estudiaron"
             aria-describedby="headline-contador"
             className={`mt-1.5 ${bordeSegun(estadoDelTitular)}`}
           />
