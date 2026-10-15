@@ -5,7 +5,7 @@
 - **Fecha y hora:** 2026-10-15 09:05 (America/Bogota, UTC−5)
 - **Canal:** chat de Claude Code
 - **Sesión:** f5bedb76
-- **Commits relacionados:** (se completan; va en `develop`, sin desplegar, como los pedidos de las 08:14 y 08:40)
+- **Commits relacionados:** el de «the tour opens with a big ¡Bienvenido a Orión! pop-up» en `develop`, sin desplegar
 
 ## El pedido exacto
 
@@ -24,6 +24,17 @@ Features: (1) el video de bienvenida se apaga (no se borra: vuelve cuando Pardo 
 pop-up de bienvenida grande, con el logo, justo antes de que empiece el recorrido; (3) todo en
 `develop`, sin desplegar.
 
+## Cómo quedó
+
+- El pop-up es la **primera pantalla del recorrido** la primera vez: el amanecer con la constelación y el
+  logotipo «ORIÓN ✦» arriba, «¡Bienvenido a Orión!» grande, Rigel celebrando, el saludo («Estamos
+  felices de tenerte con nosotros, <nombre>. Queremos que saques el mayor provecho de la plataforma y
+  de tus clases cuanto antes.»), la línea «Te mostramos Orión en N pasos» y el botón «Empezar». Al
+  profe recién aprobado no se le ofrece «Ahora no» (su recorrido sigue siendo obligatorio).
+- Repetido desde Ayuda sale el inicio de siempre: a quien ya está dentro no se le da la bienvenida otra vez.
+- **El video:** no se toca el código; se muestra solo si el ajuste `professor_welcome_video_url` tiene
+  una URL, y por defecto está vacío. Si en producción lo llenaste, vacíalo en Ajustes.
+
 ## Estado
 
-**En curso.**
+**Hecho en `develop`, sin desplegar.** Se despliega con el lote del 15/10 cuando Pardo lo diga.
