@@ -98,11 +98,12 @@ el dinero, y eso lo resuelve `billing` al recibir el evento. Bloquear era peor p
 al estudiante que ya sabía que no iba se le obligaba a dejar la clase en pie, y el profesor se
 enteraba delante de una sala vacía.
 
-**Dos puertas que están cerradas a propósito.** Orión es **solo para mayores de 18** (art. 7 de la
-Ley 1581: tratar datos de menores exige autorización del representante legal, y ese flujo no
-existe) y **todas las clases son virtuales** (el CHECK de `bookings.modality` solo admite `VIRTUAL`
-desde la V30). Las dos se han pedido «abrir» alguna vez; las dos exigen una decisión de producto y
-—la primera— un abogado, no un parche.
+**Dos puertas que están cerradas a propósito.** Las **cuentas** son **solo de mayores de 18** (art. 7
+de la Ley 1581). Desde el Bloque 12 (V83, 14/10/2026, con el abogado) un adolescente de 13 a 17 es un
+**perfil bajo la cuenta de su representante legal**, con autorización propia, profes habilitados y
+sin IA: no es una cuenta ni una excepción a la regla. Y **todas las clases son virtuales** (el CHECK de
+`bookings.modality` solo admite `VIRTUAL` desde la V30). Abrir cualquiera de las dos exige una
+decisión de producto y un abogado, no un parche.
 
 **El cálculo de cupos vive en `SlotCalculator`, una clase pura** (sin Spring, sin repositorios,
 sin reloj del sistema: el "ahora" entra por parámetro). Sus 12 tests corren en ~150 ms porque no

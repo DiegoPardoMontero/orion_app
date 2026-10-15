@@ -953,6 +953,54 @@ Pendiente para Pardo:
   que dictaste», y desde la decisión 4 también entran las cancelaciones tardías.
 - El manual técnico necesita esta sección.
 
+## La noche del 14 al 15/10/2026: Claude, adolescentes (Bloque 12) y Meissa
+
+Pedido `docs/pedidos/2026-10-14-2355-…` («en loop hasta las 8am»). Cada decisión tomada sin Pardo está
+en ese archivo, con sus alternativas.
+
+**Claude escribe el texto con IA** (`f2731d4`, `89ab07b`): `orion.ai.text-provider` =
+`${ORION_TEXT_PROVIDER:${ORION_VOICE_PROVIDER:scripted}}` elige `scripted | openai | claude` para el
+acta (`ClaudeLessonNoteDrafter`), la práctica y su revisión (`ClaudePracticeGenerator`), el resumen del
+diagnóstico (`ClaudeConversationSummarizer`), la traducción en vivo (`ClaudeTraductorDeFrases`) y «Tu
+frase» (`ClaudeRevisorDeFrases`); todos reutilizan los prompts y los validadores de las clases
+`OpenAi*`. `ClaudeTexto` (`shared/ai`) es el único cliente: Opus 5.5 para lo que se lee, Haiku 5.5 para
+lo que vuelve en segundos, sin reintentos del SDK. La voz de Meissa sigue en OpenAI Realtime. En
+Railway: `ANTHROPIC_API_KEY` y `ORION_TEXT_PROVIDER=claude`; Sistema muestra «Texto con IA (Claude)».
+Dos exclusiones en el `pom` porque el SDK arrastraba `httpclient5` (cambiaba el cliente HTTP de
+Spring y mezclaba sesiones en las pruebas) y `swagger-annotations` viejo (rompía `/v3/api-docs`).
+
+**Bloque 12, adolescentes de 13 a 17 bajo la cuenta del adulto** (`64833d2`, `d31b0c7`, `e47c19b`;
+brief `docs/briefs/orion-bloque-12-adolescentes.md`, aprobado por el abogado):
+- **V83:** `adolescent_profiles`, `guardian_authorizations`, `bookings.adolescent_profile_id` y
+  `guardian_present_confirmed_at`, `professor_profiles.minors_cleared_*`, los tipos de documento
+  `REGISTRY_CHECK`/`BACKGROUND_CHECK`, los códigos legales `GUARDIAN_AUTHORIZATION` y
+  `MINORS_CODE_OF_CONDUCT`, y el índice de la prueba gratis cuenta el perfil (una por cada hijo).
+- **Perfiles:** `/api/v1/me/adolescents` (crear con la autorización 1.0 y «fue escuchado», editar,
+  revocar = cerrar y borrar lo suyo); pantalla «Adolescentes a mi cargo» en Cuenta → Mi ficha.
+- **Habilitación del profe:** acepta el código de conducta (`POST /me/profile/minors/conduct`), sube los
+  dos documentos por el endpoint de siempre, y el admin enciende `POST /admin/professors/{id}/minors`
+  por un año; se ve en Mi perfil («Clases con adolescentes»), en el perfil público (`minorsCleared`) y
+  en Usuarios (ícono de escudo + estado).
+- **Las tres puertas:** `?forMinor=true` en el buscador (filtro «Para un adolescente»); la reserva con
+  `adolescentProfileId` exige perfil propio y vivo y profe habilitado («¿Para quién es la clase?» en el
+  perfil del profe; «Para <nombre>» en Mis clases); el aula del adulto espera «Estoy presente o cerca»
+  (`POST /bookings/{id}/classroom/guardian-present`) y la del profe le recuerda el código.
+- **Sin IA:** borrador y dictado del acta responden 422 para esas clases; la práctica la arma
+  `GeneradorSinIa` (`Material.forAdolescent`).
+- **Textos legales 1.2** vigentes desde el 14/10: Términos y Política con el capítulo de adolescentes
+  (la Política además nombra a OpenAI, 8x8 y el login social, sin revisión del abogado por decisión de
+  Pardo), la autorización del representante 1.0 y el código de conducta 1.0.
+- **Pendiente del bloque:** el reporte de seguridad (paso 9), los puntos propios por hijo (10), el aviso
+  al cumplir 18 y la sección de familias en la portada (11).
+- Pruebas: `AdolescentProfileIT`, `HabilitacionParaAdolescentesIT`, `ReservaParaAdolescenteIT`,
+  `PoliticaDeTratamientoTest` (1.2) y el e2e `adolescentes.spec.ts`.
+
+**Meissa, primera ronda de pulido** (`e47c19b`): la interrupción corta de verdad (`response.cancel` +
+`output_audio_buffer.clear`), el micrófono negado/ausente/ocupado y la caída de la conexión tienen
+su aviso, y la espera inicial dice «Meissa te saluda en un momento…». Releer la conversación se
+construyó y se quitó: `DiagnosticoIT.laTranscripcionNoSale` protege que la transcripción nunca salga
+por la API; es decisión de Pardo.
+
 ## La retoma del 14/10/2026: semana 0, francés y la barra del profe
 
 Pedidos `2026-10-14-1847-…`, `…-2135-…` y `…-2230-…`; plan v3 en `docs/plan-de-lanzamiento.md`.

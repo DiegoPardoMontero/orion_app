@@ -61,6 +61,9 @@ como página: https://claude.ai/artifact/PKrHkCLJ6zCfTq7Q48RiCF
 
 ## Cómo se construye (plan del 14/10/2026, noche)
 
+**Estado al 15/10 por la mañana:** pasos 1 a 8 hechos (`64833d2`, `d31b0c7`, `e47c19b`); faltan el 9
+(reporte de seguridad), el 10 (puntos por hijo) y el 11 (los 18 años y la portada).
+
 El principio que ordena todo: **la reserva sigue siendo del adulto.** `bookings.student_id` es el
 representante legal; el adolescente es una columna más (`adolescent_profile_id`, nula para los
 adultos). Así pagos, saldo, reclamos, retracto, reseñas, mensajes y liquidaciones no cambian: todos
