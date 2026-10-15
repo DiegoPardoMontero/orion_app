@@ -50,6 +50,10 @@ public class DictadoService {
                 || b.getCompletedAt().isBefore(lanzamiento.desde())) {
             throw new UnprocessableException("Puedes dictar el acta cuando la clase ya terminó y quedó cerrada.");
         }
+        if (b.isForAdolescent()) {
+            throw new UnprocessableException(
+                    "Las clases con adolescentes no usan inteligencia artificial: escribe el acta a mano.");
+        }
         if (audio == null || audio.length == 0 || tipo == null
                 || !(tipo.startsWith("audio/") || tipo.startsWith("video/webm"))) {
             throw new UnprocessableException("No recibimos el audio. Intenta de nuevo.");

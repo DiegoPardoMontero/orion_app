@@ -44,7 +44,9 @@ public record MyBookingResponse(UUID id,
                                  * Ya empezó y todavía no termina. Sigue en «Próximas» para poder
                                  * entrar (o volver a entrar), pero ya no se cancela desde la lista.
                                  */
-                                boolean inProgress) {
+                                boolean inProgress,
+                                /** Para quién es la clase cuando es de un adolescente (Bloque 12); nulo si es del titular. */
+                                String adolescentFirstName) {
 
     /**
      * La otra parte: el profesor si mira un estudiante, el estudiante si mira un profesor. La foto
@@ -66,6 +68,12 @@ public record MyBookingResponse(UUID id,
     public static MyBookingResponse of(Booking booking, User counterpart,
                                        String counterpartPhotoUrl, String counterpartHeadline,
                                        Instant now, Duration cancellationWindow) {
+        return of(booking, counterpart, counterpartPhotoUrl, counterpartHeadline, now, cancellationWindow, null);
+    }
+
+    public static MyBookingResponse of(Booking booking, User counterpart,
+                                       String counterpartPhotoUrl, String counterpartHeadline,
+                                       Instant now, Duration cancellationWindow, String adolescentFirstName) {
         return new MyBookingResponse(
                 booking.getId(),
                 booking.getStartsAt().atZone(BusinessZone.BOGOTA),
@@ -83,6 +91,7 @@ public record MyBookingResponse(UUID id,
                 booking.isRehearsal(),
                 booking.isTrial(),
                 (booking.isConfirmed() || booking.getStatus() == BookingStatus.UNDER_REVIEW)
-                        && !now.isBefore(booking.getStartsAt()) && now.isBefore(booking.getEndsAt()));
+                        && !now.isBefore(booking.getStartsAt()) && now.isBefore(booking.getEndsAt()),
+                adolescentFirstName);
     }
 }

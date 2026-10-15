@@ -21,6 +21,7 @@ import co.orion.shared.error.BusinessRuleViolationException;
 import co.orion.shared.error.ResourceNotFoundException;
 import co.orion.shared.time.BusinessZone;
 import co.orion.shared.time.ClassLength;
+import co.orion.identity.application.AdolescentProfileService;
 
 /**
  * Quién puede entrar al aula, cuándo, y con qué poderes.
@@ -55,6 +56,7 @@ public class ClassroomService {
     private final JaasTokenMinter minter;
     private final JaasProperties props;
     private final RoomPresence presence;
+    private final AdolescentProfileService adolescents;
     private final Clock clock;
 
     public ClassroomService(BookingRepository bookings,
@@ -63,7 +65,9 @@ public class ClassroomService {
                             JaasTokenMinter minter,
                             JaasProperties props,
                             RoomPresence presence,
+                            AdolescentProfileService adolescents,
                             Clock clock) {
+        this.adolescents = adolescents;
         this.bookings = bookings;
         this.users = users;
         this.profiles = profiles;
@@ -107,8 +111,15 @@ public class ClassroomService {
             estado = "STARTED";
         }
 
+        // La clase de un adolescente se abre desde la cuenta del adulto, y antes de entrar él confirma
+        // que está presente o cerca (Bloque 12). Al profe no se le pide nada: él espera en la sala.
+        boolean faltaElAdulto = booking.isForAdolescent() && esEstudiante
+                && booking.getGuardianPresentConfirmedAt() == null;
         boolean puedeEntrar = ("OPEN".equals(estado) || "STARTED".equals(estado))
-                && minter.disponible();
+                && minter.disponible() && !faltaElAdulto;
+        String adolescente = booking.isForAdolescent()
+                ? adolescents.find(booking.getAdolescentProfileId()).map(a -> a.getFirstName()).orElse(null)
+                : null;
 
         UUID otroId = esProfesor ? booking.getStudentId() : booking.getProfessorId();
         User otro = users.findById(otroId).orElse(null);
@@ -131,7 +142,24 @@ public class ClassroomService {
                         ? minter.mint(bookingId.toString(), quien.getId().toString(),
                                 quien.getFullName(), quien.getEmail(), quien.getPhotoUrl(),
                                 esProfesor, ahora, caduca)
-                        : null);
+                        : null,
+                faltaElAdulto,
+                adolescente);
+    }
+
+    /** El adulto confirma que está presente o cerca durante la clase de su adolescente (Bloque 12). */
+    @Transactional
+    public void confirmGuardianPresent(UUID bookingId, User quien) {
+        Booking booking = bookings.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada"));
+        if (!booking.getStudentId().equals(quien.getId())) {
+            throw new ResourceNotFoundException("Reserva no encontrada");
+        }
+        if (!booking.isForAdolescent()) {
+            throw new BusinessRuleViolationException("Esta clase no es de un adolescente.");
+        }
+        booking.confirmGuardianPresent(clock.instant());
+        bookings.save(booking);
     }
 
     /** El titular solo lo tiene el profesor; al estudiante no se le inventa uno. */

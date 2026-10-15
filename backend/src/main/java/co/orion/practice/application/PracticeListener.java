@@ -38,7 +38,7 @@ public class PracticeListener {
                     .map(t -> new Material.Termino(t.term(), t.meaning())).toList();
             practica.crearDesdeActa(e.noteId(), e.studentId(), e.professorId(), new Material(e.languageCode(),
                     e.workedOn(), e.recurringIssues(), e.nextSteps(), terminos, e.bookingId().toString(),
-                    e.claseEmpieza() == null ? null : e.claseEmpieza().toString()));
+                    e.claseEmpieza() == null ? null : e.claseEmpieza().toString()).paraAdolescente(e.forAdolescent()));
         } catch (RuntimeException ex) {
             log.error("No se pudo encolar la práctica del acta {}. El acta sigue publicada.", e.noteId(), ex);
         }

@@ -40,7 +40,8 @@ public class BookingsController {
                 body.locationNote(),
                 body.languageCode(),
                 body.studentId(),
-                Boolean.TRUE.equals(body.trial())));
+                Boolean.TRUE.equals(body.trial()),
+                body.adolescentProfileId()));
     }
 
     @PostMapping("/{id}/cancel")

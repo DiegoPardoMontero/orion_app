@@ -5,6 +5,7 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.time.LocalDate;
 
 /**
  * Filtros del buscador de profesores. Todos opcionales y combinables. Un campo nulo/vacío no filtra.
@@ -41,7 +42,12 @@ public record ProfessorSearchCriteria(
          * entonces el resultado tiene que ser vacío. Confundir las dos cosas devolvería el
          * catálogo entero justo cuando alguien acaba de pedir algo muy concreto.
          */
-        List<UUID> availableProfessorIds) {
+        List<UUID> availableProfessorIds,
+        /**
+         * Solo profes habilitados para adolescentes a esta fecha (Bloque 12). Nulo: no se filtra. Es la
+         * fecha y no un booleano para que la Specification no tenga reloj.
+         */
+        LocalDate minorsClearedOn) {
 
     /** Sin filtros de disponibilidad ni sancionados: el punto de partida del controlador. */
     public static ProfessorSearchCriteria of(String language, List<String> levels, List<String> goals,
@@ -49,7 +55,13 @@ public record ProfessorSearchCriteria(
                                              Boolean nativeOnly, Set<DayOfWeek> days,
                                              LocalTime from, LocalTime to, Set<LocalTime> hours) {
         return new ProfessorSearchCriteria(language, levels, goals, minPrice, maxPrice, certified,
-                nativeOnly, days, from, to, hours, List.of(), null);
+                nativeOnly, days, from, to, hours, List.of(), null, null);
+    }
+
+    /** Solo profes habilitados para adolescentes hoy (Bloque 12). */
+    public ProfessorSearchCriteria forMinorsOn(LocalDate today) {
+        return new ProfessorSearchCriteria(language, levels, goals, minPrice, maxPrice, certified,
+                nativeOnly, days, from, to, hours, hiddenProfessorIds, availableProfessorIds, today);
     }
 
     /** Si alguien pidió filtrar por día u hora. */
@@ -66,12 +78,12 @@ public record ProfessorSearchCriteria(
     public ProfessorSearchCriteria hiding(List<UUID> hidden) {
         return new ProfessorSearchCriteria(language, levels, goals, minPrice, maxPrice, certified,
                 nativeOnly, days, from, to, hours, hidden == null ? List.of() : hidden,
-                availableProfessorIds);
+                availableProfessorIds, minorsClearedOn);
     }
 
     /** Con los ids que cumplen la disponibilidad ya resueltos. */
     public ProfessorSearchCriteria availableOnly(List<UUID> available) {
         return new ProfessorSearchCriteria(language, levels, goals, minPrice, maxPrice, certified,
-                nativeOnly, days, from, to, hours, hiddenProfessorIds, available);
+                nativeOnly, days, from, to, hours, hiddenProfessorIds, available, minorsClearedOn);
     }
 }

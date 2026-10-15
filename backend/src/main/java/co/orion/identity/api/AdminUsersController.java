@@ -22,6 +22,7 @@ import co.orion.identity.domain.UserRole;
 import co.orion.shared.error.BusinessRuleViolationException;
 import co.orion.shared.security.OrionUserDetails;
 import jakarta.validation.Valid;
+import co.orion.identity.application.MinorsClearanceService;
 
 /** Toda la ruta /api/v1/admin/** exige rol ADMIN en la SecurityFilterChain. */
 @RestController
@@ -30,8 +31,10 @@ public class AdminUsersController {
 
     private final AdminUserService adminUsers;
     private final FounderService founders;
+    private final MinorsClearanceService minors;
 
-    public AdminUsersController(AdminUserService adminUsers, FounderService founders) {
+    public AdminUsersController(AdminUserService adminUsers, FounderService founders, MinorsClearanceService minors) {
+        this.minors = minors;
         this.adminUsers = adminUsers;
         this.founders = founders;
     }
@@ -41,10 +44,12 @@ public class AdminUsersController {
                                         @RequestParam(required = false) String q) {
         List<User> encontrados = adminUsers.search(parseRole(role), q);
         // El beneficio de fundador de cada profe de la lista, en una sola consulta.
-        var fundadores = founders.viewsOf(encontrados.stream()
-                .filter(u -> u.getRole() == UserRole.PROFESSOR).map(User::getId).toList());
+        List<UUID> profes = encontrados.stream()
+                .filter(u -> u.getRole() == UserRole.PROFESSOR).map(User::getId).toList();
+        var fundadores = founders.viewsOf(profes);
+        var adolescentes = minors.viewsOf(profes);
         return encontrados.stream()
-                .map(u -> AdminUserResponse.from(u, fundadores.get(u.getId())))
+                .map(u -> AdminUserResponse.from(u, fundadores.get(u.getId()), adolescentes.get(u.getId())))
                 .toList();
     }
 

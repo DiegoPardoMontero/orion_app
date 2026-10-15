@@ -34,5 +34,7 @@ public record ProfileResponse(
         /** La comisión de Orión (ajuste), para la ayuda de la tarifa: «Después recibirás…». */
         int baseRateBps,
         /** El beneficio de profe fundador, o {@code null} si no lo es. */
-        FounderView founder) {
+        FounderView founder,
+        /** La habilitación para adolescentes (Bloque 12). */
+        MinorsClearanceView minors) {
 }

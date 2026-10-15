@@ -110,6 +110,11 @@ public class LessonNoteService {
             throw new UnprocessableException(
                     "Las actas son para las clases que se cierran desde que llegó esta función.");
         }
+        // Nada de un adolescente va a un proveedor de IA (Bloque 12): el acta se escribe a mano.
+        if (b.isForAdolescent()) {
+            throw new UnprocessableException(
+                    "Las clases con adolescentes no usan inteligencia artificial: escribe el acta a mano.");
+        }
 
         Instant ahora = clock.instant();
         LessonNote nota = notas.findByBookingId(b.getId()).orElseGet(() -> notas.save(
@@ -262,11 +267,13 @@ public class LessonNoteService {
 
     /** El evento lleva lo que el acta dice: la práctica lo usa sin tener que leer el acta. */
     private LessonNotePublishedEvent evento(LessonNote nota, List<LessonVocabulary> palabras, boolean actualizacion) {
-        Instant clase = bookings.findById(nota.getBookingId()).map(Booking::getStartsAt).orElse(null);
+        java.util.Optional<Booking> reserva = bookings.findById(nota.getBookingId());
+        Instant clase = reserva.map(Booking::getStartsAt).orElse(null);
         return new LessonNotePublishedEvent(nota.getId(), nota.getBookingId(), nota.getStudentId(),
                 nota.getProfessorId(), actualizacion, nota.getLanguageCode(), clase, nota.getWorkedOn(),
                 nota.getRecurringIssues(), nota.getNextSteps(),
-                palabras.stream().map(v -> new LessonNotePublishedEvent.Termino(v.getTerm(), v.getMeaning())).toList());
+                palabras.stream().map(v -> new LessonNotePublishedEvent.Termino(v.getTerm(), v.getMeaning())).toList(),
+                reserva.map(Booking::isForAdolescent).orElse(false));
     }
 
     private void exigirProfesorDe(Booking b, User profesor) {

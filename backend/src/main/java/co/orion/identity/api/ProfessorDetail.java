@@ -25,5 +25,7 @@ public record ProfessorDetail(
         Double ratingAvg,
         int ratingCount,
         List<ProfileLanguage> languages,
-        List<String> goals) {
+        List<String> goals,
+        /** Habilitado por Orión para dar clase a adolescentes (Bloque 12). */
+        boolean minorsCleared) {
 }

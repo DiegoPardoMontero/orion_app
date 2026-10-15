@@ -34,6 +34,8 @@ import co.orion.shared.error.ForbiddenException;
 import co.orion.shared.error.ResourceNotFoundException;
 import co.orion.shared.error.UnprocessableException;
 import co.orion.shared.time.BusinessZone;
+import co.orion.identity.application.AdolescentProfileService;
+import co.orion.identity.application.MinorsClearanceService;
 
 @Service
 public class BookingService {
@@ -57,6 +59,8 @@ public class BookingService {
     private final PaymentInitiator payments;
     private final PlatformSettingsService settings;
     private final ApplicationEventPublisher events;
+    private final AdolescentProfileService adolescents;
+    private final MinorsClearanceService minors;
     private final Clock clock;
 
     public BookingService(BookingRepository bookings,
@@ -68,7 +72,11 @@ public class BookingService {
                           PaymentInitiator payments,
                           PlatformSettingsService settings,
                           ApplicationEventPublisher events,
+                          AdolescentProfileService adolescents,
+                          MinorsClearanceService minors,
                           Clock clock) {
+        this.adolescents = adolescents;
+        this.minors = minors;
         this.bookings = bookings;
         this.users = users;
         this.slots = slots;
@@ -132,7 +140,38 @@ public class BookingService {
                              String requestedLanguage,
                              UUID requestedStudentId,
                              boolean trial) {
+        return create(actor, professorId, startsAt, modalityName, locationNote, requestedLanguage,
+                requestedStudentId, trial, null);
+    }
+
+    /**
+     * Con {@code adolescentProfileId}, la clase es para un adolescente a cargo del adulto que reserva
+     * (Bloque 12): el perfil tiene que ser suyo y tener la autorización viva, y el profesor tiene que
+     * estar habilitado para adolescentes. La reserva sigue siendo del adulto; el perfil solo dice para
+     * quién es. Un admin no reserva para el adolescente de otro: eso es del representante legal.
+     */
+    @Transactional
+    public NewBooking create(User actor,
+                             UUID professorId,
+                             Instant startsAt,
+                             String modalityName,
+                             String locationNote,
+                             String requestedLanguage,
+                             UUID requestedStudentId,
+                             boolean trial,
+                             UUID adolescentProfileId) {
         UUID studentId = resolveStudent(actor, requestedStudentId);
+        if (adolescentProfileId != null) {
+            if (actor.getRole() == UserRole.ADMIN) {
+                throw new UnprocessableException(
+                        "La clase de un adolescente la reserva su representante legal desde su cuenta.");
+            }
+            adolescents.ownAndAuthorized(actor, adolescentProfileId);
+            if (!minors.isCleared(professorId)) {
+                throw new UnprocessableException(
+                        "Este profesor no está habilitado para dar clase a adolescentes.");
+            }
+        }
         requireAdulthood(actor);
         requireVerifiedEmail(actor);
         BookingModality modality = parseModality(modalityName);
@@ -151,7 +190,7 @@ public class BookingService {
         // locationNote describía dónde verse en persona. Sin presencial no tiene sentido, y
         // guardarlo pondría una dirección en una clase a la que se entra por un enlace.
         if (trial) {
-            requireTrialIsPossible(studentId, professorId);
+            requireTrialIsPossible(studentId, professorId, adolescentProfileId);
         }
 
         Booking booking = new Booking(studentId, professorId, startsAt, endsAt, modality,
@@ -159,6 +198,9 @@ public class BookingService {
                 payments.holdExpiry(clock.instant()));
         if (trial) {
             booking.markAsTrial();
+        }
+        if (adolescentProfileId != null) {
+            booking.forAdolescent(adolescentProfileId);
         }
 
         Booking saved = saveOrLoseTheRace(booking);
@@ -457,13 +499,18 @@ public class BookingService {
 
     @Transactional(readOnly = true)
     public Prueba pruebaCon(UUID studentId, UUID professorId) {
+        return pruebaCon(studentId, professorId, null);
+    }
+
+    /** La prueba es una por cada hijo (Pardo, 14/10/2026): con perfil, se mira lo de ese perfil. */
+    public Prueba pruebaCon(UUID studentId, UUID professorId, UUID adolescentProfileId) {
         boolean ofrecida = professorProfiles.findById(professorId).map(p -> p.acceptsTrial()).orElse(false);
         if (!ofrecida) {
             return new Prueba(false, false, "Este profesor no ofrece clase de prueba.");
         }
         // Una prueba dictada o a la que faltó el estudiante cuenta; lo mismo que cualquier clase
         // normal con él: la prueba es para conocerse.
-        if (bookings.countEarlierTogether(studentId, professorId, clock.instant().plusSeconds(1),
+        if (bookings.countEarlierTogether(studentId, professorId, adolescentProfileId, clock.instant().plusSeconds(1),
                 List.of(BookingStatus.PENDING_PAYMENT, BookingStatus.CONFIRMED, BookingStatus.UNDER_REVIEW,
                         BookingStatus.COMPLETED, BookingStatus.NO_SHOW_STUDENT)) > 0) {
             return new Prueba(true, false,
@@ -471,7 +518,7 @@ public class BookingService {
         }
         // Cancelarla cuando ya empezó no la devuelve: si no, se podía tomar entera, cancelarla antes
         // de que se cerrara y pedir otra gratis, sin fin. El índice de la V67 lo sostiene en la base.
-        if (bookings.existsTrialCancelledOnceStarted(studentId, professorId)) {
+        if (bookings.existsTrialCancelledOnceStarted(studentId, professorId, adolescentProfileId)) {
             return new Prueba(true, false,
                     "Ya usaste tu clase de prueba con este profesor: la cancelaste cuando ya había empezado.");
         }
@@ -479,8 +526,8 @@ public class BookingService {
     }
 
     /** El chequeo amable de la clase de prueba; la regla de fondo la guarda el índice de la V62. */
-    private void requireTrialIsPossible(UUID studentId, UUID professorId) {
-        Prueba prueba = pruebaCon(studentId, professorId);
+    private void requireTrialIsPossible(UUID studentId, UUID professorId, UUID adolescentProfileId) {
+        Prueba prueba = pruebaCon(studentId, professorId, adolescentProfileId);
         if (!prueba.disponible()) {
             throw new UnprocessableException(prueba.motivo());
         }

@@ -217,19 +217,54 @@ public interface BookingRepository extends JpaRepository<Booking, UUID>,
      */
     @Query("""
             select count(b) from Booking b
-             where b.studentId = :studentId and b.professorId = :professorId
+             where b.studentId = :studentId and b.professorId = :professorId and b.adolescentProfileId is null
                and b.createdAt < :antesDe and b.status in :estados
             """)
     long countEarlierTogether(@Param("studentId") UUID studentId, @Param("professorId") UUID professorId,
                               @Param("antesDe") Instant antesDe, @Param("estados") Collection<BookingStatus> estados);
 
+    /** Lo mismo, para las clases de un adolescente concreto (Bloque 12): la prueba es una por cada hijo. */
+    @Query("""
+            select count(b) from Booking b
+             where b.studentId = :studentId and b.professorId = :professorId and b.adolescentProfileId = :perfil
+               and b.createdAt < :antesDe and b.status in :estados
+            """)
+    long countEarlierTogetherForAdolescent(@Param("studentId") UUID studentId, @Param("professorId") UUID professorId,
+                                           @Param("perfil") UUID perfil, @Param("antesDe") Instant antesDe,
+                                           @Param("estados") Collection<BookingStatus> estados);
+
+    default long countEarlierTogether(UUID studentId, UUID professorId, UUID adolescentProfileId, Instant antesDe,
+                                      Collection<BookingStatus> estados) {
+        return adolescentProfileId == null
+                ? countEarlierTogether(studentId, professorId, antesDe, estados)
+                : countEarlierTogetherForAdolescent(studentId, professorId, adolescentProfileId, antesDe, estados);
+    }
+
     /** La prueba que el estudiante canceló cuando ya había empezado: cuenta como usada (V67). */
     @Query("""
             select count(b) > 0 from Booking b
              where b.studentId = :studentId and b.professorId = :professorId and b.trial = true
+               and b.adolescentProfileId is null
                and b.status = co.orion.scheduling.domain.BookingStatus.CANCELLED_BY_STUDENT
                and b.cancelledAt >= b.startsAt
             """)
     boolean existsTrialCancelledOnceStarted(@Param("studentId") UUID studentId,
                                             @Param("professorId") UUID professorId);
+
+    @Query("""
+            select count(b) > 0 from Booking b
+             where b.studentId = :studentId and b.professorId = :professorId and b.trial = true
+               and b.adolescentProfileId = :perfil
+               and b.status = co.orion.scheduling.domain.BookingStatus.CANCELLED_BY_STUDENT
+               and b.cancelledAt >= b.startsAt
+            """)
+    boolean existsTrialCancelledOnceStartedForAdolescent(@Param("studentId") UUID studentId,
+                                                         @Param("professorId") UUID professorId,
+                                                         @Param("perfil") UUID perfil);
+
+    default boolean existsTrialCancelledOnceStarted(UUID studentId, UUID professorId, UUID adolescentProfileId) {
+        return adolescentProfileId == null
+                ? existsTrialCancelledOnceStarted(studentId, professorId)
+                : existsTrialCancelledOnceStartedForAdolescent(studentId, professorId, adolescentProfileId);
+    }
 }

@@ -57,6 +57,7 @@ public class ProfessorProfileService {
     private final PlatformSettingsService settings;
     private final ProfessorAccessService access;
     private final ProfessorRatingService ratings;
+    private final MinorsClearanceService minors;
     private final Clock clock;
 
     public ProfessorProfileService(ProfessorProfileRepository profiles,
@@ -69,7 +70,9 @@ public class ProfessorProfileService {
                                    PlatformSettingsService settings,
                                    ProfessorAccessService access,
                                    ProfessorRatingService ratings,
+                                   MinorsClearanceService minors,
                                    Clock clock) {
+        this.minors = minors;
         this.profiles = profiles;
         this.users = users;
         this.languagesOf = languagesOf;
@@ -240,7 +243,8 @@ public class ProfessorProfileService {
                 rating.ratingAvg(),
                 rating.ratingCount(),
                 loadLanguages(professorId),
-                loadGoals(professorId));
+                loadGoals(professorId),
+                profile.isClearedForMinors(minors.hoy()));
     }
 
     /**
@@ -392,7 +396,8 @@ public class ProfessorProfileService {
                 profile.isPublished(),
                 profile.canPublish(),
                 settings.getInt(COMMISSION_KEY),
-                FounderView.of(profile.founderTerms(), clock.instant()));
+                FounderView.of(profile.founderTerms(), clock.instant()),
+                minors.view(profile));
     }
 
     private List<ProfileLanguage> loadLanguages(UUID professorId) {

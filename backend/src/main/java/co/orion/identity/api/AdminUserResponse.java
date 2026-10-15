@@ -13,13 +13,19 @@ public record AdminUserResponse(UUID id,
                                 /** Si alguien confirmó ese correo. Sin confirmar, el admin lo puede corregir. */
                                 boolean emailVerified,
                                 /** El beneficio de profe fundador, o {@code null} si no lo tiene. */
-                                FounderView founder) {
+                                FounderView founder,
+                                /** La habilitación para adolescentes, solo en profes (Bloque 12). */
+                                MinorsClearanceView minors) {
 
     public static AdminUserResponse from(User user) {
         return from(user, null);
     }
 
     public static AdminUserResponse from(User user, FounderView founder) {
+        return from(user, founder, null);
+    }
+
+    public static AdminUserResponse from(User user, FounderView founder, MinorsClearanceView minors) {
         return new AdminUserResponse(
                 user.getId(),
                 user.getEmail(),
@@ -28,6 +34,7 @@ public record AdminUserResponse(UUID id,
                 user.getRole().name(),
                 user.getStatus().name(),
                 user.isEmailVerified(),
-                founder);
+                founder,
+                minors);
     }
 }

@@ -25,6 +25,9 @@ import co.orion.shared.error.BusinessRuleViolationException;
 import co.orion.shared.error.ForbiddenException;
 import co.orion.shared.error.ResourceNotFoundException;
 import co.orion.shared.time.BusinessZone;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Los adolescentes a cargo de un adulto (Bloque 12). Crear un perfil exige la autorización del
@@ -149,6 +152,17 @@ public class AdolescentProfileService {
                     profile.getFirstName() + " ya no está en el rango de 13 a 17 años. Puede abrir su propia cuenta.");
         }
         return profile;
+    }
+
+    /** Los nombres de pila de varios perfiles, para pintar «Para <nombre>» en una lista. */
+    @Transactional(readOnly = true)
+    public Map<UUID, String> namesOf(Collection<UUID> ids) {
+        Map<UUID, String> nombres = new HashMap<>();
+        if (ids == null || ids.isEmpty()) {
+            return nombres;
+        }
+        profiles.findAllById(ids).forEach(p -> nombres.put(p.getId(), p.getFirstName()));
+        return nombres;
     }
 
     @Transactional(readOnly = true)

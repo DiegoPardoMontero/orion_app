@@ -40,7 +40,16 @@ public record CreateBookingRequest(
         UUID studentId,
 
         /** Reservarla como clase de prueba (Q7). Ausente o falso: una clase normal. */
-        Boolean trial) {
+        Boolean trial,
+
+        /** Para quién es la clase cuando es para un adolescente a cargo del adulto (Bloque 12). */
+        UUID adolescentProfileId) {
+
+    /** Sin adolescente: la forma del Bloque 11. */
+    public CreateBookingRequest(UUID professorId, OffsetDateTime startsAt, String modality, String locationNote,
+                                String languageCode, UUID studentId, Boolean trial) {
+        this(professorId, startsAt, modality, locationNote, languageCode, studentId, trial, null);
+    }
 
     /** La forma de siempre, sin clase de prueba. */
     public CreateBookingRequest(UUID professorId, OffsetDateTime startsAt, String modality, String locationNote,

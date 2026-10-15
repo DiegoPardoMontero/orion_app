@@ -13,7 +13,9 @@ import java.util.UUID;
 public record LessonNotePublishedEvent(UUID noteId, UUID bookingId, UUID studentId, UUID professorId,
                                        boolean actualizacion, String languageCode, Instant claseEmpieza,
                                        String workedOn, String recurringIssues, String nextSteps,
-                                       List<Termino> vocabulario) {
+                                       List<Termino> vocabulario,
+                                       /** La clase era de un adolescente (Bloque 12): la práctica se arma sin IA. */
+                                       boolean forAdolescent) {
 
     public record Termino(String term, String meaning) {
     }

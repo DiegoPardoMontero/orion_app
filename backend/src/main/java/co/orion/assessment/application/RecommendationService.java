@@ -112,7 +112,7 @@ public class RecommendationService {
                 idioma, niveles, metas,
                 null, null, null, null,
                 java.util.Set.of(), null, null, java.util.Set.of(),
-                List.of(), null);
+                List.of(), null, null);
         return buscador.search(criterios, ProfessorSortOption.RELEVANCE, 0, CANDIDATOS).content();
     }
 

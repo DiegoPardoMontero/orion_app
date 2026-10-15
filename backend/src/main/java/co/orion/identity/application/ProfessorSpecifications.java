@@ -77,6 +77,10 @@ final class ProfessorSpecifications {
             if (Boolean.TRUE.equals(c.certified())) {
                 predicates.add(cb.isTrue(root.get("certified")));
             }
+            // Para un adolescente solo cuentan los profes habilitados y vigentes (Bloque 12).
+            if (c.minorsClearedOn() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.<java.time.LocalDate>get("minorsClearedUntil"), c.minorsClearedOn()));
+            }
 
             // Disponibilidad. Nulo es "no se pidió"; vacía es "se pidió y no lo cumple nadie", y
             // ahí el resultado tiene que ser vacío — devolver el catálogo entero justo cuando

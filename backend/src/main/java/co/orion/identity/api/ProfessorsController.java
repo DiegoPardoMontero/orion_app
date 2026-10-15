@@ -23,6 +23,7 @@ import co.orion.identity.application.ProfessorProfileService;
 import co.orion.identity.application.ProfessorSearchCriteria;
 import co.orion.identity.application.ProfessorSearchService;
 import co.orion.identity.application.ProfessorSortOption;
+import co.orion.identity.application.MinorsClearanceService;
 
 /**
  * Marketplace público. GET /professors busca con filtros combinables; /professors/{id} da el
@@ -35,10 +36,13 @@ public class ProfessorsController {
 
     private final ProfessorSearchService search;
     private final ProfessorProfileService profiles;
+    private final MinorsClearanceService minors;
 
-    public ProfessorsController(ProfessorSearchService search, ProfessorProfileService profiles) {
+    public ProfessorsController(ProfessorSearchService search, ProfessorProfileService profiles,
+                                MinorsClearanceService minors) {
         this.search = search;
         this.profiles = profiles;
+        this.minors = minors;
     }
 
     @GetMapping
@@ -50,6 +54,8 @@ public class ProfessorsController {
             @RequestParam(required = false) Long maxPrice,
             @RequestParam(required = false, name = "native") Boolean nativeOnly,
             @RequestParam(required = false) Boolean certified,
+            // Buscar para un adolescente: solo profes habilitados y vigentes (Bloque 12).
+            @RequestParam(required = false) Boolean forMinor,
             @RequestParam(required = false) List<String> day,
             @RequestParam(required = false) String from,
             @RequestParam(required = false) String to,
@@ -60,6 +66,9 @@ public class ProfessorsController {
         ProfessorSearchCriteria criteria = ProfessorSearchCriteria.of(
                 language, level, goal, minPrice, maxPrice, certified, nativeOnly,
                 parseDays(day), parseTime(from, "from"), parseTime(to, "to"), parseHours(hour));
+        if (Boolean.TRUE.equals(forMinor)) {
+            criteria = criteria.forMinorsOn(minors.hoy());
+        }
         return search.search(criteria, sort, page, size);
     }
 

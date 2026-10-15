@@ -76,6 +76,8 @@ public class PracticeService {
     private final PracticeItemRepository items;
     private final BookingRepository bookings;
     private final PracticeGenerator generador;
+    /** El generador sin IA, siempre a mano para las clases de adolescentes; no es un bean a propósito. */
+    private final PracticeGenerator sinIa = new GeneradorSinIa();
     private final PlatformSettingsService settings;
     private final StudentProfileRepository perfiles;
     private final RevisorDeFrases revisor;
@@ -169,8 +171,10 @@ public class PracticeService {
         }
         int cuantos = settings.getInt("practice_items_per_set");
         set.intentoDeGeneracion();
+        // Nada de un adolescente va a un proveedor de IA (Bloque 12): su práctica la arma la regla.
+        PracticeGenerator quien = material.esDeAdolescente() ? sinIa : generador;
         List<PracticeGenerator.Generado> validos = ValidadorDeEjercicios.validos(
-                generador.generar(set.getStudentId(), material, cuantos), material, cuantos);
+                quien.generar(set.getStudentId(), material, cuantos), material, cuantos);
         if (validos.size() >= 2) {
             for (int i = 0; i < validos.size(); i++) {
                 PracticeGenerator.Generado g = validos.get(i);

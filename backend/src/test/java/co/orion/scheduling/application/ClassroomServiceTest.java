@@ -26,6 +26,7 @@ import co.orion.scheduling.domain.Booking;
 import co.orion.scheduling.domain.BookingStatus;
 import co.orion.scheduling.persistence.BookingRepository;
 import co.orion.shared.error.ResourceNotFoundException;
+import co.orion.identity.application.AdolescentProfileService;
 
 /**
  * El reloj de la antesala: cuándo se puede entrar, cuándo hay llave y quién manda.
@@ -89,7 +90,7 @@ class ClassroomServiceTest {
     private ClassroomResponse en(Instant ahora, User quien) {
         ClassroomService service = new ClassroomService(bookings, users, profiles, minter,
                 new JaasProperties("app", "app/kid", "x", null, null), presence,
-                Clock.fixed(ahora, ZoneOffset.UTC));
+                mock(AdolescentProfileService.class), Clock.fixed(ahora, ZoneOffset.UTC));
         return service.enter(bookingId, quien);
     }
 

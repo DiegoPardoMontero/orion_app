@@ -36,7 +36,14 @@ public record ClassroomResponse(
         String displayName,
         String domain,
         String room,
-        String token) {
+        String token,
+        /**
+         * La clase es de un adolescente y el adulto todavía no confirmó que está presente o cerca
+         * (Bloque 12): hasta que lo haga, su lado no recibe el acceso a la sala.
+         */
+        boolean guardianConfirmationRequired,
+        /** El nombre de pila del adolescente, si la clase es suya; para la antesala del profe. */
+        String adolescentFirstName) {
 
     public record Counterpart(String name, String firstName, String photoUrl, String headline) {
     }

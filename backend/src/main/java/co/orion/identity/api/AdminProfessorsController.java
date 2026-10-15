@@ -19,6 +19,7 @@ import co.orion.identity.application.ProfessorInviteService;
 import co.orion.identity.application.ProfessorProfileService;
 import co.orion.shared.security.OrionUserDetails;
 import jakarta.validation.Valid;
+import co.orion.identity.application.MinorsClearanceService;
 
 /** Invitación de profesores y tarifa. Solo ADMIN (la ruta /admin/** ya lo exige). */
 @RestController
@@ -28,10 +29,13 @@ public class AdminProfessorsController {
     private final ProfessorInviteService inviteService;
     private final ProfessorProfileService profileService;
     private final FounderService founders;
+    private final MinorsClearanceService minors;
 
     public AdminProfessorsController(ProfessorInviteService inviteService,
                                      ProfessorProfileService profileService,
-                                     FounderService founders) {
+                                     FounderService founders,
+                                     MinorsClearanceService minors) {
+        this.minors = minors;
         this.inviteService = inviteService;
         this.profileService = profileService;
         this.founders = founders;
@@ -45,6 +49,25 @@ public class AdminProfessorsController {
     public FounderView grantFounder(@AuthenticationPrincipal OrionUserDetails principal,
                                     @PathVariable UUID professorId) {
         return founders.grant(professorId, principal.user().getId());
+    }
+
+    /** La habilitación para adolescentes (Bloque 12): cómo va, encenderla por un año, apagarla. */
+    @GetMapping("/{professorId}/minors")
+    public MinorsClearanceView minors(@PathVariable UUID professorId) {
+        return minors.view(professorId);
+    }
+
+    @PostMapping("/{professorId}/minors")
+    public MinorsClearanceView grantMinors(@AuthenticationPrincipal OrionUserDetails principal,
+                                           @PathVariable UUID professorId) {
+        return minors.grant(professorId, principal.user().getId());
+    }
+
+    @DeleteMapping("/{professorId}/minors")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void revokeMinors(@AuthenticationPrincipal OrionUserDetails principal,
+                             @PathVariable UUID professorId) {
+        minors.revoke(professorId, principal.user().getId());
     }
 
     /** Quita el beneficio: solo cambia las reservas nuevas. */
