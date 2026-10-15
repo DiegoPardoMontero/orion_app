@@ -430,10 +430,10 @@ test("[p-bienvenida.1 p-bienvenida.2 p-bienvenida.3 e-whatsapp.2 e-whatsapp.3 p-
 
     // El recorrido: sin «Ahora no» ni «Saltar», Esc no lo cierra, y lleva de pantalla en pantalla.
     const recorrido = profe.getByRole("dialog");
-    await expect(recorrido.getByRole("heading", { name: "Te muestro Orión en 8 pasos" })).toBeVisible();
+    await expect(recorrido.getByRole("heading", { name: "¡Bienvenido a Orión!" })).toBeVisible();
     await expect(recorrido.getByRole("button", { name: "Ahora no" })).toHaveCount(0);
     await profe.keyboard.press("Escape");
-    await expect(recorrido.getByRole("heading", { name: "Te muestro Orión en 8 pasos" })).toBeVisible();
+    await expect(recorrido.getByRole("heading", { name: "¡Bienvenido a Orión!" })).toBeVisible();
     await recorrido.getByRole("button", { name: "Empezar" }).click();
     await expect(recorrido.getByText(/^1 de \d/)).toBeVisible();
     const antes = profe.url();

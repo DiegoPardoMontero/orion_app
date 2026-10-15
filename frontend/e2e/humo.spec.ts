@@ -141,7 +141,8 @@ test("un estudiante nuevo se registra desde el login y aterriza dentro", async (
   // Y lo recibe el recorrido guiado (handoff §7): va de pantalla en pantalla, se puede retomar si
   // se cierra a mitad y, terminado, no vuelve.
   const recorrido = page.getByRole("dialog");
-  await expect(recorrido.getByRole("heading", { name: "Te muestro Orión en 6 pasos" })).toBeVisible();
+  await expect(recorrido.getByRole("heading", { name: "¡Bienvenido a Orión!" })).toBeVisible();
+  await expect(recorrido.getByText("Te mostramos Orión en 6 pasos")).toBeVisible();
   await recorrido.getByRole("button", { name: "Empezar" }).click();
   await expect(recorrido.getByText("1 de 6")).toBeVisible();
   await expect(recorrido.getByRole("heading", { name: "Encuentra tu profe" })).toBeVisible();

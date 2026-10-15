@@ -270,7 +270,7 @@ async function atenderDialogosDeEntrada(page: Page, datosDePago: { llave: string
   const acuerdos = page.getByRole("dialog", { name: ACUERDOS });
   const pago = page.getByRole("dialog", { name: PAGO });
   const bienvenida = page.getByRole("dialog", { name: BIENVENIDA });
-  const recorrido = page.getByRole("dialog").filter({ has: page.getByRole("heading", { name: /^Te muestro Orión/ }) });
+  const recorrido = page.getByRole("dialog").filter({ has: page.getByRole("heading", { name: /^Te muestro Orión|^¡Bienvenido a Orión!/ }) });
   const cualquiera = edad.or(whatsapp).or(acuerdos).or(pago).or(bienvenida).or(recorrido);
 
   for (let i = 0; i < 8; i++) {
@@ -595,7 +595,7 @@ test("un profesor nuevo: de «Enseña con Orión» a su primera clase dictada, c
       for (const nombre of [ACUERDOS, PAGO, BIENVENIDA, "Antes de seguir", "Falta tu WhatsApp"]) {
         await expect.soft(p.getByRole("dialog", { name: nombre }), `«${nombre}» no vuelve al recargar`).toHaveCount(0);
       }
-      await expect.soft(p.getByRole("dialog").filter({ has: p.getByRole("heading", { name: /^Te muestro Orión/ }) }), "el recorrido no vuelve al recargar").toHaveCount(0);
+      await expect.soft(p.getByRole("dialog").filter({ has: p.getByRole("heading", { name: /^Te muestro Orión|^¡Bienvenido a Orión!/ }) }), "el recorrido no vuelve al recargar").toHaveCount(0);
       // Los datos de pago quedaron guardados (enmascarados).
       await p.goto("/perfil?seccion=pagos");
       await expect.soft(p.getByText("••••4321")).toBeVisible();

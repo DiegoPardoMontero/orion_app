@@ -5,6 +5,7 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { Constelacion, Wordmark } from "@/components/marca";
 import { Meissa } from "@/components/Meissa";
 import { Rigel } from "@/components/Rigel";
 import { apiFetch } from "@/lib/api/fetch";
@@ -58,11 +59,18 @@ export function Recorrido({
   nombre,
   arranque,
   obligatorio = false,
+  bienvenida = false,
   onTerminar,
 }: {
   definicion: Definicion;
   nombre: string;
   arranque: Arranque;
+  /**
+   * La primera vez: la pantalla de inicio es el pop-up grande de «¡Bienvenido a Orión!» (Pardo,
+   * 15/10/2026), con el logo y el saludo, y de ahí al paso 1. Repetido desde Ayuda, el inicio de
+   * siempre: a quien ya está dentro no se le da la bienvenida otra vez.
+   */
+  bienvenida?: boolean;
   /**
    * Sin «Ahora no», sin «Saltar» y sin Esc: solo se sale terminándolo. El del profe recién aprobado
    * (Pardo, 28/09/2026: «el video de Sofía es opcional, el recorrido NO»).
@@ -147,7 +155,16 @@ export function Recorrido({
       }}
       className="fixed inset-0 z-[80]"
     >
-      {fase.tipo === "inicio" && (
+      {fase.tipo === "inicio" && bienvenida && (
+        <ModalDeBienvenida
+          nombre={nombre}
+          pasos={total}
+          principal={{ etiqueta: "Empezar", accion: () => irA(0) }}
+          secundaria={obligatorio ? undefined : { etiqueta: "Ahora no", accion: terminar }}
+          onEscape={obligatorio ? undefined : terminar}
+        />
+      )}
+      {fase.tipo === "inicio" && !bienvenida && (
         <ModalDelRecorrido
           pose={definicion.inicio.pose}
           titulo={definicion.inicio.titulo}
@@ -579,6 +596,97 @@ function ModalDelRecorrido({
               {secundaria.etiqueta}
             </button>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * El pop-up de bienvenida (Pardo, 15/10/2026: «grande, muy llamativo, con el logo»): el amanecer con
+ * la constelación y el logotipo arriba, el saludo y, abajo, el mismo botón que arranca el recorrido.
+ * Sustituye al video por ahora; la pantalla del video sigue existiendo para cuando haya uno.
+ */
+function ModalDeBienvenida({
+  nombre,
+  pasos,
+  principal,
+  secundaria,
+  onEscape,
+}: {
+  nombre: string;
+  pasos: number;
+  principal: { etiqueta: string; accion: () => void };
+  secundaria?: { etiqueta: string; accion: () => void };
+  onEscape?: () => void;
+}) {
+  const tituloId = useId();
+  const textoId = useId();
+  const caja = useRef<HTMLDivElement>(null);
+  const primero = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    primero.current?.focus({ preventScroll: true });
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onEscape?.();
+      } else if (e.key === "Tab") {
+        atraparFoco(e, caja.current);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onEscape]);
+
+  return (
+    <div className="absolute inset-0 flex items-center justify-center px-4" style={{ background: VELO }}>
+      <div
+        ref={caja}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={tituloId}
+        aria-describedby={textoId}
+        className="anim-modal flex w-full max-h-[calc(100dvh-24px)] flex-col overflow-hidden rounded-[26px] bg-white text-center shadow-[0_24px_60px_rgba(46,30,78,.45)] sm:w-[560px]"
+      >
+        <div className="gradient-dawn relative overflow-hidden px-6 pb-9 pt-10 sm:pb-11 sm:pt-12">
+          <Constelacion className="pointer-events-none absolute -right-6 -top-8 h-[190px] w-[190px] opacity-90 sm:h-[230px] sm:w-[230px]" />
+          <Constelacion className="pointer-events-none absolute -bottom-16 -left-10 h-[150px] w-[150px] opacity-50" />
+          <div className="relative flex flex-col items-center gap-3">
+            <Wordmark className="text-[40px] text-on-primary drop-shadow-[0_6px_18px_rgba(46,30,78,.35)] sm:text-[48px]" />
+            <h2 id={tituloId} className="font-display text-[30px] font-bold leading-[1.1] text-on-primary [text-wrap:balance] sm:text-[36px]">
+              ¡Bienvenido a Orión!
+            </h2>
+          </div>
+        </div>
+        <div className="flex flex-col items-center gap-3.5 px-6 pb-6 pt-6 sm:px-10 sm:pb-8 sm:pt-7">
+          <Rigel pose="celebracion" decorativo className="-mt-14 h-[120px] w-[114px] sm:-mt-16 sm:h-[136px] sm:w-[130px]" />
+          <p id={textoId} className="m-0 text-[16px] leading-[1.55] text-[#33203B] [text-wrap:pretty] sm:text-[17px]">
+            <strong>Estamos felices de tenerte con nosotros, {nombre}.</strong> Queremos que saques el mayor provecho de la
+            plataforma y de tus clases cuanto antes.
+          </p>
+          <p className="m-0 text-[14px] leading-[1.5] text-[#5E4E6B]">
+            Te mostramos Orión en {pasos} pasos. Es rápido, y puedes repetirlo desde Ayuda.
+          </p>
+          <div className="flex w-full flex-col gap-1.5 pt-1 sm:w-auto sm:flex-row-reverse sm:justify-center sm:gap-2.5 sm:pt-2">
+            <button
+              ref={primero}
+              type="button"
+              onClick={principal.accion}
+              className="h-[54px] rounded-pill bg-[#E8503A] px-8 text-[16px] font-bold text-[#FFF6EE] shadow-[0_12px_28px_rgba(232,80,58,.4)] transition-colors hover:bg-[#C0341F] focus-visible:shadow-[0_0_0_4px_rgba(232,80,58,.22)] focus-visible:outline-none"
+            >
+              {principal.etiqueta}
+            </button>
+            {secundaria && (
+              <button
+                type="button"
+                onClick={secundaria.accion}
+                className="h-12 rounded-pill px-5 text-[15px] font-semibold text-[#5E4E6B] transition-colors hover:bg-[#F4EAE0] hover:text-[#33203B] focus-visible:shadow-[0_0_0_4px_rgba(232,80,58,.22)] focus-visible:outline-none sm:h-[54px]"
+              >
+                {secundaria.etiqueta}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -13,6 +13,8 @@ import { VideoBienvenida } from "./VideoBienvenida";
 /**
  * La bienvenida al entrar (handoff §6 y §9). Al profesor recién aprobado, la pantalla completa con
  * el video de Sofía; después —o directo, si no hay video—, el recorrido. Al estudiante, el recorrido.
+ * Desde el 15/10/2026 el video está apagado (el ajuste `professor_welcome_video_url` vacío) y el
+ * recorrido arranca con el pop-up grande de «¡Bienvenido a Orión!».
  *
  * <p>Para el profesor, el video es opcional y el recorrido no (Pardo, 28/09/2026). «Empezar el
  * recorrido» sirve haya visto el video o no, y el recorrido no se salta ni se deja para después:
@@ -61,6 +63,7 @@ export function Bienvenida({ me }: { me: Me }) {
         nombre={nombre}
         arranque={guardado ? { reanudar: guardado } : "inicio"}
         obligatorio={obligatorio}
+        bienvenida
         onTerminar={() => completar.mutate(b.pendingTour!)}
       />
     );
