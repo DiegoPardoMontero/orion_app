@@ -650,7 +650,7 @@ function ModalDeBienvenida({
         className="anim-modal flex w-full max-h-[calc(100dvh-24px)] flex-col overflow-hidden rounded-[26px] bg-white text-center shadow-[0_24px_60px_rgba(46,30,78,.45)] sm:w-[560px]"
       >
         <div className="gradient-dawn relative overflow-hidden px-6 pb-9 pt-10 sm:pb-11 sm:pt-12">
-          <Constelacion className="pointer-events-none absolute -right-6 -top-8 h-[190px] w-[190px] opacity-90 sm:h-[230px] sm:w-[230px]" />
+          <Constelacion className="pointer-events-none absolute -right-12 -top-14 h-[170px] w-[170px] opacity-60 sm:-right-10 sm:-top-16 sm:h-[220px] sm:w-[220px]" />
           <Constelacion className="pointer-events-none absolute -bottom-16 -left-10 h-[150px] w-[150px] opacity-50" />
           <div className="relative flex flex-col items-center gap-3">
             <Wordmark className="text-[40px] text-on-primary drop-shadow-[0_6px_18px_rgba(46,30,78,.35)] sm:text-[48px]" />

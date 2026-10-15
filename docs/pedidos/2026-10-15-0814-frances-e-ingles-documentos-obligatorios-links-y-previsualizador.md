@@ -80,6 +80,9 @@ Lo que más le importa es el pop-up de bienvenida de los profes (pedido de las 0
 `develop` del 15/10 (08:14, 08:32, 08:40, 08:45, 09:05 y 09:10) se despliega entero cuando él lo
 autorice, tras el aviso de «listo».
 
+**09:20:** «Dale, me mandas el correo entonces, pero lo más pronto posible que puedas terminar todo,
+mejor.» → el aviso de «listo» va por correo a diegopardomontero@gmail.com, además del chat.
+
 ## Estado
 
 **Listo en `develop`, sin desplegar.** Cuando Pardo diga, se hace merge a `master` y push; Railway lo
