@@ -54,6 +54,9 @@ export const DOC_TIPOS = [
   { code: "UNIVERSITY_DEGREE", label: "Título universitario", obligatorio: false },
   { code: "LANGUAGE_CERTIFICATION", label: "Certificación de idioma", obligatorio: false },
   { code: "OTHER", label: "Otro documento", obligatorio: false },
+  // Los dos de la habilitación para adolescentes (Bloque 12): no van en la postulación, van en Mi perfil.
+  { code: "REGISTRY_CHECK", label: "Consulta del Registro de inhabilidades (Ley 1918)", obligatorio: false },
+  { code: "BACKGROUND_CHECK", label: "Certificado de antecedentes judiciales", obligatorio: false },
 ] as const;
 
 export function etiquetaDocumento(code?: string): string {

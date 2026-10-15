@@ -112,6 +112,8 @@ export class ConversacionDeVoz {
   private ultimoDeMeissa = "";
   private reintentos = 0;
   private reintento: ReturnType<typeof setTimeout> | null = null;
+  private caida: ReturnType<typeof setTimeout> | null = null;
+  private colgada = false;
 
   /**
    * @param enviar a dónde van los mensajes para la sesión. Por defecto, el canal de datos; los
@@ -125,9 +127,28 @@ export class ConversacionDeVoz {
   ) {}
 
   async conectar(clientSecret: string, model: string) {
-    this.micro = await navigator.mediaDevices.getUserMedia({ audio: true });
+    try {
+      this.micro = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (e) {
+      throw new Error(mensajeDeMicrofono(e));
+    }
 
     this.pc = new RTCPeerConnection();
+    // La conexión se cae en silencio (se fue el wifi, cambió de red): sin esto Meissa se quedaba
+    // «escuchando» para siempre. `disconnected` a veces se recupera solo; se le da un respiro.
+    this.pc.onconnectionstatechange = () => {
+      const estado = this.pc?.connectionState;
+      if (estado === "failed" || estado === "closed") {
+        this.avisarCaida();
+      } else if (estado === "disconnected") {
+        this.caida = setTimeout(() => {
+          if (this.pc?.connectionState === "disconnected") this.avisarCaida();
+        }, 6000);
+      } else if (estado === "connected" && this.caida) {
+        clearTimeout(this.caida);
+        this.caida = null;
+      }
+    };
     this.audio = new Audio();
     this.audio.autoplay = true;
     this.pc.ontrack = (e) => {
@@ -179,6 +200,9 @@ export class ConversacionDeVoz {
 
   colgar() {
     this.cancelarReintento();
+    if (this.caida) clearTimeout(this.caida);
+    this.caida = null;
+    this.colgada = true;
     this.pc?.close();
     this.micro?.getTracks().forEach((t) => t.stop());
     this.pc = null;
@@ -247,6 +271,13 @@ export class ConversacionDeVoz {
         this.cancelarReintento();
         this.usuarioHablando = true;
         this.inicioDelUsuario = performance.now();
+        // Si la interrumpe, Meissa se calla de verdad: se cancela la respuesta que va generándose
+        // y se vacía lo que quedaba por sonar. Sin esto, por WebRTC el audio ya enviado seguía
+        // saliendo unos segundos encima de la persona, y Meissa parecía no escuchar.
+        if (this.hablando || this.respuestaEnCurso) {
+          if (this.respuestaEnCurso) this.enviar({ type: "response.cancel" });
+          if (this.hablando) this.enviar({ type: "output_audio_buffer.clear" });
+        }
         this.cb.onFase("escucha");
         break;
 
@@ -310,6 +341,11 @@ export class ConversacionDeVoz {
     }
   }
 
+  private avisarCaida() {
+    if (this.colgada) return;
+    this.cb.onError("Se interrumpió la conversación.");
+  }
+
   /**
    * Una respuesta que falló —casi siempre el límite de tokens por minuto de la organización, que se
    * alcanza con dos o tres diagnósticos a la vez— no traía sonido ni aviso: Meissa se callaba y la
@@ -358,6 +394,24 @@ export class ConversacionDeVoz {
     const limpia = frase.trim();
     if (limpia) this.cb.onFrase?.(limpia, this.turnosIniciados, this.frasesDelTurno++);
   }
+}
+
+/**
+ * Lo que se le dice a la persona cuando el micrófono no se pudo abrir. Los nombres de error son los
+ * del navegador (NotAllowedError, NotFoundError, NotReadableError); todo lo demás, un aviso general.
+ */
+export function mensajeDeMicrofono(e: unknown): string {
+  const nombre = e instanceof Error ? e.name : "";
+  if (nombre === "NotAllowedError" || nombre === "SecurityError") {
+    return "Necesitamos tu permiso para usar el micrófono. Actívalo en el navegador e intenta de nuevo.";
+  }
+  if (nombre === "NotFoundError" || nombre === "OverconstrainedError") {
+    return "No encontramos un micrófono. Conecta uno o prueba desde el celular.";
+  }
+  if (nombre === "NotReadableError" || nombre === "AbortError") {
+    return "Otra aplicación está usando el micrófono. Ciérrala e intenta de nuevo.";
+  }
+  return "No pudimos conectar la conversación.";
 }
 
 /**

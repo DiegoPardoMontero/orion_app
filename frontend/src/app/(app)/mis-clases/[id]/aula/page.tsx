@@ -76,6 +76,7 @@ export default function AulaPage() {
   if (!miLlamada || !datos) {
     return (
       <Antesala
+        bookingId={id}
         datos={datos!}
         micOn={micOn}
         camOn={camOn}

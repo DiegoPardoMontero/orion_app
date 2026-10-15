@@ -17,6 +17,7 @@ import {
   UserRound,
   Wallet,
   X,
+  ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -50,6 +51,7 @@ import { SelectorDePais } from "@/components/SelectorDePais";
 import { SelectorDeCiudad } from "@/components/SelectorDeCiudad";
 import { Modal } from "@/components/Modal";
 import { TarjetaProfesor } from "@/components/profesor/TarjetaProfesor";
+import { ClasesConAdolescentes } from "@/components/profesor/ClasesConAdolescentes";
 
 /** El idioma tal como lo edita el profesor: código + si es nativo + niveles que enseña. */
 type LangEdit = { code: string; isNative: boolean; levels: string[] };
@@ -667,6 +669,17 @@ function CamposDelPerfil({ inicial }: { inicial: ProfileResponse }) {
             </p>
           </div>
         </div>
+      </Seccion>
+
+      {/* Clases con adolescentes (Bloque 12): el código de conducta y los dos documentos que revisa el
+          equipo antes de habilitarlo por un año. Solo se ve aquí; no es parte de la postulación. */}
+      <Seccion
+        icono={<ShieldCheck size={16} strokeWidth={1.75} />}
+        tono="lavanda"
+        titulo="Clases con adolescentes"
+        descripcion="Si quieres dar clase a estudiantes de 13 a 17 años, Orión te habilita después de revisar tres cosas."
+      >
+        <ClasesConAdolescentes />
       </Seccion>
     </>
   );

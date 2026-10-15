@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ConversacionDeVoz, traduccionVisible, type ConversacionCallbacks } from "./diagnostico";
+import { ConversacionDeVoz, mensajeDeMicrofono, traduccionVisible, type ConversacionCallbacks } from "./diagnostico";
 
 /**
  * El cliente de voz, alimentado con la secuencia de eventos que manda OpenAI por WebRTC. Ahí el
@@ -70,6 +70,24 @@ describe("ConversacionDeVoz por WebRTC", () => {
     voz.recibir({ type: "output_audio_buffer.cleared" });
 
     expect(turnosTerminados).toHaveLength(1);
+  });
+
+  it("si la persona empieza a hablar encima de Meissa, se cancela la respuesta y se vacía el audio pendiente", () => {
+    const { voz, enviados } = cliente();
+    voz.recibir({ type: "response.created" });
+    voz.recibir({ type: "output_audio_buffer.started" });
+    voz.recibir({ type: "input_audio_buffer.speech_started" });
+
+    expect(enviados).toContainEqual({ type: "response.cancel" });
+    expect(enviados).toContainEqual({ type: "output_audio_buffer.clear" });
+  });
+
+  it("si la persona habla cuando Meissa ya calló, no se cancela nada", () => {
+    const { voz, enviados } = cliente();
+    turnoDeMeissa(voz, "How are you?");
+    voz.recibir({ type: "input_audio_buffer.speech_started" });
+
+    expect(enviados.filter((m) => (m as { type: string }).type === "response.cancel")).toHaveLength(0);
   });
 
   it("suelta cada frase apenas se cierra, y la última al terminar el turno", () => {
@@ -227,5 +245,15 @@ describe("traduccionVisible", () => {
   it("salta las que no tienen traducción (ya eran español o no llegaron a tiempo)", () => {
     expect(traduccionVisible([null, "¿Dónde estás?"])).toBe("¿Dónde estás?");
     expect(traduccionVisible([])).toBe("");
+  });
+});
+
+describe("mensajeDeMicrofono", () => {
+  it("explica el permiso negado, el micrófono ausente y el ocupado; lo demás, el aviso general", () => {
+    const con = (name: string) => Object.assign(new Error("x"), { name });
+    expect(mensajeDeMicrofono(con("NotAllowedError"))).toContain("permiso");
+    expect(mensajeDeMicrofono(con("NotFoundError"))).toContain("No encontramos un micrófono");
+    expect(mensajeDeMicrofono(con("NotReadableError"))).toContain("Otra aplicación");
+    expect(mensajeDeMicrofono(new Error("boom"))).toBe("No pudimos conectar la conversación.");
   });
 });

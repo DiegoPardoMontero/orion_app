@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Award, BadgeDollarSign, Check, Copy, Mail, MessageCircle, RefreshCw, Search, UserCheck, UserPlus, UserX } from "lucide-react";
+import { Award, BadgeDollarSign, Check, Copy, Mail, MessageCircle, RefreshCw, Search, ShieldCheck, UserCheck, UserPlus, UserX } from "lucide-react";
 import { useState } from "react";
 import { AvisoError, Cargando, ErrorCarga, Vacio } from "@/components/estados";
 import { Modal } from "@/components/Modal";
@@ -12,6 +12,7 @@ import { Badge, Boton, BotonIcono, Campo, Spinner } from "@/components/ui";
 import { ApiError, apiFetch } from "@/lib/api/fetch";
 import type { AdminUserResponse } from "@/lib/api/types";
 import { estadoDeFundador } from "@/lib/fundador";
+import { estadoDeAdolescentes, habilitacionDe, type HabilitacionAdolescentes } from "@/lib/adolescentes";
 import { fechaLarga } from "@/lib/format";
 import { generarClave } from "@/lib/password";
 
@@ -307,6 +308,7 @@ function ModalInvitarProfesor({ onCerrar }: { onCerrar: () => void }) {
 function FilaUsuario({ usuario }: { usuario: AdminUserResponse }) {
   const queryClient = useQueryClient();
   const activo = usuario.status === "ACTIVE";
+  const adolescentes = habilitacionDe(usuario.minors);
 
   const cambiarEstado = useMutation({
     mutationFn: () =>
@@ -332,6 +334,11 @@ function FilaUsuario({ usuario }: { usuario: AdminUserResponse }) {
         )}
         {usuario.role === "PROFESSOR" && (
           <span className="mt-0.5 block text-[11.5px] font-medium text-text-muted">{estadoDeFundador(usuario.founder)}</span>
+        )}
+        {usuario.role === "PROFESSOR" && adolescentes && (
+          <span className={`mt-0.5 block text-[11.5px] font-medium ${adolescentes.active ? "text-success" : "text-text-muted"}`}>
+            {estadoDeAdolescentes(adolescentes)}
+          </span>
         )}
       </td>
       <td className={`${t.celda} whitespace-nowrap text-text-secondary`}>
@@ -364,11 +371,86 @@ function FilaUsuario({ usuario }: { usuario: AdminUserResponse }) {
           )}
           {usuario.role === "PROFESSOR" && <BotonTarifa profesorId={usuario.id!} />}
           {usuario.role === "PROFESSOR" && <BotonFundador profesorId={usuario.id!} esFundador={!!usuario.founder} />}
+          {usuario.role === "PROFESSOR" && adolescentes && (
+            <BotonAdolescentes profesorId={usuario.id!} habilitacion={adolescentes} nombre={usuario.fullName ?? ""} />
+          )}
           {/* Inactivar oculta; borrar destruye. Son cosas distintas y por eso conviven. */}
           <BotonPurga tipo="user" id={usuario.id!} etiqueta="Borrar" soloIcono />
         </div>
       </td>
     </tr>
+  );
+}
+
+/**
+ * La habilitación para dar clase a adolescentes (Bloque 12): el admin la enciende por un año cuando el
+ * profe ya aceptó el código de conducta y subió la consulta del Registro de inhabilidades y los
+ * antecedentes; si falta algo, el botón lo dice en vez de fallar. Apagarla pide confirmación.
+ */
+function BotonAdolescentes({ profesorId, habilitacion, nombre }: { profesorId: string; habilitacion: HabilitacionAdolescentes; nombre: string }) {
+  const queryClient = useQueryClient();
+  const [abierto, setAbierto] = useState(false);
+  const cambiar = useMutation({
+    mutationFn: () =>
+      apiFetch<unknown>(`/api/v1/admin/professors/${profesorId}/minors`, { method: habilitacion.active ? "DELETE" : "POST" }),
+    onSuccess: () => {
+      setAbierto(false);
+      void queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+  });
+  const error = cambiar.error instanceof ApiError ? cambiar.error.message : null;
+  return (
+    <>
+      <BotonIcono
+        etiqueta={habilitacion.active ? "Quitar la habilitación para adolescentes" : "Habilitar para adolescentes"}
+        variante={habilitacion.active ? "tinta" : "contorno"}
+        onClick={() => setAbierto(true)}
+      >
+        <ShieldCheck size={17} strokeWidth={1.75} />
+      </BotonIcono>
+      {abierto && (
+        <Modal titulo={habilitacion.active ? "¿Quitar la habilitación para adolescentes?" : `Habilitar a ${nombre} para adolescentes`} onCerrar={() => setAbierto(false)}>
+          {habilitacion.active ? (
+            <p className="text-[14px] text-text-secondary">
+              Deja de aparecer para los perfiles de adolescentes y no se le pueden reservar clases nuevas con ellos.
+              Las clases ya reservadas siguen en pie.
+            </p>
+          ) : (
+            <ul className="grid gap-2 text-[14px]">
+              {[
+                ["Código de conducta aceptado", habilitacion.conductAccepted],
+                ["Consulta del Registro de inhabilidades (Ley 1918)", habilitacion.registryCheck],
+                ["Certificado de antecedentes judiciales", habilitacion.backgroundCheck],
+              ].map(([texto, ok]) => (
+                <li key={String(texto)} className="flex items-center gap-2">
+                  <span className={`flex h-5 w-5 items-center justify-center rounded-full ${ok ? "bg-success/15 text-success" : "bg-surface-sunken text-text-muted"}`}>
+                    {ok ? <Check size={12} strokeWidth={3} /> : "·"}
+                  </span>
+                  <span className={ok ? "text-text" : "text-text-secondary"}>{texto}</span>
+                </li>
+              ))}
+              <li className="mt-1 text-[12.5px] text-text-muted">
+                {habilitacion.missing.length === 0
+                  ? "Revisa los dos documentos en su postulación antes de encenderla. Queda vigente un año."
+                  : `Falta ${habilitacion.missing.join(", ")}. El profe lo completa desde Mi perfil → Clases con adolescentes.`}
+              </li>
+            </ul>
+          )}
+          {error && <div className="mt-3"><AvisoError mensaje={error} /></div>}
+          <div className="mt-5 flex gap-3">
+            <Boton variante="contorno" onClick={() => setAbierto(false)} className="h-11 flex-1">Cancelar</Boton>
+            <Boton
+              variante={habilitacion.active ? "peligro" : "primario"}
+              disabled={cambiar.isPending || (!habilitacion.active && habilitacion.missing.length > 0)}
+              onClick={() => cambiar.mutate()}
+              className="h-11 flex-1"
+            >
+              {cambiar.isPending ? <Spinner /> : habilitacion.active ? "Quitar" : "Habilitar por un año"}
+            </Boton>
+          </div>
+        </Modal>
+      )}
+    </>
   );
 }
 

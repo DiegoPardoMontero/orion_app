@@ -516,6 +516,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/profile/minors/conduct": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["acceptConduct"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/photo": {
         parameters: {
             query?: never;
@@ -676,6 +692,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/adolescents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_2"];
+        put?: never;
+        post: operations["create_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/account/email-verification/resend": {
         parameters: {
             query?: never;
@@ -731,7 +763,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_2"];
+        get: operations["list_3"];
         put?: never;
         post: operations["open_1"];
         delete?: never;
@@ -781,7 +813,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["create_2"];
+        post: operations["create_3"];
         delete?: never;
         options?: never;
         head?: never;
@@ -852,6 +884,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/bookings/{id}/classroom/guardian-present": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["guardianPresent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/bookings/{id}/cancel": {
         parameters: {
             query?: never;
@@ -893,7 +941,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["create_3"];
+        post: operations["create_4"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1099,9 +1147,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_3"];
+        get: operations["list_4"];
         put?: never;
-        post: operations["create_4"];
+        post: operations["create_5"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1300,6 +1348,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/professors/{professorId}/minors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["minors"];
+        put?: never;
+        post: operations["grantMinors"];
+        delete: operations["revokeMinors"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/professors/{professorId}/founder": {
         parameters: {
             query?: never;
@@ -1492,6 +1556,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/adolescents/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["revoke_1"];
+        options?: never;
+        head?: never;
+        patch: operations["update_4"];
+        trace?: never;
+    };
     "/api/v1/admin/users/{id}": {
         parameters: {
             query?: never;
@@ -1505,7 +1585,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch: operations["update_4"];
+        patch: operations["update_5"];
         trace?: never;
     };
     "/api/v1/students/{studentId}/profile": {
@@ -1563,7 +1643,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_4"];
+        get: operations["list_5"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1892,6 +1972,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/profile/minors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["mine_5"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/profile/invite-link": {
         parameters: {
             query?: never;
@@ -1979,7 +2075,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["mine_5"];
+        get: operations["mine_6"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2075,7 +2171,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_5"];
+        get: operations["list_6"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2235,7 +2331,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["mine_6"];
+        get: operations["mine_7"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2555,7 +2651,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_6"];
+        get: operations["list_7"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2651,7 +2747,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_7"];
+        get: operations["list_8"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3067,7 +3163,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_8"];
+        get: operations["list_9"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3294,7 +3390,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete: operations["revoke_1"];
+        delete: operations["revoke_2"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3362,6 +3458,17 @@ export interface components {
             until?: string;
             status?: string;
         };
+        MinorsClearanceView: {
+            active?: boolean;
+            /** Format: date */
+            clearedUntil?: string;
+            /** Format: date-time */
+            clearedAt?: string;
+            conductAccepted?: boolean;
+            registryCheck?: boolean;
+            backgroundCheck?: boolean;
+            missing?: string[];
+        };
         ProfileLanguage: {
             code?: string;
             nameEs?: string;
@@ -3396,6 +3503,7 @@ export interface components {
             /** Format: int32 */
             baseRateBps?: number;
             founder?: components["schemas"]["FounderView"];
+            minors?: components["schemas"]["MinorsClearanceView"];
         };
         RateBreakdownResponse: {
             /** Format: int64 */
@@ -3797,6 +3905,29 @@ export interface components {
             endTime?: string;
             reason?: string;
         };
+        CreateRequest: {
+            firstName: string;
+            /** Format: int32 */
+            birthYear?: number;
+            selfDeclaredLevel?: string;
+            motivation?: string;
+            acceptsAuthorization?: boolean;
+            heardConfirmed?: boolean;
+        };
+        AdolescentProfileResponse: {
+            /** Format: uuid */
+            id?: string;
+            firstName?: string;
+            /** Format: int32 */
+            birthYear?: number;
+            /** Format: int32 */
+            age?: number;
+            selfDeclaredLevel?: string;
+            motivation?: string;
+            authorizationVersion?: string;
+            /** Format: date-time */
+            authorizedAt?: string;
+        };
         CreateConversationRequest: {
             /** Format: uuid */
             counterpartId: string;
@@ -3862,6 +3993,8 @@ export interface components {
             /** Format: uuid */
             studentId?: string;
             trial?: boolean;
+            /** Format: uuid */
+            adolescentProfileId?: string;
         };
         ProposeRescheduleRequest: {
             /** Format: date-time */
@@ -3894,6 +4027,35 @@ export interface components {
         };
         RedactarRequest: {
             rawInput: string;
+        };
+        ClassroomResponse: {
+            state?: string;
+            languageCode?: string;
+            /** Format: date-time */
+            startsAt?: string;
+            /** Format: date-time */
+            endsAt?: string;
+            /** Format: date-time */
+            opensAt?: string;
+            /** Format: date-time */
+            expiresAt?: string;
+            /** Format: int32 */
+            classMinutes?: number;
+            moderator?: boolean;
+            counterpart?: components["schemas"]["Counterpart"];
+            counterpartPresent?: boolean;
+            displayName?: string;
+            domain?: string;
+            room?: string;
+            token?: string;
+            guardianConfirmationRequired?: boolean;
+            adolescentFirstName?: string;
+        };
+        Counterpart: {
+            name?: string;
+            firstName?: string;
+            photoUrl?: string;
+            headline?: string;
         };
         CancelBookingRequest: {
             reason?: string;
@@ -4033,6 +4195,7 @@ export interface components {
             /** Format: date-time */
             completedAt?: string;
             recommendations?: components["schemas"]["RecommendationView"][];
+            turns?: components["schemas"]["TurnView"][];
         };
         RecommendationView: {
             /** Format: uuid */
@@ -4042,6 +4205,10 @@ export interface components {
             reasonCode?: string;
             reasonText?: string;
             booked?: boolean;
+        };
+        TurnView: {
+            speaker?: string;
+            transcript?: string;
         };
         CrearLeadRequest: {
             firstName: string;
@@ -4069,6 +4236,7 @@ export interface components {
             status?: string;
             emailVerified?: boolean;
             founder?: components["schemas"]["FounderView"];
+            minors?: components["schemas"]["MinorsClearanceView"];
         };
         ReviewDecisionRequest: {
             note?: string;
@@ -4246,6 +4414,11 @@ export interface components {
             /** Format: date-time */
             attendedAt?: string;
         };
+        UpdateRequest: {
+            firstName?: string;
+            selfDeclaredLevel?: string;
+            motivation?: string;
+        };
         UpdateUserRequest: {
             fullName?: string;
             whatsappPhone?: string;
@@ -4341,6 +4514,7 @@ export interface components {
             ratingCount?: number;
             languages?: components["schemas"]["ProfileLanguage"][];
             goals?: string[];
+            minorsCleared?: boolean;
         };
         TrialResponse: {
             offered?: boolean;
@@ -4784,13 +4958,6 @@ export interface components {
             unlockCondition?: string;
             equipped?: boolean;
         };
-        Counterpart: {
-            /** Format: uuid */
-            id?: string;
-            fullName?: string;
-            photoUrl?: string;
-            headline?: string;
-        };
         MyBookingResponse: {
             /** Format: uuid */
             id?: string;
@@ -4808,6 +4975,7 @@ export interface components {
             rehearsal?: boolean;
             trial?: boolean;
             inProgress?: boolean;
+            adolescentFirstName?: string;
         };
         EligibilityResponse: {
             eligible?: boolean;
@@ -4911,27 +5079,6 @@ export interface components {
             /** Format: date-time */
             expiresAt?: string;
             checkoutUrl?: string;
-        };
-        ClassroomResponse: {
-            state?: string;
-            languageCode?: string;
-            /** Format: date-time */
-            startsAt?: string;
-            /** Format: date-time */
-            endsAt?: string;
-            /** Format: date-time */
-            opensAt?: string;
-            /** Format: date-time */
-            expiresAt?: string;
-            /** Format: int32 */
-            classMinutes?: number;
-            moderator?: boolean;
-            counterpart?: components["schemas"]["Counterpart"];
-            counterpartPresent?: boolean;
-            displayName?: string;
-            domain?: string;
-            room?: string;
-            token?: string;
         };
         Proveedores: {
             providers?: string[];
@@ -6260,6 +6407,26 @@ export interface operations {
             };
         };
     };
+    acceptConduct: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MinorsClearanceView"];
+                };
+            };
+        };
+    };
     upload: {
         parameters: {
             query?: never;
@@ -6543,6 +6710,50 @@ export interface operations {
             };
         };
     };
+    list_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AdolescentProfileResponse"][];
+                };
+            };
+        };
+    };
+    create_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AdolescentProfileResponse"];
+                };
+            };
+        };
+    };
     resend: {
         parameters: {
             query?: never;
@@ -6601,7 +6812,7 @@ export interface operations {
             };
         };
     };
-    list_2: {
+    list_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -6717,7 +6928,7 @@ export interface operations {
             };
         };
     };
-    create_2: {
+    create_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -6874,6 +7085,28 @@ export interface operations {
             };
         };
     };
+    guardianPresent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ClassroomResponse"];
+                };
+            };
+        };
+    };
     cancel: {
         parameters: {
             query?: never;
@@ -6926,7 +7159,7 @@ export interface operations {
             };
         };
     };
-    create_3: {
+    create_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -7234,7 +7467,7 @@ export interface operations {
             };
         };
     };
-    list_3: {
+    list_4: {
         parameters: {
             query?: {
                 role?: string;
@@ -7257,7 +7490,7 @@ export interface operations {
             };
         };
     };
-    create_4: {
+    create_5: {
         parameters: {
             query?: never;
             header?: never;
@@ -7558,6 +7791,70 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["RefundResponse"];
                 };
+            };
+        };
+    };
+    minors: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MinorsClearanceView"];
+                };
+            };
+        };
+    };
+    grantMinors: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MinorsClearanceView"];
+                };
+            };
+        };
+    };
+    revokeMinors: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -7891,7 +8188,53 @@ export interface operations {
             };
         };
     };
+    revoke_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     update_4: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AdolescentProfileResponse"];
+                };
+            };
+        };
+    };
+    update_5: {
         parameters: {
             query?: never;
             header?: never;
@@ -7981,7 +8324,7 @@ export interface operations {
             };
         };
     };
-    list_4: {
+    list_5: {
         parameters: {
             query?: {
                 language?: string;
@@ -7991,6 +8334,7 @@ export interface operations {
                 maxPrice?: number;
                 native?: boolean;
                 certified?: boolean;
+                forMinor?: boolean;
                 day?: string[];
                 from?: string;
                 to?: string;
@@ -8450,6 +8794,26 @@ export interface operations {
             };
         };
     };
+    mine_5: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MinorsClearanceView"];
+                };
+            };
+        };
+    };
     inviteLink: {
         parameters: {
             query?: never;
@@ -8550,7 +8914,7 @@ export interface operations {
             };
         };
     };
-    mine_5: {
+    mine_6: {
         parameters: {
             query?: never;
             header?: never;
@@ -8676,7 +9040,7 @@ export interface operations {
             };
         };
     };
-    list_5: {
+    list_6: {
         parameters: {
             query?: never;
             header?: never;
@@ -8884,7 +9248,7 @@ export interface operations {
             };
         };
     };
-    mine_6: {
+    mine_7: {
         parameters: {
             query?: never;
             header?: never;
@@ -9306,7 +9670,7 @@ export interface operations {
             };
         };
     };
-    list_6: {
+    list_7: {
         parameters: {
             query?: {
                 status?: string;
@@ -9434,7 +9798,7 @@ export interface operations {
             };
         };
     };
-    list_7: {
+    list_8: {
         parameters: {
             query?: never;
             header?: never;
@@ -9991,7 +10355,7 @@ export interface operations {
             };
         };
     };
-    list_8: {
+    list_9: {
         parameters: {
             query?: {
                 status?: string;
@@ -10290,7 +10654,7 @@ export interface operations {
             };
         };
     };
-    revoke_1: {
+    revoke_2: {
         parameters: {
             query?: never;
             header?: never;

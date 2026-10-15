@@ -39,6 +39,9 @@ const MENSAJES_PROPIOS = new Set([
   "No pudimos conectar la conversación.",
   "Se interrumpió la conversación.",
   "Meissa se quedó sin voz un momento. Intenta de nuevo en un minuto.",
+  "Necesitamos tu permiso para usar el micrófono. Actívalo en el navegador e intenta de nuevo.",
+  "No encontramos un micrófono. Conecta uno o prueba desde el celular.",
+  "Otra aplicación está usando el micrófono. Ciérrala e intenta de nuevo.",
 ]);
 
 const ESTADO: Record<FaseDeMeissa, string> = {
@@ -235,8 +238,11 @@ export function Conversacion({
             </>
           ) : (
             <>
-              <p lang="en" className="min-h-[3.2em] font-display text-[19px] font-semibold leading-snug text-text">
-                {subtitulo || "…"}
+              <p
+                lang={subtitulo ? "en" : "es"}
+                className={`min-h-[3.2em] font-display text-[19px] font-semibold leading-snug ${subtitulo ? "text-text" : "text-text-muted"}`}
+              >
+                {subtitulo || (turno === 1 && fase === "piensa" ? "Meissa te saluda en un momento…" : "…")}
               </p>
               {mostrarTraduccion && traduccionVisible(traducciones) && (
                 <p lang="es" className="mt-2 text-[14px] leading-relaxed text-text-secondary">

@@ -16,6 +16,7 @@ import { Cargando, ErrorCarga } from "@/components/estados";
 import { EdicionEnPagina } from "@/components/edicion/EdicionEnPagina";
 import { apiFetch } from "@/lib/api/fetch";
 import { type Cuenta, MisDatos } from "@/components/cuenta/MisDatos";
+import { Adolescentes } from "@/components/cuenta/Adolescentes";
 
 export default function CuentaPage() {
   const cuenta = useQuery({
@@ -147,6 +148,8 @@ function FormularioCuenta({ inicial }: { inicial: Cuenta }) {
             onCambiarClave={() => setCambiandoClave(true)}
             ayudaNombre="Tu nombre sí lo ven tus profesores."
           />
+          {/* Adolescentes de 13 a 17 bajo esta cuenta (Bloque 12): solo el titular los ve. */}
+          <Adolescentes />
         </div>
       </EdicionEnPagina>
 

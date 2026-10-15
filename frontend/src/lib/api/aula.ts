@@ -10,6 +10,10 @@ export type EstadoDelAula = "CLOSED" | "OPEN" | "STARTED" | "ENDED";
 export type ClassroomResponse = {
   /** El idioma de la clase (EN, FR). */
   languageCode?: string | null;
+  /** La clase es de un adolescente y el adulto no ha confirmado que está presente o cerca (Bloque 12). */
+  guardianConfirmationRequired?: boolean;
+  /** El nombre de pila del adolescente, si la clase es suya. */
+  adolescentFirstName?: string | null;
   state: EstadoDelAula;
   startsAt: string;
   endsAt: string;

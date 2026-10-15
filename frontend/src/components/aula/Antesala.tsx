@@ -5,7 +5,10 @@ import Link from "next/link";
 import { Check, Clock, Lock, ShieldCheck } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Rigel } from "@/components/Rigel";
-import { Boton } from "@/components/ui";
+import { Boton, Spinner } from "@/components/ui";
+import { AvisoError } from "@/components/estados";
+import { ApiError, apiFetch } from "@/lib/api/fetch";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { VistaPrevia } from "@/components/aula/VistaPrevia";
 import type { ClassroomResponse } from "@/lib/api/aula";
 import { fechaCorta, horaBogota, rangoHoras } from "@/lib/format";
@@ -29,6 +32,7 @@ export function Antesala({
   camOn,
   onMic,
   onCam,
+  bookingId,
 }: {
   datos: ClassroomResponse;
   onEntrar: () => void;
@@ -36,6 +40,8 @@ export function Antesala({
   camOn: boolean;
   onMic: (v: boolean) => void;
   onCam: (v: boolean) => void;
+  /** Para la confirmación del adulto en la clase de un adolescente (Bloque 12). */
+  bookingId: string;
 }) {
   const ahora = useReloj();
   const otro = datos.counterpart;
@@ -175,6 +181,12 @@ export function Antesala({
         </div>
 
         <div className="mt-7 lg:mt-0">
+          {datos.adolescentFirstName && esAnfitrion && (
+            <p className="mt-3 flex items-center gap-2 rounded-base bg-accent-lavender-soft px-4 py-2.5 text-[13px] text-[#5E4A8A]">
+              <ShieldCheck size={15} strokeWidth={2} className="shrink-0" />
+              La clase es con <strong>{datos.adolescentFirstName}</strong>, un adolescente a cargo de {otro?.firstName ?? "su representante"}. Recuerda el código de conducta.
+            </p>
+          )}
           {!terminada && (
             <VistaPrevia micOn={micOn} camOn={camOn} onMic={onMic} onCam={onCam} />
           )}
@@ -197,6 +209,8 @@ export function Antesala({
                   Ver mis clases
                 </Link>
               </>
+            ) : datos.guardianConfirmationRequired ? (
+              <ConfirmacionDelAdulto bookingId={bookingId} nombre={datos.adolescentFirstName ?? "tu hijo o hija"} />
             ) : (
               <>
                 <Boton
@@ -246,4 +260,33 @@ function cuentaAtras(minutos: number): string {
   }
   const dias = Math.floor(minutos / (24 * 60));
   return `${dias} ${dias === 1 ? "día" : "días"}`;
+}
+
+/**
+ * La clase de un adolescente se abre desde la cuenta del adulto, y antes de entrar confirma que está
+ * presente o cerca (Bloque 12). Hasta entonces el servidor no entrega el acceso a la sala; al confirmar,
+ * la antesala se refresca y aparece el botón de entrar.
+ */
+function ConfirmacionDelAdulto({ bookingId, nombre }: { bookingId: string; nombre: string }) {
+  const qc = useQueryClient();
+  const confirmar = useMutation({
+    mutationFn: () => apiFetch<ClassroomResponse>(`/api/v1/bookings/${bookingId}/classroom/guardian-present`, { method: "POST", body: {} }),
+    onSuccess: (datos) => qc.setQueryData(["aula", bookingId], datos),
+  });
+  const error = confirmar.error instanceof ApiError ? confirmar.error.message : null;
+  return (
+    <div className="rounded-card bg-accent-lavender-soft p-4">
+      <p className="flex items-start gap-2 text-[14px] font-semibold text-text">
+        <ShieldCheck size={18} strokeWidth={2} className="mt-0.5 shrink-0 text-[#5E4A8A]" />
+        Esta clase es de {nombre}. Antes de abrir la sala, confirma que vas a estar presente o cerca durante la clase.
+      </p>
+      <p className="mt-1.5 pl-6 text-[12.5px] text-text-secondary">
+        Es parte de la autorización que diste como representante legal. La clase no se graba.
+      </p>
+      {error && <div className="mt-3"><AvisoError mensaje={error} /></div>}
+      <Boton variante="primario" className="mt-3 w-full" disabled={confirmar.isPending} onClick={() => confirmar.mutate()}>
+        {confirmar.isPending ? <Spinner /> : "Estoy presente o cerca"}
+      </Boton>
+    </div>
+  );
 }

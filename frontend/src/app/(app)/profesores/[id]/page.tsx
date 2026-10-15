@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   Sparkles,
   Video,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -63,6 +64,7 @@ import { aplicarSaldo } from "@/lib/saldo";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import { minutos, useCifras } from "@/lib/cifras";
 import { paisConBandera } from "@/lib/paises";
+import { useAdolescentes } from "@/lib/adolescentes";
 
 export default function AgendaProfesorPage() {
   // En Next 16 los params de página son una Promise; en un client component se leen con este hook.
@@ -100,6 +102,10 @@ export default function AgendaProfesorPage() {
   const [idioma, setIdioma] = useState<string | null>(null);
   // Reservarla como clase de prueba (Q7). Solo se ofrece si al estudiante le toca.
   const [comoPrueba, setComoPrueba] = useState(false);
+  // Para quién es la clase (Bloque 12): el titular (null) o uno de los adolescentes a su cargo.
+  const [paraQuien, setParaQuien] = useState<string | null>(null);
+  const adolescentes = useAdolescentes(me?.role === "STUDENT");
+  const hijos = adolescentes.data ?? [];
 
   const profesor = useQuery({
     queryKey: ["professor", id],
@@ -155,6 +161,7 @@ export default function AgendaProfesorPage() {
           modality: "VIRTUAL",
           languageCode: idiomaDeLaClase ?? undefined,
           trial: reservandoPrueba || undefined,
+          adolescentProfileId: paraQuien ?? undefined,
         },
       }),
     onSuccess: (reserva) => {
@@ -245,6 +252,43 @@ export default function AgendaProfesorPage() {
   // Controles compartidos entre móvil y desktop: idioma y confirmación.
   const controles: ReactNode = (
     <>
+      {/* Para quién es la clase (Bloque 12): solo si el adulto tiene adolescentes a su cargo. Con un
+          profe no habilitado, los hijos se ven pero no se eligen, y se dice por qué. */}
+      {hijos.length > 0 && (
+        <Bloque tono="lavanda" titulo="¿Para quién es la clase?" icono={<Users size={16} strokeWidth={1.75} />}>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {[{ id: null as string | null, titulo: "Para mí", detalle: "" }, ...hijos.map((h) => ({ id: h.id as string | null, titulo: `Para ${h.firstName}`, detalle: `${h.age} años` }))].map((o) => {
+              const bloqueado = o.id !== null && !detalle.minorsCleared;
+              return (
+                <button
+                  key={o.id ?? "yo"}
+                  type="button"
+                  aria-pressed={paraQuien === o.id}
+                  disabled={bloqueado}
+                  onClick={() => setParaQuien(o.id)}
+                  className={`flex min-h-14 flex-col items-start justify-center rounded-base border-[1.5px] px-4 py-2 text-left transition-colors focus-visible:shadow-focus disabled:cursor-not-allowed disabled:opacity-50 ${
+                    paraQuien === o.id ? "border-primary bg-primary/5" : "border-border bg-surface-raised"
+                  }`}
+                >
+                  <span className="font-semibold text-text">{o.titulo}</span>
+                  {o.detalle && <span className="text-[12.5px] text-text-secondary">{o.detalle}</span>}
+                </button>
+              );
+            })}
+          </div>
+          {!detalle.minorsCleared ? (
+            <p className="mt-2 text-[12.5px] text-text-secondary">
+              Este profesor todavía no está habilitado para dar clase a adolescentes. En el buscador puedes
+              filtrar por «Para un adolescente».
+            </p>
+          ) : (
+            <p className="mt-2 flex items-center gap-1.5 text-[12.5px] text-success">
+              <ShieldCheck size={14} strokeWidth={2.2} /> Habilitado por Orión para clases con adolescentes.
+            </p>
+          )}
+        </Bloque>
+      )}
+
       {/* La clase de prueba se elige aquí, antes de todo lo demás: cambia el precio. */}
       {pruebaDisponible && (
         <Bloque tono="melocoton" titulo="¿Cómo quieres tu primera clase?" icono={<Sparkles size={16} strokeWidth={1.75} />}>

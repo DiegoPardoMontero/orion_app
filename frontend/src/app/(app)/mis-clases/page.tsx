@@ -594,6 +594,7 @@ function TarjetaClase({
           <span className="flex flex-wrap items-center justify-end gap-1.5 @3xl:justify-start">
             {clase.rehearsal && <Badge tono="neutral">Ensayo</Badge>}
             {clase.trial && <Badge tono="coral">Clase de prueba</Badge>}
+            {clase.adolescentFirstName && <Badge tono="lavanda">Para {clase.adolescentFirstName}</Badge>}
             <Badge tono={virtual ? "menta" : "melocoton"}>
               {virtual ? <Video size={12} strokeWidth={2.4} /> : <MapPin size={12} strokeWidth={2.4} />}
               {virtual ? "Virtual" : "Presencial"}

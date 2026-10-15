@@ -30,6 +30,8 @@ type Filtros = {
   maxPrice: string;
   native: boolean;
   certified: boolean;
+  /** Solo profes habilitados para adolescentes (Bloque 12). */
+  forMinor: boolean;
   /** Días de la semana, como los nombra java.time: MONDAY, TUESDAY… */
   days: string[];
   /**
@@ -84,6 +86,7 @@ const FILTROS_INICIALES: Filtros = {
   maxPrice: "",
   native: false,
   certified: false,
+  forMinor: false,
   days: [],
   hours: [],
   sort: "RELEVANCE",
@@ -101,6 +104,7 @@ function contarActivos(f: Filtros): number {
     (f.maxPrice ? 1 : 0) +
     (f.native ? 1 : 0) +
     (f.certified ? 1 : 0) +
+    (f.forMinor ? 1 : 0) +
     f.days.length +
     (f.hours.length > 0 ? 1 : 0)
   );
@@ -116,6 +120,7 @@ function construirQs(f: Filtros, page: number): string {
   if (f.maxPrice) p.set("maxPrice", f.maxPrice);
   if (f.native) p.set("native", "true");
   if (f.certified) p.set("certified", "true");
+  if (f.forMinor) p.set("forMinor", "true");
   for (const day of f.days) p.append("day", day);
   for (const h of [...f.hours].sort((a, b) => a - b)) p.append("hour", `${String(h).padStart(2, "0")}:00`);
   if (f.sort !== "RELEVANCE") p.set("sort", f.sort);
@@ -445,6 +450,7 @@ function PanelFiltros({
     filtros.goals.length +
     (filtros.native ? 1 : 0) +
     (filtros.certified ? 1 : 0) +
+    (filtros.forMinor ? 1 : 0) +
     filtros.days.length +
     (filtros.hours.length > 0 ? 1 : 0);
 
@@ -525,6 +531,17 @@ function PanelFiltros({
           />
           <span className="whitespace-nowrap text-[13.5px] font-semibold text-text">
             {t.filtros.certificado}
+          </span>
+        </label>
+        {/* Para un adolescente (Bloque 12): solo profes habilitados y vigentes. */}
+        <label className={`flex items-center gap-2.5 ${horizontal ? "" : "justify-between"}`}>
+          <Toggle
+            activo={filtros.forMinor}
+            onCambio={(forMinor) => onCambio({ ...filtros, forMinor })}
+            etiqueta="Para un adolescente"
+          />
+          <span className="whitespace-nowrap text-[13.5px] font-semibold text-text">
+            Para un adolescente
           </span>
         </label>
       </div>
